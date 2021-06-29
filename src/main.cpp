@@ -1,5 +1,6 @@
+#include "entity.h"
+
 #include <iostream>
-#include "main.h"
 
 int main()
 {
