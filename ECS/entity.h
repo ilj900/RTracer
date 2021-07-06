@@ -332,7 +332,7 @@ namespace ECS
         }
 
         template<typename T>
-        void SetSytemSignature(FSignature Signature)
+        void SetSystemSignature(FSignature Signature)
         {
             SystemManager->template SetSignature<T>(Signature);
         }
