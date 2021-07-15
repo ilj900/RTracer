@@ -19,8 +19,8 @@ namespace VKH
 
         void PickPhysicalDevice();
         void CreateLogicalDevice();
-        void CreateSwapChain();
         void CreateSurface();
+        void CreateSwapChain();
         void CreateRenderPass();
 
 
@@ -34,8 +34,11 @@ namespace VKH
         std::unique_ptr<FInstance> Instance;
         std::shared_ptr<FPhysicalDevice> PhysicalDevice;
         std::shared_ptr<FLogicalDevice> LogicalDevice;
+        std::shared_ptr<VkSurfaceKHR> Surface;
 
         bool bGraphicsQueueRequired = true;
         bool NumberOfGraphicsQueueRequired = 1;
     };
+
+    FDirector* GetDirector();
 }

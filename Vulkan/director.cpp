@@ -1,12 +1,26 @@
 #include "director.h"
+#include "GLFW/glfw3.h"
 
 #include <stdexcept>
 
 using namespace VKH;
 
+FDirector Director{};
+
+FDirector* GetDirector()
+{
+    return &Director;
+}
+
 void FDirector::Init()
 {
     Instance = std::make_unique<FInstance>("RTracer", 1, 2, 0);
+    uint32_t ExtensionsCount = 0;
+    const char** RequiredExtesions = glfwGetRequiredInstanceExtensions(&ExtensionsCount);
+    for(uint32_t i = 0; i < ExtensionsCount; ++i)
+    {
+        Instance->InstancePushExtension(RequiredExtesions[i]);
+    }
     Instance->Init();
     PickPhysicalDevice();
     CreateLogicalDevice();
@@ -69,7 +83,11 @@ void FDirector::CreateLogicalDevice()
     vkGetDeviceQueue(LogicalDevice->LogicalDevice, GrapgicsQueueIndex, 0, &LogicalDevice->GraphicsQueue);
 }
 
-void FDirector::CreateSwapChain()
+void FDirector::CreateSurface()
 {
 
+}
+
+void FDirector::CreateSwapChain()
+{
 }

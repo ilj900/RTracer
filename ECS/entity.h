@@ -306,7 +306,7 @@ namespace ECS
         {
             ComponentManager->RemoveComponent<T>(Entity);
 
-            auto Signature = mEntityManager->GetSignature(Entity);
+            auto Signature = EntityManager->GetSignature(Entity);
             Signature.set(ComponentManager->GetComponentType<T>(), false);
             EntityManager->SetSignature(Entity, Signature);
 

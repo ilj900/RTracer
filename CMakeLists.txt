@@ -9,6 +9,7 @@ find_package(Vulkan REQUIRED)
 add_subdirectory(glfw)
 
 include_directories(ECS
+                    vulkan
                     glfw/include
                     ${Vulkan}/Include)
 

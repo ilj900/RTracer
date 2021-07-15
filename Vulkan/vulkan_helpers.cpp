@@ -41,6 +41,8 @@ VkInstance CreateInstance(const std::string& ApplicationName, uint32_t APIVersio
     VkInstance Instance;
     auto Result = vkCreateInstance(&InstanceCreateInfo, nullptr, &Instance);
     assert(Result != VK_SUCCESS && "Failed to create an Instance!");
+
+    return Instance;
 }
 
 void CreatePhysicalDevice()
