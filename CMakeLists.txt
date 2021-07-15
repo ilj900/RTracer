@@ -12,9 +12,18 @@ include_directories(ECS
                     glfw/include
                     ${Vulkan}/Include)
 
-set(SOURCE src/main.cpp)
+set(SOURCE  src/main.cpp
+            vulkan/instance.cpp
+            vulkan/physical_device.cpp
+            vulkan/vulkan_helpers.cpp
+            vulkan/director.cpp
+            vulkan/logical_device.cpp)
 
-set(INCLUDE ECS/entity.h)
+set(INCLUDE ECS/entity.h
+            vulkan/vulkan_helpers.h
+            vulkan/instance.h
+            vulkan/physical_device.h
+            vulkan/director.h)
 
 add_executable(RTracer ${SOURCE} ${INCLUDE})
 target_link_libraries(RTracer glfw ${GLFW_LIBRARIES} Vulkan::Vulkan)
