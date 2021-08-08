@@ -47,14 +47,11 @@ void FContext::Init()
         CreateSurface();
         PickPhysicalDevice();
         CreateLogicalDevice();
+        CreateCommandPool();
         CreateSwapChain();
-        CreateImageViews();
         CreateRenderPass();
         CreateDescriptorSetLayout();
         CreateGraphicsPipeline();
-        CreateCommandPool();
-        CreateColorResources();
-        CreateDepthResources();
         CreateFramebuffers();
         CreateTextureImage(TexturePath);
         CreateTextureImageView();
@@ -451,10 +448,12 @@ void FContext::CreateLogicalDevice()
 
 void FContext::CreateSwapChain()
 {
+    /// Request surface properties
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(PhysicalDevice, Surface, &Capabilities);
 
     uint32_t FormatCount = 0;
     vkGetPhysicalDeviceSurfaceFormatsKHR(PhysicalDevice, Surface, &FormatCount, nullptr);
+
     if (FormatCount != 0)
     {
         Formats.resize(FormatCount);
@@ -471,6 +470,7 @@ void FContext::CreateSwapChain()
     }
 
     VkPresentModeKHR PresentMode = VK_PRESENT_MODE_FIFO_KHR;
+
     for (const auto& AvailablePresentMode : PresentModes)
     {
         if (AvailablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
@@ -480,6 +480,7 @@ void FContext::CreateSwapChain()
     }
 
     VkSurfaceFormatKHR SurfaceFormat = Formats[0];
+
     for (const auto& Format : Formats)
     {
         if (Format.format == VK_FORMAT_B8G8R8A8_SRGB && Format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
@@ -513,6 +514,7 @@ void FContext::CreateSwapChain()
         ImageCount = Capabilities.maxImageCount;
     }
 
+    /// Create SwapChain
     VkSwapchainCreateInfoKHR CreateInfo{};
     CreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     CreateInfo.surface = Surface;
@@ -550,21 +552,35 @@ void FContext::CreateSwapChain()
         throw std::runtime_error("Failed to create swap chain!");
     }
 
+    /// Queue SwapChain for it's images
     vkGetSwapchainImagesKHR(LogicalDevice, SwapChain, &ImageCount, nullptr);
     SwapChainImages.resize(ImageCount);
     vkGetSwapchainImagesKHR(LogicalDevice, SwapChain, &ImageCount, SwapChainImages.data());
     SwapChainImageFormat = SurfaceFormat.format;
     SwapChainExtent = Extent;
-}
 
-void FContext::CreateImageViews()
-{
+    /// Create ImageViews for SwapChain Images
     SwapChainImageViews.resize(SwapChainImages.size());
 
     for (std::size_t i = 0; i < SwapChainImages.size(); ++i)
     {
         SwapChainImageViews[i] = CreateImageView(SwapChainImages[i], SwapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
     }
+
+    // Create Image and ImageView for AA
+    VkFormat ColorFormat = SwapChainImageFormat;
+
+    CreateImage(SwapChainExtent.width, SwapChainExtent.height, 1, MSAASamples, ColorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ColorImage, ColorImageMemory);
+
+    ColorImageView = CreateImageView(ColorImage, ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+
+    // Create Image and ImageView for Depth
+    VkFormat DepthFormat = FindDepthFormat();
+
+    CreateImage(SwapChainExtent.width, SwapChainExtent.height, 1, MSAASamples, DepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, DepthImage, DepthImageMemory);
+    DepthImageView = CreateImageView(DepthImage, DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+
+    TransitionImageLayout(DepthImage, DepthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
 }
 
 VkImageView FContext::CreateImageView(VkImage Image, VkFormat Format, VkImageAspectFlags AspectFlags, uint32_t MipLevels)
@@ -896,15 +912,6 @@ void FContext::CreateCommandPool()
     }
 }
 
-void FContext::CreateColorResources()
-{
-    VkFormat ColorFormat = SwapChainImageFormat;
-
-    CreateImage(SwapChainExtent.width, SwapChainExtent.height, 1, MSAASamples, ColorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ColorImage, ColorImageMemory);
-
-    ColorImageView = CreateImageView(ColorImage, ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-}
-
 void FContext::CreateImage(uint32_t Width, uint32_t Height, uint32_t MipLevels, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties, VkImage& Image, VkDeviceMemory& ImageMemory)
 {
     VkImageCreateInfo ImageInfo{};
@@ -957,16 +964,6 @@ uint32_t FContext::FindMemoryType(uint32_t TypeFilter, VkMemoryPropertyFlags Pro
     }
 
     throw std::runtime_error("Failed to find suitable memory type!");
-}
-
-void FContext::CreateDepthResources()
-{
-    VkFormat DepthFormat = FindDepthFormat();
-
-    CreateImage(SwapChainExtent.width, SwapChainExtent.height, 1, MSAASamples, DepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, DepthImage, DepthImageMemory);
-    DepthImageView = CreateImageView(DepthImage, DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
-
-    TransitionImageLayout(DepthImage, DepthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
 }
 
 VkFormat FContext::FindDepthFormat()
@@ -1655,11 +1652,8 @@ void FContext::RecreateSwapChain()
     CleanUpSwapChain();
 
     CreateSwapChain();
-    CreateImageViews();
     CreateRenderPass();
     CreateGraphicsPipeline();
-    CreateColorResources();
-    CreateDepthResources();
     CreateFramebuffers();
     CreateUniformBuffers();
     CreateDescriptorPool();

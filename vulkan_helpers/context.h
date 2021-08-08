@@ -82,13 +82,10 @@ namespace V
         void QueuePhysicalDeviceProperties();
         void CreateLogicalDevice();
         void CreateSwapChain();
-        void CreateImageViews();
         void CreateRenderPass();
         void CreateDescriptorSetLayout();
         void CreateGraphicsPipeline();
         void CreateCommandPool();
-        void CreateColorResources();
-        void CreateDepthResources();
         void CreateFramebuffers();
         void CreateTextureImage(std::string& TexturePath);
         void CreateTextureImageView();
