@@ -10,11 +10,21 @@ add_subdirectory(glfw)
 
 include_directories(ECS
                     glfw/include
-                    ${Vulkan}/Include)
+                    vulkan_helpers
+                    ${Vulkan}/Include
+                    include
+                    math)
 
-set(SOURCE src/main.cpp)
+set(SOURCE  src/main.cpp
+            vulkan_helpers/context.cpp
+            math/maths.cpp)
 
-set(INCLUDE ECS/entity.h)
+set(INCLUDE ECS/entity.h
+            vulkan_helpers/context.h
+            include/stb_image.h
+            include/tiny_obj_loader.h
+            math/maths.h)
 
 add_executable(RTracer ${SOURCE} ${INCLUDE})
+
 target_link_libraries(RTracer glfw ${GLFW_LIBRARIES} Vulkan::Vulkan)
