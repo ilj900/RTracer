@@ -64,6 +64,7 @@ void FContext::Init()
         CreateDescriptorSet();
         CreateCommandBuffers();
         CreateSyncObjects();
+        CreateAS();
     }
     catch (std::runtime_error &Error) {
         std::cout << Error.what() << std::endl;
@@ -100,10 +101,10 @@ void FContext::CreateInstance()
     VkApplicationInfo AppInfo{};
     AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     AppInfo.pApplicationName = "Hello Triangle";
-    AppInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+    AppInfo.applicationVersion = VK_MAKE_VERSION(1, 2, 6);
     AppInfo.pEngineName = "No Engine";
-    AppInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    AppInfo.apiVersion = VK_API_VERSION_1_0;
+    AppInfo.engineVersion = VK_MAKE_VERSION(1, 2, 6);
+    AppInfo.apiVersion = VK_API_VERSION_1_2;
 
     VkInstanceCreateInfo CreateInfo{};
     CreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -253,6 +254,12 @@ void FContext::QueuePhysicalDeviceProperties()
     {
         MSAASamples = VK_SAMPLE_COUNT_1_BIT;
     }
+
+    VkPhysicalDeviceProperties2 Properties{};
+    Properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    RayTracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+    Properties.pNext = &RayTracingProperties;
+    vkGetPhysicalDeviceProperties2(PhysicalDevice, &Properties);
 }
 
 bool FContext::CheckDeviceExtensionsSupport(VkPhysicalDevice Device)
@@ -382,15 +389,31 @@ void FContext::CreateLogicalDevice()
         QueueCreateInfos.push_back(QueueCreateInfo);
     }
 
-    VkPhysicalDeviceFeatures DeviceFeatures{};
-    DeviceFeatures.samplerAnisotropy = VK_TRUE;
-    DeviceFeatures.sampleRateShading = VK_TRUE;
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR  RayTracingPipelineFeatures{};
+    RayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
+    RayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
+
+    VkPhysicalDeviceBufferDeviceAddressFeatures DeviceAddressFeatures{};
+    DeviceAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+    DeviceAddressFeatures.bufferDeviceAddress = VK_TRUE;
+    DeviceAddressFeatures.pNext = &RayTracingPipelineFeatures;
+
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR AccelerationStructureFeatures{};
+    AccelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+    AccelerationStructureFeatures.accelerationStructure = VK_TRUE;
+    AccelerationStructureFeatures.pNext = &DeviceAddressFeatures;
+
+    VkPhysicalDeviceFeatures2 DeviceFeatures2{};
+    DeviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    DeviceFeatures2.pNext = &AccelerationStructureFeatures;
+    DeviceFeatures2.features.samplerAnisotropy = VK_TRUE;
+    DeviceFeatures2.features.sampleRateShading = VK_TRUE;
 
     VkDeviceCreateInfo CreateInfo{};
     CreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     CreateInfo.pQueueCreateInfos = QueueCreateInfos.data();
     CreateInfo.queueCreateInfoCount = static_cast<uint32_t>(QueueCreateInfos.size());
-    CreateInfo.pEnabledFeatures = &DeviceFeatures;
+    CreateInfo.pNext = &DeviceFeatures2;
     CreateInfo.enabledExtensionCount = static_cast<uint32_t>(DeviceExtensions.size());
     std::vector<const char*> CharExtensions;
     for (const auto& Extension : DeviceExtensions)
@@ -1135,7 +1158,7 @@ void FContext::CreateTextureImage(std::string& TexturePath)
     vkFreeMemory(LogicalDevice, StagingBufferMemory, nullptr);
 }
 
-void FContext::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, VkBuffer& Buffer, VkDeviceMemory& BufferMemory)
+void FContext::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, VkBuffer& Buffer, VkDeviceMemory& BufferMemory, bool DeviceAddressRequired)
 {
     VkBufferCreateInfo BufferInfo{};
     BufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -1155,6 +1178,13 @@ void FContext::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemor
     AllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     AllocInfo.allocationSize = MemRequirements.size;
     AllocInfo.memoryTypeIndex = FindMemoryType(MemRequirements.memoryTypeBits, Properties);
+    if (DeviceAddressRequired)
+    {
+        VkMemoryAllocateFlagsInfo MemoryFlagsInfo{};
+        MemoryFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
+        MemoryFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+        AllocInfo.pNext = &MemoryFlagsInfo;
+    }
 
     if (vkAllocateMemory(LogicalDevice, &AllocInfo, nullptr, &BufferMemory) != VK_SUCCESS)
     {
@@ -1345,6 +1375,167 @@ void FContext::LoadModel(const std::string& ModelPath)
     }
 }
 
+FAccelerationStructure FContext::CreateAccelerationStructure(VkDeviceSize Size)
+{
+    FAccelerationStructure Structure;
+    VkAccelerationStructureCreateInfoKHR CreateInfo{};
+    CreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+    CreateInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+    CreateInfo.size = Size;
+
+    CreateBuffer(CreateInfo.size, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Structure.AccelerationStructureBuffer, Structure.AccelerationStructureBufferMemory, true);
+    CreateInfo.buffer = Structure.AccelerationStructureBuffer;
+
+    static auto vkCreateAccelerationStructureKHR = (PFN_vkCreateAccelerationStructureKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCreateAccelerationStructureKHR");
+    vkCreateAccelerationStructureKHR(LogicalDevice, &CreateInfo, nullptr, &Structure.AccelerationStructure);
+    return Structure;
+}
+
+void FContext::DeleteAccelerationStrucure(FAccelerationStructure& AccelerationStructure)
+{
+    static auto vkDestroyAccelerationStructureKHR = (PFN_vkDestroyAccelerationStructureKHR)vkGetDeviceProcAddr(LogicalDevice, "vkDestroyAccelerationStructureKHR");
+    vkDestroyAccelerationStructureKHR(LogicalDevice, AccelerationStructure.AccelerationStructure, nullptr);
+    vkDestroyBuffer(LogicalDevice, AccelerationStructure.AccelerationStructureBuffer, nullptr);
+    vkFreeMemory(LogicalDevice, AccelerationStructure.AccelerationStructureBufferMemory, nullptr);
+}
+
+void FContext::CreateAS()
+{
+    // Get addresses of vertex and index buffers
+    VkBufferDeviceAddressInfo VertexAddressInfo{};
+    VertexAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    VertexAddressInfo.buffer = VertexBuffer;
+    VkDeviceAddress VertexAddress = vkGetBufferDeviceAddress(LogicalDevice, &VertexAddressInfo);
+
+    VkBufferDeviceAddressInfo IndexAddressInfo{};
+    IndexAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    IndexAddressInfo.buffer = IndexBuffer;
+    VkDeviceAddress IndexAddress = vkGetBufferDeviceAddress(LogicalDevice, &IndexAddressInfo);
+
+    uint32_t MaxPrimitiveCount = Vertices.size() / 3;
+
+    VkAccelerationStructureGeometryTrianglesDataKHR Triangles{};
+    Triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+    Triangles.vertexFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
+    Triangles.vertexData.deviceAddress = VertexAddress;
+    Triangles.vertexStride = sizeof(FVertex);
+    Triangles.indexType = VK_INDEX_TYPE_UINT32;
+    Triangles.indexData.deviceAddress = IndexAddress;
+    Triangles.maxVertex = Vertices.size();
+
+    VkAccelerationStructureGeometryKHR AccelerationStructureGeometry{};
+    AccelerationStructureGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+    AccelerationStructureGeometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
+    AccelerationStructureGeometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
+    AccelerationStructureGeometry.geometry.triangles = Triangles;
+
+    VkAccelerationStructureBuildRangeInfoKHR Offset{};
+    Offset.firstVertex = 0;
+    Offset.primitiveCount = MaxPrimitiveCount;
+    Offset.primitiveOffset = 0;
+    Offset.transformOffset = 0;
+
+    VkAccelerationStructureBuildGeometryInfoKHR GeometryInfo{};
+    GeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    GeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR;
+    GeometryInfo.geometryCount = 1;
+    GeometryInfo.pGeometries = &AccelerationStructureGeometry;
+    GeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+    GeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+    GeometryInfo.srcAccelerationStructure = VK_NULL_HANDLE;
+
+    VkAccelerationStructureBuildSizesInfoKHR SizeInfo{};
+    SizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+    auto vkGetAccelerationStructureBuildSizesKHR = (PFN_vkGetAccelerationStructureBuildSizesKHR)vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureBuildSizesKHR");
+    vkGetAccelerationStructureBuildSizesKHR(LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &GeometryInfo, &MaxPrimitiveCount, &SizeInfo);
+
+    AccelerationStructure = CreateAccelerationStructure(SizeInfo.accelerationStructureSize);
+    GeometryInfo.dstAccelerationStructure = AccelerationStructure.AccelerationStructure;
+
+    VkDebugUtilsObjectNameInfoEXT Name{};
+    Name.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+    Name.pNext = nullptr;
+    Name.objectType = VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR;
+    Name.objectHandle = (uint64_t)AccelerationStructure.AccelerationStructure;
+    Name.pObjectName = "BLAS";
+    auto vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetDeviceProcAddr(LogicalDevice, "vkSetDebugUtilsObjectNameEXT");
+    vkSetDebugUtilsObjectNameEXT(LogicalDevice, &Name);
+
+    VkDeviceSize MaxScratch{0};
+    MaxScratch = std::max(MaxScratch, SizeInfo.buildScratchSize);
+
+    VkBuffer ScratchBuffer;
+    VkDeviceMemory ScratchBufferMemory;
+    CreateBuffer(MaxScratch, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ScratchBuffer, ScratchBufferMemory, true);
+    VkBufferDeviceAddressInfo ScratchBufferAddressInfo{};
+    ScratchBufferAddressInfo.buffer = ScratchBuffer;
+    ScratchBufferAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    VkDeviceAddress ScratchBufferAddress = vkGetBufferDeviceAddress(LogicalDevice, &ScratchBufferAddressInfo);
+
+    VkQueryPoolCreateInfo QueryPoolCreateInfo{};
+    QueryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+    QueryPoolCreateInfo.queryCount = 1;
+    QueryPoolCreateInfo.queryType = VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR;
+    VkQueryPool QueryPool;
+    vkCreateQueryPool(LogicalDevice, &QueryPoolCreateInfo, nullptr, &QueryPool);
+
+    auto CommandBuffer = BeginSingleTimeCommands();
+    GeometryInfo.scratchData.deviceAddress = ScratchBufferAddress;
+    std::array<VkAccelerationStructureBuildRangeInfoKHR*, 1> Offsets{&Offset};
+    auto vkCmdBuildAccelerationStructuresKHR = (PFN_vkCmdBuildAccelerationStructuresKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCmdBuildAccelerationStructuresKHR");
+    vkCmdBuildAccelerationStructuresKHR(CommandBuffer, 1, &GeometryInfo, Offsets.data());
+
+    VkMemoryBarrier Barrier{};
+    Barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+    Barrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+    Barrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+    vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, 0, 1, &Barrier, 0,
+                         nullptr, 0, nullptr);
+    if (VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR)
+    {
+        auto vkCmdWriteAccelerationStructuresPropertiesKHR = (PFN_vkCmdWriteAccelerationStructuresPropertiesKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCmdWriteAccelerationStructuresPropertiesKHR");
+        vkCmdWriteAccelerationStructuresPropertiesKHR(CommandBuffer, 1, &AccelerationStructure.AccelerationStructure, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR, QueryPool, 0);
+    }
+    EndSingleTimeCommand(CommandBuffer);
+
+    if (VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR)
+    {
+        auto CompactCommandBuffer = BeginSingleTimeCommands();
+
+        VkDeviceSize CompactSizes{};
+        vkGetQueryPoolResults(LogicalDevice, QueryPool, 0, 1, sizeof(VkDeviceSize), &CompactSizes, sizeof(VkDeviceSize), VK_QUERY_RESULT_WAIT_BIT);
+
+        uint32_t OriginalSize = SizeInfo.accelerationStructureSize;
+        uint32_t CompactSize = CompactSizes;
+
+        VkAccelerationStructureCreateInfoKHR AccelerationStructureCreateInfo{};
+        AccelerationStructureCreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+        AccelerationStructureCreateInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+        AccelerationStructureCreateInfo.size = CompactSize;
+
+        FAccelerationStructure CompactedAccelerationStructure = CreateAccelerationStructure(CompactSize);
+
+        VkCopyAccelerationStructureInfoKHR CopyInfo{};
+        CopyInfo.sType = VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR;
+        CopyInfo.src = AccelerationStructure.AccelerationStructure;
+        CopyInfo.dst = CompactedAccelerationStructure.AccelerationStructure;
+        CopyInfo.mode = VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR;
+        auto vkCmdCopyAccelerationStructureKHR = (PFN_vkCmdCopyAccelerationStructureKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCmdCopyAccelerationStructureKHR");
+        vkCmdCopyAccelerationStructureKHR(CompactCommandBuffer, &CopyInfo);
+
+        EndSingleTimeCommand(CompactCommandBuffer);
+
+        DeleteAccelerationStrucure(AccelerationStructure);
+        AccelerationStructure = CompactedAccelerationStructure;
+
+        std::cout << "Compaction saved us " << OriginalSize - CompactSize << " bytes! (" << OriginalSize << "->" << CompactSize << ")" << std::endl;
+    }
+
+    vkDestroyQueryPool(LogicalDevice, QueryPool, nullptr);
+    vkDestroyBuffer(LogicalDevice, ScratchBuffer, nullptr);
+    vkFreeMemory(LogicalDevice, ScratchBufferMemory, nullptr);
+}
+
 void FContext::CreateVertexBuffer()
 {
     VkDeviceSize BufferSize = sizeof(Vertices[0]) * Vertices.size();
@@ -1358,7 +1549,7 @@ void FContext::CreateVertexBuffer()
     memcpy(Data, Vertices.data(), (std::size_t)BufferSize);
     vkUnmapMemory(LogicalDevice, StagingBufferMemory);
 
-    CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VertexBuffer, VertexBufferMemory);
+    CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VertexBuffer, VertexBufferMemory, true);
 
     CopyBuffer(StagingBuffer, VertexBuffer, BufferSize);
 
@@ -1390,7 +1581,7 @@ void FContext::CreateIndexBuffer()
     memcpy(Data, Indices.data(), (std::size_t)BufferSize);
     vkUnmapMemory(LogicalDevice, StagingBufferMemory);
 
-    CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, IndexBuffer, IndexBufferMemory);
+    CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, IndexBuffer, IndexBufferMemory, true);
 
     CopyBuffer(StagingBuffer, IndexBuffer, BufferSize);
     vkDestroyBuffer(LogicalDevice, StagingBuffer, nullptr);

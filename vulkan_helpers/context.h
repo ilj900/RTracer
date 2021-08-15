@@ -67,6 +67,12 @@ struct UniformBufferObject
 
 namespace V
 {
+    struct FAccelerationStructure{
+        VkAccelerationStructureKHR AccelerationStructure;
+        VkBuffer AccelerationStructureBuffer;
+        VkDeviceMemory AccelerationStructureBufferMemory;
+    };
+
     class FContext
     {
     public:
@@ -103,6 +109,9 @@ namespace V
         void CleanUp();
         void DestroyDebugUtilsMessengerEXT();
         void UpdateUniformBuffer(uint32_t CurrentImage);
+        void CreateAS();
+        FAccelerationStructure CreateAccelerationStructure(VkDeviceSize Size);
+        void DeleteAccelerationStrucure(FAccelerationStructure& AccelerationStructure);
 
         void DrawFrame();
 
@@ -116,7 +125,7 @@ namespace V
         VkCommandBuffer BeginSingleTimeCommands();
         void EndSingleTimeCommand(VkCommandBuffer CommandBuffer);
         bool HasStensilComponent(VkFormat Format);
-        void CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, VkBuffer& Buffer, VkDeviceMemory& BufferMemory);
+        void CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, VkBuffer& Buffer, VkDeviceMemory& BufferMemory, bool DeviceAddressRequired = false);
         void CopyBufferToImage(VkBuffer Buffer, VkImage Image, uint32_t Width, uint32_t Height);
         void GenerateMipmaps(VkImage Image, VkFormat ImageFormat, int32_t TexWidth, int32_t TexHeight, uint32_t mipLevels);
         void CopyBuffer(VkBuffer SrcBuffer, VkBuffer DstBuffer, VkDeviceSize Size);
@@ -128,7 +137,12 @@ namespace V
         GLFWwindow* Window = nullptr;
 
         std::vector<std::string> InstanceExtensions;
-        std::vector<std::string> DeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+        std::vector<std::string> DeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+                                                     VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+                                                     VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+                                                     VK_KHR_RAY_QUERY_EXTENSION_NAME,
+                                                     VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+                                                     VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME};
         std::vector<std::string> ValidationLayers = {"VK_LAYER_KHRONOS_validation"};
 
         VkSurfaceCapabilitiesKHR Capabilities;
@@ -193,6 +207,8 @@ namespace V
         VkBuffer IndexBuffer;
         VkDeviceMemory IndexBufferMemory;
 
+        FAccelerationStructure AccelerationStructure;
+
         VkDescriptorPool DescriptorPool;
         std::vector<VkDescriptorSet> DescriptorSets;
 
@@ -228,6 +244,8 @@ namespace V
 
         std::string ModelPath = "../models/viking_room/viking_room.obj";
         std::string TexturePath = "../models/viking_room/viking_room.png";
+
+        VkPhysicalDeviceRayTracingPipelinePropertiesKHR RayTracingProperties{};
     };
 }
 
