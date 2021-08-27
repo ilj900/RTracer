@@ -16,6 +16,8 @@
 
 using namespace V;
 
+bool bEnableRayTracing = true;
+
 static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT MessageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT MessageType,
@@ -43,6 +45,7 @@ void FContext::Init()
 {
     try {
         CreateInstance();
+        LoadFunctionPointers();
         SetupDebugMessenger();
         CreateSurface();
         PickPhysicalDevice();
@@ -52,6 +55,8 @@ void FContext::Init()
         CreateRenderPass();
         CreateDescriptorSetLayout();
         CreateGraphicsPipeline();
+        CreateRayTracingPipeline();
+        CreateRayTracingShaderBindingTable();
         CreateFramebuffers();
         CreateTextureImage(TexturePath);
         CreateTextureImageView();
@@ -59,12 +64,14 @@ void FContext::Init()
         LoadModel(ModelPath);
         CreateVertexBuffer();
         CreateIndexBuffer();
+        CreateBLAS();
+        CreateTLAS();
         CreateUniformBuffers();
         CreateDescriptorPool();
         CreateDescriptorSet();
+        CreateRayTracingDescriptorSet();
         CreateCommandBuffers();
         CreateSyncObjects();
-        CreateAS();
     }
     catch (std::runtime_error &Error) {
         std::cout << Error.what() << std::endl;
@@ -163,6 +170,23 @@ void FContext::CreateInstance()
     }
 }
 
+void FContext::LoadFunctionPointers()
+{
+    Vulkan::vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(Instance, "vkCreateDebugUtilsMessengerEXT");
+    Vulkan::vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(Instance, "vkDestroyDebugUtilsMessengerEXT");
+    Vulkan::vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT) vkGetInstanceProcAddr(Instance, "vkSetDebugUtilsObjectNameEXT");
+    Vulkan::vkCreateAccelerationStructureKHR = (PFN_vkCreateAccelerationStructureKHR) vkGetInstanceProcAddr(Instance, "vkCreateAccelerationStructureKHR");
+    Vulkan::vkDestroyAccelerationStructureKHR = (PFN_vkDestroyAccelerationStructureKHR) vkGetInstanceProcAddr(Instance, "vkDestroyAccelerationStructureKHR");
+    Vulkan::vkGetAccelerationStructureBuildSizesKHR = (PFN_vkGetAccelerationStructureBuildSizesKHR) vkGetInstanceProcAddr(Instance, "vkGetAccelerationStructureBuildSizesKHR");
+    Vulkan::vkCmdBuildAccelerationStructuresKHR = (PFN_vkCmdBuildAccelerationStructuresKHR) vkGetInstanceProcAddr(Instance, "vkCmdBuildAccelerationStructuresKHR");
+    Vulkan::vkCmdWriteAccelerationStructuresPropertiesKHR = (PFN_vkCmdWriteAccelerationStructuresPropertiesKHR)vkGetInstanceProcAddr(Instance, "vkCmdWriteAccelerationStructuresPropertiesKHR");
+    Vulkan::vkCmdCopyAccelerationStructureKHR = (PFN_vkCmdCopyAccelerationStructureKHR)vkGetInstanceProcAddr(Instance, "vkCmdCopyAccelerationStructureKHR");
+    Vulkan::vkGetAccelerationStructureDeviceAddressKHR = (PFN_vkGetAccelerationStructureDeviceAddressKHR)vkGetInstanceProcAddr(Instance, "vkGetAccelerationStructureDeviceAddressKHR");
+    Vulkan::vkGetRayTracingShaderGroupHandlesKHR = (PFN_vkGetRayTracingShaderGroupHandlesKHR)vkGetInstanceProcAddr(Instance, "vkGetRayTracingShaderGroupHandlesKHR");
+    Vulkan::vkCreateRayTracingPipelinesKHR = (PFN_vkCreateRayTracingPipelinesKHR)vkGetInstanceProcAddr(Instance, "vkCreateRayTracingPipelinesKHR");
+    Vulkan::vkCmdTraceRaysKHR = (PFN_vkCmdTraceRaysKHR)vkGetInstanceProcAddr(Instance, "vkCmdTraceRaysKHR");
+}
+
 void FContext::SetupDebugMessenger()
 {
     if (ValidationLayers.empty())
@@ -170,10 +194,9 @@ void FContext::SetupDebugMessenger()
         return;
     }
 
-    auto Function = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(Instance, "vkCreateDebugUtilsMessengerEXT");
-    if (Function != nullptr)
+    if (Vulkan::vkCreateDebugUtilsMessengerEXT != nullptr)
     {
-        Function(Instance, &DebugCreateInfo, nullptr, &DebugMessenger);
+        Vulkan::vkCreateDebugUtilsMessengerEXT(Instance, &DebugCreateInfo, nullptr, &DebugMessenger);
     }
     else
     {
@@ -731,7 +754,7 @@ void FContext::CreateDescriptorSetLayout()
     UboLayoutBinding.binding = 0;
     UboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     UboLayoutBinding.descriptorCount = 1;
-    UboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    UboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR;
     UboLayoutBinding.pImmutableSamplers = nullptr;
 
     VkDescriptorSetLayoutBinding SamplerLayoutBinding{};
@@ -739,7 +762,7 @@ void FContext::CreateDescriptorSetLayout()
     SamplerLayoutBinding.descriptorCount = 1;
     SamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     SamplerLayoutBinding.pImmutableSamplers = nullptr;
-    SamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    SamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
 
     std::array<VkDescriptorSetLayoutBinding, 2> Bindings {UboLayoutBinding, SamplerLayoutBinding};
     VkDescriptorSetLayoutCreateInfo LayoutInfo{};
@@ -920,6 +943,121 @@ void FContext::CreateGraphicsPipeline()
 
     vkDestroyShaderModule(LogicalDevice, FragmentShaderModule, nullptr);
     vkDestroyShaderModule(LogicalDevice, VertexShaderModule, nullptr);
+}
+
+void FContext::CreateRayTracingPipeline()
+{
+    enum StageIndices
+    {
+        eRayGeneration,
+        eMiss,
+        eClosestHit,
+        eShaderGroupCount
+    };
+
+    std::array<VkPipelineShaderStageCreateInfo, eShaderGroupCount> Stages{};
+    VkPipelineShaderStageCreateInfo Stage{};
+    Stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    Stage.pName = "main";
+    ///Ray generation stage
+    Stage.module = CreateShaderFromFile("../shaders/raygen.spv");
+    Stage.stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+    Stages[eRayGeneration] = Stage;
+    ///Miss stage
+    Stage.module = CreateShaderFromFile("../shaders/raymiss.spv");
+    Stage.stage = VK_SHADER_STAGE_MISS_BIT_KHR;
+    Stages[eMiss] = Stage;
+    ///Closest hit stage
+    Stage.module = CreateShaderFromFile("../shaders/rayclosesthit.spv");
+    Stage.stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+    Stages[eClosestHit] = Stage;
+
+    VkRayTracingShaderGroupCreateInfoKHR RayTracingShaderGroupCreateInfo{};
+    RayTracingShaderGroupCreateInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+    RayTracingShaderGroupCreateInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
+    RayTracingShaderGroupCreateInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
+    RayTracingShaderGroupCreateInfo.generalShader = VK_SHADER_UNUSED_KHR;
+    RayTracingShaderGroupCreateInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+
+    /// Ray generation
+    RayTracingShaderGroupCreateInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+    RayTracingShaderGroupCreateInfo.generalShader = eRayGeneration;
+    RayTracingShaderGroups.push_back(RayTracingShaderGroupCreateInfo);
+
+    /// Miss
+    RayTracingShaderGroupCreateInfo.generalShader = eMiss;
+    RayTracingShaderGroups.push_back(RayTracingShaderGroupCreateInfo);
+
+    /// Closest hit
+    RayTracingShaderGroupCreateInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
+    RayTracingShaderGroupCreateInfo.generalShader = VK_SHADER_UNUSED_KHR;
+    RayTracingShaderGroupCreateInfo.closestHitShader = eClosestHit;
+    RayTracingShaderGroups.push_back(RayTracingShaderGroupCreateInfo);
+
+    VkPipelineLayoutCreateInfo PipelineLayoutCreateInfo{};
+    PipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+
+    VkPushConstantRange PushConstants{};
+    PushConstants.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
+    PushConstants.size = sizeof(FRayTracingPushConstants);
+    PushConstants.offset = 0;
+
+    PipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+    PipelineLayoutCreateInfo.pPushConstantRanges = &PushConstants;
+
+    std::vector<VkDescriptorSetLayout> DescriptorSetLayouts = {RayTracingDescriptorSetLayout, DescriptorSetLayout};
+    PipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(DescriptorSetLayouts.size());
+    PipelineLayoutCreateInfo.pSetLayouts = DescriptorSetLayouts.data();
+
+    vkCreatePipelineLayout(LogicalDevice, &PipelineLayoutCreateInfo, nullptr, &RayTracingPipelineLayout);
+
+    VkRayTracingPipelineCreateInfoKHR RayTracingPipelineCreateInfo{};
+    RayTracingPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
+    RayTracingPipelineCreateInfo.stageCount = static_cast<uint32_t>(Stages.size());
+    RayTracingPipelineCreateInfo.pStages = Stages.data();
+    RayTracingPipelineCreateInfo.groupCount = static_cast<uint32_t>(RayTracingShaderGroups.size());
+    RayTracingPipelineCreateInfo.pGroups = RayTracingShaderGroups.data();
+    RayTracingPipelineCreateInfo.maxPipelineRayRecursionDepth = 1;
+    RayTracingPipelineCreateInfo.layout = RayTracingPipelineLayout;
+
+    Vulkan::vkCreateRayTracingPipelinesKHR(LogicalDevice, {}, {}, 1, &RayTracingPipelineCreateInfo, nullptr, &RayTracingPipeline);
+    for (auto& Shader : Stages)
+    {
+        vkDestroyShaderModule(LogicalDevice, Shader.module, nullptr);
+    }
+}
+
+uint32_t AlignUp(uint32_t Size, uint32_t Alignment)
+{
+    return (Size + (Alignment - 1)) & ~(Alignment - 1);
+}
+
+void FContext::CreateRayTracingShaderBindingTable()
+{
+    uint32_t GroupCount = static_cast<uint32_t>(RayTracingShaderGroups.size());
+    uint32_t GroupHandleSize = RayTracingProperties.shaderGroupHandleSize;
+    /// Some magic is about to happen
+    auto A = RayTracingProperties.shaderGroupBaseAlignment;
+    uint32_t GroupSizeAligned = AlignUp(GroupHandleSize, RayTracingProperties.shaderGroupBaseAlignment);
+    uint32_t SBTSize = GroupCount * GroupSizeAligned;
+
+    std::vector<uint8_t> ShaderHandleStorage(SBTSize);
+    auto Result = Vulkan::vkGetRayTracingShaderGroupHandlesKHR(LogicalDevice, RayTracingPipeline, 0, GroupCount, SBTSize, ShaderHandleStorage.data());
+
+    assert(Result == VK_SUCCESS);
+
+    CreateBuffer(SBTSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, SBTBuffer, SBTBufferMemory);
+    SetObjectName(SBTBuffer, "SBT");
+
+    void* Mapped;
+    vkMapMemory(LogicalDevice, SBTBufferMemory, 0, SBTSize, 0, &Mapped);
+    auto* Data = reinterpret_cast<uint8_t*>(Mapped);
+    for (uint32_t i = 0; i < GroupCount; ++i)
+    {
+        memcpy(Data, ShaderHandleStorage.data() + i * GroupHandleSize, GroupHandleSize);
+        Data += GroupSizeAligned;
+    }
+    vkUnmapMemory(LogicalDevice, SBTBufferMemory);
 }
 
 void FContext::CreateCommandPool()
@@ -1158,7 +1296,7 @@ void FContext::CreateTextureImage(std::string& TexturePath)
     vkFreeMemory(LogicalDevice, StagingBufferMemory, nullptr);
 }
 
-void FContext::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, VkBuffer& Buffer, VkDeviceMemory& BufferMemory, bool DeviceAddressRequired)
+void FContext::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, VkBuffer& Buffer, VkDeviceMemory& BufferMemory)
 {
     VkBufferCreateInfo BufferInfo{};
     BufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -1178,7 +1316,7 @@ void FContext::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemor
     AllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     AllocInfo.allocationSize = MemRequirements.size;
     AllocInfo.memoryTypeIndex = FindMemoryType(MemRequirements.memoryTypeBits, Properties);
-    if (DeviceAddressRequired)
+    if (Usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT == VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
     {
         VkMemoryAllocateFlagsInfo MemoryFlagsInfo{};
         MemoryFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
@@ -1375,31 +1513,152 @@ void FContext::LoadModel(const std::string& ModelPath)
     }
 }
 
-FAccelerationStructure FContext::CreateAccelerationStructure(VkDeviceSize Size)
+FAccelerationStructure FContext::CreateAccelerationStructure(VkDeviceSize Size, VkAccelerationStructureTypeKHR Type)
 {
     FAccelerationStructure Structure;
     VkAccelerationStructureCreateInfoKHR CreateInfo{};
     CreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
-    CreateInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+    CreateInfo.type = Type;
     CreateInfo.size = Size;
 
-    CreateBuffer(CreateInfo.size, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Structure.AccelerationStructureBuffer, Structure.AccelerationStructureBufferMemory, true);
+    CreateBuffer(CreateInfo.size, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Structure.AccelerationStructureBuffer, Structure.AccelerationStructureBufferMemory);
     CreateInfo.buffer = Structure.AccelerationStructureBuffer;
 
-    static auto vkCreateAccelerationStructureKHR = (PFN_vkCreateAccelerationStructureKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCreateAccelerationStructureKHR");
-    vkCreateAccelerationStructureKHR(LogicalDevice, &CreateInfo, nullptr, &Structure.AccelerationStructure);
+    if (Vulkan::vkCreateAccelerationStructureKHR != nullptr)
+    {
+        Vulkan::vkCreateAccelerationStructureKHR(LogicalDevice, &CreateInfo, nullptr, &Structure.AccelerationStructure);
+    }
+    else
+    {
+        throw std::runtime_error("Function \"vkCreateAccelerationStructureKHR\" not loaded!");
+    }
     return Structure;
 }
 
-void FContext::DeleteAccelerationStrucure(FAccelerationStructure& AccelerationStructure)
+void FContext::DeleteAccelerationStructure(FAccelerationStructure& AccelerationStructure)
 {
-    static auto vkDestroyAccelerationStructureKHR = (PFN_vkDestroyAccelerationStructureKHR)vkGetDeviceProcAddr(LogicalDevice, "vkDestroyAccelerationStructureKHR");
-    vkDestroyAccelerationStructureKHR(LogicalDevice, AccelerationStructure.AccelerationStructure, nullptr);
+    Vulkan::vkDestroyAccelerationStructureKHR(LogicalDevice, AccelerationStructure.AccelerationStructure, nullptr);
     vkDestroyBuffer(LogicalDevice, AccelerationStructure.AccelerationStructureBuffer, nullptr);
     vkFreeMemory(LogicalDevice, AccelerationStructure.AccelerationStructureBufferMemory, nullptr);
 }
 
-void FContext::CreateAS()
+void FContext::SetObjectName(const uint64_t Object, const std::string& Name, VkObjectType T)
+{
+    VkDebugUtilsObjectNameInfoEXT ObjectName{};
+    ObjectName.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+    ObjectName.pNext = nullptr;
+    ObjectName.objectType = T;
+    ObjectName.objectHandle = (uint64_t)Object;
+    ObjectName.pObjectName = Name.c_str();
+    Vulkan::vkSetDebugUtilsObjectNameEXT(LogicalDevice, &ObjectName);
+}
+
+void FContext::SetObjectName(VkAccelerationStructureKHR Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR);
+}
+
+void FContext::SetObjectName(VkBuffer Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_BUFFER);
+}
+
+void FContext::SetObjectName(VkBufferView Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_BUFFER_VIEW);
+}
+
+void FContext::SetObjectName(VkCommandBuffer Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_COMMAND_BUFFER );
+}
+
+void FContext::SetObjectName(VkCommandPool Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_COMMAND_POOL );
+}
+
+void FContext::SetObjectName(VkDescriptorPool Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_DESCRIPTOR_POOL);
+}
+
+void FContext::SetObjectName(VkDescriptorSet Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_DESCRIPTOR_SET);
+}
+
+void FContext::SetObjectName(VkDescriptorSetLayout Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT);
+}
+
+void FContext::SetObjectName(VkDeviceMemory Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_DEVICE_MEMORY);
+}
+
+void FContext::SetObjectName(VkFramebuffer Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_FRAMEBUFFER);
+}
+
+void FContext::SetObjectName(VkImage Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_IMAGE);
+}
+
+void FContext::SetObjectName(VkImageView Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_IMAGE_VIEW);
+}
+
+void FContext::SetObjectName(VkPipeline Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_PIPELINE);
+}
+
+void FContext::SetObjectName(VkPipelineLayout Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_PIPELINE_LAYOUT);
+}
+
+void FContext::SetObjectName(VkQueryPool Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_QUERY_POOL);
+}
+
+void FContext::SetObjectName(VkQueue Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_QUEUE);
+}
+
+void FContext::SetObjectName(VkRenderPass Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_RENDER_PASS);
+}
+
+void FContext::SetObjectName(VkSampler Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_SAMPLER);
+}
+
+void FContext::SetObjectName(VkSemaphore Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_SEMAPHORE);
+}
+
+void FContext::SetObjectName(VkShaderModule Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_SHADER_MODULE);
+}
+
+void FContext::SetObjectName(VkSwapchainKHR Object, const std::string& Name)
+{
+    SetObjectName((uint64_t)Object, Name, VK_OBJECT_TYPE_SWAPCHAIN_KHR);
+}
+
+void FContext::CreateBLAS()
 {
     // Get addresses of vertex and index buffers
     VkBufferDeviceAddressInfo VertexAddressInfo{};
@@ -1412,7 +1671,7 @@ void FContext::CreateAS()
     IndexAddressInfo.buffer = IndexBuffer;
     VkDeviceAddress IndexAddress = vkGetBufferDeviceAddress(LogicalDevice, &IndexAddressInfo);
 
-    uint32_t MaxPrimitiveCount = Vertices.size() / 3;
+    uint32_t MaxPrimitiveCount = static_cast<uint32_t>(Vertices.size()) / 3;
 
     VkAccelerationStructureGeometryTrianglesDataKHR Triangles{};
     Triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
@@ -1421,7 +1680,7 @@ void FContext::CreateAS()
     Triangles.vertexStride = sizeof(FVertex);
     Triangles.indexType = VK_INDEX_TYPE_UINT32;
     Triangles.indexData.deviceAddress = IndexAddress;
-    Triangles.maxVertex = Vertices.size();
+    Triangles.maxVertex = static_cast<uint32_t>(Vertices.size());
 
     VkAccelerationStructureGeometryKHR AccelerationStructureGeometry{};
     AccelerationStructureGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
@@ -1446,27 +1705,19 @@ void FContext::CreateAS()
 
     VkAccelerationStructureBuildSizesInfoKHR SizeInfo{};
     SizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
-    auto vkGetAccelerationStructureBuildSizesKHR = (PFN_vkGetAccelerationStructureBuildSizesKHR)vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureBuildSizesKHR");
-    vkGetAccelerationStructureBuildSizesKHR(LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &GeometryInfo, &MaxPrimitiveCount, &SizeInfo);
+    Vulkan::vkGetAccelerationStructureBuildSizesKHR(LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &GeometryInfo, &MaxPrimitiveCount, &SizeInfo);
 
-    AccelerationStructure = CreateAccelerationStructure(SizeInfo.accelerationStructureSize);
-    GeometryInfo.dstAccelerationStructure = AccelerationStructure.AccelerationStructure;
+    BLAS = CreateAccelerationStructure(SizeInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
+    GeometryInfo.dstAccelerationStructure = BLAS.AccelerationStructure;
 
-    VkDebugUtilsObjectNameInfoEXT Name{};
-    Name.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
-    Name.pNext = nullptr;
-    Name.objectType = VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR;
-    Name.objectHandle = (uint64_t)AccelerationStructure.AccelerationStructure;
-    Name.pObjectName = "BLAS";
-    auto vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetDeviceProcAddr(LogicalDevice, "vkSetDebugUtilsObjectNameEXT");
-    vkSetDebugUtilsObjectNameEXT(LogicalDevice, &Name);
+    SetObjectName(BLAS.AccelerationStructure, "BLAS");
 
     VkDeviceSize MaxScratch{0};
     MaxScratch = std::max(MaxScratch, SizeInfo.buildScratchSize);
 
     VkBuffer ScratchBuffer;
     VkDeviceMemory ScratchBufferMemory;
-    CreateBuffer(MaxScratch, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ScratchBuffer, ScratchBufferMemory, true);
+    CreateBuffer(MaxScratch, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ScratchBuffer, ScratchBufferMemory);
     VkBufferDeviceAddressInfo ScratchBufferAddressInfo{};
     ScratchBufferAddressInfo.buffer = ScratchBuffer;
     ScratchBufferAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
@@ -1482,8 +1733,7 @@ void FContext::CreateAS()
     auto CommandBuffer = BeginSingleTimeCommands();
     GeometryInfo.scratchData.deviceAddress = ScratchBufferAddress;
     std::array<VkAccelerationStructureBuildRangeInfoKHR*, 1> Offsets{&Offset};
-    auto vkCmdBuildAccelerationStructuresKHR = (PFN_vkCmdBuildAccelerationStructuresKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCmdBuildAccelerationStructuresKHR");
-    vkCmdBuildAccelerationStructuresKHR(CommandBuffer, 1, &GeometryInfo, Offsets.data());
+    Vulkan::vkCmdBuildAccelerationStructuresKHR(CommandBuffer, 1, &GeometryInfo, Offsets.data());
 
     VkMemoryBarrier Barrier{};
     Barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
@@ -1493,8 +1743,7 @@ void FContext::CreateAS()
                          nullptr, 0, nullptr);
     if (VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR)
     {
-        auto vkCmdWriteAccelerationStructuresPropertiesKHR = (PFN_vkCmdWriteAccelerationStructuresPropertiesKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCmdWriteAccelerationStructuresPropertiesKHR");
-        vkCmdWriteAccelerationStructuresPropertiesKHR(CommandBuffer, 1, &AccelerationStructure.AccelerationStructure, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR, QueryPool, 0);
+        Vulkan::vkCmdWriteAccelerationStructuresPropertiesKHR(CommandBuffer, 1, &BLAS.AccelerationStructure, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR, QueryPool, 0);
     }
     EndSingleTimeCommand(CommandBuffer);
 
@@ -1505,33 +1754,119 @@ void FContext::CreateAS()
         VkDeviceSize CompactSizes{};
         vkGetQueryPoolResults(LogicalDevice, QueryPool, 0, 1, sizeof(VkDeviceSize), &CompactSizes, sizeof(VkDeviceSize), VK_QUERY_RESULT_WAIT_BIT);
 
-        uint32_t OriginalSize = SizeInfo.accelerationStructureSize;
-        uint32_t CompactSize = CompactSizes;
+        uint32_t OriginalSize = static_cast<uint32_t>(SizeInfo.accelerationStructureSize);
+        uint32_t CompactSize = static_cast<uint32_t>(CompactSizes);
 
-        VkAccelerationStructureCreateInfoKHR AccelerationStructureCreateInfo{};
-        AccelerationStructureCreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
-        AccelerationStructureCreateInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-        AccelerationStructureCreateInfo.size = CompactSize;
-
-        FAccelerationStructure CompactedAccelerationStructure = CreateAccelerationStructure(CompactSize);
+        FAccelerationStructure CompactedAccelerationStructure = CreateAccelerationStructure(CompactSize, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
 
         VkCopyAccelerationStructureInfoKHR CopyInfo{};
         CopyInfo.sType = VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR;
-        CopyInfo.src = AccelerationStructure.AccelerationStructure;
+        CopyInfo.src = BLAS.AccelerationStructure;
         CopyInfo.dst = CompactedAccelerationStructure.AccelerationStructure;
         CopyInfo.mode = VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR;
-        auto vkCmdCopyAccelerationStructureKHR = (PFN_vkCmdCopyAccelerationStructureKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCmdCopyAccelerationStructureKHR");
-        vkCmdCopyAccelerationStructureKHR(CompactCommandBuffer, &CopyInfo);
+        Vulkan::vkCmdCopyAccelerationStructureKHR(CompactCommandBuffer, &CopyInfo);
 
         EndSingleTimeCommand(CompactCommandBuffer);
 
-        DeleteAccelerationStrucure(AccelerationStructure);
-        AccelerationStructure = CompactedAccelerationStructure;
+        auto BLASToDelete = BLAS;
+        BLAS = CompactedAccelerationStructure;
+        DeleteAccelerationStructure(BLASToDelete);
 
         std::cout << "Compaction saved us " << OriginalSize - CompactSize << " bytes! (" << OriginalSize << "->" << CompactSize << ")" << std::endl;
     }
 
     vkDestroyQueryPool(LogicalDevice, QueryPool, nullptr);
+    vkDestroyBuffer(LogicalDevice, ScratchBuffer, nullptr);
+    vkFreeMemory(LogicalDevice, ScratchBufferMemory, nullptr);
+}
+
+void FContext::CreateTLAS()
+{
+    /// Base info
+    uint32_t BlasId{0};
+    uint32_t InstanceCustomId{0};
+    uint32_t HitGroupId{0};
+    uint32_t Mask{0xFF};
+    VkGeometryInstanceFlagsKHR Flags{VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR};
+    FMatrix4 Transform{};
+
+    VkAccelerationStructureDeviceAddressInfoKHR AddressInfo{};
+    AddressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
+    AddressInfo.accelerationStructure = BLAS.AccelerationStructure;
+    VkDeviceAddress BlasAddress = Vulkan::vkGetAccelerationStructureDeviceAddressKHR(LogicalDevice, &AddressInfo);
+
+    VkAccelerationStructureInstanceKHR GeometryInstance{};
+    GeometryInstance.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+    FMatrix4 TransformationMatrix{};
+    memcpy(&GeometryInstance.transform, Transform.Data.data(), sizeof(VkTransformMatrixKHR));
+    GeometryInstance.instanceShaderBindingTableRecordOffset = 0;
+    GeometryInstance.accelerationStructureReference = BlasAddress;
+    GeometryInstance.instanceCustomIndex = 0;
+
+    VkDeviceSize InstanceDescsSizeInBytes = sizeof(VkAccelerationStructureInstanceKHR);
+    VkBuffer InstanceBuffer;
+    VkDeviceMemory InstanceBufferMemory;
+    CreateBuffer(InstanceDescsSizeInBytes, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, InstanceBuffer, InstanceBufferMemory);
+    SetObjectName(InstanceBuffer, "TLASInstance");
+    VkBufferDeviceAddressInfo BufferInfo{};
+    BufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    BufferInfo.buffer = InstanceBuffer;
+    VkDeviceAddress InstanceAddress = vkGetBufferDeviceAddress(LogicalDevice, &BufferInfo);
+
+    auto CommandBuffer = BeginSingleTimeCommands();
+    VkMemoryBarrier Barrier{};
+    Barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+    Barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    Barrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+    vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, 0, 1, &Barrier, 0,
+                         nullptr, 0, nullptr);
+
+    VkAccelerationStructureGeometryInstancesDataKHR InstanceData{};
+    InstanceData.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+    InstanceData.arrayOfPointers = VK_FALSE;
+    InstanceData.data.deviceAddress = InstanceAddress;
+    VkAccelerationStructureGeometryKHR TLASGeometry{};
+    TLASGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+    TLASGeometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
+    TLASGeometry.geometry.instances = InstanceData;
+
+    VkAccelerationStructureBuildGeometryInfoKHR BuildInfo{};
+    BuildInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    BuildInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+    BuildInfo.geometryCount = 1;
+    BuildInfo.pGeometries = &TLASGeometry;
+    BuildInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+    BuildInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+    BuildInfo.srcAccelerationStructure = VK_NULL_HANDLE;
+    uint32_t Count = 1;
+    VkAccelerationStructureBuildSizesInfoKHR SizeInfo{};
+    SizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+    Vulkan:: vkGetAccelerationStructureBuildSizesKHR(LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &BuildInfo, &Count, &SizeInfo);
+
+    //If not update
+    TLAS = CreateAccelerationStructure(SizeInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
+    SetObjectName(TLAS.AccelerationStructure, "TLAS");
+
+    VkBuffer ScratchBuffer;
+    VkDeviceMemory ScratchBufferMemory;
+    CreateBuffer(SizeInfo.buildScratchSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ScratchBuffer, ScratchBufferMemory);
+    BufferInfo.buffer = ScratchBuffer;
+    VkDeviceAddress ScratchAddress = vkGetBufferDeviceAddress(LogicalDevice, &BufferInfo);
+
+    BuildInfo.srcAccelerationStructure = VK_NULL_HANDLE;
+    BuildInfo.dstAccelerationStructure = TLAS.AccelerationStructure;
+    BuildInfo.scratchData.deviceAddress = ScratchAddress;
+
+    VkAccelerationStructureBuildRangeInfoKHR BuildOffsetInfo{};
+    BuildOffsetInfo.primitiveCount = 1;
+    BuildOffsetInfo.firstVertex = 0;
+    BuildOffsetInfo.transformOffset = 0;
+    BuildOffsetInfo.primitiveOffset = 0;
+    const VkAccelerationStructureBuildRangeInfoKHR* PointerBuildOffsetInfo = &BuildOffsetInfo;
+
+    Vulkan::vkCmdBuildAccelerationStructuresKHR(CommandBuffer, 1, &BuildInfo, &PointerBuildOffsetInfo);
+    EndSingleTimeCommand(CommandBuffer);
+
     vkDestroyBuffer(LogicalDevice, ScratchBuffer, nullptr);
     vkFreeMemory(LogicalDevice, ScratchBufferMemory, nullptr);
 }
@@ -1549,7 +1884,7 @@ void FContext::CreateVertexBuffer()
     memcpy(Data, Vertices.data(), (std::size_t)BufferSize);
     vkUnmapMemory(LogicalDevice, StagingBufferMemory);
 
-    CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VertexBuffer, VertexBufferMemory, true);
+    CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VertexBuffer, VertexBufferMemory);
 
     CopyBuffer(StagingBuffer, VertexBuffer, BufferSize);
 
@@ -1581,7 +1916,7 @@ void FContext::CreateIndexBuffer()
     memcpy(Data, Indices.data(), (std::size_t)BufferSize);
     vkUnmapMemory(LogicalDevice, StagingBufferMemory);
 
-    CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, IndexBuffer, IndexBufferMemory, true);
+    CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, IndexBuffer, IndexBufferMemory);
 
     CopyBuffer(StagingBuffer, IndexBuffer, BufferSize);
     vkDestroyBuffer(LogicalDevice, StagingBuffer, nullptr);
@@ -1669,6 +2004,75 @@ void FContext::CreateDescriptorSet()
     }
 }
 
+void FContext::CreateRayTracingDescriptorSet()
+{
+    VkDescriptorSetLayoutBinding AccelerationStructureBinding{};
+    AccelerationStructureBinding.binding = 0;
+    AccelerationStructureBinding.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+    AccelerationStructureBinding.descriptorCount = 1;
+    AccelerationStructureBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+    AccelerationStructureBinding.pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutBinding OutputImageBinding{};
+    OutputImageBinding.binding = 1;
+    OutputImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    OutputImageBinding.descriptorCount = 1;
+    OutputImageBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+    OutputImageBinding.pImmutableSamplers = nullptr;
+
+    std::array<VkDescriptorSetLayoutBinding, 2> Bindings {AccelerationStructureBinding, OutputImageBinding};
+
+    VkDescriptorSetLayoutCreateInfo DescriptorSetLayoutCreateInfo{};
+    DescriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    DescriptorSetLayoutCreateInfo.bindingCount = 2;
+    DescriptorSetLayoutCreateInfo.pBindings = Bindings.data();
+
+    vkCreateDescriptorSetLayout(LogicalDevice, &DescriptorSetLayoutCreateInfo, nullptr, &RayTracingDescriptorSetLayout);
+
+    VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo{};
+    DescriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    DescriptorSetAllocateInfo.descriptorPool = DescriptorPool;
+    DescriptorSetAllocateInfo.descriptorSetCount = 1;
+    DescriptorSetAllocateInfo.pSetLayouts = &RayTracingDescriptorSetLayout;
+
+    RayTracingDescriptorSets.resize(SwapChainImages.size());
+
+    vkAllocateDescriptorSets(LogicalDevice, &DescriptorSetAllocateInfo, RayTracingDescriptorSets.data());
+
+    VkWriteDescriptorSetAccelerationStructureKHR WriteDescriptorSetAccelerationStructure{};
+    WriteDescriptorSetAccelerationStructure.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+    WriteDescriptorSetAccelerationStructure.accelerationStructureCount = 1;
+    WriteDescriptorSetAccelerationStructure.pAccelerationStructures = &TLAS.AccelerationStructure;
+
+    VkDescriptorImageInfo ImageInfo{};
+    ImageInfo.sampler = TextureSampler;
+    ImageInfo.imageView = TextureImageView;
+    ImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    for (size_t i = 0; i < SwapChainImages.size(); ++i)
+    {
+        std::array<VkWriteDescriptorSet, 2> DescriptorWrites{};
+
+        DescriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        DescriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+        DescriptorWrites[0].dstSet = RayTracingDescriptorSets[i];
+        DescriptorWrites[0].dstBinding = 0;
+        DescriptorWrites[0].dstArrayElement = 0;
+        DescriptorWrites[0].descriptorCount = 1;
+        DescriptorWrites[0].pNext = &WriteDescriptorSetAccelerationStructure;
+
+        DescriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        DescriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        DescriptorWrites[1].dstSet = RayTracingDescriptorSets[i];
+        DescriptorWrites[1].dstBinding = 1;
+        DescriptorWrites[1].dstArrayElement = 0;
+        DescriptorWrites[1].descriptorCount = 1;
+        DescriptorWrites[1].pImageInfo = &ImageInfo;
+
+        vkUpdateDescriptorSets(LogicalDevice, DescriptorWrites.size(), DescriptorWrites.data(), 0, nullptr);
+    }
+}
+
 void FContext::CreateCommandBuffers()
 {
     CommandBuffers.resize(SwapChainFramebuffers.size());
@@ -1722,6 +2126,62 @@ void FContext::CreateCommandBuffers()
         vkCmdEndRenderPass(CommandBuffers[i]);
 
         if (vkEndCommandBuffer(CommandBuffers[i]) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to record command buffer!");
+        }
+    }
+}
+
+void FContext::CreateRayTracingCommandBuffers()
+{
+    RayTracingCommandBuffers.resize(SwapChainFramebuffers.size());
+
+    VkCommandBufferAllocateInfo AllocInfo{};
+    AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    AllocInfo.commandPool = CommandPool;
+    AllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    AllocInfo.commandBufferCount = (uint32_t) RayTracingCommandBuffers.size();
+
+    if (vkAllocateCommandBuffers(LogicalDevice, &AllocInfo, RayTracingCommandBuffers.data()) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to allocate command buffers!");
+    }
+
+    for (std::size_t i = 0; i <RayTracingCommandBuffers.size(); ++i)
+    {
+        VkCommandBufferBeginInfo BeginInfo{};
+        BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        BeginInfo.flags = 0;
+        BeginInfo.pInheritanceInfo = nullptr;
+
+        if (vkBeginCommandBuffer(RayTracingCommandBuffers[i], &BeginInfo) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to begin recording command buffer!");
+        }
+
+        vkCmdBindPipeline(RayTracingCommandBuffers[i], VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, RayTracingPipeline);
+
+        std::vector<VkDescriptorSet> Sets{RayTracingDescriptorSets[i], DescriptorSets[i]};
+        vkCmdBindDescriptorSets(RayTracingCommandBuffers[i], VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, RayTracingPipelineLayout, 0, (uint32_t)Sets.size(), Sets.data(), 0, nullptr);
+        vkCmdPushConstants(RayTracingCommandBuffers[i], RayTracingPipelineLayout, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR, 0, sizeof(FRayTracingPushConstants), &RayTracingPushConstants);
+
+        uint32_t GroupSize = AlignUp(RayTracingProperties.shaderGroupHandleSize, RayTracingProperties.shaderGroupBaseAlignment);
+        uint32_t GroupStride = GroupSize;
+
+        VkBufferDeviceAddressInfo Info{};
+        Info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+        Info.buffer = SBTBuffer;
+        VkDeviceAddress SBTAddress = vkGetBufferDeviceAddress(LogicalDevice, &Info);
+
+        using Stride = VkStridedDeviceAddressRegionKHR;
+        std::array<Stride, 4> StrideAddress{Stride{SBTAddress + 0u * GroupSize, GroupStride, GroupSize * 1},
+                                            Stride{SBTAddress + 1u * GroupSize, GroupStride, GroupSize * 1},
+                                            Stride{SBTAddress + 2u * GroupSize, GroupStride, GroupSize * 1},
+                                            Stride{0u, 0u, 0u}};
+
+        Vulkan::vkCmdTraceRaysKHR(RayTracingCommandBuffers[i], &StrideAddress[0], &StrideAddress[1], &StrideAddress[2], &StrideAddress[3], SwapChainExtent.width, SwapChainExtent.height, 1);
+
+        if (vkEndCommandBuffer(RayTracingCommandBuffers[i]) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to record command buffer!");
         }
@@ -1870,7 +2330,9 @@ void FContext::CleanUpSwapChain()
     vkFreeCommandBuffers(LogicalDevice, CommandPool, static_cast<uint32_t>(CommandBuffers.size()), CommandBuffers.data());
 
     vkDestroyPipeline(LogicalDevice, GraphicsPipeline, nullptr);
+    vkDestroyPipeline(LogicalDevice, RayTracingPipeline, nullptr);
     vkDestroyPipelineLayout(LogicalDevice, PipelineLayout, nullptr);
+    vkDestroyPipelineLayout(LogicalDevice, RayTracingPipelineLayout, nullptr);
     vkDestroyRenderPass(LogicalDevice, RenderPass, nullptr);
 
     for (auto ImageView : SwapChainImageViews)
@@ -1909,10 +2371,9 @@ void FContext::UpdateUniformBuffer(uint32_t CurrentImage)
 
 void FContext::DestroyDebugUtilsMessengerEXT()
 {
-    auto Function = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(Instance, "vkDestroyDebugUtilsMessengerEXT");
-    if (Function != nullptr)
+    if (Vulkan::vkDestroyDebugUtilsMessengerEXT != nullptr)
     {
-        Function(Instance, DebugMessenger, nullptr);
+        Vulkan::vkDestroyDebugUtilsMessengerEXT(Instance, DebugMessenger, nullptr);
     }
 }
 
@@ -1927,6 +2388,10 @@ void FContext::CleanUp()
     vkFreeMemory(LogicalDevice, TextureImageMemory, nullptr);
 
     vkDestroyDescriptorSetLayout(LogicalDevice, DescriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(LogicalDevice, RayTracingDescriptorSetLayout, nullptr);
+
+    vkDestroyBuffer(LogicalDevice, SBTBuffer, nullptr);
+    vkFreeMemory(LogicalDevice, SBTBufferMemory, nullptr);
 
     vkDestroyBuffer(LogicalDevice, IndexBuffer, nullptr);
     vkFreeMemory(LogicalDevice, IndexBufferMemory, nullptr);

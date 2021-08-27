@@ -65,6 +65,14 @@ struct UniformBufferObject
     alignas(16) FMatrix4 Projection;
 };
 
+struct FRayTracingPushConstants
+{
+    FVector4 ClearColor{0.f, 0.f, 0.2f, 1.f};
+    FVector3 LightPosition {100.f, 100.f, 100.f};
+    float LightIntensity{100.f};
+    int LightType{0};
+};
+
 namespace V
 {
     struct FAccelerationStructure{
@@ -82,6 +90,7 @@ namespace V
         void Init();
 
         void CreateInstance();
+        void LoadFunctionPointers();
         void SetupDebugMessenger();
         void CreateSurface();
         void PickPhysicalDevice();
@@ -91,6 +100,7 @@ namespace V
         void CreateRenderPass();
         void CreateDescriptorSetLayout();
         void CreateGraphicsPipeline();
+        void CreateRayTracingPipeline();
         void CreateCommandPool();
         void CreateFramebuffers();
         void CreateTextureImage(std::string& TexturePath);
@@ -102,16 +112,20 @@ namespace V
         void CreateUniformBuffers();
         void CreateDescriptorPool();
         void CreateDescriptorSet();
+        void CreateRayTracingDescriptorSet();
         void CreateCommandBuffers();
+        void CreateRayTracingCommandBuffers();
         void CreateSyncObjects();
         void RecreateSwapChain();
         void CleanUpSwapChain();
         void CleanUp();
         void DestroyDebugUtilsMessengerEXT();
         void UpdateUniformBuffer(uint32_t CurrentImage);
-        void CreateAS();
-        FAccelerationStructure CreateAccelerationStructure(VkDeviceSize Size);
-        void DeleteAccelerationStrucure(FAccelerationStructure& AccelerationStructure);
+        void CreateBLAS();
+        void CreateTLAS();
+        void CreateRayTracingShaderBindingTable();
+        FAccelerationStructure CreateAccelerationStructure(VkDeviceSize Size, VkAccelerationStructureTypeKHR Type);
+        void DeleteAccelerationStructure(FAccelerationStructure& AccelerationStructure);
 
         void DrawFrame();
 
@@ -125,13 +139,36 @@ namespace V
         VkCommandBuffer BeginSingleTimeCommands();
         void EndSingleTimeCommand(VkCommandBuffer CommandBuffer);
         bool HasStensilComponent(VkFormat Format);
-        void CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, VkBuffer& Buffer, VkDeviceMemory& BufferMemory, bool DeviceAddressRequired = false);
+        void CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, VkBuffer& Buffer, VkDeviceMemory& BufferMemory);
         void CopyBufferToImage(VkBuffer Buffer, VkImage Image, uint32_t Width, uint32_t Height);
         void GenerateMipmaps(VkImage Image, VkFormat ImageFormat, int32_t TexWidth, int32_t TexHeight, uint32_t mipLevels);
         void CopyBuffer(VkBuffer SrcBuffer, VkBuffer DstBuffer, VkDeviceSize Size);
 
         bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device);
         bool CheckDeviceQueueSupport(VkPhysicalDevice Device);
+
+        void SetObjectName(const uint64_t Object, const std::string& Name, VkObjectType T);
+        void SetObjectName(VkAccelerationStructureKHR Object, const std::string& Name);
+        void SetObjectName(VkBuffer Object, const std::string& Name);
+        void SetObjectName(VkBufferView Object, const std::string& Name);
+        void SetObjectName(VkCommandBuffer Object, const std::string& Name);
+        void SetObjectName(VkCommandPool Object, const std::string& Name);
+        void SetObjectName(VkDescriptorPool Object, const std::string& Name);
+        void SetObjectName(VkDescriptorSet Object, const std::string& Name);
+        void SetObjectName(VkDescriptorSetLayout Object, const std::string& Name);
+        void SetObjectName(VkDeviceMemory Object, const std::string& Name);
+        void SetObjectName(VkFramebuffer Object, const std::string& Name);
+        void SetObjectName(VkImage Object, const std::string& Name);
+        void SetObjectName(VkImageView Object, const std::string& Name);
+        void SetObjectName(VkPipeline Object, const std::string& Name);
+        void SetObjectName(VkPipelineLayout Object, const std::string& Name);
+        void SetObjectName(VkQueryPool Object, const std::string& Name);
+        void SetObjectName(VkQueue Object, const std::string& Name);
+        void SetObjectName(VkRenderPass Object, const std::string& Name);
+        void SetObjectName(VkSampler Object, const std::string& Name);
+        void SetObjectName(VkSemaphore Object, const std::string& Name);
+        void SetObjectName(VkShaderModule Object, const std::string& Name);
+        void SetObjectName(VkSwapchainKHR Object, const std::string& Name);
 
     public:
         GLFWwindow* Window = nullptr;
@@ -174,6 +211,7 @@ namespace V
         VkRenderPass RenderPass;
 
         VkDescriptorSetLayout DescriptorSetLayout;
+        VkDescriptorSetLayout RayTracingDescriptorSetLayout;
 
         VkPipelineLayout PipelineLayout;
         VkPipeline GraphicsPipeline;
@@ -207,12 +245,18 @@ namespace V
         VkBuffer IndexBuffer;
         VkDeviceMemory IndexBufferMemory;
 
-        FAccelerationStructure AccelerationStructure;
+        VkBuffer SBTBuffer;
+        VkDeviceMemory SBTBufferMemory;
+
+        FAccelerationStructure BLAS;
+        FAccelerationStructure TLAS;
 
         VkDescriptorPool DescriptorPool;
         std::vector<VkDescriptorSet> DescriptorSets;
+        std::vector<VkDescriptorSet> RayTracingDescriptorSets;
 
         std::vector<VkCommandBuffer> CommandBuffers;
+        std::vector<VkCommandBuffer> RayTracingCommandBuffers;
 
         std::vector<FVertex> Vertices;
         std::vector<uint32_t> Indices;
@@ -227,6 +271,12 @@ namespace V
         size_t CurrentFrame = 0;
 
         VkDebugUtilsMessengerCreateInfoEXT DebugCreateInfo = {};
+
+        FRayTracingPushConstants RayTracingPushConstants{};
+
+        std::vector<VkRayTracingShaderGroupCreateInfoKHR> RayTracingShaderGroups{};
+        VkPipelineLayout RayTracingPipelineLayout{};
+        VkPipeline RayTracingPipeline{};
 
         const int MAX_FRAMES_IN_FLIGHT = 2;
         bool bFramebufferResized = false;
@@ -247,6 +297,23 @@ namespace V
 
         VkPhysicalDeviceRayTracingPipelinePropertiesKHR RayTracingProperties{};
     };
+
+    namespace Vulkan
+    {
+        static PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = nullptr;
+        static PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = nullptr;
+        static PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = nullptr;
+        static PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR = nullptr;
+        static PFN_vkDestroyAccelerationStructureKHR vkDestroyAccelerationStructureKHR = nullptr;
+        static PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR = nullptr;
+        static PFN_vkCmdBuildAccelerationStructuresKHR vkCmdBuildAccelerationStructuresKHR = nullptr;
+        static PFN_vkCmdWriteAccelerationStructuresPropertiesKHR vkCmdWriteAccelerationStructuresPropertiesKHR = nullptr;
+        static PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR = nullptr;
+        static PFN_vkCmdCopyAccelerationStructureKHR vkCmdCopyAccelerationStructureKHR = nullptr;
+        static PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR = nullptr;
+        static PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR = nullptr;
+        static PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR = nullptr;
+    }
 }
 
 std::vector<char> ReadFile(const std::string& FileName);
