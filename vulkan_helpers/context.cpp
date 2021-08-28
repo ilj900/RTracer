@@ -444,6 +444,8 @@ void FContext::CreateLogicalDevice()
     {
         vkGetDeviceQueue(LogicalDevice, PresentQueueIndex, 0, &PresentQueue);
     }
+
+    ResourceAllocator = std::make_shared<FResourceAllocator>(PhysicalDevice, LogicalDevice);
 }
 
 void FContext::CreateSwapChain()
@@ -940,7 +942,7 @@ void FContext::CreateImage(uint32_t Width, uint32_t Height, uint32_t MipLevels, 
     VkMemoryAllocateInfo AllocInfo{};
     AllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     AllocInfo.allocationSize = MemRequirements.size;
-    AllocInfo.memoryTypeIndex = FindMemoryType(MemRequirements.memoryTypeBits, Properties);
+    AllocInfo.memoryTypeIndex = ResourceAllocator->FindMemoryType(MemRequirements.memoryTypeBits, Properties);
 
     if (vkAllocateMemory(LogicalDevice, &AllocInfo, nullptr, &ImageMemory) != VK_SUCCESS)
     {
@@ -948,22 +950,6 @@ void FContext::CreateImage(uint32_t Width, uint32_t Height, uint32_t MipLevels, 
     }
 
     vkBindImageMemory(LogicalDevice, Image, ImageMemory, 0);
-}
-
-uint32_t FContext::FindMemoryType(uint32_t TypeFilter, VkMemoryPropertyFlags Properties)
-{
-    VkPhysicalDeviceMemoryProperties MemProperties;
-    vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &MemProperties);
-
-    for (uint32_t i = 0; i < MemProperties.memoryTypeCount; ++i)
-    {
-        if (TypeFilter & (1 << i) && (MemProperties.memoryTypes[i].propertyFlags & Properties) == Properties)
-        {
-            return i;
-        }
-    }
-
-    throw std::runtime_error("Failed to find suitable memory type!");
 }
 
 VkFormat FContext::FindDepthFormat()
@@ -1117,54 +1103,24 @@ void FContext::CreateTextureImage(std::string& TexturePath)
         throw std::runtime_error("Failed to load texture image!");
     }
 
-    CreateBuffer(ImageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, StagingBuffer, StagingBufferMemory);
+    FBuffer TempStagingBuffer = ResourceAllocator->CreateBuffer(ImageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     void *Data;
-    vkMapMemory(LogicalDevice, StagingBufferMemory, 0, ImageSize, 0, &Data);
+    vkMapMemory(LogicalDevice, TempStagingBuffer.Memory, 0, ImageSize, 0, &Data);
     memcpy(Data, Pixels, static_cast<size_t>(ImageSize));
-    vkUnmapMemory(LogicalDevice, StagingBufferMemory);
+    vkUnmapMemory(LogicalDevice, TempStagingBuffer.Memory);
     stbi_image_free(Pixels);
 
     CreateImage(TexWidth, TexHeight, MipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, TextureImage, TextureImageMemory);
 
     TransitionImageLayout(TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, MipLevels);
-    CopyBufferToImage(StagingBuffer, TextureImage, static_cast<uint32_t>(TexWidth), static_cast<uint32_t>(TexHeight));
+    CopyBufferToImage(TempStagingBuffer, TextureImage, static_cast<uint32_t>(TexWidth), static_cast<uint32_t>(TexHeight));
 
     GenerateMipmaps(TextureImage, VK_FORMAT_R8G8B8A8_SRGB, TexWidth, TexHeight, MipLevels);
-    vkDestroyBuffer(LogicalDevice, StagingBuffer, nullptr);
-    vkFreeMemory(LogicalDevice, StagingBufferMemory, nullptr);
+    ResourceAllocator->DestroyBuffer(TempStagingBuffer);
 }
 
-void FContext::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, VkBuffer& Buffer, VkDeviceMemory& BufferMemory)
-{
-    VkBufferCreateInfo BufferInfo{};
-    BufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    BufferInfo.size = Size;
-    BufferInfo.usage = Usage;
-    BufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    if (vkCreateBuffer(LogicalDevice, &BufferInfo, nullptr, &Buffer) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create buffer!");
-    }
-
-    VkMemoryRequirements MemRequirements;
-    vkGetBufferMemoryRequirements(LogicalDevice, Buffer, &MemRequirements);
-
-    VkMemoryAllocateInfo  AllocInfo{};
-    AllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    AllocInfo.allocationSize = MemRequirements.size;
-    AllocInfo.memoryTypeIndex = FindMemoryType(MemRequirements.memoryTypeBits, Properties);
-
-    if (vkAllocateMemory(LogicalDevice, &AllocInfo, nullptr, &BufferMemory) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to allocate buffer memory!");
-    }
-
-    vkBindBufferMemory(LogicalDevice, Buffer, BufferMemory, 0);
-}
-
-void FContext::CopyBufferToImage(VkBuffer Buffer, VkImage Image, uint32_t Width, uint32_t Height)
+void FContext::CopyBufferToImage(FBuffer &Buffer, VkImage Image, uint32_t Width, uint32_t Height)
 {
     VkCommandBuffer CommandBuffer = BeginSingleTimeCommands();
 
@@ -1181,7 +1137,7 @@ void FContext::CopyBufferToImage(VkBuffer Buffer, VkImage Image, uint32_t Width,
     Region.imageOffset = {0, 0, 0};
     Region.imageExtent = {Width, Height, 1};
 
-    vkCmdCopyBufferToImage(CommandBuffer, Buffer, Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &Region);
+    vkCmdCopyBufferToImage(CommandBuffer, Buffer.Buffer, Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &Region);
 
     EndSingleTimeCommand(CommandBuffer);
 }
@@ -1349,30 +1305,28 @@ void FContext::CreateVertexBuffer()
 {
     VkDeviceSize BufferSize = sizeof(Vertices[0]) * Vertices.size();
 
-    VkBuffer StagingBuffer;
-    VkDeviceMemory StagingBufferMemory;
-    CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, StagingBuffer, StagingBufferMemory);
+    FBuffer TempStagingBuffer;
+    TempStagingBuffer = ResourceAllocator->CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     void* Data;
-    vkMapMemory(LogicalDevice, StagingBufferMemory, 0, BufferSize, 0, &Data);
+    vkMapMemory(LogicalDevice, TempStagingBuffer.Memory, 0, BufferSize, 0, &Data);
     memcpy(Data, Vertices.data(), (std::size_t)BufferSize);
-    vkUnmapMemory(LogicalDevice, StagingBufferMemory);
+    vkUnmapMemory(LogicalDevice, TempStagingBuffer.Memory);
 
-    CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VertexBuffer, VertexBufferMemory);
+    VertexBuffer = ResourceAllocator->CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    CopyBuffer(StagingBuffer, VertexBuffer, BufferSize);
+    CopyBuffer(TempStagingBuffer, VertexBuffer, BufferSize);
 
-    vkDestroyBuffer(LogicalDevice, StagingBuffer, nullptr);
-    vkFreeMemory(LogicalDevice, StagingBufferMemory, nullptr);
+    ResourceAllocator->DestroyBuffer(TempStagingBuffer);
 }
 
-void FContext::CopyBuffer(VkBuffer SrcBuffer, VkBuffer DstBuffer, VkDeviceSize Size)
+void FContext::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size)
 {
     VkCommandBuffer CommandBuffer = BeginSingleTimeCommands();
 
     VkBufferCopy CopyRegion{};
     CopyRegion.size = Size;
-    vkCmdCopyBuffer(CommandBuffer, SrcBuffer, DstBuffer, 1, &CopyRegion);
+    vkCmdCopyBuffer(CommandBuffer, SrcBuffer.Buffer, DstBuffer.Buffer, 1, &CopyRegion);
 
     EndSingleTimeCommand(CommandBuffer);
 }
@@ -1381,20 +1335,17 @@ void FContext::CreateIndexBuffer()
 {
     VkDeviceSize BufferSize = sizeof(Indices[0]) * Indices.size();
 
-    VkBuffer StagingBuffer;
-    VkDeviceMemory StagingBufferMemory;
-    CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, StagingBuffer, StagingBufferMemory);
+    FBuffer IndexStagingBuffer = ResourceAllocator->CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     void* Data;
-    vkMapMemory(LogicalDevice, StagingBufferMemory, 0, BufferSize, 0, &Data);
+    vkMapMemory(LogicalDevice, IndexStagingBuffer.Memory, 0, BufferSize, 0, &Data);
     memcpy(Data, Indices.data(), (std::size_t)BufferSize);
-    vkUnmapMemory(LogicalDevice, StagingBufferMemory);
+    vkUnmapMemory(LogicalDevice, IndexStagingBuffer.Memory);
 
-    CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, IndexBuffer, IndexBufferMemory);
+    IndexBuffer = ResourceAllocator->CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    CopyBuffer(StagingBuffer, IndexBuffer, BufferSize);
-    vkDestroyBuffer(LogicalDevice, StagingBuffer, nullptr);
-    vkFreeMemory(LogicalDevice, StagingBufferMemory, nullptr);
+    CopyBuffer(IndexStagingBuffer, IndexBuffer, BufferSize);
+    ResourceAllocator->DestroyBuffer(IndexStagingBuffer);
 }
 
 void FContext::CreateUniformBuffers()
@@ -1402,11 +1353,10 @@ void FContext::CreateUniformBuffers()
     VkDeviceSize BufferSize = sizeof(UniformBufferObject);
 
     UniformBuffers.resize(SwapChainImages.size());
-    UniformBuffersMemory.resize(SwapChainImages.size());
 
     for (size_t i = 0; i < SwapChainImages.size(); ++i)
     {
-        CreateBuffer(BufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UniformBuffers[i], UniformBuffersMemory[i]);
+        UniformBuffers[i] = ResourceAllocator->CreateBuffer(BufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     }
 }
 
@@ -1448,7 +1398,7 @@ void FContext::CreateDescriptorSet()
     for (size_t i = 0; i < SwapChainImages.size(); ++i)
     {
         VkDescriptorBufferInfo BufferInfo{};
-        BufferInfo.buffer = UniformBuffers[i];
+        BufferInfo.buffer = UniformBuffers[i].Buffer;
         BufferInfo.offset = 0;
         BufferInfo.range = sizeof(UniformBufferObject);
 
@@ -1520,10 +1470,10 @@ void FContext::CreateCommandBuffers()
 
         vkCmdBeginRenderPass(CommandBuffers[i], &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline);
-        VkBuffer VertexBuffers[] = {VertexBuffer};
+        VkBuffer VertexBuffers[] = {VertexBuffer.Buffer};
         VkDeviceSize Offsets[] = {0};
         vkCmdBindVertexBuffers(CommandBuffers[i], 0, 1, VertexBuffers, Offsets);
-        vkCmdBindIndexBuffer(CommandBuffers[i], IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindIndexBuffer(CommandBuffers[i], IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
         vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSets[i], 0,
                                 nullptr);
@@ -1691,8 +1641,7 @@ void FContext::CleanUpSwapChain()
 
     for (size_t i = 0; i < SwapChainImages.size(); ++i)
     {
-        vkDestroyBuffer(LogicalDevice, UniformBuffers[i], nullptr);
-        vkFreeMemory(LogicalDevice, UniformBuffersMemory[i], nullptr);
+        ResourceAllocator->DestroyBuffer(UniformBuffers[i]);
     }
 
     vkDestroyDescriptorPool(LogicalDevice, DescriptorPool, nullptr);
@@ -1711,9 +1660,9 @@ void FContext::UpdateUniformBuffer(uint32_t CurrentImage)
     UBO.Projection = GetPerspective(0.785398f, SwapChainExtent.width / (float) SwapChainExtent.height, 0.1f, 10.f);
 
     void* Data;
-    vkMapMemory(LogicalDevice, UniformBuffersMemory[CurrentImage], 0, sizeof(UBO), 0, &Data);
+    vkMapMemory(LogicalDevice, UniformBuffers[CurrentImage].Memory, 0, sizeof(UBO), 0, &Data);
     memcpy(Data, &UBO, sizeof(UBO));
-    vkUnmapMemory(LogicalDevice, UniformBuffersMemory[CurrentImage]);
+    vkUnmapMemory(LogicalDevice, UniformBuffers[CurrentImage].Memory);
 }
 
 void FContext::DestroyDebugUtilsMessengerEXT()
@@ -1737,11 +1686,9 @@ void FContext::CleanUp()
 
     vkDestroyDescriptorSetLayout(LogicalDevice, DescriptorSetLayout, nullptr);
 
-    vkDestroyBuffer(LogicalDevice, IndexBuffer, nullptr);
-    vkFreeMemory(LogicalDevice, IndexBufferMemory, nullptr);
+    ResourceAllocator->DestroyBuffer(IndexBuffer);
 
-    vkDestroyBuffer(LogicalDevice, VertexBuffer, nullptr);
-    vkFreeMemory(LogicalDevice, VertexBufferMemory, nullptr);
+    ResourceAllocator->DestroyBuffer(VertexBuffer);
 
     for(std::size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {

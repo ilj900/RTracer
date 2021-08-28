@@ -3,11 +3,14 @@
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
 #include "vulkan/vulkan.h"
+
+#include "resource_allocation.h"
 #include "maths.h"
 
 #include <vector>
 #include <string>
 #include <array>
+#include <memory>
 
 struct FVertex {
     FVector3 Pos;
@@ -110,22 +113,22 @@ namespace V
         VkImageView CreateImageView(VkImage Image, VkFormat Format, VkImageAspectFlags AspectFlags, uint32_t MipLevels);
         VkFormat FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features);
         VkShaderModule CreateShaderFromFile(const std::string& FileName);
-        uint32_t FindMemoryType(uint32_t TypeFilter, VkMemoryPropertyFlags Properties);
         VkFormat FindDepthFormat();
         void TransitionImageLayout(VkImage Image, VkFormat Format, VkImageLayout OldLayout, VkImageLayout NewLayout, uint32_t MipLevels);
         VkCommandBuffer BeginSingleTimeCommands();
         void EndSingleTimeCommand(VkCommandBuffer CommandBuffer);
         bool HasStensilComponent(VkFormat Format);
-        void CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, VkBuffer& Buffer, VkDeviceMemory& BufferMemory);
-        void CopyBufferToImage(VkBuffer Buffer, VkImage Image, uint32_t Width, uint32_t Height);
+        void CopyBufferToImage(FBuffer &Buffer, VkImage Image, uint32_t Width, uint32_t Height);
         void GenerateMipmaps(VkImage Image, VkFormat ImageFormat, int32_t TexWidth, int32_t TexHeight, uint32_t mipLevels);
-        void CopyBuffer(VkBuffer SrcBuffer, VkBuffer DstBuffer, VkDeviceSize Size);
+        void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size);
 
         bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device);
         bool CheckDeviceQueueSupport(VkPhysicalDevice Device);
 
     public:
         GLFWwindow* Window = nullptr;
+
+        std::shared_ptr<FResourceAllocator> ResourceAllocator = nullptr;
 
         std::vector<std::string> InstanceExtensions;
         std::vector<std::string> DeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
@@ -182,16 +185,13 @@ namespace V
 
         VkSampler TextureSampler;
 
-        VkBuffer StagingBuffer;
-        VkDeviceMemory StagingBufferMemory;
+        FBuffer StagingBuffer;
 
         uint32_t  MipLevels;
 
-        VkBuffer VertexBuffer;
-        VkDeviceMemory VertexBufferMemory;
+        FBuffer VertexBuffer;
 
-        VkBuffer IndexBuffer;
-        VkDeviceMemory IndexBufferMemory;
+        FBuffer IndexBuffer;
 
         VkDescriptorPool DescriptorPool;
         std::vector<VkDescriptorSet> DescriptorSets;
@@ -201,8 +201,7 @@ namespace V
         std::vector<FVertex> Vertices;
         std::vector<uint32_t> Indices;
 
-        std::vector<VkBuffer> UniformBuffers;
-        std::vector<VkDeviceMemory> UniformBuffersMemory;
+        std::vector<FBuffer> UniformBuffers;
 
         std::vector<VkSemaphore> ImageAvailableSemaphores;
         std::vector<VkSemaphore> RenderFinishedSemaphores;

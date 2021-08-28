@@ -17,10 +17,12 @@ include_directories(ECS
 
 set(SOURCE  src/main.cpp
             vulkan_helpers/context.cpp
+            vulkan_helpers/resource_allocation.cpp
             math/maths.cpp)
 
 set(INCLUDE ECS/entity.h
             vulkan_helpers/context.h
+            vulkan_helpers/resource_allocation.h
             include/stb_image.h
             include/tiny_obj_loader.h
             math/maths.h)
