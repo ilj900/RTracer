@@ -5,6 +5,7 @@
 #include "vulkan/vulkan.h"
 
 #include "resource_allocation.h"
+#include "function_loader.h"
 #include "maths.h"
 
 #include <vector>
@@ -129,6 +130,7 @@ namespace V
         GLFWwindow* Window = nullptr;
 
         std::shared_ptr<FResourceAllocator> ResourceAllocator = nullptr;
+        std::shared_ptr<FVulkanFunctionLoader> FunctionLoader = nullptr;
 
         std::vector<std::string> InstanceExtensions;
         std::vector<std::string> DeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};

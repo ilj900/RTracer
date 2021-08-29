@@ -37,12 +37,14 @@ size_t std::hash<FVertex>::operator()(FVertex const& Vertex) const
 FContext::FContext(GLFWwindow *Window) :
     Window(Window)
 {
+    FunctionLoader = std::make_shared<FVulkanFunctionLoader>();
 }
 
 void FContext::Init()
 {
     try {
         CreateInstance();
+        FunctionLoader->LoadFunctions(Instance);
         SetupDebugMessenger();
         CreateSurface();
         PickPhysicalDevice();
@@ -169,15 +171,7 @@ void FContext::SetupDebugMessenger()
         return;
     }
 
-    auto Function = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(Instance, "vkCreateDebugUtilsMessengerEXT");
-    if (Function != nullptr)
-    {
-        Function(Instance, &DebugCreateInfo, nullptr, &DebugMessenger);
-    }
-    else
-    {
-        throw std::runtime_error("Failed to set up debug messenger!");
-    }
+    FunctionLoader->vkCreateDebugUtilsMessengerEXT(Instance, &DebugCreateInfo, nullptr, &DebugMessenger);
 }
 
 void FContext::CreateSurface()
@@ -1667,11 +1661,7 @@ void FContext::UpdateUniformBuffer(uint32_t CurrentImage)
 
 void FContext::DestroyDebugUtilsMessengerEXT()
 {
-    auto Function = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(Instance, "vkDestroyDebugUtilsMessengerEXT");
-    if (Function != nullptr)
-    {
-        Function(Instance, DebugMessenger, nullptr);
-    }
+    FunctionLoader->vkDestroyDebugUtilsMessengerEXT(Instance, DebugMessenger, nullptr);
 }
 
 void FContext::CleanUp()
