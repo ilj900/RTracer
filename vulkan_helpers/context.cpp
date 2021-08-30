@@ -3,9 +3,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include "tiny_obj_loader.h"
-
 #include <stdexcept>
 #include <iostream>
 #include <fstream>
@@ -13,8 +10,6 @@
 #include <array>
 #include <unordered_map>
 #include <chrono>
-
-using namespace V;
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT MessageSeverity,
@@ -25,13 +20,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     std::cerr << "Validation layer: " << pCallBackData->pMessage << std::endl;
 
     return VK_FALSE;
-}
-
-size_t std::hash<FVertex>::operator()(FVertex const& Vertex) const
-{
-    return ((std::hash<FVector3>{}(Vertex.Pos) ^
-             (std::hash<FVector3>{}(Vertex.Color) << 1)) >> 1) ^
-           (std::hash<FVector2>{}(Vertex.TexCoord) << 1);
 }
 
 FContext::FContext(GLFWwindow *Window) :
@@ -58,9 +46,8 @@ void FContext::Init()
         CreateTextureImage(TexturePath);
         CreateTextureImageView();
         CreateTextureSampler();
-        LoadModel(ModelPath);
-        CreateVertexBuffer();
-        CreateIndexBuffer();
+
+        Models.push_back(FModel(ModelPath, LogicalDevice, ResourceAllocator));
         CreateUniformBuffers();
         CreateDescriptorPool();
         CreateDescriptorSet();
@@ -439,7 +426,7 @@ void FContext::CreateLogicalDevice()
         vkGetDeviceQueue(LogicalDevice, PresentQueueIndex, 0, &PresentQueue);
     }
 
-    ResourceAllocator = std::make_shared<FResourceAllocator>(PhysicalDevice, LogicalDevice);
+    ResourceAllocator = std::make_shared<FResourceAllocator>(PhysicalDevice, LogicalDevice, this);
 }
 
 void FContext::CreateSwapChain()
@@ -1250,68 +1237,8 @@ void FContext::CreateTextureSampler()
     }
 }
 
-void FContext::LoadModel(const std::string& ModelPath)
-{
-    tinyobj::attrib_t Attrib;
-    std::vector<tinyobj::shape_t> Shapes;
-    std::vector<tinyobj::material_t> Materials;
-    std::string Warn, Err;
-
-    if (!tinyobj::LoadObj(&Attrib, &Shapes, &Materials, &Warn, &Err, ModelPath.c_str()))
-    {
-        throw std::runtime_error(Warn + Err);
-    }
-
-    std::unordered_map<FVertex, uint32_t> UniqueVertices{};
-
-
-    for (const auto& Shape : Shapes)
-    {
-        for (const auto& Index : Shape.mesh.indices)
-        {
-            FVertex Vert{};
-
-            Vert.Pos = {
-                    Attrib.vertices[3 * Index.vertex_index + 0],
-                    Attrib.vertices[3 * Index.vertex_index + 1],
-                    Attrib.vertices[3 * Index.vertex_index + 2]
-            };
-
-            Vert.TexCoord = {
-                    Attrib.texcoords[2 * Index.texcoord_index + 0],
-                    1.f - Attrib.texcoords[2 * Index.texcoord_index + 1],
-            };
-
-            Vert.Color = {1.f, 1.f, 1.f};
-
-            if (UniqueVertices.find(Vert) == UniqueVertices.end())
-            {
-                UniqueVertices[Vert] = static_cast<uint32_t>(Vertices.size());
-                Vertices.push_back(Vert);
-            }
-
-            Indices.push_back(UniqueVertices[Vert]);
-        }
-    }
-}
-
 void FContext::CreateVertexBuffer()
 {
-    VkDeviceSize BufferSize = sizeof(Vertices[0]) * Vertices.size();
-
-    FBuffer TempStagingBuffer;
-    TempStagingBuffer = ResourceAllocator->CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    void* Data;
-    vkMapMemory(LogicalDevice, TempStagingBuffer.Memory, 0, BufferSize, 0, &Data);
-    memcpy(Data, Vertices.data(), (std::size_t)BufferSize);
-    vkUnmapMemory(LogicalDevice, TempStagingBuffer.Memory);
-
-    VertexBuffer = ResourceAllocator->CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-    CopyBuffer(TempStagingBuffer, VertexBuffer, BufferSize);
-
-    ResourceAllocator->DestroyBuffer(TempStagingBuffer);
 }
 
 void FContext::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size)
@@ -1327,19 +1254,6 @@ void FContext::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize S
 
 void FContext::CreateIndexBuffer()
 {
-    VkDeviceSize BufferSize = sizeof(Indices[0]) * Indices.size();
-
-    FBuffer IndexStagingBuffer = ResourceAllocator->CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    void* Data;
-    vkMapMemory(LogicalDevice, IndexStagingBuffer.Memory, 0, BufferSize, 0, &Data);
-    memcpy(Data, Indices.data(), (std::size_t)BufferSize);
-    vkUnmapMemory(LogicalDevice, IndexStagingBuffer.Memory);
-
-    IndexBuffer = ResourceAllocator->CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-    CopyBuffer(IndexStagingBuffer, IndexBuffer, BufferSize);
-    ResourceAllocator->DestroyBuffer(IndexStagingBuffer);
 }
 
 void FContext::CreateUniformBuffers()
@@ -1464,14 +1378,14 @@ void FContext::CreateCommandBuffers()
 
         vkCmdBeginRenderPass(CommandBuffers[i], &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline);
-        VkBuffer VertexBuffers[] = {VertexBuffer.Buffer};
+        VkBuffer VertexBuffers[] = {Models[0].VertexBuffer.Buffer};
         VkDeviceSize Offsets[] = {0};
         vkCmdBindVertexBuffers(CommandBuffers[i], 0, 1, VertexBuffers, Offsets);
-        vkCmdBindIndexBuffer(CommandBuffers[i], IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindIndexBuffer(CommandBuffers[i], Models[0].IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
         vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSets[i], 0,
                                 nullptr);
-        vkCmdDrawIndexed(CommandBuffers[i], static_cast<uint32_t>(Indices.size()), 1, 0, 0, 0);
+        vkCmdDrawIndexed(CommandBuffers[i], static_cast<uint32_t>(Models[0].Indices.size()), 1, 0, 0, 0);
         vkCmdEndRenderPass(CommandBuffers[i]);
 
         if (vkEndCommandBuffer(CommandBuffers[i]) != VK_SUCCESS)
@@ -1676,9 +1590,8 @@ void FContext::CleanUp()
 
     vkDestroyDescriptorSetLayout(LogicalDevice, DescriptorSetLayout, nullptr);
 
-    ResourceAllocator->DestroyBuffer(IndexBuffer);
-
-    ResourceAllocator->DestroyBuffer(VertexBuffer);
+    ResourceAllocator->DestroyBuffer(Models[0].IndexBuffer);
+    ResourceAllocator->DestroyBuffer(Models[0].VertexBuffer);
 
     for(std::size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {

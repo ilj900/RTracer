@@ -1,9 +1,11 @@
 #include "resource_allocation.h"
+#include "context.h"
 
 #include <stdexcept>
 
-FResourceAllocator::FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice Device)
-    :Device(Device)
+FResourceAllocator::FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice Device, FContext* Context)
+    :Device(Device),
+     Context(Context)
 {
     vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &MemProperties);
 }
@@ -59,4 +61,15 @@ uint32_t FResourceAllocator::FindMemoryType(uint32_t TypeFilter, VkMemoryPropert
     }
 
     throw std::runtime_error("Failed to find suitable memory type!");
+}
+
+void FResourceAllocator::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size)
+{
+    VkCommandBuffer CommandBuffer = Context->BeginSingleTimeCommands();
+
+    VkBufferCopy CopyRegion{};
+    CopyRegion.size = Size;
+    vkCmdCopyBuffer(CommandBuffer, SrcBuffer.Buffer, DstBuffer.Buffer, 1, &CopyRegion);
+
+    Context->EndSingleTimeCommand(CommandBuffer);
 }

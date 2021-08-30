@@ -19,12 +19,14 @@ set(SOURCE  src/main.cpp
             vulkan_helpers/context.cpp
             vulkan_helpers/resource_allocation.cpp
             vulkan_helpers/function_loader.cpp
+            vulkan_helpers/model.cpp
             math/maths.cpp)
 
 set(INCLUDE ECS/entity.h
             vulkan_helpers/context.h
             vulkan_helpers/resource_allocation.h
             vulkan_helpers/function_loader.h
+            vulkan_helpers/model.h
             include/stb_image.h
             include/tiny_obj_loader.h
             math/maths.h)

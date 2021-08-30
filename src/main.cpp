@@ -14,7 +14,7 @@ int main()
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     GLFWwindow* Window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_NAME.c_str(), nullptr, nullptr);
 
-    V::FContext Context(Window);
+    FContext Context(Window);
     Context.Init();
 
     while (!glfwWindowShouldClose(Window))
