@@ -1378,14 +1378,18 @@ void FContext::CreateCommandBuffers()
 
         vkCmdBeginRenderPass(CommandBuffers[i], &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline);
-        VkBuffer VertexBuffers[] = {Models[0].VertexBuffer.Buffer};
-        VkDeviceSize Offsets[] = {0};
-        vkCmdBindVertexBuffers(CommandBuffers[i], 0, 1, VertexBuffers, Offsets);
-        vkCmdBindIndexBuffer(CommandBuffers[i], Models[0].IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+
+        for (auto& Model : Models)
+        {
+            Model.Bind(CommandBuffers[i]);
+        }
 
         vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSets[i], 0,
                                 nullptr);
-        vkCmdDrawIndexed(CommandBuffers[i], static_cast<uint32_t>(Models[0].Indices.size()), 1, 0, 0, 0);
+        for (auto& Model : Models)
+        {
+            Model.Draw(CommandBuffers[i]);
+        }
         vkCmdEndRenderPass(CommandBuffers[i]);
 
         if (vkEndCommandBuffer(CommandBuffers[i]) != VK_SUCCESS)

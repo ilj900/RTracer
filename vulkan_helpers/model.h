@@ -32,6 +32,9 @@ class FModel
 public:
     FModel(const std::string &Path, VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator);
 
+    void Draw(VkCommandBuffer CommandBuffer);
+    void Bind(VkCommandBuffer CommandBuffer);
+
     std::vector<FVertex> Vertices;
     std::vector<uint32_t> Indices;
 

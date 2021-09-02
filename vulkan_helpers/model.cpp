@@ -122,3 +122,16 @@ FModel::FModel(const std::string &Path, VkDevice LogicalDevice, std::shared_ptr<
     ResourceAllocator->CopyBuffer(StagingBuffer, IndexBuffer, IndexBufferSize);
     ResourceAllocator->DestroyBuffer(StagingBuffer);
 }
+
+void FModel::Draw(VkCommandBuffer CommandBuffer)
+{
+    vkCmdDrawIndexed(CommandBuffer, Indices.size(), 1, 0, 0, 0);
+}
+
+void FModel::Bind(VkCommandBuffer CommandBuffer)
+{
+    VkBuffer Buffers[] = {VertexBuffer.Buffer};
+    VkDeviceSize Offsets[] = {0};
+    vkCmdBindVertexBuffers(CommandBuffer, 0, 1, Buffers, Offsets);
+    vkCmdBindIndexBuffer(CommandBuffer, IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+}
