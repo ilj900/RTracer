@@ -1424,10 +1424,9 @@ void FContext::CreateSyncObjects()
     }
 }
 
-void FContext::DrawFrame()
+void FContext::Render()
 {
     vkWaitForFences(LogicalDevice, 1, &InFlightFences[CurrentFrame], VK_TRUE, UINT64_MAX);
-    uint32_t ImageIndex;
     VkResult Result = vkAcquireNextImageKHR(LogicalDevice, SwapChain, UINT64_MAX, ImageAvailableSemaphores[CurrentFrame], VK_NULL_HANDLE, &ImageIndex);
 
     if (Result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -1470,6 +1469,11 @@ void FContext::DrawFrame()
     {
         throw std::runtime_error("Failed to submit draw command buffer!");
     }
+}
+
+void FContext::Present()
+{
+    VkSemaphore SignalSemaphores[] = {RenderFinishedSemaphores[CurrentFrame]};
 
     VkPresentInfoKHR PresentInfo{};
     PresentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -1481,7 +1485,7 @@ void FContext::DrawFrame()
     PresentInfo.pImageIndices = &ImageIndex;
     PresentInfo.pResults = nullptr;
 
-    Result = vkQueuePresentKHR(PresentQueue, &PresentInfo);
+    VkResult Result = vkQueuePresentKHR(PresentQueue, &PresentInfo);
 
     if (Result == VK_ERROR_OUT_OF_DATE_KHR || Result == VK_SUBOPTIMAL_KHR || bFramebufferResized)
     {

@@ -19,7 +19,8 @@ int main()
 
     while (!glfwWindowShouldClose(Window))
     {
-        Context.DrawFrame();
+        Context.Render();
+        Context.Present();
         glfwPollEvents();
     }
 

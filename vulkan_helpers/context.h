@@ -57,7 +57,8 @@ public:
     void DestroyDebugUtilsMessengerEXT();
     void UpdateUniformBuffer(uint32_t CurrentImage);
 
-    void DrawFrame();
+    void Render();
+    void Present();
 
     void CreateImage(uint32_t Width, uint32_t Height, uint32_t MipLevels, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties, VkImage& Image, VkDeviceMemory& ImageMemory);
     VkImageView CreateImageView(VkImage Image, VkFormat Format, VkImageAspectFlags AspectFlags, uint32_t MipLevels);
@@ -151,6 +152,7 @@ public:
     std::vector<VkFence> InFlightFences;
     std::vector<VkFence> ImagesInFlight;
     size_t CurrentFrame = 0;
+    uint32_t ImageIndex;
 
     VkDebugUtilsMessengerCreateInfoEXT DebugCreateInfo = {};
 
