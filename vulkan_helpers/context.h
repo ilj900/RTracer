@@ -8,6 +8,7 @@
 #include "function_loader.h"
 #include "maths.h"
 #include "model.h"
+#include "swapchain.h"
 
 #include <vector>
 #include <string>
@@ -35,7 +36,7 @@ public:
     void PickPhysicalDevice();
     void QueuePhysicalDeviceProperties();
     void CreateLogicalDevice();
-    void CreateSwapChain();
+    void CreateDepthAndAAImages();
     void CreateRenderPass();
     void CreateDescriptorSetLayout();
     void CreateGraphicsPipeline();
@@ -44,8 +45,6 @@ public:
     void CreateTextureImage(std::string& TexturePath);
     void CreateTextureImageView();
     void CreateTextureSampler();
-    void CreateVertexBuffer();
-    void CreateIndexBuffer();
     void CreateUniformBuffers();
     void CreateDescriptorPool();
     void CreateDescriptorSet();
@@ -106,11 +105,7 @@ public:
     VkQueue PresentQueue;
 
     // SwapChain
-    VkSwapchainKHR SwapChain;
-    std::vector<VkImage> SwapChainImages;
-    VkFormat SwapChainImageFormat;
-    VkExtent2D SwapChainExtent;
-    std::vector<VkImageView> SwapChainImageViews;
+    std::shared_ptr<FSwapchain> Swapchain = nullptr;
     std::vector<VkFramebuffer> SwapChainFramebuffers;
 
     VkRenderPass RenderPass;

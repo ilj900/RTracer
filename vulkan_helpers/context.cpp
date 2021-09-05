@@ -38,7 +38,8 @@ void FContext::Init()
         PickPhysicalDevice();
         CreateLogicalDevice();
         CreateCommandPool();
-        CreateSwapChain();
+        Swapchain = std::make_shared<FSwapchain>(*this, PhysicalDevice, LogicalDevice, Surface, Window, GraphicsQueueIndex, PresentQueueIndex, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
+        CreateDepthAndAAImages();
         CreateRenderPass();
         CreateDescriptorSetLayout();
         CreateGraphicsPipeline();
@@ -429,138 +430,19 @@ void FContext::CreateLogicalDevice()
     ResourceAllocator = std::make_shared<FResourceAllocator>(PhysicalDevice, LogicalDevice, this);
 }
 
-void FContext::CreateSwapChain()
+void FContext::CreateDepthAndAAImages()
 {
-    /// Request surface properties
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(PhysicalDevice, Surface, &Capabilities);
+    /// Create Image and ImageView for AA
+    VkFormat ColorFormat = Swapchain->GetImageFormat();
 
-    uint32_t FormatCount = 0;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(PhysicalDevice, Surface, &FormatCount, nullptr);
-
-    if (FormatCount != 0)
-    {
-        Formats.resize(FormatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(PhysicalDevice, Surface, &FormatCount, Formats.data());
-    }
-
-    uint32_t PresentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(PhysicalDevice, Surface, &PresentModeCount, nullptr);
-
-    if (PresentModeCount != 0)
-    {
-        PresentModes.resize(PresentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(PhysicalDevice, Surface, &PresentModeCount, PresentModes.data());
-    }
-
-    VkPresentModeKHR PresentMode = VK_PRESENT_MODE_FIFO_KHR;
-
-    for (const auto& AvailablePresentMode : PresentModes)
-    {
-        if (AvailablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
-        {
-            PresentMode = AvailablePresentMode;
-        }
-    }
-
-    VkSurfaceFormatKHR SurfaceFormat = Formats[0];
-
-    for (const auto& Format : Formats)
-    {
-        if (Format.format == VK_FORMAT_B8G8R8A8_SRGB && Format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-        {
-            SurfaceFormat = Format;
-        }
-    }
-
-    VkExtent2D Extent;
-
-    if (Capabilities.currentExtent.width != UINT32_MAX)
-    {
-        Extent = Capabilities.currentExtent;
-    }
-    else
-    {
-        int Width, Height;
-
-        glfwGetFramebufferSize(Window, &Width, &Height);
-
-        VkExtent2D ActualExtent = {static_cast<uint32_t>(Width), static_cast<uint32_t>(Height)};
-        ActualExtent.width = std::max(Capabilities.minImageExtent.width, std::min(Capabilities.minImageExtent.width, ActualExtent.width));
-        ActualExtent.height = std::max(Capabilities.minImageExtent.height, std::min(Capabilities.minImageExtent.height, ActualExtent.height));
-        Extent = ActualExtent;
-    }
-
-    uint32_t ImageCount = Capabilities.minImageCount + 1;
-
-    if (Capabilities.maxImageCount > 0 && ImageCount > Capabilities.maxImageCount)
-    {
-        ImageCount = Capabilities.maxImageCount;
-    }
-
-    /// Create SwapChain
-    VkSwapchainCreateInfoKHR CreateInfo{};
-    CreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    CreateInfo.surface = Surface;
-
-    CreateInfo.minImageCount = ImageCount;
-    CreateInfo.imageFormat = SurfaceFormat.format;
-    CreateInfo.imageColorSpace = SurfaceFormat.colorSpace;
-    CreateInfo.imageExtent = Extent;
-    CreateInfo.imageArrayLayers = 1;
-    CreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-    uint32_t QueueFamilyIndices[] = {GraphicsQueueIndex, PresentQueueIndex};
-    if (GraphicsQueueIndex != PresentQueueIndex)
-    {
-        CreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-        CreateInfo.queueFamilyIndexCount = 2;
-        CreateInfo.pQueueFamilyIndices = QueueFamilyIndices;
-    }
-    else
-    {
-        CreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        CreateInfo.queueFamilyIndexCount = 0;
-        CreateInfo.pQueueFamilyIndices = nullptr;
-    }
-
-    CreateInfo.preTransform = Capabilities.currentTransform;
-    CreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    CreateInfo.presentMode = PresentMode;
-    CreateInfo.clipped = VK_TRUE;
-
-    CreateInfo.oldSwapchain = VK_NULL_HANDLE;
-
-    if (vkCreateSwapchainKHR(LogicalDevice, &CreateInfo, nullptr, &SwapChain) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create swap chain!");
-    }
-
-    /// Queue SwapChain for it's images
-    vkGetSwapchainImagesKHR(LogicalDevice, SwapChain, &ImageCount, nullptr);
-    SwapChainImages.resize(ImageCount);
-    vkGetSwapchainImagesKHR(LogicalDevice, SwapChain, &ImageCount, SwapChainImages.data());
-    SwapChainImageFormat = SurfaceFormat.format;
-    SwapChainExtent = Extent;
-
-    /// Create ImageViews for SwapChain Images
-    SwapChainImageViews.resize(SwapChainImages.size());
-
-    for (std::size_t i = 0; i < SwapChainImages.size(); ++i)
-    {
-        SwapChainImageViews[i] = CreateImageView(SwapChainImages[i], SwapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-    }
-
-    // Create Image and ImageView for AA
-    VkFormat ColorFormat = SwapChainImageFormat;
-
-    CreateImage(SwapChainExtent.width, SwapChainExtent.height, 1, MSAASamples, ColorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ColorImage, ColorImageMemory);
+    CreateImage(Swapchain->GetWidth(), Swapchain->GetHeight(), 1, MSAASamples, ColorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ColorImage, ColorImageMemory);
 
     ColorImageView = CreateImageView(ColorImage, ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 
     // Create Image and ImageView for Depth
     VkFormat DepthFormat = FindDepthFormat();
 
-    CreateImage(SwapChainExtent.width, SwapChainExtent.height, 1, MSAASamples, DepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, DepthImage, DepthImageMemory);
+    CreateImage(Swapchain->GetWidth(), Swapchain->GetHeight(), 1, MSAASamples, DepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, DepthImage, DepthImageMemory);
     DepthImageView = CreateImageView(DepthImage, DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 
     TransitionImageLayout(DepthImage, DepthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
@@ -591,7 +473,7 @@ VkImageView FContext::CreateImageView(VkImage Image, VkFormat Format, VkImageAsp
 void FContext::CreateRenderPass()
 {
     VkAttachmentDescription ColorAttachment{};
-    ColorAttachment.format = SwapChainImageFormat;
+    ColorAttachment.format = Swapchain->GetImageFormat();
     ColorAttachment.samples = MSAASamples;
     ColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     ColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -605,7 +487,7 @@ void FContext::CreateRenderPass()
     ColorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     VkAttachmentDescription ColorAttachmentResolve{};
-    ColorAttachmentResolve.format = SwapChainImageFormat;
+    ColorAttachmentResolve.format = Swapchain->GetImageFormat();
     ColorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
     ColorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     ColorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -770,14 +652,14 @@ void FContext::CreateGraphicsPipeline()
     VkViewport Viewport{};
     Viewport.x = 0.f;
     Viewport.y = 0.f;
-    Viewport.width = (float)SwapChainExtent.width;
-    Viewport.height = (float)SwapChainExtent.height;
+    Viewport.width = (float)Swapchain->GetWidth();
+    Viewport.height = (float)Swapchain->GetHeight();
     Viewport.minDepth = 0.f;
     Viewport.maxDepth = 1.f;
 
     VkRect2D Scissors{};
     Scissors.offset = {0, 0};
-    Scissors.extent = SwapChainExtent;
+    Scissors.extent = Swapchain->GetExtent2D();
 
     VkPipelineViewportStateCreateInfo ViewportState{};
     ViewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -1051,17 +933,17 @@ void FContext::EndSingleTimeCommand(VkCommandBuffer CommandBuffer)
 
 void FContext::CreateFramebuffers()
 {
-    SwapChainFramebuffers.resize(SwapChainImageViews.size());
-    for (std::size_t i = 0; i < SwapChainImageViews.size(); ++i) {
-        std::array<VkImageView, 3> Attachments = {ColorImageView, DepthImageView, SwapChainImageViews[i]};
+    SwapChainFramebuffers.resize(Swapchain->Size());
+    for (std::size_t i = 0; i < Swapchain->Size(); ++i) {
+        std::array<VkImageView, 3> Attachments = {ColorImageView, DepthImageView, Swapchain->GetImageViews()[i]};
 
         VkFramebufferCreateInfo FramebufferInfo{};
         FramebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         FramebufferInfo.renderPass = RenderPass;
         FramebufferInfo.attachmentCount = static_cast<uint32_t>(Attachments.size());
         FramebufferInfo.pAttachments = Attachments.data();
-        FramebufferInfo.width = SwapChainExtent.width;
-        FramebufferInfo.height = SwapChainExtent.height;
+        FramebufferInfo.width = Swapchain->GetWidth();
+        FramebufferInfo.height = Swapchain->GetHeight();
         FramebufferInfo.layers = 1;
 
         if (vkCreateFramebuffer(LogicalDevice, &FramebufferInfo, nullptr, &SwapChainFramebuffers[i]) != VK_SUCCESS)
@@ -1237,10 +1119,6 @@ void FContext::CreateTextureSampler()
     }
 }
 
-void FContext::CreateVertexBuffer()
-{
-}
-
 void FContext::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size)
 {
     VkCommandBuffer CommandBuffer = BeginSingleTimeCommands();
@@ -1252,17 +1130,13 @@ void FContext::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize S
     EndSingleTimeCommand(CommandBuffer);
 }
 
-void FContext::CreateIndexBuffer()
-{
-}
-
 void FContext::CreateUniformBuffers()
 {
     VkDeviceSize BufferSize = sizeof(UniformBufferObject);
 
-    UniformBuffers.resize(SwapChainImages.size());
+    UniformBuffers.resize(Swapchain->Size());
 
-    for (size_t i = 0; i < SwapChainImages.size(); ++i)
+    for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
         UniformBuffers[i] = ResourceAllocator->CreateBuffer(BufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     }
@@ -1272,15 +1146,15 @@ void FContext::CreateDescriptorPool()
 {
     std::array<VkDescriptorPoolSize, 2> PoolSizes{};
     PoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    PoolSizes[0].descriptorCount = static_cast<uint32_t>(SwapChainImages.size());
+    PoolSizes[0].descriptorCount = static_cast<uint32_t>(Swapchain->Size());
     PoolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    PoolSizes[1].descriptorCount = static_cast<uint32_t>(SwapChainImages.size());
+    PoolSizes[1].descriptorCount = static_cast<uint32_t>(Swapchain->Size());
 
     VkDescriptorPoolCreateInfo PoolInfo{};
     PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     PoolInfo.poolSizeCount = static_cast<uint32_t>(PoolSizes.size());
     PoolInfo.pPoolSizes = PoolSizes.data();
-    PoolInfo.maxSets = static_cast<uint32_t>(SwapChainImages.size());
+    PoolInfo.maxSets = static_cast<uint32_t>(Swapchain->Size());
 
     if (vkCreateDescriptorPool(LogicalDevice, &PoolInfo, nullptr, &DescriptorPool) != VK_SUCCESS)
     {
@@ -1290,20 +1164,20 @@ void FContext::CreateDescriptorPool()
 
 void FContext::CreateDescriptorSet()
 {
-    std::vector<VkDescriptorSetLayout> Layouts(SwapChainImages.size(), DescriptorSetLayout);
+    std::vector<VkDescriptorSetLayout> Layouts(Swapchain->Size(), DescriptorSetLayout);
     VkDescriptorSetAllocateInfo AllocInfo{};
     AllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     AllocInfo.descriptorPool = DescriptorPool;
-    AllocInfo.descriptorSetCount = static_cast<uint32_t>(SwapChainImages.size());
+    AllocInfo.descriptorSetCount = static_cast<uint32_t>(Swapchain->Size());
     AllocInfo.pSetLayouts = Layouts.data();
 
-    DescriptorSets.resize(SwapChainImages.size());
+    DescriptorSets.resize(Swapchain->Size());
     if (vkAllocateDescriptorSets(LogicalDevice, &AllocInfo, DescriptorSets.data()) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to allocate descriptor sets!");
     }
 
-    for (size_t i = 0; i < SwapChainImages.size(); ++i)
+    for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
         VkDescriptorBufferInfo BufferInfo{};
         BufferInfo.buffer = UniformBuffers[i].Buffer;
@@ -1368,7 +1242,7 @@ void FContext::CreateCommandBuffers()
         RenderPassInfo.renderPass = RenderPass;
         RenderPassInfo.framebuffer = SwapChainFramebuffers[i];
         RenderPassInfo.renderArea.offset = {0, 0};
-        RenderPassInfo.renderArea.extent = SwapChainExtent;
+        RenderPassInfo.renderArea.extent = Swapchain->GetExtent2D();
 
         std::array<VkClearValue, 2> ClearValues{};
         ClearValues[0].color = {0.f, 0.f, 0.f, 1.f};
@@ -1427,7 +1301,7 @@ void FContext::CreateSyncObjects()
 void FContext::Render()
 {
     vkWaitForFences(LogicalDevice, 1, &InFlightFences[CurrentFrame], VK_TRUE, UINT64_MAX);
-    VkResult Result = vkAcquireNextImageKHR(LogicalDevice, SwapChain, UINT64_MAX, ImageAvailableSemaphores[CurrentFrame], VK_NULL_HANDLE, &ImageIndex);
+    VkResult Result = vkAcquireNextImageKHR(LogicalDevice, Swapchain->GetSwapchain(), UINT64_MAX, ImageAvailableSemaphores[CurrentFrame], VK_NULL_HANDLE, &ImageIndex);
 
     if (Result == VK_ERROR_OUT_OF_DATE_KHR)
     {
@@ -1479,7 +1353,7 @@ void FContext::Present()
     PresentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     PresentInfo.waitSemaphoreCount = 1;
     PresentInfo.pWaitSemaphores = SignalSemaphores;
-    VkSwapchainKHR SwapChains[] = {SwapChain};
+    VkSwapchainKHR SwapChains[] = {Swapchain->GetSwapchain()};
     PresentInfo.swapchainCount = 1;
     PresentInfo.pSwapchains = SwapChains;
     PresentInfo.pImageIndices = &ImageIndex;
@@ -1517,8 +1391,7 @@ void FContext::RecreateSwapChain()
 
     CleanUpSwapChain();
 
-    CreateSwapChain();
-    CreateRenderPass();
+    Swapchain = std::make_shared<FSwapchain>(*this, PhysicalDevice, LogicalDevice, Surface, Window, GraphicsQueueIndex, PresentQueueIndex, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
     CreateGraphicsPipeline();
     CreateFramebuffers();
     CreateUniformBuffers();
@@ -1548,17 +1421,12 @@ void FContext::CleanUpSwapChain()
     vkDestroyPipelineLayout(LogicalDevice, PipelineLayout, nullptr);
     vkDestroyRenderPass(LogicalDevice, RenderPass, nullptr);
 
-    for (auto ImageView : SwapChainImageViews)
-    {
-        vkDestroyImageView(LogicalDevice, ImageView, nullptr);
-    }
-
-    vkDestroySwapchainKHR(LogicalDevice, SwapChain, nullptr);
-
-    for (size_t i = 0; i < SwapChainImages.size(); ++i)
+    for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
         ResourceAllocator->DestroyBuffer(UniformBuffers[i]);
     }
+
+    Swapchain = nullptr;
 
     vkDestroyDescriptorPool(LogicalDevice, DescriptorPool, nullptr);
 }
@@ -1573,7 +1441,7 @@ void FContext::UpdateUniformBuffer(uint32_t CurrentImage)
     UniformBufferObject UBO{};
     UBO.Model = Rotate(Time * 1.f, FVector3(0.f, 0.f, 1.f));
     UBO.View = LookAt(FVector3(2.f, 2.f, 2.f), FVector3(0.f, 0.f, 0.f), FVector3(0.f, 0.f, 1.f));
-    UBO.Projection = GetPerspective(0.785398f, SwapChainExtent.width / (float) SwapChainExtent.height, 0.1f, 10.f);
+    UBO.Projection = GetPerspective(0.785398f, Swapchain->GetWidth() / (float) Swapchain->GetHeight(), 0.1f, 10.f);
 
     void* Data;
     vkMapMemory(LogicalDevice, UniformBuffers[CurrentImage].Memory, 0, sizeof(UBO), 0, &Data);
