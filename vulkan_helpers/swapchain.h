@@ -12,8 +12,8 @@ struct FSwapchain
                GLFWwindow* Window, uint32_t GraphicsQueueFamilyIndex, uint32_t PresentQueueFamilyIndex,
                VkFormat Format, VkColorSpaceKHR ColorSpace, VkPresentModeKHR PresentMode);
     ~FSwapchain();
-    uint32_t Size();
-    VkImage GetNextImage();
+    size_t Size();
+    VkResult GetNextImage(VkImage& Image, VkSemaphore &Semaphore, uint32_t& ImageIndex);
     VkFormat GetImageFormat();
     uint32_t GetWidth();
     uint32_t GetHeight();
@@ -28,8 +28,6 @@ struct FSwapchain
     VkExtent2D Extent;
     std::vector<VkImage> Images;
     std::vector<VkImageView> ImageViews;
-    std::vector<VkSemaphore> ImageAvailableSemaphores;
-    uint32_t CurrentImage = 0;
 
     VkDevice LogicalDevice = VK_NULL_HANDLE;
 };

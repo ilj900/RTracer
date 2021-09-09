@@ -23,7 +23,7 @@ int main()
         Context.Present();
         glfwPollEvents();
     }
-
+    Context.WaitIdle();
     Context.CleanUp();
 
     glfwDestroyWindow(Window);

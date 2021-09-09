@@ -1277,7 +1277,7 @@ void FContext::CreateSyncObjects()
 {
     ImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     RenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    InFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+    RenderingFinishedFences.resize(MAX_FRAMES_IN_FLIGHT);
     ImagesInFlight.resize(MAX_FRAMES_IN_FLIGHT, VK_NULL_HANDLE);
 
     VkSemaphoreCreateInfo SemaphoreInfo{};
@@ -1291,7 +1291,7 @@ void FContext::CreateSyncObjects()
     {
         if (vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &ImageAvailableSemaphores[i]) != VK_SUCCESS ||
             vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &RenderFinishedSemaphores[i]) != VK_SUCCESS ||
-            vkCreateFence(LogicalDevice, &FenceInfo, nullptr, &InFlightFences[i]) != VK_SUCCESS)
+            vkCreateFence(LogicalDevice, &FenceInfo, nullptr, &RenderingFinishedFences[i]) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create synchronization objects for a frame!");
         }
@@ -1300,25 +1300,31 @@ void FContext::CreateSyncObjects()
 
 void FContext::Render()
 {
-    vkWaitForFences(LogicalDevice, 1, &InFlightFences[CurrentFrame], VK_TRUE, UINT64_MAX);
-    VkResult Result = vkAcquireNextImageKHR(LogicalDevice, Swapchain->GetSwapchain(), UINT64_MAX, ImageAvailableSemaphores[CurrentFrame], VK_NULL_HANDLE, &ImageIndex);
+    /// Previous rendering iteration of the frame might still be in use, so we wait for it
+    vkWaitForFences(LogicalDevice, 1, &RenderingFinishedFences[CurrentFrame], VK_TRUE, UINT64_MAX);
 
+    /// Acquire next image from swapchain, also it's index and provide semaphore to signal when image is ready to be used
+    VkResult Result = Swapchain->GetNextImage(CurrentImage, ImageAvailableSemaphores[CurrentFrame], ImageIndex);
+
+    /// Run some checks
     if (Result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         RecreateSwapChain();
         return;
     }
-    else if (Result != VK_SUCCESS && Result != VK_SUBOPTIMAL_KHR)
+    if (Result != VK_SUCCESS && Result != VK_SUBOPTIMAL_KHR)
     {
         throw std::runtime_error("Failed to acquire swap chain image!");
     }
 
+    /// If this image is still in use, wait for it.
     if(ImagesInFlight[ImageIndex] != VK_NULL_HANDLE)
     {
         vkWaitForFences(LogicalDevice, 1, &ImagesInFlight[ImageIndex], VK_TRUE, UINT64_MAX);
     }
 
-    ImagesInFlight[ImageIndex] = InFlightFences[CurrentFrame];
+    /// Mark this image as is being in use
+    ImagesInFlight[ImageIndex] = RenderingFinishedFences[CurrentFrame];
 
     UpdateUniformBuffer(ImageIndex);
 
@@ -1337,9 +1343,11 @@ void FContext::Render()
     SubmitInfo.signalSemaphoreCount = 1;
     SubmitInfo.pSignalSemaphores = SignalSemaphores;
 
-    vkResetFences(LogicalDevice, 1, &InFlightFences[CurrentFrame]);
+    /// Reset frame state to unsignaled, just before rendering
+    vkResetFences(LogicalDevice, 1, &RenderingFinishedFences[CurrentFrame]);
 
-    if (vkQueueSubmit(GraphicsQueue, 1, &SubmitInfo, InFlightFences[CurrentFrame]) != VK_SUCCESS)
+    /// Submit rendering. When rendering finished, apropriate fence will be signalled
+    if (vkQueueSubmit(GraphicsQueue, 1, &SubmitInfo, RenderingFinishedFences[CurrentFrame]) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to submit draw command buffer!");
     }
@@ -1372,7 +1380,10 @@ void FContext::Present()
     }
 
     CurrentFrame = (CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
 
+void FContext::WaitIdle()
+{
     vkDeviceWaitIdle(LogicalDevice);
 }
 
@@ -1473,7 +1484,7 @@ void FContext::CleanUp()
     {
         vkDestroySemaphore(LogicalDevice, RenderFinishedSemaphores[i], nullptr);
         vkDestroySemaphore(LogicalDevice, ImageAvailableSemaphores[i], nullptr);
-        vkDestroyFence(LogicalDevice, InFlightFences[i], nullptr);
+        vkDestroyFence(LogicalDevice, RenderingFinishedFences[i], nullptr);
     }
 
     vkDestroyCommandPool(LogicalDevice, CommandPool, nullptr);

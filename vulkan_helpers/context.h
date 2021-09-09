@@ -58,6 +58,7 @@ public:
 
     void Render();
     void Present();
+    void WaitIdle();
 
     void CreateImage(uint32_t Width, uint32_t Height, uint32_t MipLevels, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties, VkImage& Image, VkDeviceMemory& ImageMemory);
     VkImageView CreateImageView(VkImage Image, VkFormat Format, VkImageAspectFlags AspectFlags, uint32_t MipLevels);
@@ -106,6 +107,7 @@ public:
 
     // SwapChain
     std::shared_ptr<FSwapchain> Swapchain = nullptr;
+    VkImage CurrentImage = VK_NULL_HANDLE;
     std::vector<VkFramebuffer> SwapChainFramebuffers;
 
     VkRenderPass RenderPass;
@@ -144,10 +146,10 @@ public:
 
     std::vector<VkSemaphore> ImageAvailableSemaphores;
     std::vector<VkSemaphore> RenderFinishedSemaphores;
-    std::vector<VkFence> InFlightFences;
+    std::vector<VkFence> RenderingFinishedFences;
     std::vector<VkFence> ImagesInFlight;
     size_t CurrentFrame = 0;
-    uint32_t ImageIndex;
+    uint32_t ImageIndex = 0;
 
     VkDebugUtilsMessengerCreateInfoEXT DebugCreateInfo = {};
 

@@ -141,7 +141,7 @@ FSwapchain::~FSwapchain()
     vkDestroySwapchainKHR(LogicalDevice, Swapchain, nullptr);
 }
 
-uint32_t FSwapchain::Size()
+size_t FSwapchain::Size()
 {
     return Images.size();
 }
@@ -176,12 +176,9 @@ VkSwapchainKHR FSwapchain::GetSwapchain()
     return Swapchain;
 }
 
-VkImage FSwapchain::GetNextImage()
+VkResult FSwapchain::GetNextImage(VkImage& Image, VkSemaphore &Semaphore, uint32_t& ImageIndex)
 {
-    uint32_t ImageIndex = 0;
-    if (vkAcquireNextImageKHR(LogicalDevice, Swapchain, UINT64_MAX, ImageAvailableSemaphores[CurrentImage], VK_NULL_HANDLE, &ImageIndex) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to acquire next image from swapchain!");
-    }
-    return Images[ImageIndex];
+    VkResult Result = vkAcquireNextImageKHR(LogicalDevice, Swapchain, UINT64_MAX, Semaphore, VK_NULL_HANDLE, &ImageIndex);
+    Image = Images[ImageIndex];
+    return Result;
 }
