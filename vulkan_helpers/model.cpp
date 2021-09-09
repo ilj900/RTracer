@@ -172,7 +172,7 @@ FModel FModel::CreateTetrahedron(VkDevice LogicalDevice, std::shared_ptr<FResour
     Tetrahedron.Vertices[0] = FVertex(0.f, 0.f, 1.f, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
     Tetrahedron.Vertices[1] = FVertex(-C, D, -A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
     Tetrahedron.Vertices[2] = FVertex(-C, -D, -A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Tetrahedron.Vertices[3] = FVertex(B, 0.f, A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
+    Tetrahedron.Vertices[3] = FVertex(B, 0.f, -A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
 
     Tetrahedron.Indices = {0, 1, 2, 0, 2, 3, 0, 3, 1, 3, 2, 1};
     Tetrahedron.LoadDataIntoGPU(LogicalDevice, ResourceAllocator);
