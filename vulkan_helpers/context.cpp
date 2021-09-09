@@ -48,9 +48,9 @@ void FContext::Init()
         CreateTextureImageView();
         CreateTextureSampler();
 
-        //Models.push_back(FModel(ModelPath, LogicalDevice, ResourceAllocator));
+        Models.push_back(FModel(ModelPath, LogicalDevice, ResourceAllocator));
         //Models.push_back(FModel::CreateTetrahedron(LogicalDevice, ResourceAllocator));
-        Models.push_back(FModel::CreateHexahedron(LogicalDevice, ResourceAllocator));
+        //Models.push_back(FModel::CreateHexahedron(LogicalDevice, ResourceAllocator));
         CreateUniformBuffers();
         CreateDescriptorPool();
         CreateDescriptorSet();

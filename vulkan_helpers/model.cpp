@@ -7,24 +7,29 @@
 
 size_t std::hash<FVertex>::operator()(FVertex const& Vertex) const
 {
-    return ((std::hash<FVector3>{}(Vertex.Pos) ^
-             (std::hash<FVector3>{}(Vertex.Color) << 1)) >> 1) ^
-           (std::hash<FVector2>{}(Vertex.TexCoord) << 1);
+    /// I'm not sure this is a good hash function
+    return ((((std::hash<FVector3>{}(Vertex.Position) ^
+    (std::hash<FVector3>{}(Vertex.Color) << 1)) >> 1) ^
+    (std::hash<FVector3>{}(Vertex.Normal) << 1)) >> 1) ^
+    (std::hash<FVector2>{}(Vertex.TexCoord) << 1);
 }
 
 FVertex::FVertex(float PosX, float PosY, float PosZ, float ColR, float ColG, float ColB, float TexU, float TexV):
-    Pos(PosX, PosY, PosZ), Color(ColR, ColG, ColB), TexCoord(TexU, TexV)
+Position(PosX, PosY, PosZ), Color(ColR, ColG, ColB), TexCoord(TexU, TexV)
 {
 }
 
 FVertex& FVertex::operator=(const FVertex& Other)
 {
-    Pos.X = Other.Pos.X;
-    Pos.Y = Other.Pos.Y;
-    Pos.Z = Other.Pos.Z;
+    Position.X = Other.Position.X;
+    Position.Y = Other.Position.Y;
+    Position.Z = Other.Position.Z;
     Color.X = Other.Color.X;
     Color.Y = Other.Color.Y;
     Color.Z = Other.Color.Z;
+    Normal.X = Other.Normal.X;
+    Normal.Y = Other.Normal.Y;
+    Normal.Z = Other.Normal.Z;
     TexCoord.X = Other.TexCoord.X;
     TexCoord.Y = Other.TexCoord.Y;
     return *this;
@@ -40,30 +45,35 @@ VkVertexInputBindingDescription FVertex::GetBindingDescription()
     return BindingDescription;
 }
 
-std::array<VkVertexInputAttributeDescription, 3> FVertex::GetAttributeDescriptions()
+std::array<VkVertexInputAttributeDescription, 4> FVertex::GetAttributeDescriptions()
 {
-    std::array<VkVertexInputAttributeDescription, 3> AttributeDescription{};
+    std::array<VkVertexInputAttributeDescription, 4> AttributeDescription{};
     AttributeDescription[0].binding = 0;
     AttributeDescription[0].location = 0;
     AttributeDescription[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    AttributeDescription[0].offset = offsetof(FVertex, Pos);
+    AttributeDescription[0].offset = offsetof(FVertex, Position);
 
     AttributeDescription[1].binding = 0;
     AttributeDescription[1].location = 1;
     AttributeDescription[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    AttributeDescription[1].offset = offsetof(FVertex, Color);
+    AttributeDescription[1].offset = offsetof(FVertex, Normal);
 
     AttributeDescription[2].binding = 0;
     AttributeDescription[2].location = 2;
-    AttributeDescription[2].format = VK_FORMAT_R32G32_SFLOAT;
-    AttributeDescription[2].offset = offsetof(FVertex, TexCoord);
+    AttributeDescription[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+    AttributeDescription[2].offset = offsetof(FVertex, Color);
+
+    AttributeDescription[3].binding = 0;
+    AttributeDescription[3].location = 3;
+    AttributeDescription[3].format = VK_FORMAT_R32G32_SFLOAT;
+    AttributeDescription[3].offset = offsetof(FVertex, TexCoord);
 
     return AttributeDescription;
 }
 
 bool FVertex::operator==(const FVertex& Other) const
 {
-    return Pos == Other.Pos && Color == Other.Color && TexCoord == Other.TexCoord;
+    return Position == Other.Position && Color == Other.Color && TexCoord == Other.TexCoord;
 }
 
 FModel::FModel(const std::string &Path, VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator)
@@ -88,10 +98,15 @@ FModel::FModel(const std::string &Path, VkDevice LogicalDevice, std::shared_ptr<
         {
             FVertex Vert{};
 
-            Vert.Pos = {
+            Vert.Position = {
                     Attrib.vertices[3 * Index.vertex_index + 0],
                     Attrib.vertices[3 * Index.vertex_index + 1],
                     Attrib.vertices[3 * Index.vertex_index + 2]
+            };
+
+            Vert.Normal = {Attrib.normals[3 * Index.normal_index + 0],
+                           Attrib.normals[3 * Index.normal_index + 1],
+                           Attrib.normals[3 * Index.normal_index + 2]
             };
 
             Vert.TexCoord = {
