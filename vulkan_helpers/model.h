@@ -40,6 +40,7 @@ public:
     void Bind(VkCommandBuffer CommandBuffer);
 
     static FModel CreateTetrahedron(VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator);
+    static FModel CreateHexahedron(VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator);
 
     std::vector<FVertex> Vertices;
     std::vector<uint32_t> Indices;

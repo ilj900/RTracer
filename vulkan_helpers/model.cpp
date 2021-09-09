@@ -175,7 +175,34 @@ FModel FModel::CreateTetrahedron(VkDevice LogicalDevice, std::shared_ptr<FResour
     Tetrahedron.Vertices[3] = FVertex(B, 0.f, -A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
 
     Tetrahedron.Indices = {0, 1, 2, 0, 2, 3, 0, 3, 1, 3, 2, 1};
-    Tetrahedron.LoadDataIntoGPU(LogicalDevice, ResourceAllocator);
+    Tetrahedron.LoadDataIntoGPU(LogicalDevice, std::move(ResourceAllocator));
 
     return Tetrahedron;
+}
+
+FModel FModel::CreateHexahedron(VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator)
+{
+    float A = 1.f / 3.f;
+
+    FModel Hexahedron;
+    Hexahedron.Vertices.resize(8);
+    Hexahedron.Vertices[0] = FVertex(-A, -A, -A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
+    Hexahedron.Vertices[1] = FVertex( A, -A, -A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
+    Hexahedron.Vertices[2] = FVertex( A,  A, -A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
+    Hexahedron.Vertices[3] = FVertex(-A,  A, -A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
+    Hexahedron.Vertices[4] = FVertex(-A, -A,  A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
+    Hexahedron.Vertices[5] = FVertex( A, -A,  A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
+    Hexahedron.Vertices[6] = FVertex( A,  A,  A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
+    Hexahedron.Vertices[7] = FVertex(-A,  A,  A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
+
+    Hexahedron.Indices = {3, 2, 1, 3, 1, 0,
+                          2, 6, 5, 2, 5, 1,
+                          5, 6, 7, 5, 7, 4,
+                          0, 4, 7, 0, 7, 3,
+                          3, 7, 6, 3, 6, 2,
+                          1, 5, 4, 1, 4, 0};
+
+    Hexahedron.LoadDataIntoGPU(LogicalDevice, std::move(ResourceAllocator));
+    return Hexahedron;
+
 }
