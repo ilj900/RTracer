@@ -12,6 +12,24 @@ size_t std::hash<FVertex>::operator()(FVertex const& Vertex) const
            (std::hash<FVector2>{}(Vertex.TexCoord) << 1);
 }
 
+FVertex::FVertex(float PosX, float PosY, float PosZ, float ColR, float ColG, float ColB, float TexU, float TexV):
+    Pos(PosX, PosY, PosZ), Color(ColR, ColG, ColB), TexCoord(TexU, TexV)
+{
+}
+
+FVertex& FVertex::operator=(const FVertex& Other)
+{
+    Pos.X = Other.Pos.X;
+    Pos.Y = Other.Pos.Y;
+    Pos.Z = Other.Pos.Z;
+    Color.X = Other.Color.X;
+    Color.Y = Other.Color.Y;
+    Color.Z = Other.Color.Z;
+    TexCoord.X = Other.TexCoord.X;
+    TexCoord.Y = Other.TexCoord.Y;
+    return *this;
+}
+
 VkVertexInputBindingDescription FVertex::GetBindingDescription()
 {
     VkVertexInputBindingDescription BindingDescription{};
@@ -93,6 +111,10 @@ FModel::FModel(const std::string &Path, VkDevice LogicalDevice, std::shared_ptr<
         }
     }
 
+    LoadDataIntoGPU(LogicalDevice, ResourceAllocator);
+}
+void FModel::LoadDataIntoGPU(VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator)
+{
     /// Create vertex buffer
     VkDeviceSize VertexBufferSize = sizeof(Vertices[0]) * Vertices.size();
 
@@ -123,9 +145,10 @@ FModel::FModel(const std::string &Path, VkDevice LogicalDevice, std::shared_ptr<
     ResourceAllocator->DestroyBuffer(StagingBuffer);
 }
 
+
 void FModel::Draw(VkCommandBuffer CommandBuffer)
 {
-    vkCmdDrawIndexed(CommandBuffer, Indices.size(), 1, 0, 0, 0);
+    vkCmdDrawIndexed(CommandBuffer, static_cast<uint32_t>(Indices.size()), 1, 0, 0, 0);
 }
 
 void FModel::Bind(VkCommandBuffer CommandBuffer)
@@ -134,4 +157,25 @@ void FModel::Bind(VkCommandBuffer CommandBuffer)
     VkDeviceSize Offsets[] = {0};
     vkCmdBindVertexBuffers(CommandBuffer, 0, 1, Buffers, Offsets);
     vkCmdBindIndexBuffer(CommandBuffer, IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+}
+
+FModel FModel::CreateTetrahedron(VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator)
+{
+    float A = 1.f / 3.f;
+    float B = std::sqrt(8.f / 9.f);
+    float C = std::sqrt(2.f / 9.f);
+    float D = std::sqrt(2.f / 3.f);
+
+    FModel Tetrahedron;
+
+    Tetrahedron.Vertices.resize(4);
+    Tetrahedron.Vertices[0] = FVertex(0.f, 0.f, 1.f, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
+    Tetrahedron.Vertices[1] = FVertex(-C, D, -A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
+    Tetrahedron.Vertices[2] = FVertex(-C, -D, -A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
+    Tetrahedron.Vertices[3] = FVertex(B, 0.f, A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
+
+    Tetrahedron.Indices = {0, 1, 2, 0, 2, 3, 0, 3, 1, 3, 2, 1};
+    Tetrahedron.LoadDataIntoGPU(LogicalDevice, ResourceAllocator);
+
+    return Tetrahedron;
 }

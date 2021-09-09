@@ -48,7 +48,8 @@ void FContext::Init()
         CreateTextureImageView();
         CreateTextureSampler();
 
-        Models.push_back(FModel(ModelPath, LogicalDevice, ResourceAllocator));
+        //Models.push_back(FModel(ModelPath, LogicalDevice, ResourceAllocator));
+        Models.push_back(FModel::CreateTetrahedron(LogicalDevice, ResourceAllocator));
         CreateUniformBuffers();
         CreateDescriptorPool();
         CreateDescriptorSet();
@@ -1117,17 +1118,6 @@ void FContext::CreateTextureSampler()
     {
         throw std::runtime_error("Failed to create texture sampler!");
     }
-}
-
-void FContext::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size)
-{
-    VkCommandBuffer CommandBuffer = BeginSingleTimeCommands();
-
-    VkBufferCopy CopyRegion{};
-    CopyRegion.size = Size;
-    vkCmdCopyBuffer(CommandBuffer, SrcBuffer.Buffer, DstBuffer.Buffer, 1, &CopyRegion);
-
-    EndSingleTimeCommand(CommandBuffer);
 }
 
 void FContext::CreateUniformBuffers()

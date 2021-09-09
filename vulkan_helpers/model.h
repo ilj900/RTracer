@@ -10,14 +10,17 @@
 #include <memory>
 
 struct FVertex {
+    FVertex() = default;
+    FVertex(float PosX, float PosY, float PosZ, float ColR, float ColG, float ColB, float TexU, float TexV);
     static VkVertexInputBindingDescription GetBindingDescription();
     static std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescriptions();
 
     bool operator==(const FVertex& Other) const;
+    FVertex& operator=(const FVertex& Other);
 
-    FVector3 Pos;
-    FVector3 Color;
-    FVector2 TexCoord;
+    FVector3 Pos = {0.f, 0.f, 0.f};
+    FVector3 Color = {0.f, 0.f, 0.f};
+    FVector2 TexCoord = {0.f, 0.f};
 
 };
 
@@ -30,10 +33,13 @@ struct std::hash<FVertex>
 class FModel
 {
 public:
+    FModel() = default;
     FModel(const std::string &Path, VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator);
 
     void Draw(VkCommandBuffer CommandBuffer);
     void Bind(VkCommandBuffer CommandBuffer);
+
+    static FModel CreateTetrahedron(VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator);
 
     std::vector<FVertex> Vertices;
     std::vector<uint32_t> Indices;
@@ -41,4 +47,6 @@ public:
     FBuffer VertexBuffer;
     FBuffer IndexBuffer;
     FBuffer StagingBuffer;
+private:
+    void LoadDataIntoGPU(VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator);
 };
