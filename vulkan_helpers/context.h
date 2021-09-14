@@ -9,6 +9,7 @@
 #include "maths.h"
 #include "model.h"
 #include "swapchain.h"
+#include "controller.h"
 
 #include <vector>
 #include <string>
@@ -25,7 +26,7 @@ struct UniformBufferObject
 class FContext
 {
 public:
-    FContext(GLFWwindow* Window);
+    FContext(GLFWwindow* Window, FController* Controller);
     ~FContext();
 
     void Init();
@@ -78,6 +79,7 @@ public:
 
 public:
     GLFWwindow* Window = nullptr;
+    FController* Controller = nullptr;
 
     std::shared_ptr<FResourceAllocator> ResourceAllocator = nullptr;
     std::shared_ptr<FVulkanFunctionLoader> FunctionLoader = nullptr;

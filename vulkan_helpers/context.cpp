@@ -22,8 +22,9 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     return VK_FALSE;
 }
 
-FContext::FContext(GLFWwindow *Window) :
-    Window(Window)
+FContext::FContext(GLFWwindow* Window, FController* Controller) :
+    Window(Window),
+    Controller(Controller)
 {
     FunctionLoader = std::make_shared<FVulkanFunctionLoader>();
 }
@@ -1435,15 +1436,10 @@ void FContext::CleanUpSwapChain()
 
 void FContext::UpdateUniformBuffer(uint32_t CurrentImage)
 {
-    static auto StartTime = std::chrono::high_resolution_clock::now();
-
-    auto CurrentTime = std::chrono::high_resolution_clock::now();
-    float Time = std::chrono::duration<float, std::chrono::seconds::period>(CurrentTime - StartTime).count();
-
     UniformBufferObject UBO{};
-    UBO.Model = Rotate(Time * 1.f, FVector3(0.f, 0.f, 1.f));
-    UBO.View = LookAt(FVector3(2.f, 2.f, 2.f), FVector3(0.f, 0.f, 0.f), FVector3(0.f, 0.f, 1.f));
-    UBO.Projection = GetPerspective(0.785398f, Swapchain->GetWidth() / (float) Swapchain->GetHeight(), 0.1f, 10.f);
+    UBO.Model = FMatrix4();
+    UBO.View = Controller->Camera.GetViewMatrix();
+    UBO.Projection = Controller->Camera.GetProjectionMatrix();
 
     void* Data;
     vkMapMemory(LogicalDevice, UniformBuffers[CurrentImage].Memory, 0, sizeof(UBO), 0, &Data);
