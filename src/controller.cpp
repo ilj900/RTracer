@@ -1,4 +1,6 @@
 #include "controller.h"
+#include "components/camera_component.h"
+#include "systems/camera_system.h"
 
 FController::FController(GLFWwindow* Window):
 Window(Window)
@@ -7,6 +9,10 @@ Window(Window)
     glfwSetKeyCallback(Window, ProcessKeyInput);
     glfwSetCursorPosCallback(Window, ProcessMouseInput);
     glfwSetMouseButtonCallback(Window, ProcessMouseButtonInput);
+
+    auto& Coordinator = ECS::GetCoordinator();
+    Camera = Coordinator.CreateEntity();
+    Coordinator.AddComponent<ECS::COMPONENTS::FCameraComponent>(Camera, {});
 }
 
 void ProcessMouseButtonInput(GLFWwindow* Window, int Button, int Action, int Mods)
@@ -85,37 +91,38 @@ void FController::Update(float Time)
 {
     static float Speed = 0.4f;
     Time *= Speed;
+    auto CameraSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FCameraSystem>();
     if (KeyMap[GLFW_KEY_W])
     {
-        Camera.WS(Time);
+        CameraSystem->MoveCameraForward(Camera, Time);
     }
     if (KeyMap[GLFW_KEY_S])
     {
-        Camera.WS(-Time);
+        CameraSystem->MoveCameraForward(Camera, -Time);
     }
     if (KeyMap[GLFW_KEY_A])
     {
-        Camera.AD(-Time);
+        CameraSystem->MoveCameraRight(Camera, -Time);
     }
     if (KeyMap[GLFW_KEY_D])
     {
-        Camera.AD(Time);
+        CameraSystem->MoveCameraRight(Camera, Time);
     }
     if (KeyMap[GLFW_KEY_Z])
     {
-        Camera.ZC(Time);
+        CameraSystem->MoveCameraUpward(Camera, Time);
     }
     if (KeyMap[GLFW_KEY_C])
     {
-        Camera.ZC(-Time);
+        CameraSystem->MoveCameraUpward(Camera, -Time);
     }
     if (KeyMap[GLFW_KEY_Q])
     {
-        Camera.QE(-Time);
+        CameraSystem->Roll(Camera, -Time);
     }
     if (KeyMap[GLFW_KEY_E])
     {
-        Camera.QE(Time);
+        CameraSystem->Roll(Camera, Time);
     }
     if (KeyMap[GLFW_MOUSE_BUTTON_LEFT])
     {
@@ -123,8 +130,8 @@ void FController::Update(float Time)
         double YDelta = YCurrent - YPrevious;
         XPrevious = XCurrent;
         YPrevious = YCurrent;
-        static double Sensetivity = 0.001;
-        Camera.MLMR(-XDelta * Sensetivity);
-        Camera.MUMD(-YDelta * Sensetivity);
+        static double Sensitivity = 0.001;
+        CameraSystem->LookRight(Camera, -XDelta * Sensitivity);
+        CameraSystem->LookUp(Camera, -YDelta * Sensitivity);
     }
 }

@@ -1,7 +1,9 @@
 #pragma once
 
+#include "entities/entity.h"
+#include "systems/system.h"
+
 #include <array>
-#include <bitset>
 #include <cassert>
 #include <memory>
 #include <queue>
@@ -10,14 +12,6 @@
 
 namespace ECS
 {
-    using FEntity = std::uint16_t;
-    using FComponentType = std::uint8_t;
-
-    const std::uint32_t MAX_ENTITIES = 65535;
-    const std::uint8_t MAX_COMPONENTS = 64;
-
-    using FSignature = std::bitset<MAX_COMPONENTS>;
-
     class FEntityManager
     {
     public:
@@ -93,7 +87,7 @@ namespace ECS
 
         void RemoveData(FEntity Entity)
         {
-            assert(EntityToIndexMap.find(entity) != EntityToIndexMap.end() && "removing non-existing component!");
+            assert(EntityToIndexMap.find(Entity) != EntityToIndexMap.end() && "removing non-existing component!");
 
             size_t IndexOfRemovedEntity = EntityToIndexMap[Entity];
             size_t IndexOfLastElement = Size - 1;
@@ -141,7 +135,7 @@ namespace ECS
             assert(ComponentTypes.find(TypeName) == ComponentTypes.end() && "Registering component types more that once!");
 
             ComponentTypes.insert({TypeName, NextComponentType});
-            ComponentArrays.insert({TypeName, std::make_shared<TComponentArray<T>>});
+            ComponentArrays.insert({TypeName, std::make_shared<TComponentArray<T>>()});
 
             ++NextComponentType;
         }
@@ -199,12 +193,6 @@ namespace ECS
         }
     };
 
-    class FSystem
-    {
-    public:
-        std::set<FEntity> Entities;
-    };
-
     class FSystemManager
     {
     public:
@@ -216,8 +204,17 @@ namespace ECS
             assert(Systems.find(TypeName) == Systems.end() && "Registering system more than once!");
 
             auto System = std::make_shared<T>();
-            Systems.template insert({TypeName, System});
+            Systems.insert({TypeName, System});
             return System;
+        }
+
+        template<typename T>
+        std::shared_ptr<T> GetSystem()
+        {
+            const char* TypeName = typeid(T).name();
+            assert(Systems.find(TypeName) != Systems.end() && "System not registered!");
+
+            return std::static_pointer_cast<T>(Systems.find(TypeName)->second);
         }
 
         template<typename T>
@@ -262,9 +259,14 @@ namespace ECS
         std::unordered_map<const char*, std::shared_ptr<FSystem>> Systems{};
     };
 
-    class Coordinator
+    class FCoordinator
     {
     public:
+
+        FCoordinator() = default;
+        FCoordinator operator=(const FCoordinator* Other) = delete;
+        FCoordinator(const FCoordinator& Other) = delete;
+
         void Init()
         {
             ComponentManager = std::make_unique<FComponentManager>();
@@ -337,9 +339,17 @@ namespace ECS
             SystemManager->template SetSignature<T>(Signature);
         }
 
+        template<typename T>
+        std::shared_ptr<T> GetSystem()
+        {
+            return SystemManager->template GetSystem<T>();
+        }
+
     private:
         std::unique_ptr<FComponentManager> ComponentManager;
         std::unique_ptr<FEntityManager> EntityManager;
         std::unique_ptr<FSystemManager> SystemManager;
     };
+
+    FCoordinator& GetCoordinator();
 }

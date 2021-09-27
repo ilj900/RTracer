@@ -2,7 +2,7 @@
 
 #include "GLFW/glfw3.h"
 
-#include "camera.h"
+#include "coordinator.h"
 
 #include <unordered_map>
 
@@ -36,7 +36,7 @@ public:
     double XCurrent = 0.;
     double YCurrent = 0.;
 
-    FCamera Camera;
+    ECS::FEntity Camera;
 };
 
 void ProcessKeyInput(GLFWwindow* Window, int Key, int Scancode, int Action, int Mods);

@@ -1,4 +1,5 @@
 #include "context.h"
+#include "systems/camera_system.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -1436,10 +1437,12 @@ void FContext::CleanUpSwapChain()
 
 void FContext::UpdateUniformBuffer(uint32_t CurrentImage)
 {
+    auto CameraSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FCameraSystem>();
+
     UniformBufferObject UBO{};
     UBO.Model = FMatrix4();
-    UBO.View = Controller->Camera.GetViewMatrix();
-    UBO.Projection = Controller->Camera.GetProjectionMatrix();
+    UBO.View = CameraSystem->GetViewMatrix(Controller->Camera);
+    UBO.Projection = CameraSystem->GetProjectionMatrix(Controller->Camera);
 
     void* Data;
     vkMapMemory(LogicalDevice, UniformBuffers[CurrentImage].Memory, 0, sizeof(UBO), 0, &Data);

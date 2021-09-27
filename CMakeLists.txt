@@ -8,17 +8,29 @@ find_package(Vulkan REQUIRED)
 
 add_subdirectory(glfw)
 
-include_directories(ECS
+include_directories(
         glfw/include
         vulkan_helpers
         ${Vulkan}/Include
         include
         math
-        src)
+        src
+        ECS
+        components
+        systems)
+
+set(ECS_SOURCE
+        ECS/entities/entity.h
+        ECS/systems/system.h
+        ECS/coordinator.h
+        ECS/coordinator.cpp
+        ECS/components/transform_component.h
+        ECS/components/camera_component.h
+        ECS/systems/camera_system.h
+        ECS/systems/camera_system.cpp)
 
 set(SOURCE
         src/main.cpp
-        src/camera.cpp
         src/controller.cpp
         vulkan_helpers/context.cpp
         vulkan_helpers/resource_allocation.cpp
@@ -28,8 +40,7 @@ set(SOURCE
         math/maths.cpp)
 
 set(INCLUDE
-        ECS/entity.h
-        src/camera.h
+        ${ECS_SOURCE}
         src/controller.h
         vulkan_helpers/context.h
         vulkan_helpers/resource_allocation.h
