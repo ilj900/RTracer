@@ -1,3 +1,3 @@
 glslc.exe triangle.vert -o triangle_vert.spv
 glslc.exe triangle.frag -o triangle_frag.spv
-Start-Sleep -s 10
+Start-Sleep -s 1

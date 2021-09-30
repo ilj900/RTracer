@@ -1448,6 +1448,21 @@ void FContext::UpdateUniformBuffer(uint32_t CurrentImage)
     vkMapMemory(LogicalDevice, UniformBuffers[CurrentImage].Memory, 0, sizeof(UBO), 0, &Data);
     memcpy(Data, &UBO, sizeof(UBO));
     vkUnmapMemory(LogicalDevice, UniformBuffers[CurrentImage].Memory);
+
+    LoadDataIntoBuffer(UniformBuffers[CurrentImage], &UBO, sizeof(UBO));
+}
+
+void FContext::LoadDataIntoBuffer(FBuffer &Buffer, void* DataToLoad, uint32_t Size)
+{
+    if (Size > Buffer.Size)
+    {
+        throw std::runtime_error("Loading data into buffer with data size greater that buffer size!");
+    }
+    void* Data;
+    vkMapMemory(LogicalDevice, Buffer.Memory, 0, Size, 0, &Data);
+    memcpy(Data, DataToLoad, Size);
+    vkUnmapMemory(LogicalDevice, Buffer.Memory);
+
 }
 
 void FContext::DestroyDebugUtilsMessengerEXT()

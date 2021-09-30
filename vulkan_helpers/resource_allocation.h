@@ -10,6 +10,7 @@ struct FBuffer
 {
     VkBuffer Buffer = VK_NULL_HANDLE;
     VkDeviceMemory Memory = VK_NULL_HANDLE;
+    uint32_t Size = 0;
 };
 
 class FResourceAllocator

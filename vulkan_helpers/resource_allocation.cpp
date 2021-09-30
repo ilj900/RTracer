@@ -13,6 +13,10 @@ FResourceAllocator::FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice
 FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties)
 {
     FBuffer Buffer;
+
+    Buffer.Size = Size;
+
+    /// Create buffer
     VkBufferCreateInfo BufferInfo{};
     BufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     BufferInfo.size = Size;
@@ -24,6 +28,7 @@ FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags U
         throw std::runtime_error("Failed to create buffer!");
     }
 
+    /// Allocate Device Memory
     VkMemoryRequirements MemRequirements;
     vkGetBufferMemoryRequirements(Device, Buffer.Buffer, &MemRequirements);
 
@@ -37,6 +42,7 @@ FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags U
         throw std::runtime_error("Failed to allocate buffer memory!");
     }
 
+    /// Bind Buffer Memory
     vkBindBufferMemory(Device, Buffer.Buffer, Buffer.Memory, 0);
 
     return Buffer;

@@ -72,7 +72,7 @@ public:
     bool HasStensilComponent(VkFormat Format);
     void CopyBufferToImage(FBuffer &Buffer, VkImage Image, uint32_t Width, uint32_t Height);
     void GenerateMipmaps(VkImage Image, VkFormat ImageFormat, int32_t TexWidth, int32_t TexHeight, uint32_t mipLevels);
-    void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size);
+    void LoadDataIntoBuffer(FBuffer &Buffer, void* Data, uint32_t Size);
 
     bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device);
     bool CheckDeviceQueueSupport(VkPhysicalDevice Device);
