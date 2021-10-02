@@ -573,21 +573,28 @@ VkFormat FContext::FindSupportedFormat(const std::vector<VkFormat>& Candidates, 
 
 void FContext::CreateDescriptorSetLayout()
 {
-    VkDescriptorSetLayoutBinding UboLayoutBinding{};
-    UboLayoutBinding.binding = 0;
-    UboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    UboLayoutBinding.descriptorCount = 1;
-    UboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    UboLayoutBinding.pImmutableSamplers = nullptr;
+    VkDescriptorSetLayoutBinding ModelLayoutBinding{};
+    ModelLayoutBinding.binding = 0;
+    ModelLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    ModelLayoutBinding.descriptorCount = 1;
+    ModelLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    ModelLayoutBinding.pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutBinding CameraLayoutBinding{};
+    CameraLayoutBinding.binding = 1;
+    CameraLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    CameraLayoutBinding.descriptorCount = 1;
+    CameraLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    CameraLayoutBinding.pImmutableSamplers = nullptr;
 
     VkDescriptorSetLayoutBinding SamplerLayoutBinding{};
-    SamplerLayoutBinding.binding = 1;
+    SamplerLayoutBinding.binding = 2;
     SamplerLayoutBinding.descriptorCount = 1;
     SamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     SamplerLayoutBinding.pImmutableSamplers = nullptr;
     SamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-    std::array<VkDescriptorSetLayoutBinding, 2> Bindings {UboLayoutBinding, SamplerLayoutBinding};
+    std::array<VkDescriptorSetLayoutBinding, 3> Bindings {ModelLayoutBinding, CameraLayoutBinding, SamplerLayoutBinding};
     VkDescriptorSetLayoutCreateInfo LayoutInfo{};
     LayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     LayoutInfo.bindingCount = static_cast<uint32_t>(Bindings.size());
@@ -1125,23 +1132,28 @@ void FContext::CreateTextureSampler()
 
 void FContext::CreateUniformBuffers()
 {
-    VkDeviceSize BufferSize = sizeof(UniformBufferObject);
+    VkDeviceSize ModelBufferSize = sizeof(FModelBufferObject);
+    VkDeviceSize CameraBufferSize = sizeof(FCameraBufferObject);
 
-    UniformBuffers.resize(Swapchain->Size());
+    ModelBuffers.resize(Swapchain->Size());
+    CameraBuffers.resize(Swapchain->Size());
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
-        UniformBuffers[i] = ResourceAllocator->CreateBuffer(BufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        ModelBuffers[i] = ResourceAllocator->CreateBuffer(ModelBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        CameraBuffers[i] = ResourceAllocator->CreateBuffer(CameraBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     }
 }
 
 void FContext::CreateDescriptorPool()
 {
-    std::array<VkDescriptorPoolSize, 2> PoolSizes{};
+    std::array<VkDescriptorPoolSize, 3> PoolSizes{};
     PoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     PoolSizes[0].descriptorCount = static_cast<uint32_t>(Swapchain->Size());
-    PoolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    PoolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     PoolSizes[1].descriptorCount = static_cast<uint32_t>(Swapchain->Size());
+    PoolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    PoolSizes[2].descriptorCount = static_cast<uint32_t>(Swapchain->Size());
 
     VkDescriptorPoolCreateInfo PoolInfo{};
     PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1172,32 +1184,45 @@ void FContext::CreateDescriptorSet()
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
-        VkDescriptorBufferInfo BufferInfo{};
-        BufferInfo.buffer = UniformBuffers[i].Buffer;
-        BufferInfo.offset = 0;
-        BufferInfo.range = sizeof(UniformBufferObject);
+        VkDescriptorBufferInfo ModelBufferInfo{};
+        ModelBufferInfo.buffer = ModelBuffers[i].Buffer;
+        ModelBufferInfo.offset = 0;
+        ModelBufferInfo.range = sizeof(FCameraBufferObject);
+
+        VkDescriptorBufferInfo CameraBufferInfo{};
+        CameraBufferInfo.buffer = CameraBuffers[i].Buffer;
+        CameraBufferInfo.offset = 0;
+        CameraBufferInfo.range = sizeof(FCameraBufferObject);
 
         VkDescriptorImageInfo ImageInfo{};
         ImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         ImageInfo.imageView = TextureImageView;
         ImageInfo.sampler = TextureSampler;
 
-        std::array<VkWriteDescriptorSet, 2> DescriptorWrites{};
+        std::array<VkWriteDescriptorSet, 3> DescriptorWrites{};
         DescriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         DescriptorWrites[0].dstSet = DescriptorSets[i];
         DescriptorWrites[0].dstBinding = 0;
         DescriptorWrites[0].dstArrayElement = 0;
         DescriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         DescriptorWrites[0].descriptorCount = 1;
-        DescriptorWrites[0].pBufferInfo = &BufferInfo;
+        DescriptorWrites[0].pBufferInfo = &ModelBufferInfo;
 
         DescriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         DescriptorWrites[1].dstSet = DescriptorSets[i];
         DescriptorWrites[1].dstBinding = 1;
         DescriptorWrites[1].dstArrayElement = 0;
-        DescriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        DescriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         DescriptorWrites[1].descriptorCount = 1;
-        DescriptorWrites[1].pImageInfo = &ImageInfo;
+        DescriptorWrites[1].pBufferInfo = &CameraBufferInfo;
+
+        DescriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        DescriptorWrites[2].dstSet = DescriptorSets[i];
+        DescriptorWrites[2].dstBinding = 2;
+        DescriptorWrites[2].dstArrayElement = 0;
+        DescriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        DescriptorWrites[2].descriptorCount = 1;
+        DescriptorWrites[2].pImageInfo = &ImageInfo;
 
         vkUpdateDescriptorSets(LogicalDevice, static_cast<uint32_t>(DescriptorWrites.size()), DescriptorWrites.data(), 0, nullptr);
     }
@@ -1427,7 +1452,8 @@ void FContext::CleanUpSwapChain()
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
-        ResourceAllocator->DestroyBuffer(UniformBuffers[i]);
+        ResourceAllocator->DestroyBuffer(ModelBuffers[i]);
+        ResourceAllocator->DestroyBuffer(CameraBuffers[i]);
     }
 
     Swapchain = nullptr;
@@ -1439,17 +1465,14 @@ void FContext::UpdateUniformBuffer(uint32_t CurrentImage)
 {
     auto CameraSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FCameraSystem>();
 
-    UniformBufferObject UBO{};
-    UBO.Model = FMatrix4();
-    UBO.View = CameraSystem->GetViewMatrix(Controller->Camera);
-    UBO.Projection = CameraSystem->GetProjectionMatrix(Controller->Camera);
+    FModelBufferObject MBO{};
+    FCameraBufferObject CBO{};
+    MBO.TransformMatrix = FMatrix4();
+    CBO.ViewMatrix = CameraSystem->GetViewMatrix(Controller->Camera);
+    CBO.ProjectionMatrix = CameraSystem->GetProjectionMatrix(Controller->Camera);
 
-    void* Data;
-    vkMapMemory(LogicalDevice, UniformBuffers[CurrentImage].Memory, 0, sizeof(UBO), 0, &Data);
-    memcpy(Data, &UBO, sizeof(UBO));
-    vkUnmapMemory(LogicalDevice, UniformBuffers[CurrentImage].Memory);
-
-    LoadDataIntoBuffer(UniformBuffers[CurrentImage], &UBO, sizeof(UBO));
+    LoadDataIntoBuffer(ModelBuffers[CurrentImage], &MBO, sizeof(MBO));
+    LoadDataIntoBuffer(CameraBuffers[CurrentImage], &CBO, sizeof(CBO));
 }
 
 void FContext::LoadDataIntoBuffer(FBuffer &Buffer, void* DataToLoad, uint32_t Size)

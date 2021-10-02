@@ -8,7 +8,7 @@ layout(location = 1) in vec3 FragNormal;
 layout(location = 2) in vec3 FragColor;
 layout(location = 3) in vec2 FragTexCoord;
 
-layout(binding = 1) uniform sampler2D TexSampler;
+layout(binding = 2) uniform sampler2D TexSampler;
 
 vec3 LightPosition = vec3(20.f, 20.f, 0.f);
 

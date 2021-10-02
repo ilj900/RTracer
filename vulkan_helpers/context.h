@@ -16,11 +16,15 @@
 #include <array>
 #include <memory>
 
-struct UniformBufferObject
+struct FModelBufferObject
 {
-    alignas(16) FMatrix4 Model;
-    alignas(16) FMatrix4 View;
-    alignas(16) FMatrix4 Projection;
+    FMatrix4 TransformMatrix;
+    FMatrix4 DummyMatrix;
+};
+struct FCameraBufferObject
+{
+    FMatrix4 ViewMatrix;
+    FMatrix4 ProjectionMatrix;
 };
 
 class FContext
@@ -144,7 +148,8 @@ public:
 
     std::vector<VkCommandBuffer> CommandBuffers;
 
-    std::vector<FBuffer> UniformBuffers;
+    std::vector<FBuffer> ModelBuffers;
+    std::vector<FBuffer> CameraBuffers;
 
     std::vector<VkSemaphore> ImageAvailableSemaphores;
     std::vector<VkSemaphore> RenderFinishedSemaphores;
