@@ -1,5 +1,6 @@
 #include "controller.h"
 #include "components/camera_component.h"
+#include "components/device_camera_component.h"
 #include "systems/camera_system.h"
 
 FController::FController(GLFWwindow* Window):
@@ -13,6 +14,7 @@ Window(Window)
     auto& Coordinator = ECS::GetCoordinator();
     Camera = Coordinator.CreateEntity();
     Coordinator.AddComponent<ECS::COMPONENTS::FCameraComponent>(Camera, {});
+    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera, {});
 }
 
 void ProcessMouseButtonInput(GLFWwindow* Window, int Button, int Action, int Mods)
@@ -131,7 +133,8 @@ void FController::Update(float Time)
         XPrevious = XCurrent;
         YPrevious = YCurrent;
         static double Sensitivity = 0.001;
-        CameraSystem->LookRight(Camera, -XDelta * Sensitivity);
-        CameraSystem->LookUp(Camera, -YDelta * Sensitivity);
+        CameraSystem->LookRight(Camera, float(-XDelta * Sensitivity));
+        CameraSystem->LookUp(Camera, float(-YDelta * Sensitivity));
     }
+    CameraSystem->UpdateDeviceComponentData(Camera);
 }

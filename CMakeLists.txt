@@ -26,6 +26,7 @@ set(ECS_SOURCE
         ECS/coordinator.cpp
         ECS/components/transform_component.h
         ECS/components/camera_component.h
+        ECS/components/device_camera_component.h
         ECS/systems/camera_system.h
         ECS/systems/camera_system.cpp)
 

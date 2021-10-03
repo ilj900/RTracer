@@ -1,6 +1,5 @@
 #include "system.h"
 
-#include "components/camera_component.h"
 
 namespace ECS
 {
@@ -9,9 +8,12 @@ namespace ECS
         class FCameraSystem : public FSystem
         {
         private:
-            COMPONENTS::FCameraComponent& GetComponent(FEntity CameraEntity);
+            template<typename T>
+            T& GetComponent(FEntity CameraEntity);
 
         public:
+            void UpdateAllDeviceComponentsData();
+            void UpdateDeviceComponentData(FEntity CameraEntity);
             void MoveCameraForward(FEntity CameraEntity, float Value);
             void MoveCameraRight(FEntity CameraEntity, float Value);
             void MoveCameraUpward(FEntity CameraEntity, float Value);

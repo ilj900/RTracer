@@ -1,5 +1,6 @@
 #include "coordinator.h"
 #include "components/camera_component.h"
+#include "components/device_camera_component.h"
 #include "systems/camera_system.h"
 #include "GLFW/glfw3.h"
 #include "context.h"
@@ -16,6 +17,7 @@ void InitECS(ECS::FCoordinator& Coordinator)
     Coordinator.Init();
 
     Coordinator.RegisterComponent<ECS::COMPONENTS::FCameraComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FDeviceCameraComponent>();
     auto CameraSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FCameraSystem>();
 
     ECS::FSignature CameraSystemSignature;
@@ -32,8 +34,6 @@ int main()
 
     auto& Coordinator = ECS::GetCoordinator();
     InitECS(Coordinator);
-
-    ECS::FEntity MainCamera = Coordinator.CreateEntity();
 
     FController Controller(Window);
 

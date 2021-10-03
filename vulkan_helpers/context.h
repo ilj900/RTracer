@@ -21,11 +21,6 @@ struct FModelBufferObject
     FMatrix4 TransformMatrix;
     FMatrix4 DummyMatrix;
 };
-struct FCameraBufferObject
-{
-    FMatrix4 ViewMatrix;
-    FMatrix4 ProjectionMatrix;
-};
 
 class FContext
 {
@@ -76,7 +71,7 @@ public:
     bool HasStensilComponent(VkFormat Format);
     void CopyBufferToImage(FBuffer &Buffer, VkImage Image, uint32_t Width, uint32_t Height);
     void GenerateMipmaps(VkImage Image, VkFormat ImageFormat, int32_t TexWidth, int32_t TexHeight, uint32_t mipLevels);
-    void LoadDataIntoBuffer(FBuffer &Buffer, void* Data, uint32_t Size);
+    void LoadDataIntoBuffer(FBuffer &Buffer, void* Data, size_t Size);
 
     bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device);
     bool CheckDeviceQueueSupport(VkPhysicalDevice Device);

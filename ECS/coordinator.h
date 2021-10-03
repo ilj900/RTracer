@@ -78,11 +78,11 @@ namespace ECS
         {
             assert(EntityToIndexMap.find(Entity) == EntityToIndexMap.end() && "Entity already has that component!");
 
-            size_t NewIndex = Size;
+            size_t NewIndex = ArraySize;
             EntityToIndexMap[Entity] = NewIndex;
             IndexToEntityMap[NewIndex] = Entity;
             ComponentArray[NewIndex] = Component;
-            ++Size;
+            ++ArraySize;
         }
 
         void RemoveData(FEntity Entity)
@@ -90,7 +90,7 @@ namespace ECS
             assert(EntityToIndexMap.find(Entity) != EntityToIndexMap.end() && "removing non-existing component!");
 
             size_t IndexOfRemovedEntity = EntityToIndexMap[Entity];
-            size_t IndexOfLastElement = Size - 1;
+            size_t IndexOfLastElement = ArraySize - 1;
             ComponentArray[IndexOfRemovedEntity] = ComponentArray[IndexOfLastElement];
 
             FEntity EntityOfLastElement = IndexToEntityMap[IndexOfLastElement];
@@ -100,7 +100,7 @@ namespace ECS
             EntityToIndexMap.erase(Entity);
             IndexToEntityMap.erase(IndexOfLastElement);
 
-            --Size;
+            --ArraySize;
         }
 
         T& GetData(FEntity Entity)
@@ -108,6 +108,16 @@ namespace ECS
             assert(EntityToIndexMap.find(Entity) != EntityToIndexMap.end() && "Entity doesn't have such component!");
 
             return ComponentArray[EntityToIndexMap[Entity]];
+        }
+
+        T* Data()
+        {
+            return ComponentArray.data();
+        }
+
+        size_t Size()
+        {
+            return ArraySize * sizeof(T);
         }
 
         void EntityDestroyed(FEntity Entity) override
@@ -121,7 +131,7 @@ namespace ECS
         std::array<T, MAX_ENTITIES> ComponentArray;
         std::unordered_map<FEntity, size_t> EntityToIndexMap;
         std::unordered_map<size_t, FEntity> IndexToEntityMap;
-        size_t Size;
+        size_t ArraySize;
     };
 
     class FComponentManager
@@ -166,6 +176,18 @@ namespace ECS
         T& GetComponent(FEntity Entity)
         {
             return GetComponentArray<T>()->GetData(Entity);
+        }
+
+        template<typename T>
+        T* Data()
+        {
+            return GetComponentArray<T>()->Data();
+        }
+
+        template<typename T>
+        size_t Size()
+        {
+            return GetComponentArray<T>()->Size();
         }
 
         void EntityDestroyed(FEntity Entity)
@@ -343,6 +365,18 @@ namespace ECS
         std::shared_ptr<T> GetSystem()
         {
             return SystemManager->template GetSystem<T>();
+        }
+
+        template<typename T>
+        T* Data()
+        {
+            return ComponentManager->Data<T>();
+        }
+
+        template<typename T>
+        size_t Size()
+        {
+            return ComponentManager->Size<T>();
         }
 
     private:

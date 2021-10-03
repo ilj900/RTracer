@@ -93,7 +93,13 @@ struct FMatrix4
 {
     /// Constructors
     FMatrix4() : Data({FVector4{1.f, 0.f, 0.f, 0.f}, FVector4{0.f, 1.f, 0.f, 0.f}, FVector4{0.f, 0.f, 1.f, 0.f}, FVector4{0.f, 0.f, 0.f, 1.f}}){}
-
+    FMatrix4(float A00, float A01, float A02, float A03,
+             float A10, float A11, float A12, float A13,
+             float A20, float A21, float A22, float A23,
+             float A30, float A31, float A32, float A33) :
+             Data({FVector4{A00, A01, A02, A03}, FVector4{A10, A11, A12, A13}, FVector4{A20, A21, A22, A23}, FVector4{A30, A31, A32, A33}}) {};
+    FMatrix4(FVector4& Vec1, FVector4& Vec2, FVector4& Vec3, FVector4& Vec4) :
+             Data({Vec1, Vec2, Vec3, Vec4}) {};
     /// Data
     std::array<FVector4, 4> Data;
 };
