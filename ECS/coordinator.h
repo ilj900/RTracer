@@ -6,6 +6,7 @@
 
 namespace ECS
 {
+    /// Coordinator is NOT a singleton.
     class FCoordinator
     {
     public:
@@ -92,12 +93,15 @@ namespace ECS
             return SystemManager->template GetSystem<T>();
         }
 
+        /// Returns a pointer to the ComponentArray's data. Perhaps we should return const pointer.
+        /// TODO: Check whether const can be applied
         template<typename T>
         T* Data()
         {
             return ComponentManager->Data<T>();
         }
 
+        /// Returns a size of a ComponentArray's data
         template<typename T>
         size_t Size()
         {
@@ -110,5 +114,6 @@ namespace ECS
         std::unique_ptr<FSystemManager> SystemManager;
     };
 
+    /// Coordinator can be accessed from all around the code
     FCoordinator& GetCoordinator();
 }

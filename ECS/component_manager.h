@@ -51,12 +51,16 @@ namespace ECS
             return GetComponentArray<T>()->GetData(Entity);
         }
 
+        /// It's here just to call ComponentArray's method and being called by Coordinator method.
+        /// Making all private fields public could solve this problem. If it's a problem
         template<typename T>
         T* Data()
         {
             return GetComponentArray<T>()->Data();
         }
 
+        /// It's here just to call ComponentArray's method and being called by Coordinator method.
+        /// Making all private fields public could solve this problem. If it's a problem
         template<typename T>
         size_t Size()
         {

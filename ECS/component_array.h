@@ -44,16 +44,19 @@ namespace ECS {
             --ArraySize;
         }
 
-        T &GetData(FEntity Entity) {
+        /// Get data of a single entity
+        T& GetData(FEntity Entity) {
             assert(EntityToIndexMap.find(Entity) != EntityToIndexMap.end() && "Entity doesn't have such component!");
 
             return ComponentArray[EntityToIndexMap[Entity]];
         }
 
-        T *Data() {
+        /// Get all data from the component array (Needed when we upload this data to GPU)
+        T* Data() {
             return ComponentArray.data();
         }
 
+        /// Get the total size of component's array
         size_t Size() {
             return ArraySize * sizeof(T);
         }
