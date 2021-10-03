@@ -1,6 +1,7 @@
 #pragma once
 
 #include "entities/entity.h"
+#include "entity_manager.h"
 #include "systems/system.h"
 
 #include <array>
@@ -12,57 +13,6 @@
 
 namespace ECS
 {
-    class FEntityManager
-    {
-    public:
-        FEntityManager()
-        {
-            for (FEntity Entity = 0; Entity < MAX_ENTITIES; ++Entity)
-            {
-                AvailableEntities.push(Entity);
-            }
-        }
-
-        FEntity CreateEntity()
-        {
-            assert(LivingEntitiesCount < MAX_ENTITIES && "To many entities, can't create more!");
-
-            FEntity ID = AvailableEntities.front();
-            AvailableEntities.pop();
-            ++LivingEntitiesCount;
-
-            return ID;
-        }
-
-        void DestroyEntity(FEntity Entity)
-        {
-            assert(Entity < MAX_ENTITIES && "Entity out of range!");
-
-            Signatures[Entity].reset();
-            AvailableEntities.push(Entity);
-            --LivingEntitiesCount;
-        }
-
-        void SetSignature(FEntity Entity, FSignature Signature)
-        {
-            assert(Entity < MAX_ENTITIES && "Entity out of range!");
-
-            Signatures[Entity] = Signature;
-        }
-
-        FSignature GetSignature(FEntity Entity)
-        {
-            assert(Entity < MAX_ENTITIES && "Entity out of range!");
-
-            return Signatures[Entity];
-        }
-
-    private:
-        std::queue<FEntity> AvailableEntities{};
-        std::array<FSignature, MAX_ENTITIES> Signatures{};
-        uint32_t LivingEntitiesCount{};
-    };
-
     class IComponentArray
     {
     public:

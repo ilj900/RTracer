@@ -20,13 +20,15 @@ include_directories(
         systems)
 
 set(ECS_SOURCE
-        ECS/entities/entity.h
-        ECS/systems/system.h
         ECS/coordinator.h
         ECS/coordinator.cpp
+        ECS/entity_manager.h
+        ECS/entity_manager.cpp
+        ECS/entities/entity.h
         ECS/components/transform_component.h
         ECS/components/camera_component.h
         ECS/components/device_camera_component.h
+        ECS/systems/system.h
         ECS/systems/camera_system.h
         ECS/systems/camera_system.cpp)
 
