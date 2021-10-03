@@ -24,6 +24,9 @@ set(ECS_SOURCE
         ECS/coordinator.cpp
         ECS/entity_manager.h
         ECS/entity_manager.cpp
+        ECS/component_array.h
+        ECS/component_manager.h
+        ECS/system_manager.h
         ECS/entities/entity.h
         ECS/components/transform_component.h
         ECS/components/camera_component.h
