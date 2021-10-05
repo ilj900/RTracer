@@ -1,6 +1,7 @@
 #include "context.h"
 #include "systems/camera_system.h"
 #include "components/device_camera_component.h"
+#include "components/device_transform_component.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -1134,7 +1135,7 @@ void FContext::CreateTextureSampler()
 void FContext::CreateUniformBuffers()
 {
     auto& Coordinator = ECS::GetCoordinator();
-    VkDeviceSize ModelBufferSize = sizeof(FModelBufferObject);
+    VkDeviceSize TransformBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>();
     VkDeviceSize CameraBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>();
 
     ModelBuffers.resize(Swapchain->Size());
@@ -1142,7 +1143,7 @@ void FContext::CreateUniformBuffers()
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
-        ModelBuffers[i] = ResourceAllocator->CreateBuffer(ModelBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        ModelBuffers[i] = ResourceAllocator->CreateBuffer(TransformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         CameraBuffers[i] = ResourceAllocator->CreateBuffer(CameraBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     }
 }
@@ -1189,7 +1190,7 @@ void FContext::CreateDescriptorSet()
         VkDescriptorBufferInfo ModelBufferInfo{};
         ModelBufferInfo.buffer = ModelBuffers[i].Buffer;
         ModelBufferInfo.offset = 0;
-        ModelBufferInfo.range = sizeof(FModelBufferObject);
+        ModelBufferInfo.range = ECS::GetCoordinator().Size<ECS::COMPONENTS::FDeviceTransformComponent>();
 
         VkDescriptorBufferInfo CameraBufferInfo{};
         CameraBufferInfo.buffer = CameraBuffers[i].Buffer;
@@ -1468,13 +1469,13 @@ void FContext::UpdateUniformBuffer(uint32_t CurrentImage)
     auto& Coordinator = ECS::GetCoordinator();
     auto CameraSystem = Coordinator.GetSystem<ECS::SYSTEMS::FCameraSystem>();
 
-    FModelBufferObject MBO{};
-    MBO.TransformMatrix = FMatrix4();
+    auto DeviceTransformComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceTransformComponent>();
+    auto DeviceTransformComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>();
 
     auto DeviceCameraComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceCameraComponent>();
     auto DeviceCameraComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>();
 
-    LoadDataIntoBuffer(ModelBuffers[CurrentImage], &MBO, sizeof(MBO));
+    LoadDataIntoBuffer(ModelBuffers[CurrentImage], DeviceTransformComponentsData, DeviceTransformComponentsSize);
     LoadDataIntoBuffer(CameraBuffers[CurrentImage], DeviceCameraComponentsData, DeviceCameraComponentsSize);
 }
 

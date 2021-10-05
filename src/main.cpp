@@ -1,7 +1,10 @@
 #include "coordinator.h"
 #include "components/camera_component.h"
 #include "components/device_camera_component.h"
+#include "components/transform_component.h"
+#include "components/device_transform_component.h"
 #include "systems/camera_system.h"
+#include "systems/transform_system.h"
 #include "GLFW/glfw3.h"
 #include "context.h"
 
@@ -12,8 +15,9 @@ const uint32_t WINDOW_WIDTH = 1920;
 const uint32_t WINDOW_HEIGHT = 1080;
 const std::string WINDOW_NAME = "RTracer";
 
-void InitECS(ECS::FCoordinator& Coordinator)
+void InitECS()
 {
+    auto& Coordinator = ECS::GetCoordinator();
     Coordinator.Init();
 
     Coordinator.RegisterComponent<ECS::COMPONENTS::FCameraComponent>();
@@ -22,7 +26,17 @@ void InitECS(ECS::FCoordinator& Coordinator)
 
     ECS::FSignature CameraSystemSignature;
     CameraSystemSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FCameraComponent>());
+    CameraSystemSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FDeviceCameraComponent>());
     Coordinator.SetSystemSignature<ECS::SYSTEMS::FCameraSystem>(CameraSystemSignature);
+
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FTransformComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FDeviceTransformComponent>();
+    auto TransformSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FTransformSystem>();
+
+    ECS::FSignature TransformSystemSignature;
+    TransformSystemSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FTransformComponent>());
+    TransformSystemSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FDeviceTransformComponent>());
+    Coordinator.SetSystemSignature<ECS::SYSTEMS::FTransformSystem>(TransformSystemSignature);
 }
 
 int main()
@@ -32,8 +46,7 @@ int main()
     glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
     GLFWwindow* Window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_NAME.c_str(), nullptr, nullptr);
 
-    auto& Coordinator = ECS::GetCoordinator();
-    InitECS(Coordinator);
+    InitECS();
 
     FController Controller(Window);
 

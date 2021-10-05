@@ -1,16 +1,15 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(binding = 0) uniform UniformBufferObject
+layout(binding = 0) uniform TransformBufferObject
 {
-    mat4 Model;
-    mat4 Dummy;
-} ModelBuffer[];
+    mat4 TransformMatrix;
+} TransformBuffer[];
 
 layout(binding = 1) uniform CameraBufferObject
 {
-    mat4 View;
-    mat4 Projection;
+    mat4 ViewMatrix;
+    mat4 ProjectionMatrix;
 } CameraBuffer[];
 
 layout(location = 0) in vec3 Position;
@@ -25,7 +24,7 @@ layout(location = 3) out vec2 FragTexCoord;
 
 void main()
 {
-    gl_Position = CameraBuffer[0].Projection * CameraBuffer[0].View * ModelBuffer[0].Model * vec4(Position, 1.0);
+    gl_Position = CameraBuffer[0].ProjectionMatrix * CameraBuffer[0].ViewMatrix * TransformBuffer[0].TransformMatrix * vec4(Position, 1.0);
     FragPosition = vec3(gl_Position);
     FragNormal = Normal;
     FragColor = Color;

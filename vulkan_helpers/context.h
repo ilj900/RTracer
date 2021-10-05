@@ -16,12 +16,6 @@
 #include <array>
 #include <memory>
 
-struct FModelBufferObject
-{
-    FMatrix4 TransformMatrix;
-    FMatrix4 DummyMatrix;
-};
-
 class FContext
 {
 public:

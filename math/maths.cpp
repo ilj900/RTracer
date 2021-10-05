@@ -100,6 +100,16 @@ FVector3 FVector3::Rotate(float Angle, const FVector3& Axis)
     return FVector3(Tmp2.X, Tmp2.Y, Tmp2.Z);
 }
 
+FMatrix4 Transform(const FVector3& Position, const FVector3& Direction, const FVector3& Up)
+{
+    FMatrix4 Result(1.f, 0.f, 0.f, Position.X,
+                    0.f, 1.f, 0.f, Position.Y,
+                    0.f, 0.f, 1.f, Position.Z,
+                    0.f, 0.f, 0.f, 1.f);
+
+    return Result;
+}
+
 FMatrix4 LookAt(const FVector3& Eye, const FVector3& Point, const FVector3& Up)
 {
     FMatrix4 ViewMatrix;

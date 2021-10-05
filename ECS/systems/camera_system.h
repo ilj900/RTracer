@@ -1,5 +1,6 @@
-#include "system.h"
+#pragma once
 
+#include "system.h"
 
 namespace ECS
 {

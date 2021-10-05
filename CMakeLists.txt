@@ -33,7 +33,9 @@ set(ECS_SOURCE
         ECS/components/device_camera_component.h
         ECS/systems/system.h
         ECS/systems/camera_system.h
-        ECS/systems/camera_system.cpp)
+        ECS/systems/camera_system.cpp
+        ECS/systems/transform_system.h
+        ECS/systems/transform_system.cpp)
 
 set(SOURCE
         src/main.cpp

@@ -4,6 +4,7 @@
 
 #include "maths.h"
 #include "resource_allocation.h"
+#include "entities/entity.h"
 
 #include <vector>
 #include <array>
@@ -34,7 +35,7 @@ struct std::hash<FVertex>
 class FModel
 {
 public:
-    FModel() = default;
+    FModel();
     FModel(const std::string &Path, VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator);
 
     void Draw(VkCommandBuffer CommandBuffer);
@@ -42,6 +43,8 @@ public:
 
     static FModel CreateTetrahedron(VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator);
     static FModel CreateHexahedron(VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator);
+
+    ECS::FEntity Model;
 
     std::vector<FVertex> Vertices;
     std::vector<uint32_t> Indices;

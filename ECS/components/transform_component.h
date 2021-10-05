@@ -4,9 +4,9 @@
 
 namespace ECS
 {
-    namespace Components
+    namespace COMPONENTS
     {
-        struct TransformComponent
+        struct FTransformComponent
         {
             FVector3 Position;
             FVector3 Direction;

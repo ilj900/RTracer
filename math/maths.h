@@ -130,5 +130,6 @@ struct std::hash<FVector3>
 };
 
 /// Some math functions
+FMatrix4 Transform(const FVector3& Position, const FVector3& Direction, const FVector3& Up);
 FMatrix4 LookAt(const FVector3& Eye, const FVector3& Point, const FVector3& Up);
 FMatrix4 GetPerspective(float FOV, float AspectRatio, float NearDistance, float FarDistance);
