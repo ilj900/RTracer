@@ -1,5 +1,6 @@
 #include "context.h"
 #include "systems/camera_system.h"
+#include "systems/transform_system.h"
 #include "components/device_camera_component.h"
 #include "components/device_transform_component.h"
 
@@ -52,9 +53,16 @@ void FContext::Init()
         CreateTextureImageView();
         CreateTextureSampler();
 
+        auto& Coordinator = ECS::GetCoordinator();
+
         Models.push_back(FModel(ModelPath, LogicalDevice, ResourceAllocator));
-        //Models.push_back(FModel::CreateTetrahedron(LogicalDevice, ResourceAllocator));
-        //Models.push_back(FModel::CreateHexahedron(LogicalDevice, ResourceAllocator));
+        Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->MoveForward(Models.back().Model, 10.f);
+        Models.push_back(FModel::CreateTetrahedron(LogicalDevice, ResourceAllocator));
+        Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->MoveForward(Models.back().Model, 5.f);
+        Models.push_back(FModel::CreateHexahedron(LogicalDevice, ResourceAllocator));
+        Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->MoveForward(Models.back().Model, 20.f);
+
+        Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->UpdateAllDeviceComponentsData();
         CreateUniformBuffers();
         CreateDescriptorPool();
         CreateDescriptorSet();
@@ -1152,17 +1160,17 @@ void FContext::CreateDescriptorPool()
 {
     std::array<VkDescriptorPoolSize, 3> PoolSizes{};
     PoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    PoolSizes[0].descriptorCount = static_cast<uint32_t>(Swapchain->Size());
+    PoolSizes[0].descriptorCount = static_cast<uint32_t>(Swapchain->Size() * Models.size());
     PoolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    PoolSizes[1].descriptorCount = static_cast<uint32_t>(Swapchain->Size());
+    PoolSizes[1].descriptorCount = static_cast<uint32_t>(Swapchain->Size() * Models.size());
     PoolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    PoolSizes[2].descriptorCount = static_cast<uint32_t>(Swapchain->Size());
+    PoolSizes[2].descriptorCount = static_cast<uint32_t>(Swapchain->Size() * Models.size());
 
     VkDescriptorPoolCreateInfo PoolInfo{};
     PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     PoolInfo.poolSizeCount = static_cast<uint32_t>(PoolSizes.size());
     PoolInfo.pPoolSizes = PoolSizes.data();
-    PoolInfo.maxSets = static_cast<uint32_t>(Swapchain->Size());
+    PoolInfo.maxSets = static_cast<uint32_t>(Swapchain->Size() * Models.size());
 
     if (vkCreateDescriptorPool(LogicalDevice, &PoolInfo, nullptr, &DescriptorPool) != VK_SUCCESS)
     {
@@ -1172,14 +1180,14 @@ void FContext::CreateDescriptorPool()
 
 void FContext::CreateDescriptorSet()
 {
-    std::vector<VkDescriptorSetLayout> Layouts(Swapchain->Size(), DescriptorSetLayout);
+    std::vector<VkDescriptorSetLayout> Layouts(Swapchain->Size() * Models.size(), DescriptorSetLayout);
     VkDescriptorSetAllocateInfo AllocInfo{};
     AllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     AllocInfo.descriptorPool = DescriptorPool;
-    AllocInfo.descriptorSetCount = static_cast<uint32_t>(Swapchain->Size());
+    AllocInfo.descriptorSetCount = static_cast<uint32_t>(Layouts.size());
     AllocInfo.pSetLayouts = Layouts.data();
 
-    DescriptorSets.resize(Swapchain->Size());
+    DescriptorSets.resize(Layouts.size());
     if (vkAllocateDescriptorSets(LogicalDevice, &AllocInfo, DescriptorSets.data()) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to allocate descriptor sets!");
@@ -1187,47 +1195,50 @@ void FContext::CreateDescriptorSet()
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
-        VkDescriptorBufferInfo ModelBufferInfo{};
-        ModelBufferInfo.buffer = ModelBuffers[i].Buffer;
-        ModelBufferInfo.offset = 0;
-        ModelBufferInfo.range = ECS::GetCoordinator().Size<ECS::COMPONENTS::FDeviceTransformComponent>();
+        for (uint32_t j = 0; j < Models.size(); ++j)
+        {
+            VkDescriptorBufferInfo ModelBufferInfo{};
+            ModelBufferInfo.buffer = ModelBuffers[i].Buffer;
+            ModelBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceTransformComponent) * j;
+            ModelBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceTransformComponent);
 
-        VkDescriptorBufferInfo CameraBufferInfo{};
-        CameraBufferInfo.buffer = CameraBuffers[i].Buffer;
-        CameraBufferInfo.offset = 0;
-        CameraBufferInfo.range = ECS::GetCoordinator().Size<ECS::COMPONENTS::FDeviceCameraComponent>();
+            VkDescriptorBufferInfo CameraBufferInfo{};
+            CameraBufferInfo.buffer = CameraBuffers[i].Buffer;
+            CameraBufferInfo.offset = 0;
+            CameraBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
 
-        VkDescriptorImageInfo ImageInfo{};
-        ImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        ImageInfo.imageView = TextureImageView;
-        ImageInfo.sampler = TextureSampler;
+            VkDescriptorImageInfo ImageInfo{};
+            ImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            ImageInfo.imageView = TextureImageView;
+            ImageInfo.sampler = TextureSampler;
 
-        std::array<VkWriteDescriptorSet, 3> DescriptorWrites{};
-        DescriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        DescriptorWrites[0].dstSet = DescriptorSets[i];
-        DescriptorWrites[0].dstBinding = 0;
-        DescriptorWrites[0].dstArrayElement = 0;
-        DescriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        DescriptorWrites[0].descriptorCount = 1;
-        DescriptorWrites[0].pBufferInfo = &ModelBufferInfo;
+            std::array<VkWriteDescriptorSet, 3> DescriptorWrites{};
+            DescriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            DescriptorWrites[0].dstSet = DescriptorSets[j * Swapchain->Size() + i];
+            DescriptorWrites[0].dstBinding = 0;
+            DescriptorWrites[0].dstArrayElement = 0;
+            DescriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            DescriptorWrites[0].descriptorCount = 1;
+            DescriptorWrites[0].pBufferInfo = &ModelBufferInfo;
 
-        DescriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        DescriptorWrites[1].dstSet = DescriptorSets[i];
-        DescriptorWrites[1].dstBinding = 1;
-        DescriptorWrites[1].dstArrayElement = 0;
-        DescriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        DescriptorWrites[1].descriptorCount = 1;
-        DescriptorWrites[1].pBufferInfo = &CameraBufferInfo;
+            DescriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            DescriptorWrites[1].dstSet = DescriptorSets[j * Swapchain->Size() + i];
+            DescriptorWrites[1].dstBinding = 1;
+            DescriptorWrites[1].dstArrayElement = 0;
+            DescriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            DescriptorWrites[1].descriptorCount = 1;
+            DescriptorWrites[1].pBufferInfo = &CameraBufferInfo;
 
-        DescriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        DescriptorWrites[2].dstSet = DescriptorSets[i];
-        DescriptorWrites[2].dstBinding = 2;
-        DescriptorWrites[2].dstArrayElement = 0;
-        DescriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        DescriptorWrites[2].descriptorCount = 1;
-        DescriptorWrites[2].pImageInfo = &ImageInfo;
+            DescriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            DescriptorWrites[2].dstSet = DescriptorSets[j * Swapchain->Size() + i];
+            DescriptorWrites[2].dstBinding = 2;
+            DescriptorWrites[2].dstArrayElement = 0;
+            DescriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            DescriptorWrites[2].descriptorCount = 1;
+            DescriptorWrites[2].pImageInfo = &ImageInfo;
 
-        vkUpdateDescriptorSets(LogicalDevice, static_cast<uint32_t>(DescriptorWrites.size()), DescriptorWrites.data(), 0, nullptr);
+            vkUpdateDescriptorSets(LogicalDevice, static_cast<uint32_t>(DescriptorWrites.size()), DescriptorWrites.data(), 0, nullptr);
+        }
     }
 }
 
@@ -1274,16 +1285,15 @@ void FContext::CreateCommandBuffers()
         vkCmdBeginRenderPass(CommandBuffers[i], &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline);
 
-        for (auto& Model : Models)
-        {
-            Model.Bind(CommandBuffers[i]);
-        }
+//        vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSets[i], 0,
+//                                nullptr);
 
-        vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSets[i], 0,
-                                nullptr);
-        for (auto& Model : Models)
+        for (uint32_t j = 0; j < Models.size(); ++j)
         {
-            Model.Draw(CommandBuffers[i]);
+            vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSets[j * Swapchain->Size() + i], 0,
+                                    nullptr);
+            Models[j].Bind(CommandBuffers[i]);
+            Models[j].Draw(CommandBuffers[i]);
         }
         vkCmdEndRenderPass(CommandBuffers[i]);
 

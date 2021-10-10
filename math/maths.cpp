@@ -102,10 +102,10 @@ FVector3 FVector3::Rotate(float Angle, const FVector3& Axis)
 
 FMatrix4 Transform(const FVector3& Position, const FVector3& Direction, const FVector3& Up)
 {
-    FMatrix4 Result(1.f, 0.f, 0.f, Position.X,
-                    0.f, 1.f, 0.f, Position.Y,
-                    0.f, 0.f, 1.f, Position.Z,
-                    0.f, 0.f, 0.f, 1.f);
+    FMatrix4 Result(1.f, 0.f, 0.f, 0.f,
+                    0.f, 1.f, 0.f, 0.f,
+                    0.f, 0.f, 1.f, 0.f,
+                    Position.X, Position.Y, Position.Z, 1.f);
 
     return Result;
 }
