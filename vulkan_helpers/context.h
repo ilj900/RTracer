@@ -137,8 +137,8 @@ public:
 
     std::vector<VkCommandBuffer> CommandBuffers;
 
-    std::vector<FBuffer> ModelBuffers;
-    std::vector<FBuffer> CameraBuffers;
+    std::vector<FBuffer> DeviceTransformBuffers;
+    std::vector<FBuffer> DeviceCameraBuffers;
 
     std::vector<VkSemaphore> ImageAvailableSemaphores;
     std::vector<VkSemaphore> RenderFinishedSemaphores;

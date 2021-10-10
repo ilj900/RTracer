@@ -1146,13 +1146,13 @@ void FContext::CreateUniformBuffers()
     VkDeviceSize TransformBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>();
     VkDeviceSize CameraBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>();
 
-    ModelBuffers.resize(Swapchain->Size());
-    CameraBuffers.resize(Swapchain->Size());
+    DeviceTransformBuffers.resize(Swapchain->Size());
+    DeviceCameraBuffers.resize(Swapchain->Size());
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
-        ModelBuffers[i] = ResourceAllocator->CreateBuffer(TransformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        CameraBuffers[i] = ResourceAllocator->CreateBuffer(CameraBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        DeviceTransformBuffers[i] = ResourceAllocator->CreateBuffer(TransformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        DeviceCameraBuffers[i] = ResourceAllocator->CreateBuffer(CameraBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     }
 }
 
@@ -1198,12 +1198,12 @@ void FContext::CreateDescriptorSet()
         for (uint32_t j = 0; j < Models.size(); ++j)
         {
             VkDescriptorBufferInfo ModelBufferInfo{};
-            ModelBufferInfo.buffer = ModelBuffers[i].Buffer;
+            ModelBufferInfo.buffer = DeviceTransformBuffers[i].Buffer;
             ModelBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceTransformComponent) * j;
             ModelBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceTransformComponent);
 
             VkDescriptorBufferInfo CameraBufferInfo{};
-            CameraBufferInfo.buffer = CameraBuffers[i].Buffer;
+            CameraBufferInfo.buffer = DeviceCameraBuffers[i].Buffer;
             CameraBufferInfo.offset = 0;
             CameraBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
 
@@ -1465,8 +1465,8 @@ void FContext::CleanUpSwapChain()
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
-        ResourceAllocator->DestroyBuffer(ModelBuffers[i]);
-        ResourceAllocator->DestroyBuffer(CameraBuffers[i]);
+        ResourceAllocator->DestroyBuffer(DeviceTransformBuffers[i]);
+        ResourceAllocator->DestroyBuffer(DeviceCameraBuffers[i]);
     }
 
     Swapchain = nullptr;
@@ -1485,8 +1485,8 @@ void FContext::UpdateUniformBuffer(uint32_t CurrentImage)
     auto DeviceCameraComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceCameraComponent>();
     auto DeviceCameraComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>();
 
-    LoadDataIntoBuffer(ModelBuffers[CurrentImage], DeviceTransformComponentsData, DeviceTransformComponentsSize);
-    LoadDataIntoBuffer(CameraBuffers[CurrentImage], DeviceCameraComponentsData, DeviceCameraComponentsSize);
+    LoadDataIntoBuffer(DeviceTransformBuffers[CurrentImage], DeviceTransformComponentsData, DeviceTransformComponentsSize);
+    LoadDataIntoBuffer(DeviceCameraBuffers[CurrentImage], DeviceCameraComponentsData, DeviceCameraComponentsSize);
 }
 
 void FContext::LoadDataIntoBuffer(FBuffer &Buffer, void* DataToLoad, size_t Size)
