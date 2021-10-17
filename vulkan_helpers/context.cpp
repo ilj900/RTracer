@@ -1570,8 +1570,11 @@ void FContext::CleanUp()
     vkDestroyDescriptorSetLayout(LogicalDevice, FrameDescriptorSetLayout, nullptr);
     vkDestroyDescriptorSetLayout(LogicalDevice, RenderableDescriptorSetLayout, nullptr);
 
-    ResourceAllocator->DestroyBuffer(Models[0].IndexBuffer);
-    ResourceAllocator->DestroyBuffer(Models[0].VertexBuffer);
+    for (auto& Model : Models)
+    {
+        ResourceAllocator->DestroyBuffer(Model.IndexBuffer);
+        ResourceAllocator->DestroyBuffer(Model.VertexBuffer);
+    }
 
     for(std::size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
