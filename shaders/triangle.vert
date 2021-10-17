@@ -5,12 +5,12 @@ layout(set = 0, binding = 0) uniform CameraBufferObject
 {
     mat4 ViewMatrix;
     mat4 ProjectionMatrix;
-} CameraBuffer[];
+} CameraBuffer;
 
 layout(set = 1, binding = 0) uniform TransformBufferObject
 {
     mat4 TransformMatrix;
-} TransformBuffer[];
+} TransformBuffer;
 
 layout(location = 0) in vec3 Position;
 layout(location = 1) in vec3 Normal;
@@ -24,7 +24,7 @@ layout(location = 3) out vec2 FragTexCoord;
 
 void main()
 {
-    gl_Position = CameraBuffer[0].ProjectionMatrix * CameraBuffer[0].ViewMatrix * TransformBuffer[0].TransformMatrix * vec4(Position, 1.0);
+    gl_Position = CameraBuffer.ProjectionMatrix * CameraBuffer.ViewMatrix * TransformBuffer.TransformMatrix * vec4(Position, 1.0);
     FragPosition = vec3(gl_Position);
     FragNormal = Normal;
     FragColor = Color;
