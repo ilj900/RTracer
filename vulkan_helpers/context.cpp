@@ -46,7 +46,7 @@ void FContext::Init()
         Swapchain = std::make_shared<FSwapchain>(*this, PhysicalDevice, LogicalDevice, Surface, Window, GraphicsQueueIndex, PresentQueueIndex, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
         CreateDepthAndAAImages();
         CreateRenderPass();
-        CreateDescriptorSetLayout();
+        CreateDescriptorSetLayouts();
         CreateGraphicsPipeline();
         CreateFramebuffers();
         CreateTextureImage(TexturePath);
@@ -581,36 +581,47 @@ VkFormat FContext::FindSupportedFormat(const std::vector<VkFormat>& Candidates, 
     throw std::runtime_error("Failed to find supported format!");
 }
 
-void FContext::CreateDescriptorSetLayout()
+void FContext::CreateDescriptorSetLayouts()
 {
-    VkDescriptorSetLayoutBinding ModelLayoutBinding{};
-    ModelLayoutBinding.binding = 0;
-    ModelLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    ModelLayoutBinding.descriptorCount = 1;
-    ModelLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    ModelLayoutBinding.pImmutableSamplers = nullptr;
+    VkDescriptorSetLayoutBinding TransformLayoutBinding{};
+    TransformLayoutBinding.binding = 0;
+    TransformLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    TransformLayoutBinding.descriptorCount = 1;
+    TransformLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    TransformLayoutBinding.pImmutableSamplers = nullptr;
+
+    std::vector<VkDescriptorSetLayoutBinding> RenderableBindings {TransformLayoutBinding};
+    VkDescriptorSetLayoutCreateInfo RenderableLayoutInfo{};
+    RenderableLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    RenderableLayoutInfo.bindingCount = static_cast<uint32_t>(RenderableBindings.size());
+    RenderableLayoutInfo.pBindings = RenderableBindings.data();
+
+    if (vkCreateDescriptorSetLayout(LogicalDevice, &RenderableLayoutInfo, nullptr, &RenderableDescriptorSetLayout) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create descriptor set layout!");
+    }
 
     VkDescriptorSetLayoutBinding CameraLayoutBinding{};
-    CameraLayoutBinding.binding = 1;
+    CameraLayoutBinding.binding = 0;
     CameraLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     CameraLayoutBinding.descriptorCount = 1;
     CameraLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     CameraLayoutBinding.pImmutableSamplers = nullptr;
 
     VkDescriptorSetLayoutBinding SamplerLayoutBinding{};
-    SamplerLayoutBinding.binding = 2;
+    SamplerLayoutBinding.binding = 1;
     SamplerLayoutBinding.descriptorCount = 1;
     SamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     SamplerLayoutBinding.pImmutableSamplers = nullptr;
     SamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-    std::array<VkDescriptorSetLayoutBinding, 3> Bindings {ModelLayoutBinding, CameraLayoutBinding, SamplerLayoutBinding};
-    VkDescriptorSetLayoutCreateInfo LayoutInfo{};
-    LayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    LayoutInfo.bindingCount = static_cast<uint32_t>(Bindings.size());
-    LayoutInfo.pBindings = Bindings.data();
+    std::vector<VkDescriptorSetLayoutBinding> FrameBindings {CameraLayoutBinding, SamplerLayoutBinding};
+    VkDescriptorSetLayoutCreateInfo FrameLayoutInfo{};
+    FrameLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    FrameLayoutInfo.bindingCount = static_cast<uint32_t>(FrameBindings.size());
+    FrameLayoutInfo.pBindings = FrameBindings.data();
 
-    if (vkCreateDescriptorSetLayout(LogicalDevice, &LayoutInfo, nullptr, &DescriptorSetLayout) != VK_SUCCESS)
+    if (vkCreateDescriptorSetLayout(LogicalDevice, &FrameLayoutInfo, nullptr, &FrameDescriptorSetLayout) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create descriptor set layout!");
     }
@@ -735,9 +746,10 @@ void FContext::CreateGraphicsPipeline()
 
 
     VkPipelineLayoutCreateInfo PipelineLayoutInfo{};
+    std::vector<VkDescriptorSetLayout> PipelineSetLayouts = {FrameDescriptorSetLayout, RenderableDescriptorSetLayout};
     PipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    PipelineLayoutInfo.setLayoutCount = 1;
-    PipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout;
+    PipelineLayoutInfo.setLayoutCount = PipelineSetLayouts.size();
+    PipelineLayoutInfo.pSetLayouts = PipelineSetLayouts.data();
     PipelineLayoutInfo.pushConstantRangeCount = 0;
     PipelineLayoutInfo.pPushConstantRanges = nullptr;
 
@@ -1158,19 +1170,29 @@ void FContext::CreateUniformBuffers()
 
 void FContext::CreateDescriptorPool()
 {
-    std::array<VkDescriptorPoolSize, 3> PoolSizes{};
-    PoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    PoolSizes[0].descriptorCount = static_cast<uint32_t>(Swapchain->Size() * Models.size());
-    PoolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    PoolSizes[1].descriptorCount = static_cast<uint32_t>(Swapchain->Size() * Models.size());
-    PoolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    PoolSizes[2].descriptorCount = static_cast<uint32_t>(Swapchain->Size() * Models.size());
+//    std::array<VkDescriptorPoolSize, 3> PoolSizes{};
+//    PoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+//    PoolSizes[0].descriptorCount = static_cast<uint32_t>(Swapchain->Size() * Models.size());
+//    PoolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+//    PoolSizes[1].descriptorCount = static_cast<uint32_t>(Swapchain->Size() * Models.size());
+//    PoolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+//    PoolSizes[2].descriptorCount = static_cast<uint32_t>(Swapchain->Size() * Models.size());
+
+    AddDescriptor(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain->Size() * Models.size()));
+    AddDescriptor(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(Swapchain->Size() * Models.size()));
+    AddDescriptor(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain->Size()));
+
+    std::vector<VkDescriptorPoolSize> PoolSizes{};
+    for (auto Entry : Descriptors)
+    {
+        PoolSizes.push_back({Entry.first, Entry.second});
+    }
 
     VkDescriptorPoolCreateInfo PoolInfo{};
     PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     PoolInfo.poolSizeCount = static_cast<uint32_t>(PoolSizes.size());
     PoolInfo.pPoolSizes = PoolSizes.data();
-    PoolInfo.maxSets = static_cast<uint32_t>(Swapchain->Size() * Models.size());
+    PoolInfo.maxSets = static_cast<uint32_t>(Swapchain->Size() * Models.size() + Swapchain->Size());
 
     if (vkCreateDescriptorPool(LogicalDevice, &PoolInfo, nullptr, &DescriptorPool) != VK_SUCCESS)
     {
@@ -1180,15 +1202,16 @@ void FContext::CreateDescriptorPool()
 
 void FContext::CreateDescriptorSet()
 {
-    std::vector<VkDescriptorSetLayout> Layouts(Swapchain->Size() * Models.size(), DescriptorSetLayout);
-    VkDescriptorSetAllocateInfo AllocInfo{};
-    AllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    AllocInfo.descriptorPool = DescriptorPool;
-    AllocInfo.descriptorSetCount = static_cast<uint32_t>(Layouts.size());
-    AllocInfo.pSetLayouts = Layouts.data();
+    /// Create and update descriptor sets for renderable objects
+    std::vector<VkDescriptorSetLayout> RenderableLayouts(Swapchain->Size() * Models.size(), RenderableDescriptorSetLayout);
+    VkDescriptorSetAllocateInfo RenderableAllocInfo{};
+    RenderableAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    RenderableAllocInfo.descriptorPool = DescriptorPool;
+    RenderableAllocInfo.descriptorSetCount = static_cast<uint32_t>(RenderableLayouts.size());
+    RenderableAllocInfo.pSetLayouts = RenderableLayouts.data();
 
-    DescriptorSets.resize(Layouts.size());
-    if (vkAllocateDescriptorSets(LogicalDevice, &AllocInfo, DescriptorSets.data()) != VK_SUCCESS)
+    RenderebleDescriptorSet.resize(RenderableLayouts.size());
+    if (vkAllocateDescriptorSets(LogicalDevice, &RenderableAllocInfo, RenderebleDescriptorSet.data()) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to allocate descriptor sets!");
     }
@@ -1197,48 +1220,70 @@ void FContext::CreateDescriptorSet()
     {
         for (uint32_t j = 0; j < Models.size(); ++j)
         {
-            VkDescriptorBufferInfo ModelBufferInfo{};
-            ModelBufferInfo.buffer = DeviceTransformBuffers[i].Buffer;
-            ModelBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceTransformComponent) * j;
-            ModelBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceTransformComponent);
+            VkDescriptorBufferInfo TransformBufferInfo{};
+            TransformBufferInfo.buffer = DeviceTransformBuffers[i].Buffer;
+            TransformBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceTransformComponent) * j;
+            TransformBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceTransformComponent);
 
-            VkDescriptorBufferInfo CameraBufferInfo{};
-            CameraBufferInfo.buffer = DeviceCameraBuffers[i].Buffer;
-            CameraBufferInfo.offset = 0;
-            CameraBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
-
-            VkDescriptorImageInfo ImageInfo{};
-            ImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            ImageInfo.imageView = TextureImageView;
-            ImageInfo.sampler = TextureSampler;
-
-            std::array<VkWriteDescriptorSet, 3> DescriptorWrites{};
+            std::vector<VkWriteDescriptorSet> DescriptorWrites{1};
             DescriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            DescriptorWrites[0].dstSet = DescriptorSets[j * Swapchain->Size() + i];
+            DescriptorWrites[0].dstSet = RenderebleDescriptorSet[j * Swapchain->Size() + i];
             DescriptorWrites[0].dstBinding = 0;
             DescriptorWrites[0].dstArrayElement = 0;
             DescriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             DescriptorWrites[0].descriptorCount = 1;
-            DescriptorWrites[0].pBufferInfo = &ModelBufferInfo;
-
-            DescriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            DescriptorWrites[1].dstSet = DescriptorSets[j * Swapchain->Size() + i];
-            DescriptorWrites[1].dstBinding = 1;
-            DescriptorWrites[1].dstArrayElement = 0;
-            DescriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            DescriptorWrites[1].descriptorCount = 1;
-            DescriptorWrites[1].pBufferInfo = &CameraBufferInfo;
-
-            DescriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            DescriptorWrites[2].dstSet = DescriptorSets[j * Swapchain->Size() + i];
-            DescriptorWrites[2].dstBinding = 2;
-            DescriptorWrites[2].dstArrayElement = 0;
-            DescriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            DescriptorWrites[2].descriptorCount = 1;
-            DescriptorWrites[2].pImageInfo = &ImageInfo;
+            DescriptorWrites[0].pBufferInfo = &TransformBufferInfo;
 
             vkUpdateDescriptorSets(LogicalDevice, static_cast<uint32_t>(DescriptorWrites.size()), DescriptorWrites.data(), 0, nullptr);
         }
+    }
+
+    /// Create and update descriptor sets that will be bound once per frame
+    std::vector<VkDescriptorSetLayout> FrameLayouts(Swapchain->Size(), FrameDescriptorSetLayout);
+    VkDescriptorSetAllocateInfo FrameAllocInfo{};
+    FrameAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    FrameAllocInfo.descriptorPool = DescriptorPool;
+    FrameAllocInfo.descriptorSetCount = static_cast<uint32_t>(FrameLayouts.size());
+    FrameAllocInfo.pSetLayouts = FrameLayouts.data();
+
+    FrameDescriptorSet.resize(FrameLayouts.size());
+    if (vkAllocateDescriptorSets(LogicalDevice, &FrameAllocInfo, FrameDescriptorSet.data()) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to allocate descriptor sets!");
+    }
+
+    for (size_t i = 0; i < Swapchain->Size(); ++i)
+    {
+
+        VkDescriptorBufferInfo CameraBufferInfo{};
+        CameraBufferInfo.buffer = DeviceCameraBuffers[i].Buffer;
+        CameraBufferInfo.offset = 0;
+        CameraBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
+
+        VkDescriptorImageInfo ImageBufferInfo{};
+        ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        ImageBufferInfo.imageView = TextureImageView;
+        ImageBufferInfo.sampler = TextureSampler;
+
+        std::array<VkWriteDescriptorSet, 2> DescriptorWrites{};
+
+        DescriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        DescriptorWrites[0].dstSet = FrameDescriptorSet[i];
+        DescriptorWrites[0].dstBinding = 0;
+        DescriptorWrites[0].dstArrayElement = 0;
+        DescriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        DescriptorWrites[0].descriptorCount = 1;
+        DescriptorWrites[0].pBufferInfo = &CameraBufferInfo;
+
+        DescriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        DescriptorWrites[1].dstSet = FrameDescriptorSet[i];
+        DescriptorWrites[1].dstBinding = 1;
+        DescriptorWrites[1].dstArrayElement = 0;
+        DescriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        DescriptorWrites[1].descriptorCount = 1;
+        DescriptorWrites[1].pImageInfo = &ImageBufferInfo;
+
+        vkUpdateDescriptorSets(LogicalDevice, static_cast<uint32_t>(DescriptorWrites.size()), DescriptorWrites.data(), 0, nullptr);
     }
 }
 
@@ -1285,12 +1330,12 @@ void FContext::CreateCommandBuffers()
         vkCmdBeginRenderPass(CommandBuffers[i], &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline);
 
-//        vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSets[i], 0,
-//                                nullptr);
+        vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &FrameDescriptorSet[i], 0,
+                                nullptr);
 
         for (uint32_t j = 0; j < Models.size(); ++j)
         {
-            vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSets[j * Swapchain->Size() + i], 0,
+            vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 1, 1, &RenderebleDescriptorSet[j * Swapchain->Size() + i], 0,
                                     nullptr);
             Models[j].Bind(CommandBuffers[i]);
             Models[j].Draw(CommandBuffers[i]);
@@ -1502,6 +1547,11 @@ void FContext::LoadDataIntoBuffer(FBuffer &Buffer, void* DataToLoad, size_t Size
 
 }
 
+void FContext::AddDescriptor(VkDescriptorType Type, uint32_t Count)
+{
+    Descriptors[Type] += Count;
+}
+
 void FContext::DestroyDebugUtilsMessengerEXT()
 {
     FunctionLoader->vkDestroyDebugUtilsMessengerEXT(Instance, DebugMessenger, nullptr);
@@ -1517,7 +1567,8 @@ void FContext::CleanUp()
     vkDestroyImage(LogicalDevice, TextureImage, nullptr);
     vkFreeMemory(LogicalDevice, TextureImageMemory, nullptr);
 
-    vkDestroyDescriptorSetLayout(LogicalDevice, DescriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(LogicalDevice, FrameDescriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(LogicalDevice, RenderableDescriptorSetLayout, nullptr);
 
     ResourceAllocator->DestroyBuffer(Models[0].IndexBuffer);
     ResourceAllocator->DestroyBuffer(Models[0].VertexBuffer);

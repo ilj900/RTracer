@@ -15,6 +15,7 @@
 #include <string>
 #include <array>
 #include <memory>
+#include <map>
 
 class FContext
 {
@@ -32,7 +33,7 @@ public:
     void CreateLogicalDevice();
     void CreateDepthAndAAImages();
     void CreateRenderPass();
-    void CreateDescriptorSetLayout();
+    void CreateDescriptorSetLayouts();
     void CreateGraphicsPipeline();
     void CreateCommandPool();
     void CreateFramebuffers();
@@ -66,6 +67,7 @@ public:
     void CopyBufferToImage(FBuffer &Buffer, VkImage Image, uint32_t Width, uint32_t Height);
     void GenerateMipmaps(VkImage Image, VkFormat ImageFormat, int32_t TexWidth, int32_t TexHeight, uint32_t mipLevels);
     void LoadDataIntoBuffer(FBuffer &Buffer, void* Data, size_t Size);
+    void AddDescriptor(VkDescriptorType Type, uint32_t Count);
 
     bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device);
     bool CheckDeviceQueueSupport(VkPhysicalDevice Device);
@@ -107,7 +109,8 @@ public:
 
     VkRenderPass RenderPass;
 
-    VkDescriptorSetLayout DescriptorSetLayout;
+    VkDescriptorSetLayout FrameDescriptorSetLayout;
+    VkDescriptorSetLayout RenderableDescriptorSetLayout;
 
     VkPipelineLayout PipelineLayout;
     VkPipeline GraphicsPipeline;
@@ -132,8 +135,10 @@ public:
 
     uint32_t  MipLevels;
 
+    std::map<VkDescriptorType, uint32_t> Descriptors;
     VkDescriptorPool DescriptorPool;
-    std::vector<VkDescriptorSet> DescriptorSets;
+    std::vector<VkDescriptorSet> RenderebleDescriptorSet;
+    std::vector<VkDescriptorSet> FrameDescriptorSet;
 
     std::vector<VkCommandBuffer> CommandBuffers;
 
