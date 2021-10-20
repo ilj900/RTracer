@@ -8,9 +8,10 @@ namespace ECS
     {
         struct FTransformComponent
         {
-            FVector3 Position;
-            FVector3 Direction;
-            FVector3 Up;
+            FVector3 Position = {0.f, 0.f, 0.f};
+            FVector3 Direction = {0.f, 0.f, 1.f};
+            FVector3 Up = {0.f, 1.f, 0.f};
+            FVector3 Scale = {1.f, 1.f, 1.f};
         };
     }
 }

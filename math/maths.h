@@ -50,6 +50,7 @@ struct FVector3
     /// Functions
     FVector3 GetNormalized() const;
     FVector3 Rotate(float Angle, const FVector3& Axis);
+    float Length();
 
     /// Operators
     friend bool operator==(const FVector3& A, const FVector3& B);
@@ -100,6 +101,11 @@ struct FMatrix4
              Data({FVector4{A00, A01, A02, A03}, FVector4{A10, A11, A12, A13}, FVector4{A20, A21, A22, A23}, FVector4{A30, A31, A32, A33}}) {};
     FMatrix4(FVector4& Vec1, FVector4& Vec2, FVector4& Vec3, FVector4& Vec4) :
              Data({Vec1, Vec2, Vec3, Vec4}) {};
+
+    /// Operations
+    friend FMatrix4 operator*(const FMatrix4& A, const FMatrix4& B);
+    friend FVector3 operator*(const FMatrix4& A, const FVector3& B);
+
     /// Data
     std::array<FVector4, 4> Data;
 };
@@ -130,6 +136,10 @@ struct std::hash<FVector3>
 };
 
 /// Some math functions
-FMatrix4 Transform(const FVector3& Position, const FVector3& Direction, const FVector3& Up);
+FMatrix4 GetRotationMatrix(FVector3 OriginalDirection, FVector3 FinalDirection);
+FMatrix4 GetRotationMatrixX(float Angle);
+FMatrix4 GetRotationMatrixY(float Angle);
+FMatrix4 GetRotationMatrixZ(float Angle);
+FMatrix4 Transform(const FVector3& Position, const FVector3& Direction, const FVector3& Up, const FVector3& Scale);
 FMatrix4 LookAt(const FVector3& Eye, const FVector3& Point, const FVector3& Up);
 FMatrix4 GetPerspective(float FOV, float AspectRatio, float NearDistance, float FarDistance);

@@ -29,6 +29,11 @@ FVector3 FVector3::GetNormalized() const
     return FVector3(X / L, Y / L, Z / L);
 }
 
+float FVector3::Length()
+{
+    return X * X + Y * Y + Z * Z;
+}
+
 FVector3 operator*(const FVector3& A, const FVector3& B)
 {
     return FVector3(A.Y * B.Z - B.Y * A.Z, A.Z * B.X - B.Z * A.X, A.X * B.Y - B.X * A.Y);
@@ -88,6 +93,36 @@ FQuaternion operator*(const FQuaternion& A, const FQuaternion& B)
     return Result;
 }
 
+FMatrix4 operator*(const FMatrix4& A, const FMatrix4& B)
+{
+    FMatrix4 Result;
+    Result.Data[0].X = A.Data[0].X * B.Data[0].X + A.Data[0].Y * B.Data[1].X + A.Data[0].Z * B.Data[2].X + A.Data[0].W * B.Data[3].X;
+    Result.Data[0].Y = A.Data[0].X * B.Data[0].Y + A.Data[0].Y * B.Data[1].Y + A.Data[0].Z * B.Data[2].Y + A.Data[0].W * B.Data[3].Y;
+    Result.Data[0].Z = A.Data[0].X * B.Data[0].Z + A.Data[0].Y * B.Data[1].Z + A.Data[0].Z * B.Data[2].Z + A.Data[0].W * B.Data[3].Z;
+    Result.Data[0].W = A.Data[0].X * B.Data[0].W + A.Data[0].Y * B.Data[1].W + A.Data[0].Z * B.Data[2].W + A.Data[0].W * B.Data[3].W;
+    Result.Data[1].X = A.Data[1].X * B.Data[0].X + A.Data[1].Y * B.Data[1].X + A.Data[1].Z * B.Data[2].X + A.Data[1].W * B.Data[3].X;
+    Result.Data[1].Y = A.Data[1].X * B.Data[0].Y + A.Data[1].Y * B.Data[1].Y + A.Data[1].Z * B.Data[2].Y + A.Data[1].W * B.Data[3].Y;
+    Result.Data[1].Z = A.Data[1].X * B.Data[0].Z + A.Data[1].Y * B.Data[1].Z + A.Data[1].Z * B.Data[2].Z + A.Data[1].W * B.Data[3].Z;
+    Result.Data[1].W = A.Data[1].X * B.Data[0].W + A.Data[1].Y * B.Data[1].W + A.Data[1].Z * B.Data[2].W + A.Data[1].W * B.Data[3].W;
+    Result.Data[2].X = A.Data[2].X * B.Data[0].X + A.Data[2].Y * B.Data[1].X + A.Data[2].Z * B.Data[2].X + A.Data[2].W * B.Data[3].X;
+    Result.Data[2].Y = A.Data[2].X * B.Data[0].Y + A.Data[2].Y * B.Data[1].Y + A.Data[2].Z * B.Data[2].Y + A.Data[2].W * B.Data[3].Y;
+    Result.Data[2].Z = A.Data[2].X * B.Data[0].Z + A.Data[2].Y * B.Data[1].Z + A.Data[2].Z * B.Data[2].Z + A.Data[2].W * B.Data[3].Z;
+    Result.Data[2].W = A.Data[2].X * B.Data[0].W + A.Data[2].Y * B.Data[1].W + A.Data[2].Z * B.Data[2].W + A.Data[2].W * B.Data[3].W;
+    Result.Data[3].X = A.Data[3].X * B.Data[0].X + A.Data[3].Y * B.Data[1].X + A.Data[3].Z * B.Data[2].X + A.Data[3].W * B.Data[3].X;
+    Result.Data[3].Y = A.Data[3].X * B.Data[0].Y + A.Data[3].Y * B.Data[1].Y + A.Data[3].Z * B.Data[2].Y + A.Data[3].W * B.Data[3].Y;
+    Result.Data[3].Z = A.Data[3].X * B.Data[0].Z + A.Data[3].Y * B.Data[1].Z + A.Data[3].Z * B.Data[2].Z + A.Data[3].W * B.Data[3].Z;
+    Result.Data[3].W = A.Data[3].X * B.Data[0].W + A.Data[3].Y * B.Data[1].W + A.Data[3].Z * B.Data[2].W + A.Data[3].W * B.Data[3].W;
+
+    return Result;
+}
+
+FVector3 operator*(const FMatrix4& A, const FVector3& B)
+{
+    return FVector3{A.Data[0].X * B.X + A.Data[0].Y * B.Y + A.Data[0].Z * B.Z,
+                    A.Data[1].X * B.X + A.Data[1].Y * B.Y + A.Data[1].Z * B.Z,
+                    A.Data[2].X * B.X + A.Data[2].Y * B.Y + A.Data[2].Z * B.Z};
+}
+
 FVector3 FVector3::Rotate(float Angle, const FVector3& Axis)
 {
     float HalfAngle = Angle * 0.5f;
@@ -100,45 +135,90 @@ FVector3 FVector3::Rotate(float Angle, const FVector3& Axis)
     return FVector3(Tmp2.X, Tmp2.Y, Tmp2.Z);
 }
 
-FMatrix4 Transform(const FVector3& Position, const FVector3& Direction, const FVector3& Up)
+/// Suppose incoming vectors are normalized
+/// Return matrix that rotate OriginalDirection to FinalDirection around axis perpendicular to them
+FMatrix4 GetRotationMatrix(FVector3 OriginalDirection, FVector3 FinalDirection)
 {
-    FMatrix4 Result(1.f, 0.f, 0.f, 0.f,
-                    0.f, 1.f, 0.f, 0.f,
-                    0.f, 0.f, 1.f, 0.f,
-                    Position.X, Position.Y, Position.Z, 1.f);
+    auto A = OriginalDirection * FinalDirection;
+    auto C = Dot(OriginalDirection, FinalDirection);
+    auto S = std::sin(std::acos(C));
+    auto O = 1 - C;
+    FMatrix4 Result{C + O * A.X * A.X, O * A.X * A.Y - S * A.Z, O * A.X * A.Z + S * A.Y, 0.f,
+                    O * A.X * A.Y + S * A.Z, C + O * A.Y * A.Y, O * A.Y * A.Z - S * A.X, 0.f,
+                    O * A.X * A.Z - S * A.Y, O * A.Y * A.Z + S * A.X, C + O * A.Z * A.Z, 0.f,
+                    0.f, 0.f, 0.f, 1.f};
 
     return Result;
 }
 
+FMatrix4 GetRotationMatrixX(float Angle)
+{
+    auto S = std::sin(Angle);
+    auto C = std::cos(Angle);
+    FMatrix4 Result{1.f, 0.f, 0.f, 0.f,
+                    0.f, C, -S, 0.f,
+                    0.f, S, C, 0.f,
+                    0.f, 0.f, 0.f, 1.f};
+
+    return Result;
+}
+
+FMatrix4 GetRotationMatrixY(float Angle)
+{
+    auto S = std::sin(Angle);
+    auto C = std::cos(Angle);
+    FMatrix4 Result{C, 0.f, S, 0.f,
+                    0.f, 1.f, 0.f, 0.f,
+                    -S, 0.f, C, 0.f,
+                    0.f, 0.f, 0.f, 1.f};
+
+    return Result;
+}
+
+FMatrix4 GetRotationMatrixZ(float Angle)
+{
+    auto S = std::sin(Angle);
+    auto C = std::cos(Angle);
+    FMatrix4 Result{C, -S, 0.f, 0.f,
+                    S, C, 0.f, 0.f,
+                    0.f, 0.f, 1.f, 0.f,
+                    0.f, 0.f, 0.f, 1.f};
+
+    return Result;
+}
+
+FMatrix4 Transform(const FVector3& Position, const FVector3& Direction, const FVector3& Up, const FVector3& Scale)
+{
+    FMatrix4 ScaleMatrix{Scale.X, 0.f, 0.f, 0.f,
+                         0.f, Scale.Y, 0.f, 0.f,
+                         0.f, 0.f, Scale.Z, 0.f,
+                         0.f, 0.f, 0.f, 1.f};
+
+    /// Get rotation matrix to rotate base direction to align it with the desired one
+    FMatrix4 RotationMatrixFirst = GetRotationMatrix(FVector3{0.f, 0.f, 1.f}, Direction);
+    /// Calculate new UP direction
+    FVector3 RotatedUp = RotationMatrixFirst * FVector3{0.f, 1.f, 0.f};
+    /// Get second rotation matrix to align new UP direction with desired one.
+    FMatrix4 RotationMatrixSecond = GetRotationMatrix(RotatedUp, Up);
+
+    FMatrix4 TranslationMatrix(1.f, 0.f, 0.f, 0.f,
+                               0.f, 1.f, 0.f, 0.f,
+                               0.f, 0.f, 1.f, 0.f,
+                               Position.X, Position.Y, Position.Z, 1.f);
+
+    return ScaleMatrix * RotationMatrixFirst * RotationMatrixSecond * TranslationMatrix;
+}
+
 FMatrix4 LookAt(const FVector3& Eye, const FVector3& Point, const FVector3& Up)
 {
-    FMatrix4 ViewMatrix;
-
     FVector3 F = (Point - Eye).GetNormalized();
     FVector3 R = (F * Up).GetNormalized();
     FVector3 U = (R * F).GetNormalized();
 
-    ViewMatrix.Data[0].X = R.X;
-    ViewMatrix.Data[0].Y = U.X;
-    ViewMatrix.Data[0].Z = -F.X;
-    ViewMatrix.Data[0].W = 0.f;
-
-    ViewMatrix.Data[1].X = R.Y;
-    ViewMatrix.Data[1].Y = U.Y;
-    ViewMatrix.Data[1].Z = -F.Y;
-    ViewMatrix.Data[1].W = 0.f;
-
-    ViewMatrix.Data[2].X = R.Z;
-    ViewMatrix.Data[2].Y = U.Z;
-    ViewMatrix.Data[2].Z = -F.Z;
-    ViewMatrix.Data[2].W = 0.f;
-
-    ViewMatrix.Data[3].X = -Dot(R, Eye);
-    ViewMatrix.Data[3].Y = -Dot(U, Eye);
-    ViewMatrix.Data[3].Z = Dot(F, Eye);
-    ViewMatrix.Data[3].W = 1.f;
-
-    return ViewMatrix;
+    return FMatrix4{R.X,            U.X,            -F.X,           0.f,
+                    R.Y,            U.Y,            -F.Y,           0.f,
+                    R.Z,            U.Z,            -F.Z,           0.f,
+                    -Dot(R, Eye),   -Dot(U, Eye),   Dot(F, Eye),    1.f};
 }
 
 FMatrix4 GetPerspective(float FOV, float AspectRatio, float NearDistance, float FarDistance)
@@ -155,4 +235,5 @@ FMatrix4 GetPerspective(float FOV, float AspectRatio, float NearDistance, float 
     PerspectiveMatrix.Data[3].W = 0.f;
 
     return PerspectiveMatrix;
+
 }

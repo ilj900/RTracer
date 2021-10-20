@@ -13,7 +13,7 @@ Window(Window)
 
     auto& Coordinator = ECS::GetCoordinator();
     Camera = Coordinator.CreateEntity();
-    Coordinator.AddComponent<ECS::COMPONENTS::FCameraComponent>(Camera, {});
+    Coordinator.AddComponent<ECS::COMPONENTS::FCameraComponent>(Camera, ECS::COMPONENTS::FCameraComponent());
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera, {});
 }
 
@@ -91,40 +91,41 @@ void ProcessMouseInput(GLFWwindow* Window, double XPos, double YPos)
 
 void FController::Update(float Time)
 {
-    static float Speed = 0.4f;
-    Time *= Speed;
+    static float CameraMovementSpeed = 1.4f;
+    static float CameraRotationSpeed = 0.4f;
+
     auto CameraSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FCameraSystem>();
     if (KeyMap[GLFW_KEY_W])
     {
-        CameraSystem->MoveCameraForward(Camera, Time);
+        CameraSystem->MoveCameraForward(Camera, Time * CameraMovementSpeed);
     }
     if (KeyMap[GLFW_KEY_S])
     {
-        CameraSystem->MoveCameraForward(Camera, -Time);
+        CameraSystem->MoveCameraForward(Camera, -Time * CameraMovementSpeed);
     }
     if (KeyMap[GLFW_KEY_A])
     {
-        CameraSystem->MoveCameraRight(Camera, -Time);
+        CameraSystem->MoveCameraRight(Camera, -Time * CameraMovementSpeed);
     }
     if (KeyMap[GLFW_KEY_D])
     {
-        CameraSystem->MoveCameraRight(Camera, Time);
+        CameraSystem->MoveCameraRight(Camera, Time * CameraMovementSpeed);
     }
     if (KeyMap[GLFW_KEY_Z])
     {
-        CameraSystem->MoveCameraUpward(Camera, Time);
+        CameraSystem->MoveCameraUpward(Camera, Time * CameraMovementSpeed);
     }
     if (KeyMap[GLFW_KEY_C])
     {
-        CameraSystem->MoveCameraUpward(Camera, -Time);
+        CameraSystem->MoveCameraUpward(Camera, -Time * CameraMovementSpeed);
     }
     if (KeyMap[GLFW_KEY_Q])
     {
-        CameraSystem->Roll(Camera, -Time);
+        CameraSystem->Roll(Camera, -Time * CameraRotationSpeed);
     }
     if (KeyMap[GLFW_KEY_E])
     {
-        CameraSystem->Roll(Camera, Time);
+        CameraSystem->Roll(Camera, Time * CameraRotationSpeed);
     }
     if (KeyMap[GLFW_MOUSE_BUTTON_LEFT])
     {

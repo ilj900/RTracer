@@ -54,13 +54,16 @@ void FContext::Init()
         CreateTextureSampler();
 
         auto& Coordinator = ECS::GetCoordinator();
+        auto TransformSystem = Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>();
 
-        Models.push_back(FModel(ModelPath, LogicalDevice, ResourceAllocator));
-        Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->MoveForward(Models.back().Model, 10.f);
+//        Models.push_back(FModel(ModelPath, LogicalDevice, ResourceAllocator));
+//        Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back().Model, {0.f, 0.f, -2.f}, {-1.f, 0.f, 0.f}, {0.f, 1.f, 0.f});
         Models.push_back(FModel::CreateTetrahedron(LogicalDevice, ResourceAllocator));
-        Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->MoveForward(Models.back().Model, 5.f);
+        Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back().Model, {-2.f, 0.f, -2.f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
         Models.push_back(FModel::CreateHexahedron(LogicalDevice, ResourceAllocator));
-        Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->MoveForward(Models.back().Model, 20.f);
+        Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back().Model, {0.f, 0.f, -2.f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
+        Models.push_back(FModel::CreateTetrahedron(LogicalDevice, ResourceAllocator));
+        Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back().Model, {2.f, 0.f, -2.f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
 
         Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->UpdateAllDeviceComponentsData();
         CreateUniformBuffers();

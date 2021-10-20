@@ -26,7 +26,7 @@ namespace ECS
             {
                 auto& DeviceTransformComponent = Coordinator.GetComponent<COMPONENTS::FDeviceTransformComponent>(Entity);
                 auto& TransformComponent = Coordinator.GetComponent<COMPONENTS::FTransformComponent>(Entity);
-                DeviceTransformComponent.ModelMatrix = Transform(TransformComponent.Position, TransformComponent.Direction, TransformComponent.Up);
+                DeviceTransformComponent.ModelMatrix = Transform(TransformComponent.Position, TransformComponent.Direction, TransformComponent.Up, TransformComponent.Scale);
             }
         }
 
@@ -35,7 +35,7 @@ namespace ECS
             auto& Coordinator = GetCoordinator();
             auto& DeviceTransformComponent = Coordinator.GetComponent<COMPONENTS::FDeviceTransformComponent>(Entity);
             auto& TransformComponent = Coordinator.GetComponent<COMPONENTS::FTransformComponent>(Entity);
-            DeviceTransformComponent.ModelMatrix = Transform(TransformComponent.Position, TransformComponent.Direction, TransformComponent.Up);
+            DeviceTransformComponent.ModelMatrix = Transform(TransformComponent.Position, TransformComponent.Direction, TransformComponent.Up, TransformComponent.Scale);
         }
 
         void FTransformSystem::MoveForward(FEntity Entity, float Value)
@@ -48,6 +48,20 @@ namespace ECS
         {
             auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
             TransformComponent.Position += TransformComponent.Direction * TransformComponent.Up * Value;
+        }
+
+        void FTransformSystem::SetTransform(FEntity Entity, const FVector3& Position, const FVector3& Direction, const FVector3& Up)
+        {
+            auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
+            TransformComponent.Position = Position;
+            TransformComponent.Direction = Direction;
+            TransformComponent.Up = Up;
+        }
+
+        void FTransformSystem::SetLookAt(FEntity Entity, const FVector3& PointOfInterest)
+        {
+            auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
+            TransformComponent.Direction = (PointOfInterest - TransformComponent.Position).GetNormalized();
         }
 
         void FTransformSystem::MoveUpward(FEntity Entity, float Value)
@@ -79,7 +93,7 @@ namespace ECS
         FMatrix4 FTransformSystem::GetModelMatrix(FEntity Entity)
         {
             auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
-            return Transform(TransformComponent.Position, TransformComponent.Direction, TransformComponent.Up);
+            return Transform(TransformComponent.Position, TransformComponent.Direction, TransformComponent.Up, TransformComponent.Scale);
         }
 
     }
