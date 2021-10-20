@@ -43,6 +43,7 @@ public:
 
     static FModel CreateTetrahedron(VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator);
     static FModel CreateHexahedron(VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator);
+    static FModel CreateIcosahedron(VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator);
 
     ECS::FEntity Model;
 

@@ -62,7 +62,7 @@ void FContext::Init()
         Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back().Model, {-2.f, 0.f, -2.f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
         Models.push_back(FModel::CreateHexahedron(LogicalDevice, ResourceAllocator));
         Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back().Model, {0.f, 0.f, -2.f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-        Models.push_back(FModel::CreateTetrahedron(LogicalDevice, ResourceAllocator));
+        Models.push_back(FModel::CreateIcosahedron(LogicalDevice, ResourceAllocator));
         Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back().Model, {2.f, 0.f, -2.f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
 
         Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->UpdateAllDeviceComponentsData();
