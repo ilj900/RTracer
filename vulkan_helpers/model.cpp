@@ -303,7 +303,7 @@ FModel FModel::CreateHexahedron(VkDevice LogicalDevice, std::shared_ptr<FResourc
     return Hexahedron;
 }
 
-FModel FModel::CreateIcosahedron(VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator)
+FModel FModel::CreateIcosahedron(VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator, uint32_t Depth)
 {
     FVector3 Color{0.6627f, 0.451f, 0.3647f};
 
@@ -311,41 +311,77 @@ FModel FModel::CreateIcosahedron(VkDevice LogicalDevice, std::shared_ptr<FResour
     float Z = 0.85065080835f;
     float N = 0.f;
 
-    std::vector<FVector3> Positions(12);
-    Positions[0] = {-X, N, Z};
-    Positions[1] = {X, N, Z};
-    Positions[2] = {-X, N, -Z};
-    Positions[3] = {X, N, -Z};
-    Positions[4] = {N, Z, X};
-    Positions[5] = {N, Z, -X};
-    Positions[6] = {N, -Z, X};
-    Positions[7] = {N, -Z, -X};
-    Positions[8] = {Z, X, N};
-    Positions[9] = {-Z, X, N};
-    Positions[10] = {Z, -X, N};
-    Positions[11] = {-Z, -X, N};
+    std::vector<FVector3> InitialPositions(12);
+    InitialPositions[0] = {-X, N, Z};
+    InitialPositions[1] = {X, N, Z};
+    InitialPositions[2] = {-X, N, -Z};
+    InitialPositions[3] = {X, N, -Z};
+    InitialPositions[4] = {N, Z, X};
+    InitialPositions[5] = {N, Z, -X};
+    InitialPositions[6] = {N, -Z, X};
+    InitialPositions[7] = {N, -Z, -X};
+    InitialPositions[8] = {Z, X, N};
+    InitialPositions[9] = {-Z, X, N};
+    InitialPositions[10] = {Z, -X, N};
+    InitialPositions[11] = {-Z, -X, N};
 
-    std::vector<uint32_t> Indices = {0, 1, 4, 0, 4, 9, 9, 4, 5, 4, 8, 5, 4, 1, 8,
+    std::vector<uint32_t> InitialIndices = {0, 1, 4, 0, 4, 9, 9, 4, 5, 4, 8, 5, 4, 1, 8,
                                      8, 1, 10, 8, 10, 3, 5, 8, 3, 5, 3, 2, 2, 3, 7,
                                      7, 3, 10, 7, 10, 6, 7, 6, 11, 11, 6, 0, 0, 6, 1,
                                      6, 10, 1, 9, 11, 0, 9, 2, 11, 9, 5, 2, 7, 11, 2};
 
+    std::vector<FVector3> Positions;
+    for(uint32_t i = 0; i < InitialIndices.size(); ++i)
+    {
+        Positions.push_back(InitialPositions[InitialIndices[i]]);
+    }
+
+    for (uint32_t i = 1; i < Depth; i++)
+    {
+        std::vector<FVector3> NextIterationPositions;
+
+        for (uint32_t j = 0; j < Positions.size(); j += 3)
+        {
+            FVector3 A = Positions[j];
+            FVector3 B = Positions[j+1];
+            FVector3 C = Positions[j+2];
+
+            FVector3 AB = (A + B).GetNormalized();
+            FVector3 AC = (A + C).GetNormalized();
+            FVector3 BC = (B + C).GetNormalized();
+
+            NextIterationPositions.push_back(A);
+            NextIterationPositions.push_back(AB);
+            NextIterationPositions.push_back(AC);
+            NextIterationPositions.push_back(B);
+            NextIterationPositions.push_back(BC);
+            NextIterationPositions.push_back(AB);
+            NextIterationPositions.push_back(C);
+            NextIterationPositions.push_back(AC);
+            NextIterationPositions.push_back(BC);
+            NextIterationPositions.push_back(AB);
+            NextIterationPositions.push_back(BC);
+            NextIterationPositions.push_back(AC);
+        }
+        Positions = std::move(NextIterationPositions);
+    }
+
     FModel Icosahedron;
 
-    for(uint32_t i = 0; i < Indices.size(); i += 3)
+    for(uint32_t i = 0; i < Positions.size(); i += 3)
     {
-        auto V1 = Positions[Indices[i+1]] - Positions[Indices[i]];
-        auto V2 = Positions[Indices[i+2]] - Positions[Indices[i]];
+        auto V1 = Positions[i+1] - Positions[i];
+        auto V2 = Positions[i+2] - Positions[i];
         auto Normal = (V1 * V2).GetNormalized();
-        Icosahedron.Vertices.push_back({Positions[Indices[i]].X,    Positions[Indices[i]].Y,    Positions[Indices[i]].Z,
+        Icosahedron.Vertices.push_back({Positions[i].X,    Positions[i].Y,    Positions[i].Z,
+                                       Normal.X,           Normal.Y,                   Normal.Z,
+                                       Color.X,            Color.Y,                    Color.Z,
+                                       0.f, 0.f});
+        Icosahedron.Vertices.push_back({Positions[i+1].X,    Positions[i+1].Y,    Positions[i+1].Z,
                                        Normal.X,                   Normal.Y,                   Normal.Z,
                                        Color.X,                    Color.Y,                    Color.Z,
                                        0.f, 0.f});
-        Icosahedron.Vertices.push_back({Positions[Indices[i+1]].X,    Positions[Indices[i+1]].Y,    Positions[Indices[i+1]].Z,
-                                       Normal.X,                   Normal.Y,                   Normal.Z,
-                                       Color.X,                    Color.Y,                    Color.Z,
-                                       0.f, 0.f});
-        Icosahedron.Vertices.push_back({Positions[Indices[i+2]].X,    Positions[Indices[i+2]].Y,    Positions[Indices[i+2]].Z,
+        Icosahedron.Vertices.push_back({Positions[i+2].X,    Positions[i+2].Y,    Positions[i+2].Z,
                                        Normal.X,                   Normal.Y,                   Normal.Z,
                                        Color.X,                    Color.Y,                    Color.Z,
                                        0.f, 0.f});
