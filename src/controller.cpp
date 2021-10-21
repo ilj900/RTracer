@@ -9,46 +9,11 @@ Window(Window)
     glfwSetWindowUserPointer(Window, this);
     glfwSetKeyCallback(Window, ProcessKeyInput);
     glfwSetCursorPosCallback(Window, ProcessMouseInput);
-    glfwSetMouseButtonCallback(Window, ProcessMouseButtonInput);
 
     auto& Coordinator = ECS::GetCoordinator();
     Camera = Coordinator.CreateEntity();
     Coordinator.AddComponent<ECS::COMPONENTS::FCameraComponent>(Camera, ECS::COMPONENTS::FCameraComponent());
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera, {});
-}
-
-void ProcessMouseButtonInput(GLFWwindow* Window, int Button, int Action, int Mods)
-{
-    FController* Controller = static_cast<FController*>(glfwGetWindowUserPointer(Window));
-    if (Action == GLFW_PRESS)
-    {
-        switch (Button)
-        {
-            case GLFW_MOUSE_BUTTON_LEFT:
-                Controller->SetPressed(Button);
-                Controller->XPrevious = Controller->XCurrent;
-                Controller->YPrevious = Controller->YCurrent;
-                break;
-        }
-    }
-    if (Action == GLFW_RELEASE)
-    {
-        switch (Button)
-        {
-            case GLFW_MOUSE_BUTTON_LEFT:
-                Controller->SetReleased(Button);
-                break;
-        }
-    }
-}
-
-void FController::ToggleKey(uint32_t Key)
-{
-    if (KeyMap.find(Key) == KeyMap.end())
-    {
-        return;
-    }
-    KeyMap[Key] = !KeyMap[Key];
 }
 
 void FController::SetPressed(uint32_t Key)
@@ -127,7 +92,11 @@ void FController::Update(float Time)
     {
         CameraSystem->Roll(Camera, Time * CameraRotationSpeed);
     }
-    if (KeyMap[GLFW_MOUSE_BUTTON_LEFT])
+    if (KeyMap[GLFW_KEY_ESCAPE])
+    {
+        glfwSetWindowShouldClose(Window, GLFW_TRUE);
+    }
+
     {
         double XDelta = XCurrent - XPrevious;
         double YDelta = YCurrent - YPrevious;

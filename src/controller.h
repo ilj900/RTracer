@@ -11,7 +11,6 @@ class FController
 public:
     FController(GLFWwindow* Window);
     void Update(float Time);
-    void ToggleKey(uint32_t Key);
     void SetPressed(uint32_t Key);
     void SetReleased(uint32_t Key);
 
@@ -28,8 +27,8 @@ public:
                     {GLFW_KEY_C, false},
                     {GLFW_KEY_Q, false},
                     {GLFW_KEY_E, false},
-                    {GLFW_MOUSE_BUTTON_RIGHT, false},
                     {GLFW_KEY_W, false},
+                    {GLFW_KEY_ESCAPE, false},
             };
     double XPrevious = 0.;
     double YPrevious = 0.;
@@ -40,5 +39,4 @@ public:
 };
 
 void ProcessKeyInput(GLFWwindow* Window, int Key, int Scancode, int Action, int Mods);
-void ProcessMouseButtonInput(GLFWwindow* Window, int Button, int Action, int Mods);
 void ProcessMouseInput(GLFWwindow* Window, double XPos, double YPos);
