@@ -63,6 +63,11 @@ FVector3 operator-(const FVector3& A, const FVector3& B)
     return FVector3(A.X - B.X, A.Y - B.Y, A.Z - B.Z);
 }
 
+FVector3 operator-(const FVector3& A)
+{
+    return FVector3(-A.X, -A.Y, -A.Z);
+}
+
 float Dot(const FVector3& L, const FVector3& R)
 {
     return L.X * R.X + L.Y * R.Y + L.Z * R.Z;

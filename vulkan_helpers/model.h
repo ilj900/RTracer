@@ -12,7 +12,7 @@
 
 struct FVertex {
     FVertex() = default;
-    FVertex(float PosX, float PosY, float PosZ, float ColR, float ColG, float ColB, float TexU, float TexV);
+    FVertex(float PosX, float PosY, float PosZ, float NormX, float NormY, float NormZ,float ColR, float ColG, float ColB, float TexU, float TexV);
     static VkVertexInputBindingDescription GetBindingDescription();
     static std::array<VkVertexInputAttributeDescription, 4> GetAttributeDescriptions();
 
@@ -47,8 +47,10 @@ public:
 
     ECS::FEntity Model;
 
-    std::vector<FVertex> Vertices;
-    std::vector<uint32_t> Indices;
+    bool Indexed = false;
+
+    std::vector<FVertex> Vertices{};
+    std::vector<uint32_t> Indices{};
 
     FBuffer VertexBuffer;
     FBuffer IndexBuffer;

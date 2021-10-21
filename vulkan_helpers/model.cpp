@@ -19,8 +19,8 @@ size_t std::hash<FVertex>::operator()(FVertex const& Vertex) const
     (std::hash<FVector2>{}(Vertex.TexCoord) << 1);
 }
 
-FVertex::FVertex(float PosX, float PosY, float PosZ, float ColR, float ColG, float ColB, float TexU, float TexV):
-Position(PosX, PosY, PosZ), Color(ColR, ColG, ColB), TexCoord(TexU, TexV)
+FVertex::FVertex(float PosX, float PosY, float PosZ, float NormX, float NormY, float NormZ,float ColR, float ColG, float ColB, float TexU, float TexV):
+Position(PosX, PosY, PosZ), Normal(NormX, NormY, NormZ), Color(ColR, ColG, ColB), TexCoord(TexU, TexV)
 {
 }
 
@@ -167,25 +167,34 @@ void FModel::LoadDataIntoGPU(VkDevice LogicalDevice, std::shared_ptr<FResourceAl
     ResourceAllocator->DestroyBuffer(StagingBuffer);
 
     /// Create index buffer
-    VkDeviceSize IndexBufferSize = sizeof(Indices[0]) * Indices.size();
+    if (Indices.size() > 0) {
+        VkDeviceSize IndexBufferSize = sizeof(Indices[0]) * Indices.size();
 
-    StagingBuffer = ResourceAllocator->CreateBuffer(IndexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        StagingBuffer = ResourceAllocator->CreateBuffer(IndexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-    void* IndexData;
-    vkMapMemory(LogicalDevice, StagingBuffer.Memory, 0, IndexBufferSize, 0, &IndexData);
-    memcpy(IndexData, Indices.data(), (std::size_t)IndexBufferSize);
-    vkUnmapMemory(LogicalDevice, StagingBuffer.Memory);
+        void *IndexData;
+        vkMapMemory(LogicalDevice, StagingBuffer.Memory, 0, IndexBufferSize, 0, &IndexData);
+        memcpy(IndexData, Indices.data(), (std::size_t) IndexBufferSize);
+        vkUnmapMemory(LogicalDevice, StagingBuffer.Memory);
 
-    IndexBuffer = ResourceAllocator->CreateBuffer(IndexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        IndexBuffer = ResourceAllocator->CreateBuffer(IndexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    ResourceAllocator->CopyBuffer(StagingBuffer, IndexBuffer, IndexBufferSize);
-    ResourceAllocator->DestroyBuffer(StagingBuffer);
+        ResourceAllocator->CopyBuffer(StagingBuffer, IndexBuffer, IndexBufferSize);
+        ResourceAllocator->DestroyBuffer(StagingBuffer);
+    }
 }
 
 
 void FModel::Draw(VkCommandBuffer CommandBuffer)
 {
-    vkCmdDrawIndexed(CommandBuffer, static_cast<uint32_t>(Indices.size()), 1, 0, 0, 0);
+    if (Indexed)
+    {
+        vkCmdDrawIndexed(CommandBuffer, static_cast<uint32_t>(Indices.size()), 1, 0, 0, 0);
+    }
+    else
+    {
+        vkCmdDraw(CommandBuffer, static_cast<uint32_t>(Vertices.size()), 1, 0, 0);
+    }
 }
 
 void FModel::Bind(VkCommandBuffer CommandBuffer)
@@ -193,25 +202,53 @@ void FModel::Bind(VkCommandBuffer CommandBuffer)
     VkBuffer Buffers[] = {VertexBuffer.Buffer};
     VkDeviceSize Offsets[] = {0};
     vkCmdBindVertexBuffers(CommandBuffer, 0, 1, Buffers, Offsets);
-    vkCmdBindIndexBuffer(CommandBuffer, IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+    if (Indexed)
+    {
+        vkCmdBindIndexBuffer(CommandBuffer, IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+    }
 }
 
 FModel FModel::CreateTetrahedron(VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator)
 {
+    FVector3 Color{0.6627f, 0.451f, 0.3647f};
+
     float A = 1.f / 3.f;
     float B = std::sqrt(8.f / 9.f);
     float C = std::sqrt(2.f / 9.f);
     float D = std::sqrt(2.f / 3.f);
 
+    std::vector<FVector3> Positions(4);
+    Positions[0] = {0.f, 0.f, 1.f};
+    Positions[1] = {-C, D, -A};
+    Positions[2] = {-C, -D, -A};
+    Positions[3] = {B, 0.f, -A};
+
+    std::vector<uint32_t> Indices = {0, 1, 2,
+                                     0, 2, 3,
+                                     0, 3, 1,
+                                     3, 2, 1};
+
     FModel Tetrahedron;
 
-    Tetrahedron.Vertices.resize(4);
-    Tetrahedron.Vertices[0] = FVertex(0.f, 0.f, 1.f, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Tetrahedron.Vertices[1] = FVertex(-C, D, -A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Tetrahedron.Vertices[2] = FVertex(-C, -D, -A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Tetrahedron.Vertices[3] = FVertex(B, 0.f, -A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
+    for(uint32_t i = 0; i < Indices.size(); i += 3)
+    {
+        auto V1 = Positions[Indices[i+1]] - Positions[Indices[i]];
+        auto V2 = Positions[Indices[i+2]] - Positions[Indices[i]];
+        auto Normal = (V1 * V2).GetNormalized();
+        Tetrahedron.Vertices.push_back({Positions[Indices[i]].X,    Positions[Indices[i]].Y,    Positions[Indices[i]].Z,
+                                        Normal.X,                   Normal.Y,                   Normal.Z,
+                                        Color.X,                    Color.Y,                    Color.Z,
+                                        0.f, 0.f});
+        Tetrahedron.Vertices.push_back({Positions[Indices[i+1]].X,    Positions[Indices[i+1]].Y,    Positions[Indices[i+1]].Z,
+                                        Normal.X,                   Normal.Y,                   Normal.Z,
+                                        Color.X,                    Color.Y,                    Color.Z,
+                                        0.f, 0.f});
+        Tetrahedron.Vertices.push_back({Positions[Indices[i+2]].X,    Positions[Indices[i+2]].Y,    Positions[Indices[i+2]].Z,
+                                        Normal.X,                   Normal.Y,                   Normal.Z,
+                                        Color.X,                    Color.Y,                    Color.Z,
+                                        0.f, 0.f});
+    }
 
-    Tetrahedron.Indices = {0, 1, 2, 0, 2, 3, 0, 3, 1, 3, 2, 1};
     Tetrahedron.LoadDataIntoGPU(LogicalDevice, std::move(ResourceAllocator));
 
     return Tetrahedron;
@@ -219,25 +256,48 @@ FModel FModel::CreateTetrahedron(VkDevice LogicalDevice, std::shared_ptr<FResour
 
 FModel FModel::CreateHexahedron(VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator)
 {
+    FVector3 Color{0.6627f, 0.451f, 0.3647f};
+
     float A = 1.f / 3.f;
 
-    FModel Hexahedron;
-    Hexahedron.Vertices.resize(8);
-    Hexahedron.Vertices[0] = FVertex(-A, -A, -A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Hexahedron.Vertices[1] = FVertex( A, -A, -A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Hexahedron.Vertices[2] = FVertex( A,  A, -A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Hexahedron.Vertices[3] = FVertex(-A,  A, -A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Hexahedron.Vertices[4] = FVertex(-A, -A,  A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Hexahedron.Vertices[5] = FVertex( A, -A,  A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Hexahedron.Vertices[6] = FVertex( A,  A,  A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Hexahedron.Vertices[7] = FVertex(-A,  A,  A, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
+    std::vector<FVector3> Positions(8);
 
-    Hexahedron.Indices = {3, 2, 1, 3, 1, 0,
-                          2, 6, 5, 2, 5, 1,
-                          5, 6, 7, 5, 7, 4,
-                          0, 4, 7, 0, 7, 3,
-                          3, 7, 6, 3, 6, 2,
-                          1, 5, 4, 1, 4, 0};
+    Positions[0] = {-A, -A, -A};
+    Positions[1] = { A, -A, -A};
+    Positions[2] = { A,  A, -A};
+    Positions[3] = {-A,  A, -A};
+    Positions[4] = {-A, -A,  A};
+    Positions[5] = { A, -A,  A};
+    Positions[6] = { A,  A,  A};
+    Positions[7] = {-A,  A,  A};
+
+    std::vector<uint32_t> Indices = {3, 2, 1, 3, 1, 0,
+                                     2, 6, 5, 2, 5, 1,
+                                     5, 6, 7, 5, 7, 4,
+                                     0, 4, 7, 0, 7, 3,
+                                     3, 7, 6, 3, 6, 2,
+                                     1, 5, 4, 1, 4, 0};
+
+    FModel Hexahedron;
+
+    for(uint32_t i = 0; i < Indices.size(); i += 3)
+    {
+        auto V1 = Positions[Indices[i+1]] - Positions[Indices[i]];
+        auto V2 = Positions[Indices[i+2]] - Positions[Indices[i]];
+        auto Normal = (V1 * V2).GetNormalized();
+        Hexahedron.Vertices.push_back({Positions[Indices[i]].X,    Positions[Indices[i]].Y,    Positions[Indices[i]].Z,
+                                        Normal.X,                   Normal.Y,                   Normal.Z,
+                                        Color.X,                    Color.Y,                    Color.Z,
+                                        0.f, 0.f});
+        Hexahedron.Vertices.push_back({Positions[Indices[i+1]].X,    Positions[Indices[i+1]].Y,    Positions[Indices[i+1]].Z,
+                                        Normal.X,                   Normal.Y,                   Normal.Z,
+                                        Color.X,                    Color.Y,                    Color.Z,
+                                        0.f, 0.f});
+        Hexahedron.Vertices.push_back({Positions[Indices[i+2]].X,    Positions[Indices[i+2]].Y,    Positions[Indices[i+2]].Z,
+                                        Normal.X,                   Normal.Y,                   Normal.Z,
+                                        Color.X,                    Color.Y,                    Color.Z,
+                                        0.f, 0.f});
+    }
 
     Hexahedron.LoadDataIntoGPU(LogicalDevice, std::move(ResourceAllocator));
     return Hexahedron;
@@ -245,30 +305,52 @@ FModel FModel::CreateHexahedron(VkDevice LogicalDevice, std::shared_ptr<FResourc
 
 FModel FModel::CreateIcosahedron(VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator)
 {
+    FVector3 Color{0.6627f, 0.451f, 0.3647f};
+
     float X = 0.52573111211f;
     float Z = 0.85065080835f;
     float N = 0.f;
 
+    std::vector<FVector3> Positions(12);
+    Positions[0] = {-X, N, Z};
+    Positions[1] = {X, N, Z};
+    Positions[2] = {-X, N, -Z};
+    Positions[3] = {X, N, -Z};
+    Positions[4] = {N, Z, X};
+    Positions[5] = {N, Z, -X};
+    Positions[6] = {N, -Z, X};
+    Positions[7] = {N, -Z, -X};
+    Positions[8] = {Z, X, N};
+    Positions[9] = {-Z, X, N};
+    Positions[10] = {Z, -X, N};
+    Positions[11] = {-Z, -X, N};
+
+    std::vector<uint32_t> Indices = {0, 1, 4, 0, 4, 9, 9, 4, 5, 4, 8, 5, 4, 1, 8,
+                                     8, 1, 10, 8, 10, 3, 5, 8, 3, 5, 3, 2, 2, 3, 7,
+                                     7, 3, 10, 7, 10, 6, 7, 6, 11, 11, 6, 0, 0, 6, 1,
+                                     6, 10, 1, 9, 11, 0, 9, 2, 11, 9, 5, 2, 7, 11, 2};
+
     FModel Icosahedron;
 
-    Icosahedron.Vertices.resize(12);
-    Icosahedron.Vertices[0] = FVertex(-X, N, Z, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Icosahedron.Vertices[1] = FVertex(X, N, Z, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Icosahedron.Vertices[2] = FVertex(-X, N, -Z, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Icosahedron.Vertices[3] = FVertex(X, N, -Z, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Icosahedron.Vertices[4] = FVertex(N, Z, X, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Icosahedron.Vertices[5] = FVertex(N, Z, -X, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Icosahedron.Vertices[6] = FVertex(N, -Z, X, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Icosahedron.Vertices[7] = FVertex(N, -Z, -X, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Icosahedron.Vertices[8] = FVertex(Z, X, N, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Icosahedron.Vertices[9] = FVertex(-Z, X, N, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Icosahedron.Vertices[10] = FVertex(Z, -X, N, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
-    Icosahedron.Vertices[11] = FVertex(-Z, -X, N, 0.6627f, 0.451f, 0.3647f, 0.f, 0.f);
+    for(uint32_t i = 0; i < Indices.size(); i += 3)
+    {
+        auto V1 = Positions[Indices[i+1]] - Positions[Indices[i]];
+        auto V2 = Positions[Indices[i+2]] - Positions[Indices[i]];
+        auto Normal = (V1 * V2).GetNormalized();
+        Icosahedron.Vertices.push_back({Positions[Indices[i]].X,    Positions[Indices[i]].Y,    Positions[Indices[i]].Z,
+                                       Normal.X,                   Normal.Y,                   Normal.Z,
+                                       Color.X,                    Color.Y,                    Color.Z,
+                                       0.f, 0.f});
+        Icosahedron.Vertices.push_back({Positions[Indices[i+1]].X,    Positions[Indices[i+1]].Y,    Positions[Indices[i+1]].Z,
+                                       Normal.X,                   Normal.Y,                   Normal.Z,
+                                       Color.X,                    Color.Y,                    Color.Z,
+                                       0.f, 0.f});
+        Icosahedron.Vertices.push_back({Positions[Indices[i+2]].X,    Positions[Indices[i+2]].Y,    Positions[Indices[i+2]].Z,
+                                       Normal.X,                   Normal.Y,                   Normal.Z,
+                                       Color.X,                    Color.Y,                    Color.Z,
+                                       0.f, 0.f});
+    }
 
-    Icosahedron.Indices = {0, 4, 1, 0, 9, 4, 9, 5, 4, 4, 5, 8, 4, 8, 1,
-                           8, 10, 1, 8, 3, 10, 5, 3, 8, 5, 2, 3, 2, 7, 3,
-                           7, 10, 3, 7, 6, 10, 7, 11, 6, 11, 0, 6, 0, 1, 6,
-                           6, 1, 10, 9, 0, 11, 9, 11, 2, 9, 2, 5, 7, 2, 11};
     Icosahedron.LoadDataIntoGPU(LogicalDevice, std::move(ResourceAllocator));
     return Icosahedron;
 }

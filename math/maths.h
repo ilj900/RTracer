@@ -59,6 +59,7 @@ struct FVector3
     friend FVector3 operator*(const FVector3& A, float Val);
     friend FVector3& operator+=(FVector3& A, const FVector3& B);
     friend FVector3 operator-(const FVector3& A, const FVector3& B);
+    friend FVector3 operator-(const FVector3& A);
 
     /// Data
     float X;

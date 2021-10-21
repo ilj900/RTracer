@@ -14,15 +14,17 @@ vec3 LightPosition = vec3(20.f, 20.f, 0.f);
 
 void main()
 {
-//    vec3 LightDirection = normalize(LightPosition - FragPosition);
-//    vec3 Normal = normalize(FragNormal);
-//    float LightAngle = dot(LightDirection, Normal);
-//    vec3 AmbientColor = FragColor * 0.1f;
-//    if (LightAngle < 0.f)
-//    {
-//        LightAngle = 0.f;
-//    }
-//    vec3 DiffuseColor = FragColor * 0.9 * LightAngle;
-//    OutColor = vec4(DiffuseColor + AmbientColor, 1.f);
-    OutColor = texture(TexSampler, FragTexCoord);
+    vec3 LightDirection = normalize(LightPosition - FragPosition);
+    vec3 Normal = normalize(FragNormal);
+    float LightAngle = dot(LightDirection, Normal);
+    vec3 AmbientColor = FragColor * 0.1f;
+    if (LightAngle < 0.f)
+    {
+        LightAngle = 0.f;
+    }
+    vec3 DiffuseColor = FragColor * 0.9 * LightAngle;
+    OutColor = vec4(DiffuseColor + AmbientColor, 1.f);
+
+
+//    OutColor = texture(TexSampler, FragTexCoord);
 }
