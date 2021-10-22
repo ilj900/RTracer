@@ -17,6 +17,17 @@
 #include <memory>
 #include <map>
 
+struct Renderable
+{
+    FVector3 RenderableColor;
+    uint32_t Padding1;
+
+    uint32_t RenderableIndex;
+    uint32_t RenderablePropertyMask;
+    uint32_t Padding2;
+    uint32_t Padding3;
+};
+
 class FContext
 {
 public:
@@ -144,6 +155,7 @@ public:
 
     std::vector<FBuffer> DeviceTransformBuffers;
     std::vector<FBuffer> DeviceCameraBuffers;
+    std::vector<FBuffer> DeviceRenderableBuffers;
 
     std::vector<VkSemaphore> ImageAvailableSemaphores;
     std::vector<VkSemaphore> RenderFinishedSemaphores;

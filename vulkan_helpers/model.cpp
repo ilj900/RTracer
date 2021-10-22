@@ -13,14 +13,13 @@
 size_t std::hash<FVertex>::operator()(FVertex const& Vertex) const
 {
     /// I'm not sure this is a good hash function
-    return ((((std::hash<FVector3>{}(Vertex.Position) ^
-    (std::hash<FVector3>{}(Vertex.Color) << 1)) >> 1) ^
+    return ((std::hash<FVector3>{}(Vertex.Position) ^
     (std::hash<FVector3>{}(Vertex.Normal) << 1)) >> 1) ^
     (std::hash<FVector2>{}(Vertex.TexCoord) << 1);
 }
 
-FVertex::FVertex(float PosX, float PosY, float PosZ, float NormX, float NormY, float NormZ,float ColR, float ColG, float ColB, float TexU, float TexV):
-Position(PosX, PosY, PosZ), Normal(NormX, NormY, NormZ), Color(ColR, ColG, ColB), TexCoord(TexU, TexV)
+FVertex::FVertex(float PosX, float PosY, float PosZ, float NormX, float NormY, float NormZ, float TexU, float TexV):
+Position(PosX, PosY, PosZ), Normal(NormX, NormY, NormZ), TexCoord(TexU, TexV)
 {
 }
 
@@ -29,9 +28,6 @@ FVertex& FVertex::operator=(const FVertex& Other)
     Position.X = Other.Position.X;
     Position.Y = Other.Position.Y;
     Position.Z = Other.Position.Z;
-    Color.X = Other.Color.X;
-    Color.Y = Other.Color.Y;
-    Color.Z = Other.Color.Z;
     Normal.X = Other.Normal.X;
     Normal.Y = Other.Normal.Y;
     Normal.Z = Other.Normal.Z;
@@ -50,9 +46,9 @@ VkVertexInputBindingDescription FVertex::GetBindingDescription()
     return BindingDescription;
 }
 
-std::array<VkVertexInputAttributeDescription, 4> FVertex::GetAttributeDescriptions()
+std::array<VkVertexInputAttributeDescription, 3> FVertex::GetAttributeDescriptions()
 {
-    std::array<VkVertexInputAttributeDescription, 4> AttributeDescription{};
+    std::array<VkVertexInputAttributeDescription, 3> AttributeDescription{};
     AttributeDescription[0].binding = 0;
     AttributeDescription[0].location = 0;
     AttributeDescription[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -65,20 +61,15 @@ std::array<VkVertexInputAttributeDescription, 4> FVertex::GetAttributeDescriptio
 
     AttributeDescription[2].binding = 0;
     AttributeDescription[2].location = 2;
-    AttributeDescription[2].format = VK_FORMAT_R32G32B32_SFLOAT;
-    AttributeDescription[2].offset = offsetof(FVertex, Color);
-
-    AttributeDescription[3].binding = 0;
-    AttributeDescription[3].location = 3;
-    AttributeDescription[3].format = VK_FORMAT_R32G32_SFLOAT;
-    AttributeDescription[3].offset = offsetof(FVertex, TexCoord);
+    AttributeDescription[2].format = VK_FORMAT_R32G32_SFLOAT;
+    AttributeDescription[2].offset = offsetof(FVertex, TexCoord);
 
     return AttributeDescription;
 }
 
 bool FVertex::operator==(const FVertex& Other) const
 {
-    return Position == Other.Position && Color == Other.Color && TexCoord == Other.TexCoord;
+    return Position == Other.Position && TexCoord == Other.TexCoord;
 }
 
 FModel::FModel()
@@ -135,8 +126,6 @@ FModel::FModel(const std::string &Path, VkDevice LogicalDevice, std::shared_ptr<
                     Attrib.texcoords[2 * Index.texcoord_index + 0],
                     1.f - Attrib.texcoords[2 * Index.texcoord_index + 1],
             };
-
-            Vert.Color = {1.f, 1.f, 1.f};
 
             if (UniqueVertices.find(Vert) == UniqueVertices.end())
             {
@@ -237,15 +226,12 @@ FModel FModel::CreateTetrahedron(VkDevice LogicalDevice, std::shared_ptr<FResour
         auto Normal = (V1 * V2).GetNormalized();
         Tetrahedron.Vertices.push_back({Positions[Indices[i]].X,    Positions[Indices[i]].Y,    Positions[Indices[i]].Z,
                                         Normal.X,                   Normal.Y,                   Normal.Z,
-                                        Color.X,                    Color.Y,                    Color.Z,
                                         0.f, 0.f});
         Tetrahedron.Vertices.push_back({Positions[Indices[i+1]].X,    Positions[Indices[i+1]].Y,    Positions[Indices[i+1]].Z,
                                         Normal.X,                   Normal.Y,                   Normal.Z,
-                                        Color.X,                    Color.Y,                    Color.Z,
                                         0.f, 0.f});
         Tetrahedron.Vertices.push_back({Positions[Indices[i+2]].X,    Positions[Indices[i+2]].Y,    Positions[Indices[i+2]].Z,
                                         Normal.X,                   Normal.Y,                   Normal.Z,
-                                        Color.X,                    Color.Y,                    Color.Z,
                                         0.f, 0.f});
     }
 
@@ -256,8 +242,6 @@ FModel FModel::CreateTetrahedron(VkDevice LogicalDevice, std::shared_ptr<FResour
 
 FModel FModel::CreateHexahedron(VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator)
 {
-    FVector3 Color{0.6627f, 0.451f, 0.3647f};
-
     float A = 1.f / 3.f;
 
     std::vector<FVector3> Positions(8);
@@ -287,15 +271,12 @@ FModel FModel::CreateHexahedron(VkDevice LogicalDevice, std::shared_ptr<FResourc
         auto Normal = (V1 * V2).GetNormalized();
         Hexahedron.Vertices.push_back({Positions[Indices[i]].X,    Positions[Indices[i]].Y,    Positions[Indices[i]].Z,
                                         Normal.X,                   Normal.Y,                   Normal.Z,
-                                        Color.X,                    Color.Y,                    Color.Z,
                                         0.f, 0.f});
         Hexahedron.Vertices.push_back({Positions[Indices[i+1]].X,    Positions[Indices[i+1]].Y,    Positions[Indices[i+1]].Z,
                                         Normal.X,                   Normal.Y,                   Normal.Z,
-                                        Color.X,                    Color.Y,                    Color.Z,
                                         0.f, 0.f});
         Hexahedron.Vertices.push_back({Positions[Indices[i+2]].X,    Positions[Indices[i+2]].Y,    Positions[Indices[i+2]].Z,
                                         Normal.X,                   Normal.Y,                   Normal.Z,
-                                        Color.X,                    Color.Y,                    Color.Z,
                                         0.f, 0.f});
     }
 
@@ -305,8 +286,6 @@ FModel FModel::CreateHexahedron(VkDevice LogicalDevice, std::shared_ptr<FResourc
 
 FModel FModel::CreateIcosahedron(VkDevice LogicalDevice, std::shared_ptr<FResourceAllocator> ResourceAllocator, uint32_t Depth)
 {
-    FVector3 Color{0.6627f, 0.451f, 0.3647f};
-
     float X = 0.52573111211f;
     float Z = 0.85065080835f;
     float N = 0.f;
@@ -375,15 +354,12 @@ FModel FModel::CreateIcosahedron(VkDevice LogicalDevice, std::shared_ptr<FResour
         auto Normal = (V1 * V2).GetNormalized();
         Icosahedron.Vertices.push_back({Positions[i].X,    Positions[i].Y,    Positions[i].Z,
                                        Normal.X,           Normal.Y,                   Normal.Z,
-                                       Color.X,            Color.Y,                    Color.Z,
                                        0.f, 0.f});
         Icosahedron.Vertices.push_back({Positions[i+1].X,    Positions[i+1].Y,    Positions[i+1].Z,
                                        Normal.X,                   Normal.Y,                   Normal.Z,
-                                       Color.X,                    Color.Y,                    Color.Z,
                                        0.f, 0.f});
         Icosahedron.Vertices.push_back({Positions[i+2].X,    Positions[i+2].Y,    Positions[i+2].Z,
                                        Normal.X,                   Normal.Y,                   Normal.Z,
-                                       Color.X,                    Color.Y,                    Color.Z,
                                        0.f, 0.f});
     }
 

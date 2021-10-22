@@ -12,16 +12,15 @@
 
 struct FVertex {
     FVertex() = default;
-    FVertex(float PosX, float PosY, float PosZ, float NormX, float NormY, float NormZ,float ColR, float ColG, float ColB, float TexU, float TexV);
+    FVertex(float PosX, float PosY, float PosZ, float NormX, float NormY, float NormZ, float TexU, float TexV);
     static VkVertexInputBindingDescription GetBindingDescription();
-    static std::array<VkVertexInputAttributeDescription, 4> GetAttributeDescriptions();
+    static std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescriptions();
 
     bool operator==(const FVertex& Other) const;
     FVertex& operator=(const FVertex& Other);
 
     FVector3 Position = {0.f, 0.f, 0.f};
     FVector3 Normal = {0.f, 0.f, 0.f};
-    FVector3 Color = {0.f, 0.f, 0.f};
     FVector2 TexCoord = {0.f, 0.f};
 
 };

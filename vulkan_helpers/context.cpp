@@ -593,7 +593,14 @@ void FContext::CreateDescriptorSetLayouts()
     TransformLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     TransformLayoutBinding.pImmutableSamplers = nullptr;
 
-    std::vector<VkDescriptorSetLayoutBinding> RenderableBindings {TransformLayoutBinding};
+    VkDescriptorSetLayoutBinding RenderableLayoutBinding{};
+    RenderableLayoutBinding.binding = 1;
+    RenderableLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    RenderableLayoutBinding.descriptorCount = 1;
+    RenderableLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    RenderableLayoutBinding.pImmutableSamplers = nullptr;
+
+    std::vector<VkDescriptorSetLayoutBinding> RenderableBindings {TransformLayoutBinding, RenderableLayoutBinding};
     VkDescriptorSetLayoutCreateInfo RenderableLayoutInfo{};
     RenderableLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     RenderableLayoutInfo.bindingCount = static_cast<uint32_t>(RenderableBindings.size());
@@ -1163,11 +1170,14 @@ void FContext::CreateUniformBuffers()
 
     DeviceTransformBuffers.resize(Swapchain->Size());
     DeviceCameraBuffers.resize(Swapchain->Size());
+    DeviceRenderableBuffers.resize(Swapchain->Size());
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
         DeviceTransformBuffers[i] = ResourceAllocator->CreateBuffer(TransformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         DeviceCameraBuffers[i] = ResourceAllocator->CreateBuffer(CameraBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        VkDeviceSize DeviceRenderableBufferSize = sizeof(Renderable) * Models.size();
+        DeviceRenderableBuffers[i] = ResourceAllocator->CreateBuffer(DeviceRenderableBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     }
 }
 
@@ -1183,6 +1193,7 @@ void FContext::CreateDescriptorPool()
 
     AddDescriptor(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain->Size() * Models.size()));
     AddDescriptor(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(Swapchain->Size() * Models.size()));
+    AddDescriptor(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain->Size() * Models.size()));
     AddDescriptor(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain->Size()));
 
     std::vector<VkDescriptorPoolSize> PoolSizes{};
@@ -1228,7 +1239,12 @@ void FContext::CreateDescriptorSet()
             TransformBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceTransformComponent) * j;
             TransformBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceTransformComponent);
 
-            std::vector<VkWriteDescriptorSet> DescriptorWrites{1};
+            VkDescriptorBufferInfo RenderableBufferInfo{};
+            RenderableBufferInfo.buffer = DeviceRenderableBuffers[i].Buffer;
+            RenderableBufferInfo.offset = sizeof(Renderable) * j;
+            RenderableBufferInfo.range = sizeof(Renderable);
+
+            std::vector<VkWriteDescriptorSet> DescriptorWrites{2};
             DescriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             DescriptorWrites[0].dstSet = RenderebleDescriptorSet[j * Swapchain->Size() + i];
             DescriptorWrites[0].dstBinding = 0;
@@ -1236,6 +1252,14 @@ void FContext::CreateDescriptorSet()
             DescriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             DescriptorWrites[0].descriptorCount = 1;
             DescriptorWrites[0].pBufferInfo = &TransformBufferInfo;
+
+            DescriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            DescriptorWrites[1].dstSet = RenderebleDescriptorSet[j * Swapchain->Size() + i];
+            DescriptorWrites[1].dstBinding = 1;
+            DescriptorWrites[1].dstArrayElement = 0;
+            DescriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            DescriptorWrites[1].descriptorCount = 1;
+            DescriptorWrites[1].pBufferInfo = &RenderableBufferInfo;
 
             vkUpdateDescriptorSets(LogicalDevice, static_cast<uint32_t>(DescriptorWrites.size()), DescriptorWrites.data(), 0, nullptr);
         }
@@ -1515,6 +1539,7 @@ void FContext::CleanUpSwapChain()
     {
         ResourceAllocator->DestroyBuffer(DeviceTransformBuffers[i]);
         ResourceAllocator->DestroyBuffer(DeviceCameraBuffers[i]);
+        ResourceAllocator->DestroyBuffer(DeviceRenderableBuffers[i]);
     }
 
     Swapchain = nullptr;
@@ -1535,6 +1560,10 @@ void FContext::UpdateUniformBuffer(uint32_t CurrentImage)
 
     LoadDataIntoBuffer(DeviceTransformBuffers[CurrentImage], DeviceTransformComponentsData, DeviceTransformComponentsSize);
     LoadDataIntoBuffer(DeviceCameraBuffers[CurrentImage], DeviceCameraComponentsData, DeviceCameraComponentsSize);
+    static std::vector<Renderable> Renderables{{FVector3{0.3f, 0.1f, 0.8f}, 0, 0, 0, 0, 0},
+                                               {FVector3{0.9f, 0.1f, 0.2f}, 0, 1, 0, 0, 0},
+                                               {FVector3{0.3f, 0.7f, 0.2f}, 0, 2, 0, 0, 0}};
+    LoadDataIntoBuffer(DeviceRenderableBuffers[CurrentImage], Renderables.data(), Renderables.size() * sizeof(Renderable));
 }
 
 void FContext::LoadDataIntoBuffer(FBuffer &Buffer, void* DataToLoad, size_t Size)
