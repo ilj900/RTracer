@@ -15,12 +15,9 @@ layout(set = 1, binding = 0) uniform TransformBufferObject
 layout(set = 1, binding = 1) uniform RenderableBufferObject
 {
     vec3 RenderableColor;
-    uint Padding1;
 
     uint RenderableIndex;
     uint RenderablePropertyMask;
-    uint Padding2;
-    uint Padding3;
 } RenderableBuffer;
 
 layout(location = 0) in vec3 Position;

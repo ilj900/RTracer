@@ -1,10 +1,16 @@
 #include "coordinator.h"
+
 #include "components/camera_component.h"
 #include "components/device_camera_component.h"
+#include "systems/camera_system.h"
+
 #include "components/transform_component.h"
 #include "components/device_transform_component.h"
-#include "systems/camera_system.h"
 #include "systems/transform_system.h"
+
+#include "components/renderable_component.h"
+#include "systems/renderable_system.h"
+
 #include "GLFW/glfw3.h"
 #include "context.h"
 
@@ -37,6 +43,13 @@ void InitECS()
     TransformSystemSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FTransformComponent>());
     TransformSystemSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FDeviceTransformComponent>());
     Coordinator.SetSystemSignature<ECS::SYSTEMS::FTransformSystem>(TransformSystemSignature);
+
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FRenderableComponent>();
+    auto RenderableSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FRenderableSystem>();
+
+    ECS::FSignature RenderablesSignature;
+    RenderablesSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FRenderableComponent>());
+    Coordinator.SetSystemSignature<ECS::SYSTEMS::FRenderableSystem>(RenderablesSignature);
 }
 
 int main()

@@ -19,13 +19,10 @@
 
 struct Renderable
 {
-    FVector3 RenderableColor;
-    uint32_t Padding1;
+    alignas(16)FVector3 RenderableColor;
 
-    uint32_t RenderableIndex;
-    uint32_t RenderablePropertyMask;
-    uint32_t Padding2;
-    uint32_t Padding3;
+    alignas(16)uint32_t RenderableIndex;
+    alignas(16)uint32_t RenderablePropertyMask;
 };
 
 class FContext

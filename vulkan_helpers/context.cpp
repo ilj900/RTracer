@@ -1,8 +1,10 @@
 #include "context.h"
 #include "systems/camera_system.h"
 #include "systems/transform_system.h"
+#include "systems/renderable_system.h"
 #include "components/device_camera_component.h"
 #include "components/device_transform_component.h"
+#include "components/renderable_component.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -60,10 +62,13 @@ void FContext::Init()
 //        Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back().Model, {0.f, 0.f, -2.f}, {-1.f, 0.f, 0.f}, {0.f, 1.f, 0.f});
         Models.push_back(FModel::CreateTetrahedron(LogicalDevice, ResourceAllocator));
         Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back().Model, {-2.f, 0.f, -2.f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
+        Coordinator.GetSystem<ECS::SYSTEMS::FRenderableSystem>()->SetRenderableColor(Models.back().Model, 0.9f, 0.6f, 0.3f);
         Models.push_back(FModel::CreateHexahedron(LogicalDevice, ResourceAllocator));
         Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back().Model, {0.f, 0.f, -2.f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
+        Coordinator.GetSystem<ECS::SYSTEMS::FRenderableSystem>()->SetRenderableColor(Models.back().Model, 0.3f, 0.9f, 0.6f);
         Models.push_back(FModel::CreateIcosahedron(LogicalDevice, ResourceAllocator, 6));
         Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back().Model, {2.f, 0.f, -2.f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
+        Coordinator.GetSystem<ECS::SYSTEMS::FRenderableSystem>()->SetRenderableColor(Models.back().Model, 0.6f, 0.3f, 0.9f);
 
         Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->UpdateAllDeviceComponentsData();
         CreateUniformBuffers();
@@ -80,7 +85,7 @@ void FContext::Init()
 
 void FContext::CreateInstance()
 {
-    // Check supported Layers
+    /// Check supported Layers
     {
         uint32_t LayerCount;
         vkEnumerateInstanceLayerProperties(&LayerCount, nullptr);
@@ -1167,6 +1172,7 @@ void FContext::CreateUniformBuffers()
     auto& Coordinator = ECS::GetCoordinator();
     VkDeviceSize TransformBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>();
     VkDeviceSize CameraBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>();
+    VkDeviceSize RenderableBufferSize = Coordinator.Size<ECS::COMPONENTS::FRenderableComponent>();
 
     DeviceTransformBuffers.resize(Swapchain->Size());
     DeviceCameraBuffers.resize(Swapchain->Size());
@@ -1176,8 +1182,7 @@ void FContext::CreateUniformBuffers()
     {
         DeviceTransformBuffers[i] = ResourceAllocator->CreateBuffer(TransformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         DeviceCameraBuffers[i] = ResourceAllocator->CreateBuffer(CameraBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        VkDeviceSize DeviceRenderableBufferSize = sizeof(Renderable) * Models.size();
-        DeviceRenderableBuffers[i] = ResourceAllocator->CreateBuffer(DeviceRenderableBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        DeviceRenderableBuffers[i] = ResourceAllocator->CreateBuffer(RenderableBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     }
 }
 
@@ -1558,12 +1563,12 @@ void FContext::UpdateUniformBuffer(uint32_t CurrentImage)
     auto DeviceCameraComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceCameraComponent>();
     auto DeviceCameraComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>();
 
+    auto RenderableComponentData = Coordinator.Data<ECS::COMPONENTS::FRenderableComponent>();
+    auto RenderableComponentSize = Coordinator.Size<ECS::COMPONENTS::FRenderableComponent>();
+
     LoadDataIntoBuffer(DeviceTransformBuffers[CurrentImage], DeviceTransformComponentsData, DeviceTransformComponentsSize);
     LoadDataIntoBuffer(DeviceCameraBuffers[CurrentImage], DeviceCameraComponentsData, DeviceCameraComponentsSize);
-    static std::vector<Renderable> Renderables{{FVector3{0.3f, 0.1f, 0.8f}, 0, 0, 0, 0, 0},
-                                               {FVector3{0.9f, 0.1f, 0.2f}, 0, 1, 0, 0, 0},
-                                               {FVector3{0.3f, 0.7f, 0.2f}, 0, 2, 0, 0, 0}};
-    LoadDataIntoBuffer(DeviceRenderableBuffers[CurrentImage], Renderables.data(), Renderables.size() * sizeof(Renderable));
+    LoadDataIntoBuffer(DeviceRenderableBuffers[CurrentImage], RenderableComponentData, RenderableComponentSize);
 }
 
 void FContext::LoadDataIntoBuffer(FBuffer &Buffer, void* DataToLoad, size_t Size)

@@ -5,6 +5,7 @@
 
 #include "components/transform_component.h"
 #include "components/device_transform_component.h"
+#include "components/renderable_component.h"
 #include "systems/transform_system.h"
 #include "coordinator.h"
 
@@ -78,6 +79,7 @@ FModel::FModel()
     Model = Coordinator.CreateEntity();
     Coordinator.AddComponent<ECS::COMPONENTS::FTransformComponent>(Model, {FVector3{0.f, 0.f, 0.f}, FVector3{0.f, 0.f, 1.f}, FVector3{0.f, 1.f, 0.f}});
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Model, {});
+    Coordinator.AddComponent<ECS::COMPONENTS::FRenderableComponent>(Model, {});
     auto TransformSystem = Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>();
     TransformSystem->UpdateDeviceComponentData(Model);
 }
@@ -88,6 +90,7 @@ FModel::FModel(const std::string &Path, VkDevice LogicalDevice, std::shared_ptr<
     Model = Coordinator.CreateEntity();
     Coordinator.AddComponent<ECS::COMPONENTS::FTransformComponent>(Model, {FVector3{0.f, 0.f, 0.f}, FVector3{0.f, 0.f, 1.f},FVector3 {0.f, 1.f, 0.f}});
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Model, {});
+    Coordinator.AddComponent<ECS::COMPONENTS::FRenderableComponent>(Model, {});
     auto TransformSystem = Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>();
     TransformSystem->UpdateDeviceComponentData(Model);
 

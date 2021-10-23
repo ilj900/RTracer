@@ -31,11 +31,14 @@ set(ECS_SOURCE
         ECS/components/transform_component.h
         ECS/components/camera_component.h
         ECS/components/device_camera_component.h
+        ECS/components/renderable_component.h
         ECS/systems/system.h
         ECS/systems/camera_system.h
         ECS/systems/camera_system.cpp
         ECS/systems/transform_system.h
-        ECS/systems/transform_system.cpp)
+        ECS/systems/transform_system.cpp
+        ECS/systems/renderable_system.h
+        ECS/systems/renderable_system.cpp)
 
 set(SOURCE
         src/main.cpp
