@@ -7,9 +7,9 @@
 #include "resource_allocation.h"
 #include "function_loader.h"
 #include "maths.h"
-#include "model.h"
 #include "swapchain.h"
 #include "controller.h"
+#include "buffer.h"
 
 #include <vector>
 #include <string>
@@ -28,10 +28,12 @@ struct Renderable
 class FContext
 {
 public:
-    FContext(GLFWwindow* Window, FController* Controller);
+    FContext() = default;
+    FContext operator=(const FContext* Other) = delete;
+    FContext(const FContext& Other) = delete;
     ~FContext();
 
-    void Init();
+    void Init(GLFWwindow* Window, FController* Controlle);
 
     void CreateInstance();
     void SetupDebugMessenger();
@@ -45,6 +47,7 @@ public:
     void CreateGraphicsPipeline();
     void CreateCommandPool();
     void CreateFramebuffers();
+    void LoadModelDataToGPU();
     void CreateTextureImage(std::string& TexturePath);
     void CreateTextureImageView();
     void CreateTextureSampler();
@@ -76,6 +79,8 @@ public:
     void GenerateMipmaps(VkImage Image, VkFormat ImageFormat, int32_t TexWidth, int32_t TexHeight, uint32_t mipLevels);
     void LoadDataIntoBuffer(FBuffer &Buffer, void* Data, size_t Size);
     void AddDescriptor(VkDescriptorType Type, uint32_t Count);
+    FBuffer LoadDataIntoGPU(void* Data, uint32_t Size);
+    void FreeData(FBuffer Buffer);
 
     bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device);
     bool CheckDeviceQueueSupport(VkPhysicalDevice Device);
@@ -86,7 +91,6 @@ public:
 
     std::shared_ptr<FResourceAllocator> ResourceAllocator = nullptr;
     std::shared_ptr<FVulkanFunctionLoader> FunctionLoader = nullptr;
-    std::vector<FModel> Models;
 
     std::vector<std::string> InstanceExtensions;
     std::vector<std::string> DeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
@@ -180,5 +184,7 @@ public:
     std::string ModelPath = "../models/viking_room/viking_room.obj";
     std::string TexturePath = "../models/viking_room/viking_room.png";
 };
+
+FContext& GetContext();
 
 std::vector<char> ReadFile(const std::string& FileName);

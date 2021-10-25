@@ -1,4 +1,5 @@
 #include "resource_allocation.h"
+#include "buffer.h"
 #include "context.h"
 
 #include <stdexcept>

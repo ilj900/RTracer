@@ -2,9 +2,12 @@
 #include "systems/camera_system.h"
 #include "systems/transform_system.h"
 #include "systems/renderable_system.h"
+#include "systems/mesh_system.h"
 #include "components/device_camera_component.h"
 #include "components/device_transform_component.h"
 #include "components/renderable_component.h"
+#include "components/mesh_component.h"
+#include "coordinator.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -17,6 +20,13 @@
 #include <unordered_map>
 #include <chrono>
 
+static FContext Context{};
+
+FContext& GetContext()
+{
+    return Context;
+}
+
 static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT MessageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT MessageType,
@@ -28,15 +38,12 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     return VK_FALSE;
 }
 
-FContext::FContext(GLFWwindow* Window, FController* Controller) :
-    Window(Window),
-    Controller(Controller)
+void FContext::Init(GLFWwindow *Window, FController *Controller)
 {
+    this->Window = Window;
+    this->Controller = Controller;
     FunctionLoader = std::make_shared<FVulkanFunctionLoader>();
-}
 
-void FContext::Init()
-{
     try {
         CreateInstance();
         FunctionLoader->LoadFunctions(Instance);
@@ -54,23 +61,7 @@ void FContext::Init()
         CreateTextureImage(TexturePath);
         CreateTextureImageView();
         CreateTextureSampler();
-
-        auto& Coordinator = ECS::GetCoordinator();
-        auto TransformSystem = Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>();
-
-//        Models.push_back(FModel(ModelPath, LogicalDevice, ResourceAllocator));
-//        Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back().Model, {0.f, 0.f, -2.f}, {-1.f, 0.f, 0.f}, {0.f, 1.f, 0.f});
-        Models.push_back(FModel::CreateTetrahedron(LogicalDevice, ResourceAllocator));
-        Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back().Model, {-2.f, 0.f, -2.f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-        Coordinator.GetSystem<ECS::SYSTEMS::FRenderableSystem>()->SetRenderableColor(Models.back().Model, 0.9f, 0.6f, 0.3f);
-        Models.push_back(FModel::CreateHexahedron(LogicalDevice, ResourceAllocator));
-        Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back().Model, {0.f, 0.f, -2.f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-        Coordinator.GetSystem<ECS::SYSTEMS::FRenderableSystem>()->SetRenderableColor(Models.back().Model, 0.3f, 0.9f, 0.6f);
-        Models.push_back(FModel::CreateIcosahedron(LogicalDevice, ResourceAllocator, 6));
-        Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back().Model, {2.f, 0.f, -2.f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-        Coordinator.GetSystem<ECS::SYSTEMS::FRenderableSystem>()->SetRenderableColor(Models.back().Model, 0.6f, 0.3f, 0.9f);
-
-        Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->UpdateAllDeviceComponentsData();
+        LoadModelDataToGPU();
         CreateUniformBuffers();
         CreateDescriptorPool();
         CreateDescriptorSet();
@@ -763,7 +754,7 @@ void FContext::CreateGraphicsPipeline()
     VkPipelineLayoutCreateInfo PipelineLayoutInfo{};
     std::vector<VkDescriptorSetLayout> PipelineSetLayouts = {FrameDescriptorSetLayout, RenderableDescriptorSetLayout};
     PipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    PipelineLayoutInfo.setLayoutCount = PipelineSetLayouts.size();
+    PipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(PipelineSetLayouts.size());
     PipelineLayoutInfo.pSetLayouts = PipelineSetLayouts.data();
     PipelineLayoutInfo.pushConstantRangeCount = 0;
     PipelineLayoutInfo.pPushConstantRanges = nullptr;
@@ -1133,6 +1124,17 @@ void FContext::GenerateMipmaps(VkImage Image, VkFormat ImageFormat, int32_t TexW
     EndSingleTimeCommand(CommandBuffer);
 }
 
+void FContext::LoadModelDataToGPU()
+{
+    auto MeshSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>();
+
+    for(auto Mesh : *MeshSystem)
+    {
+        MeshSystem->LoadToGPU(Mesh);
+    }
+
+}
+
 void FContext::CreateTextureImageView()
 {
     TextureImageView = CreateImageView(TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, MipLevels);
@@ -1188,17 +1190,11 @@ void FContext::CreateUniformBuffers()
 
 void FContext::CreateDescriptorPool()
 {
-//    std::array<VkDescriptorPoolSize, 3> PoolSizes{};
-//    PoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-//    PoolSizes[0].descriptorCount = static_cast<uint32_t>(Swapchain->Size() * Models.size());
-//    PoolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-//    PoolSizes[1].descriptorCount = static_cast<uint32_t>(Swapchain->Size() * Models.size());
-//    PoolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-//    PoolSizes[2].descriptorCount = static_cast<uint32_t>(Swapchain->Size() * Models.size());
+    auto ModelsCount = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>()->Size();
 
-    AddDescriptor(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain->Size() * Models.size()));
-    AddDescriptor(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(Swapchain->Size() * Models.size()));
-    AddDescriptor(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain->Size() * Models.size()));
+    AddDescriptor(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain->Size() * ModelsCount));
+    AddDescriptor(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(Swapchain->Size() * ModelsCount));
+    AddDescriptor(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain->Size() * ModelsCount));
     AddDescriptor(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain->Size()));
 
     std::vector<VkDescriptorPoolSize> PoolSizes{};
@@ -1211,7 +1207,7 @@ void FContext::CreateDescriptorPool()
     PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     PoolInfo.poolSizeCount = static_cast<uint32_t>(PoolSizes.size());
     PoolInfo.pPoolSizes = PoolSizes.data();
-    PoolInfo.maxSets = static_cast<uint32_t>(Swapchain->Size() * Models.size() + Swapchain->Size());
+    PoolInfo.maxSets = static_cast<uint32_t>(Swapchain->Size() * ModelsCount + Swapchain->Size());
 
     if (vkCreateDescriptorPool(LogicalDevice, &PoolInfo, nullptr, &DescriptorPool) != VK_SUCCESS)
     {
@@ -1221,8 +1217,10 @@ void FContext::CreateDescriptorPool()
 
 void FContext::CreateDescriptorSet()
 {
+    auto ModelsCount = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>()->Size();
+
     /// Create and update descriptor sets for renderable objects
-    std::vector<VkDescriptorSetLayout> RenderableLayouts(Swapchain->Size() * Models.size(), RenderableDescriptorSetLayout);
+    std::vector<VkDescriptorSetLayout> RenderableLayouts(Swapchain->Size() * ModelsCount, RenderableDescriptorSetLayout);
     VkDescriptorSetAllocateInfo RenderableAllocInfo{};
     RenderableAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     RenderableAllocInfo.descriptorPool = DescriptorPool;
@@ -1237,7 +1235,7 @@ void FContext::CreateDescriptorSet()
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
-        for (uint32_t j = 0; j < Models.size(); ++j)
+        for (uint32_t j = 0; j < ModelsCount; ++j)
         {
             VkDescriptorBufferInfo TransformBufferInfo{};
             TransformBufferInfo.buffer = DeviceTransformBuffers[i].Buffer;
@@ -1365,12 +1363,19 @@ void FContext::CreateCommandBuffers()
         vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &FrameDescriptorSet[i], 0,
                                 nullptr);
 
-        for (uint32_t j = 0; j < Models.size(); ++j)
+        auto MeshSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>();
+
+        uint32_t j = 0;
+        for (auto Entity : *MeshSystem)
         {
             vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 1, 1, &RenderebleDescriptorSet[j * Swapchain->Size() + i], 0,
                                     nullptr);
-            Models[j].Bind(CommandBuffers[i]);
-            Models[j].Draw(CommandBuffers[i]);
+            auto& Coordinator = ECS::GetCoordinator();
+            auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
+
+            MeshSystem->Bind(Entity, CommandBuffers[i]);
+            MeshSystem->Draw(Entity, CommandBuffers[i]);
+            ++j;
         }
         vkCmdEndRenderPass(CommandBuffers[i]);
 
@@ -1589,6 +1594,30 @@ void FContext::AddDescriptor(VkDescriptorType Type, uint32_t Count)
     Descriptors[Type] += Count;
 }
 
+void FContext::FreeData(FBuffer Buffer)
+{
+    ResourceAllocator->DestroyBuffer(Buffer);
+}
+
+FBuffer FContext::LoadDataIntoGPU(void* Data, uint32_t Size)
+{
+    VkDeviceSize BufferSize = Size;
+
+    /// Create staging buffer
+    FBuffer StagingBuffer = ResourceAllocator->CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    void* StagingData;
+    vkMapMemory(LogicalDevice, StagingBuffer.Memory, 0, BufferSize, 0, &StagingData);
+    memcpy(StagingData, Data, (std::size_t)BufferSize);
+    vkUnmapMemory(LogicalDevice, StagingBuffer.Memory);
+
+    FBuffer Buffer = ResourceAllocator->CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    ResourceAllocator->CopyBuffer(StagingBuffer, Buffer, BufferSize);
+    ResourceAllocator->DestroyBuffer(StagingBuffer);
+
+    return Buffer;
+}
+
 void FContext::DestroyDebugUtilsMessengerEXT()
 {
     FunctionLoader->vkDestroyDebugUtilsMessengerEXT(Instance, DebugMessenger, nullptr);
@@ -1607,11 +1636,8 @@ void FContext::CleanUp()
     vkDestroyDescriptorSetLayout(LogicalDevice, FrameDescriptorSetLayout, nullptr);
     vkDestroyDescriptorSetLayout(LogicalDevice, RenderableDescriptorSetLayout, nullptr);
 
-    for (auto& Model : Models)
-    {
-        ResourceAllocator->DestroyBuffer(Model.IndexBuffer);
-        ResourceAllocator->DestroyBuffer(Model.VertexBuffer);
-    }
+    auto& Coordinator = ECS::GetCoordinator();
+    Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>()->FreeAllDeviceData();
 
     for(std::size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
