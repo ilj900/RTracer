@@ -2,9 +2,10 @@
 
 #include "vulkan/vulkan.h"
 
+/// Implementation of hash function
+/// I'm not sure this is a good hash function
 size_t std::hash<FVertex>::operator()(FVertex const& Vertex) const
 {
-    /// I'm not sure this is a good hash function
     return ((std::hash<FVector3>{}(Vertex.Position) ^
              (std::hash<FVector3>{}(Vertex.Normal) << 1)) >> 1) ^
            (std::hash<FVector2>{}(Vertex.TexCoord) << 1);

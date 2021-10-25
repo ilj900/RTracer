@@ -7,6 +7,7 @@
 struct VkVertexInputBindingDescription;
 struct VkVertexInputAttributeDescription;
 
+/// Not sure this is the right place to define this structure
 struct FVertex {
     FVertex() = default;
     FVertex(float PosX, float PosY, float PosZ, float NormX, float NormY, float NormZ, float TexU, float TexV);
@@ -20,9 +21,9 @@ struct FVertex {
     FVector3 Position = {0.f, 0.f, 0.f};
     FVector3 Normal = {0.f, 0.f, 0.f};
     FVector2 TexCoord = {0.f, 0.f};
-
 };
 
+/// FVertex hash function, to we could use them in maps/sets
 template<>
 struct std::hash<FVertex>
 {

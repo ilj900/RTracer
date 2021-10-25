@@ -20,7 +20,7 @@ namespace ECS
             void CreateHexahedron(FEntity Entity);
             void CreateIcosahedron(FEntity Entity, uint32_t Depth);
             std::set<FEntity>::iterator begin();
-            std::set<FEntity>::iterator  end();
+            std::set<FEntity>::iterator end();
             uint32_t Size();
 
             void Draw(FEntity Entity, VkCommandBuffer CommandBuffer);

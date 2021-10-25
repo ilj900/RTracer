@@ -33,7 +33,7 @@ public:
     FContext(const FContext& Other) = delete;
     ~FContext();
 
-    void Init(GLFWwindow* Window, FController* Controlle);
+    void Init(GLFWwindow* Window, FController* Controller);
 
     void CreateInstance();
     void SetupDebugMessenger();
