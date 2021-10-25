@@ -77,38 +77,38 @@ void LoadModels()
     auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
     auto TransformSystem = Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>();
 
-    Models.push_back(Coordinator.CreateEntity());
-    Coordinator.AddComponent<ECS::COMPONENTS::FMeshComponent>(Models.back(), {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Models.back(), {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FRenderableComponent>(Models.back(), {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FTransformComponent>(Models.back(), {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Models.back(), {});
-    MeshSystem->CreateTetrahedron(Models.back());
-    Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back(), {-2.f, 0.f, -2.f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-    Coordinator.GetSystem<ECS::SYSTEMS::FRenderableSystem>()->SetRenderableColor(Models.back(), 0.9f, 0.6f, 0.3f);
-    TransformSystem->UpdateDeviceComponentData(Models.back());
+    enum MeshType {Tetrahedron, Hexahedron, Icosahedron, Model};
 
-    Models.push_back(Coordinator.CreateEntity());
-    Coordinator.AddComponent<ECS::COMPONENTS::FMeshComponent>(Models.back(), {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Models.back(), {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FRenderableComponent>(Models.back(), {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FTransformComponent>(Models.back(), {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Models.back(), {});
-    MeshSystem->CreateHexahedron(Models.back());
-    Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back(), {0.f, 0.f, -2.f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-    Coordinator.GetSystem<ECS::SYSTEMS::FRenderableSystem>()->SetRenderableColor(Models.back(), 0.3f, 0.9f, 0.6f);
-    TransformSystem->UpdateDeviceComponentData(Models.back());
+    auto AddMesh = [&Coordinator, &MeshSystem, &TransformSystem](const FVector3& Color, const FVector3& Position, MeshType Type, const std::string& Path){
+        Models.push_back(Coordinator.CreateEntity());
+        Coordinator.AddComponent<ECS::COMPONENTS::FMeshComponent>(Models.back(), {});
+        Coordinator.AddComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Models.back(), {});
+        Coordinator.AddComponent<ECS::COMPONENTS::FRenderableComponent>(Models.back(), {});
+        Coordinator.AddComponent<ECS::COMPONENTS::FTransformComponent>(Models.back(), {});
+        Coordinator.AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Models.back(), {});
+        switch(Type)
+        {
+        case Tetrahedron:
+            MeshSystem->CreateTetrahedron(Models.back());
+            break;
+        case Hexahedron:
+            MeshSystem->CreateHexahedron(Models.back());
+                break;
+        case Icosahedron:
+            MeshSystem->CreateIcosahedron(Models.back(), 6);
+            break;
+        case Model:
+            MeshSystem->LoadMesh(Models.back(), Path);
+            break;
+        }
+        Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back(), Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
+        Coordinator.GetSystem<ECS::SYSTEMS::FRenderableSystem>()->SetRenderableColor(Models.back(), Color.X, Color.Y, Color.Z);
+        TransformSystem->UpdateDeviceComponentData(Models.back());
+    };
 
-    Models.push_back(Coordinator.CreateEntity());
-    Coordinator.AddComponent<ECS::COMPONENTS::FMeshComponent>(Models.back(), {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Models.back(), {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FRenderableComponent>(Models.back(), {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FTransformComponent>(Models.back(), {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Models.back(), {});
-    MeshSystem->CreateIcosahedron(Models.back(), 6);
-    Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back(), {2.f, 0.f, -2.f}, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-    Coordinator.GetSystem<ECS::SYSTEMS::FRenderableSystem>()->SetRenderableColor(Models.back(), 0.6f, 0.3f, 0.9f);
-    TransformSystem->UpdateDeviceComponentData(Models.back());
+    AddMesh({0.9f, 0.6f, 0.3f}, {-2.f, 0.f, -2.f}, Tetrahedron, std::string());
+    AddMesh({0.6f, 0.3f, 0.9f}, {0.f, 0.f, -2.f}, Hexahedron, std::string());
+    AddMesh({0.3f, 0.9f, 0.6f}, {2.f, 0.f, -2.f}, Icosahedron, std::string());
 }
 
 int main()
