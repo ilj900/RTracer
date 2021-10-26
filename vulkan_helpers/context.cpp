@@ -1,7 +1,7 @@
 #include "context.h"
+#include "descriptors.h"
+
 #include "systems/camera_system.h"
-#include "systems/transform_system.h"
-#include "systems/renderable_system.h"
 #include "systems/mesh_system.h"
 #include "components/device_camera_component.h"
 #include "components/device_transform_component.h"
@@ -582,55 +582,17 @@ VkFormat FContext::FindSupportedFormat(const std::vector<VkFormat>& Candidates, 
 
 void FContext::CreateDescriptorSetLayouts()
 {
-    VkDescriptorSetLayoutBinding TransformLayoutBinding{};
-    TransformLayoutBinding.binding = 0;
-    TransformLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    TransformLayoutBinding.descriptorCount = 1;
-    TransformLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    TransformLayoutBinding.pImmutableSamplers = nullptr;
+    FDescriptorSetLayout DescriptorSetLayout;
 
-    VkDescriptorSetLayoutBinding RenderableLayoutBinding{};
-    RenderableLayoutBinding.binding = 1;
-    RenderableLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    RenderableLayoutBinding.descriptorCount = 1;
-    RenderableLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    RenderableLayoutBinding.pImmutableSamplers = nullptr;
+    DescriptorSetLayout.AddDescriptorLayout("Transform layout", {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
+    DescriptorSetLayout.AddDescriptorLayout("Renderable layout", {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
+    RenderableDescriptorSetLayout = DescriptorSetLayout.CreateDescriptorSetLayout(LogicalDevice);
+    DescriptorSetLayout.Reset();
 
-    std::vector<VkDescriptorSetLayoutBinding> RenderableBindings {TransformLayoutBinding, RenderableLayoutBinding};
-    VkDescriptorSetLayoutCreateInfo RenderableLayoutInfo{};
-    RenderableLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    RenderableLayoutInfo.bindingCount = static_cast<uint32_t>(RenderableBindings.size());
-    RenderableLayoutInfo.pBindings = RenderableBindings.data();
-
-    if (vkCreateDescriptorSetLayout(LogicalDevice, &RenderableLayoutInfo, nullptr, &RenderableDescriptorSetLayout) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create descriptor set layout!");
-    }
-
-    VkDescriptorSetLayoutBinding CameraLayoutBinding{};
-    CameraLayoutBinding.binding = 0;
-    CameraLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    CameraLayoutBinding.descriptorCount = 1;
-    CameraLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    CameraLayoutBinding.pImmutableSamplers = nullptr;
-
-    VkDescriptorSetLayoutBinding SamplerLayoutBinding{};
-    SamplerLayoutBinding.binding = 1;
-    SamplerLayoutBinding.descriptorCount = 1;
-    SamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    SamplerLayoutBinding.pImmutableSamplers = nullptr;
-    SamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    std::vector<VkDescriptorSetLayoutBinding> FrameBindings {CameraLayoutBinding, SamplerLayoutBinding};
-    VkDescriptorSetLayoutCreateInfo FrameLayoutInfo{};
-    FrameLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    FrameLayoutInfo.bindingCount = static_cast<uint32_t>(FrameBindings.size());
-    FrameLayoutInfo.pBindings = FrameBindings.data();
-
-    if (vkCreateDescriptorSetLayout(LogicalDevice, &FrameLayoutInfo, nullptr, &FrameDescriptorSetLayout) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create descriptor set layout!");
-    }
+    DescriptorSetLayout.AddDescriptorLayout("Camera layout", {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
+    DescriptorSetLayout.AddDescriptorLayout("Sampler layout", {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
+    FrameDescriptorSetLayout = DescriptorSetLayout.CreateDescriptorSetLayout(LogicalDevice);
+    DescriptorSetLayout.Reset();
 }
 
 VkShaderModule FContext::CreateShaderFromFile(const std::string& FileName)

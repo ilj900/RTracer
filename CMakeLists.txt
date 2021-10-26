@@ -52,6 +52,7 @@ set(SOURCE
         vulkan_helpers/resource_allocation.cpp
         vulkan_helpers/function_loader.cpp
         vulkan_helpers/swapchain.cpp
+        vulkan_helpers/descriptors.cpp
         math/maths.cpp)
 
 set(INCLUDE
@@ -62,6 +63,7 @@ set(INCLUDE
         vulkan_helpers/function_loader.h
         vulkan_helpers/swapchain.h
         vulkan_helpers/buffer.h
+        vulkan_helpers/descriptors.h
         include/stb_image.h
         include/tiny_obj_loader.h
         math/maths.h)
