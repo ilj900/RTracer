@@ -5,7 +5,7 @@
 #include "systems/mesh_system.h"
 #include "components/device_camera_component.h"
 #include "components/device_transform_component.h"
-#include "components/renderable_component.h"
+#include "components/device_renderable_component.h"
 #include "components/mesh_component.h"
 #include "coordinator.h"
 
@@ -441,6 +441,7 @@ void FContext::CreateLogicalDevice()
     }
 
     ResourceAllocator = std::make_shared<FResourceAllocator>(PhysicalDevice, LogicalDevice, this);
+    DescriptorSetManager = std::make_shared<FDescriptorSetManager>(LogicalDevice);
 }
 
 void FContext::CreateDepthAndAAImages()
@@ -582,17 +583,13 @@ VkFormat FContext::FindSupportedFormat(const std::vector<VkFormat>& Candidates, 
 
 void FContext::CreateDescriptorSetLayouts()
 {
-    FDescriptorSetLayout DescriptorSetLayout;
+    RenderableDescriptorSetLayout.AddDescriptorLayout("Transform layout", {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
+    RenderableDescriptorSetLayout.AddDescriptorLayout("Renderable layout", {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
+    RenderableDescriptorSetLayout.CreateDescriptorSetLayout(LogicalDevice);
 
-    DescriptorSetLayout.AddDescriptorLayout("Transform layout", {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-    DescriptorSetLayout.AddDescriptorLayout("Renderable layout", {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-    RenderableDescriptorSetLayout = DescriptorSetLayout.CreateDescriptorSetLayout(LogicalDevice);
-    DescriptorSetLayout.Reset();
-
-    DescriptorSetLayout.AddDescriptorLayout("Camera layout", {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-    DescriptorSetLayout.AddDescriptorLayout("Sampler layout", {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
-    FrameDescriptorSetLayout = DescriptorSetLayout.CreateDescriptorSetLayout(LogicalDevice);
-    DescriptorSetLayout.Reset();
+    FrameDescriptorSetLayout.AddDescriptorLayout("Camera layout", {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
+    FrameDescriptorSetLayout.AddDescriptorLayout("Sampler layout", {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
+    FrameDescriptorSetLayout.CreateDescriptorSetLayout(LogicalDevice);
 }
 
 VkShaderModule FContext::CreateShaderFromFile(const std::string& FileName)
@@ -714,7 +711,7 @@ void FContext::CreateGraphicsPipeline()
 
 
     VkPipelineLayoutCreateInfo PipelineLayoutInfo{};
-    std::vector<VkDescriptorSetLayout> PipelineSetLayouts = {FrameDescriptorSetLayout, RenderableDescriptorSetLayout};
+    std::vector<VkDescriptorSetLayout> PipelineSetLayouts = {FrameDescriptorSetLayout.GetDescriptorSetLayout(), RenderableDescriptorSetLayout.GetDescriptorSetLayout()};
     PipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     PipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(PipelineSetLayouts.size());
     PipelineLayoutInfo.pSetLayouts = PipelineSetLayouts.data();
@@ -1136,7 +1133,7 @@ void FContext::CreateUniformBuffers()
     auto& Coordinator = ECS::GetCoordinator();
     VkDeviceSize TransformBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>();
     VkDeviceSize CameraBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>();
-    VkDeviceSize RenderableBufferSize = Coordinator.Size<ECS::COMPONENTS::FRenderableComponent>();
+    VkDeviceSize RenderableBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>();
 
     DeviceTransformBuffers.resize(Swapchain->Size());
     DeviceCameraBuffers.resize(Swapchain->Size());
@@ -1182,7 +1179,7 @@ void FContext::CreateDescriptorSet()
     auto ModelsCount = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>()->Size();
 
     /// Create and update descriptor sets for renderable objects
-    std::vector<VkDescriptorSetLayout> RenderableLayouts(Swapchain->Size() * ModelsCount, RenderableDescriptorSetLayout);
+    std::vector<VkDescriptorSetLayout> RenderableLayouts(Swapchain->Size() * ModelsCount, RenderableDescriptorSetLayout.GetDescriptorSetLayout());
     VkDescriptorSetAllocateInfo RenderableAllocInfo{};
     RenderableAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     RenderableAllocInfo.descriptorPool = DescriptorPool;
@@ -1206,8 +1203,8 @@ void FContext::CreateDescriptorSet()
 
             VkDescriptorBufferInfo RenderableBufferInfo{};
             RenderableBufferInfo.buffer = DeviceRenderableBuffers[i].Buffer;
-            RenderableBufferInfo.offset = sizeof(Renderable) * j;
-            RenderableBufferInfo.range = sizeof(Renderable);
+            RenderableBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent) * j;
+            RenderableBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent);
 
             std::vector<VkWriteDescriptorSet> DescriptorWrites{2};
             DescriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1231,7 +1228,7 @@ void FContext::CreateDescriptorSet()
     }
 
     /// Create and update descriptor sets that will be bound once per frame
-    std::vector<VkDescriptorSetLayout> FrameLayouts(Swapchain->Size(), FrameDescriptorSetLayout);
+    std::vector<VkDescriptorSetLayout> FrameLayouts(Swapchain->Size(), FrameDescriptorSetLayout.GetDescriptorSetLayout());
     VkDescriptorSetAllocateInfo FrameAllocInfo{};
     FrameAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     FrameAllocInfo.descriptorPool = DescriptorPool;
@@ -1530,8 +1527,8 @@ void FContext::UpdateUniformBuffer(uint32_t CurrentImage)
     auto DeviceCameraComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceCameraComponent>();
     auto DeviceCameraComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>();
 
-    auto RenderableComponentData = Coordinator.Data<ECS::COMPONENTS::FRenderableComponent>();
-    auto RenderableComponentSize = Coordinator.Size<ECS::COMPONENTS::FRenderableComponent>();
+    auto RenderableComponentData = Coordinator.Data<ECS::COMPONENTS::FDeviceRenderableComponent>();
+    auto RenderableComponentSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>();
 
     LoadDataIntoBuffer(DeviceTransformBuffers[CurrentImage], DeviceTransformComponentsData, DeviceTransformComponentsSize);
     LoadDataIntoBuffer(DeviceCameraBuffers[CurrentImage], DeviceCameraComponentsData, DeviceCameraComponentsSize);
@@ -1595,8 +1592,8 @@ void FContext::CleanUp()
     vkDestroyImage(LogicalDevice, TextureImage, nullptr);
     vkFreeMemory(LogicalDevice, TextureImageMemory, nullptr);
 
-    vkDestroyDescriptorSetLayout(LogicalDevice, FrameDescriptorSetLayout, nullptr);
-    vkDestroyDescriptorSetLayout(LogicalDevice, RenderableDescriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(LogicalDevice, FrameDescriptorSetLayout.GetDescriptorSetLayout(), nullptr);
+    vkDestroyDescriptorSetLayout(LogicalDevice, RenderableDescriptorSetLayout.GetDescriptorSetLayout(), nullptr);
 
     auto& Coordinator = ECS::GetCoordinator();
     Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>()->FreeAllDeviceData();

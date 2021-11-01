@@ -8,7 +8,7 @@
 #include "components/device_transform_component.h"
 #include "systems/transform_system.h"
 
-#include "components/renderable_component.h"
+#include "components/device_renderable_component.h"
 #include "systems/renderable_system.h"
 
 #include "components/mesh_component.h"
@@ -53,11 +53,11 @@ void InitECS()
     Coordinator.SetSystemSignature<ECS::SYSTEMS::FTransformSystem>(TransformSystemSignature);
 
     /// Register Renderable components and system
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FRenderableComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FDeviceRenderableComponent>();
     auto RenderableSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FRenderableSystem>();
 
     ECS::FSignature RenderablesSignature;
-    RenderablesSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FRenderableComponent>());
+    RenderablesSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FDeviceRenderableComponent>());
     Coordinator.SetSystemSignature<ECS::SYSTEMS::FRenderableSystem>(RenderablesSignature);
 
     /// Register Mesh component and Systems
@@ -83,7 +83,7 @@ void LoadModels()
         Models.push_back(Coordinator.CreateEntity());
         Coordinator.AddComponent<ECS::COMPONENTS::FMeshComponent>(Models.back(), {});
         Coordinator.AddComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Models.back(), {});
-        Coordinator.AddComponent<ECS::COMPONENTS::FRenderableComponent>(Models.back(), {});
+        Coordinator.AddComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Models.back(), {});
         Coordinator.AddComponent<ECS::COMPONENTS::FTransformComponent>(Models.back(), {});
         Coordinator.AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Models.back(), {});
         switch(Type)

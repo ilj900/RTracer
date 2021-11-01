@@ -1,4 +1,4 @@
-#include "components/renderable_component.h"
+#include "components/device_renderable_component.h"
 #include "systems/renderable_system.h"
 #include "coordinator.h"
 
@@ -19,7 +19,7 @@ namespace ECS
 
         void FRenderableSystem::SetRenderableColor(FEntity Entity, float Red, float Green, float Blue)
         {
-            auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FRenderableComponent>(Entity);
+            auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
             RenderableComponent.RenderableColor = {Red, Green, Blue};
         }
     }

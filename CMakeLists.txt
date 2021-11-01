@@ -31,6 +31,7 @@ set(ECS_SOURCE
         ECS/components/transform_component.h
         ECS/components/camera_component.h
         ECS/components/device_camera_component.h
+        ECS/components/device_renderable_component.h
         ECS/components/renderable_component.h
         ECS/components/mesh_component.h
         ECS/components/device_mesh_component.h

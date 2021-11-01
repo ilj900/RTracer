@@ -10,20 +10,13 @@
 #include "swapchain.h"
 #include "controller.h"
 #include "buffer.h"
+#include "descriptors.h"
 
 #include <vector>
 #include <string>
 #include <array>
 #include <memory>
 #include <map>
-
-struct Renderable
-{
-    alignas(16)FVector3 RenderableColor;
-
-    alignas(16)uint32_t RenderableIndex;
-    alignas(16)uint32_t RenderablePropertyMask;
-};
 
 class FContext
 {
@@ -121,8 +114,8 @@ public:
 
     VkRenderPass RenderPass;
 
-    VkDescriptorSetLayout FrameDescriptorSetLayout;
-    VkDescriptorSetLayout RenderableDescriptorSetLayout;
+    FDescriptorSetLayout FrameDescriptorSetLayout;
+    FDescriptorSetLayout RenderableDescriptorSetLayout;
 
     VkPipelineLayout PipelineLayout;
     VkPipeline GraphicsPipeline;
@@ -146,6 +139,7 @@ public:
     VkSampler TextureSampler;
 
     uint32_t  MipLevels;
+    std::shared_ptr<FDescriptorSetManager >DescriptorSetManager = nullptr;
 
     std::map<VkDescriptorType, uint32_t> Descriptors;
     VkDescriptorPool DescriptorPool;
