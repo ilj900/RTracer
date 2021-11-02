@@ -583,13 +583,13 @@ VkFormat FContext::FindSupportedFormat(const std::vector<VkFormat>& Candidates, 
 
 void FContext::CreateDescriptorSetLayouts()
 {
-    RenderableDescriptorSetLayout.AddDescriptorLayout("Transform layout", {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-    RenderableDescriptorSetLayout.AddDescriptorLayout("Renderable layout", {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-    RenderableDescriptorSetLayout.CreateDescriptorSetLayout(LogicalDevice);
+    DescriptorSetManager->AddDescriptorLayout("Per-renderable layout", 0, {"Transform", 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
+    DescriptorSetManager->AddDescriptorLayout("Per-renderable layout", 0, {"Renderable", 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
 
-    FrameDescriptorSetLayout.AddDescriptorLayout("Camera layout", {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-    FrameDescriptorSetLayout.AddDescriptorLayout("Sampler layout", {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
-    FrameDescriptorSetLayout.CreateDescriptorSetLayout(LogicalDevice);
+    DescriptorSetManager->AddDescriptorLayout("Per-frame layout", 1, {"Renderable", 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
+    DescriptorSetManager->AddDescriptorLayout("Per-frame layout", 1, {"Renderable", 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
+
+    DescriptorSetManager->CreateDescriptorSetLayouts();
 }
 
 VkShaderModule FContext::CreateShaderFromFile(const std::string& FileName)
@@ -711,7 +711,7 @@ void FContext::CreateGraphicsPipeline()
 
 
     VkPipelineLayoutCreateInfo PipelineLayoutInfo{};
-    std::vector<VkDescriptorSetLayout> PipelineSetLayouts = {FrameDescriptorSetLayout.GetDescriptorSetLayout(), RenderableDescriptorSetLayout.GetDescriptorSetLayout()};
+    std::vector<VkDescriptorSetLayout> PipelineSetLayouts = {DescriptorSetManager->GetVkDescriptorSetLayout("Per-frame layout"), DescriptorSetManager->GetVkDescriptorSetLayout("Per-renderable layout")};
     PipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     PipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(PipelineSetLayouts.size());
     PipelineLayoutInfo.pSetLayouts = PipelineSetLayouts.data();
@@ -1178,19 +1178,12 @@ void FContext::CreateDescriptorSet()
 {
     auto ModelsCount = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>()->Size();
 
-    /// Create and update descriptor sets for renderable objects
-    std::vector<VkDescriptorSetLayout> RenderableLayouts(Swapchain->Size() * ModelsCount, RenderableDescriptorSetLayout.GetDescriptorSetLayout());
-    VkDescriptorSetAllocateInfo RenderableAllocInfo{};
-    RenderableAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    RenderableAllocInfo.descriptorPool = DescriptorPool;
-    RenderableAllocInfo.descriptorSetCount = static_cast<uint32_t>(RenderableLayouts.size());
-    RenderableAllocInfo.pSetLayouts = RenderableLayouts.data();
+    /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
 
-    RenderebleDescriptorSet.resize(RenderableLayouts.size());
-    if (vkAllocateDescriptorSets(LogicalDevice, &RenderableAllocInfo, RenderebleDescriptorSet.data()) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to allocate descriptor sets!");
-    }
+    DescriptorSetManager->AddDescriptorSet("Per-frame layout", Swapchain->Size());
+    DescriptorSetManager->AddDescriptorSet("Per-renderable layout", Swapchain->Size() * ModelsCount);
+    /// And create them
+    DescriptorSetManager->CreateDescriptorSets();
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
@@ -1225,20 +1218,6 @@ void FContext::CreateDescriptorSet()
 
             vkUpdateDescriptorSets(LogicalDevice, static_cast<uint32_t>(DescriptorWrites.size()), DescriptorWrites.data(), 0, nullptr);
         }
-    }
-
-    /// Create and update descriptor sets that will be bound once per frame
-    std::vector<VkDescriptorSetLayout> FrameLayouts(Swapchain->Size(), FrameDescriptorSetLayout.GetDescriptorSetLayout());
-    VkDescriptorSetAllocateInfo FrameAllocInfo{};
-    FrameAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    FrameAllocInfo.descriptorPool = DescriptorPool;
-    FrameAllocInfo.descriptorSetCount = static_cast<uint32_t>(FrameLayouts.size());
-    FrameAllocInfo.pSetLayouts = FrameLayouts.data();
-
-    FrameDescriptorSet.resize(FrameLayouts.size());
-    if (vkAllocateDescriptorSets(LogicalDevice, &FrameAllocInfo, FrameDescriptorSet.data()) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to allocate descriptor sets!");
     }
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)

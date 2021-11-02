@@ -8,7 +8,7 @@ namespace ECS
     {
         struct FRenderableComponent
         {
-            VkDescriptorSet DescriptorSet;
+            VkDescriptorSet RenderableDescriptorSet;
         };
     }
 }

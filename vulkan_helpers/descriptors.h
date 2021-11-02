@@ -23,38 +23,6 @@ struct FDescriptorSetLayout
     std::vector<FDescriptor> Descriptors;
 };
 
-//class FDescriptorSetLayout
-//{
-//public:
-//    FDescriptorSetLayout() = default;
-//
-//    void AddDescriptorLayout(const std::string& DescriptorLayoutName, const FDescriptor& Descriptor);
-//    VkDescriptorSetLayout CreateDescriptorSetLayout(VkDevice LogicalDevice);
-//    VkDescriptorSetLayout GetDescriptorSetLayout();
-//
-//    std::map<std::string, FDescriptor>::iterator begin();
-//    std::map<std::string, FDescriptor>::iterator end();
-//
-//private:
-//    /// I'm using map just to make it more informative.
-//    /// In the key you can provide some information the set
-//    std::map<std::string, FDescriptor> Content;
-//    VkDescriptorSetLayout DescriptorSetLayout = VK_NULL_HANDLE;
-//};
-//
-//class FDescriptorPool
-//{
-//public:
-//    FDescriptorPool() = default;
-//    void AddDescriptor(VkDescriptorType Type, uint32_t Count = 1);
-//    void Reserve(VkDevice LogicalDevice);
-//    VkDescriptorPool& GetDescriptorPool();
-//
-//private:
-//    std::map<VkDescriptorType, uint32_t> Descriptors;
-//    VkDescriptorPool DescriptorPool;
-//};
-
 class FDescriptorSetManager
 {
 public:
@@ -64,11 +32,13 @@ public:
 
     void CreateDescriptorSetLayouts();
 
+    VkDescriptorSetLayout GetVkDescriptorSetLayout(const std::string& DescriptorSetLayoutName);
+
     void AddDescriptorSet(const std::string& DescriptorSetLayoutName, uint32_t Count);
 
     void ReserveDescriptorPool();
 
-    void CreateDescriptorSets();
+    VkDescriptorSet CreateDescriptorSets(const std::string& DescriptorSetLayoutName);
 
     VkDescriptorSet GetSet(const std::string& Name, uint32_t Index);
 

@@ -90,6 +90,11 @@ void FDescriptorSetManager::CreateDescriptorSetLayouts()
     }
 }
 
+VkDescriptorSetLayout FDescriptorSetManager::GetVkDescriptorSetLayout(const std::string& DescriptorSetLayoutName)
+{
+    return VkDescriptorSetLayouts[DescriptorSetLayoutName];
+}
+
 void FDescriptorSetManager::AddDescriptorSet(const std::string& DescriptorSetLayoutName, uint32_t Count)
 {
     Sets[DescriptorSetLayoutName] += Count;
@@ -131,30 +136,53 @@ void FDescriptorSetManager::ReserveDescriptorPool()
     }
 }
 
-void FDescriptorSetManager::CreateDescriptorSets()
+VkDescriptorSet FDescriptorSetManager::CreateDescriptorSets(const std::string& DescriptorSetLayoutName)
 {
-    for (auto Set : Sets)
+    if (VkDescriptorSetLayouts.find(DescriptorSetLayoutName) == VkDescriptorSetLayouts.end())
     {
-        auto Name = Set.first;
-        auto Count = Set.second;
-        auto DescriptorSetLayout = VkDescriptorSetLayouts[Name];
-
-        std::vector<VkDescriptorSetLayout> DescriptorSetLayoutsData(Count, DescriptorSetLayout);
-
-        VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo{};
-        DescriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        DescriptorSetAllocateInfo.descriptorPool = DescriptorPool;
-        DescriptorSetAllocateInfo.descriptorSetCount = static_cast<uint32_t>(DescriptorSetLayoutsData.size());
-        DescriptorSetAllocateInfo.pSetLayouts = DescriptorSetLayoutsData.data();
-
-        DescriptorSets[Name] = std::vector<VkDescriptorSet>(Count);
-
-        if (vkAllocateDescriptorSets(LogicalDevice, &DescriptorSetAllocateInfo, DescriptorSets[Name].data()) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to allocate descriptor sets!");
-        }
+        throw std::runtime_error("Descriptor set layout: \"" + DescriptorSetLayoutName + "\" not registered.\n");
     }
+
+    VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo{};
+    DescriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    DescriptorSetAllocateInfo.descriptorPool = DescriptorPool;
+    DescriptorSetAllocateInfo.descriptorSetCount = 1;
+    DescriptorSetAllocateInfo.pSetLayouts = &VkDescriptorSetLayouts[DescriptorSetLayoutName];
+
+    VkDescriptorSet DescriptorSet;
+
+    if (vkAllocateDescriptorSets(LogicalDevice, &DescriptorSetAllocateInfo, &DescriptorSet) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to allocate descriptor sets!");
+    }
+
+    return DescriptorSet;
 }
+
+//void FDescriptorSetManager::CreateDescriptorSets()
+//{
+//    for (auto Set : Sets)
+//    {
+//        auto Name = Set.first;
+//        auto Count = Set.second;
+//        auto DescriptorSetLayout = VkDescriptorSetLayouts[Name];
+//
+//        std::vector<VkDescriptorSetLayout> DescriptorSetLayoutsData(Count, DescriptorSetLayout);
+//
+//        VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo{};
+//        DescriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+//        DescriptorSetAllocateInfo.descriptorPool = DescriptorPool;
+//        DescriptorSetAllocateInfo.descriptorSetCount = static_cast<uint32_t>(DescriptorSetLayoutsData.size());
+//        DescriptorSetAllocateInfo.pSetLayouts = DescriptorSetLayoutsData.data();
+//
+//        DescriptorSets[Name] = std::vector<VkDescriptorSet>(Count);
+//
+//        if (vkAllocateDescriptorSets(LogicalDevice, &DescriptorSetAllocateInfo, DescriptorSets[Name].data()) != VK_SUCCESS)
+//        {
+//            throw std::runtime_error("Failed to allocate descriptor sets!");
+//        }
+//    }
+//}
 
 VkDescriptorSet FDescriptorSetManager::GetSet(const std::string& Name, uint32_t Index)
 {
