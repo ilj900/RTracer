@@ -19,7 +19,7 @@ struct FDescriptor
 
 struct FDescriptorSetLayout
 {
-    FDescriptorSetLayout(const FDescriptor& Descriptor);
+    FDescriptorSetLayout();
     std::vector<FDescriptor> Descriptors;
 };
 
@@ -28,19 +28,21 @@ class FDescriptorSetManager
 public:
     FDescriptorSetManager(VkDevice LogicalDevice);
 
+    /// Layout business
     void AddDescriptorLayout(const std::string& DescriptorSetLayoutName, uint32_t DescriptorSetLayoutIndex, const FDescriptor& Descriptor);
-
     void CreateDescriptorSetLayouts();
-
     VkDescriptorSetLayout GetVkDescriptorSetLayout(const std::string& DescriptorSetLayoutName);
+    void DestroyDescriptorSetLayout(const std::string& DescriptorSetLayoutName);
 
+    /// Descriptor set part
     void AddDescriptorSet(const std::string& DescriptorSetLayoutName, uint32_t Count);
+    void CreateAllDescriptorSets();
+//    VkDescriptorSet CreateDescriptorSets(const std::string& DescriptorSetLayoutName);
+    VkDescriptorSet& GetSet(const std::string& Name, uint32_t Index);
 
+    /// Pool
     void ReserveDescriptorPool();
-
-    VkDescriptorSet CreateDescriptorSets(const std::string& DescriptorSetLayoutName);
-
-    VkDescriptorSet GetSet(const std::string& Name, uint32_t Index);
+    void FreeDescriptorPool();
 
 private:
     VkDevice LogicalDevice = VK_NULL_HANDLE;

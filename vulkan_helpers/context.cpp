@@ -22,6 +22,9 @@
 
 static FContext Context{};
 
+static const std::string PerFrameLayoutName = "Per-frame layout";
+static const std::string PerRenderableLayoutName = "Per-renderable layout";
+
 FContext& GetContext()
 {
     return Context;
@@ -583,11 +586,11 @@ VkFormat FContext::FindSupportedFormat(const std::vector<VkFormat>& Candidates, 
 
 void FContext::CreateDescriptorSetLayouts()
 {
-    DescriptorSetManager->AddDescriptorLayout("Per-renderable layout", 0, {"Transform", 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-    DescriptorSetManager->AddDescriptorLayout("Per-renderable layout", 0, {"Renderable", 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
+    DescriptorSetManager->AddDescriptorLayout(PerFrameLayoutName, 0, {"Camera", 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
+    DescriptorSetManager->AddDescriptorLayout(PerFrameLayoutName, 0, {"Sampler", 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
 
-    DescriptorSetManager->AddDescriptorLayout("Per-frame layout", 1, {"Renderable", 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-    DescriptorSetManager->AddDescriptorLayout("Per-frame layout", 1, {"Renderable", 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
+    DescriptorSetManager->AddDescriptorLayout(PerRenderableLayoutName, 1, {"Transform", 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
+    DescriptorSetManager->AddDescriptorLayout(PerRenderableLayoutName, 1, {"Renderable", 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
 
     DescriptorSetManager->CreateDescriptorSetLayouts();
 }
@@ -711,7 +714,7 @@ void FContext::CreateGraphicsPipeline()
 
 
     VkPipelineLayoutCreateInfo PipelineLayoutInfo{};
-    std::vector<VkDescriptorSetLayout> PipelineSetLayouts = {DescriptorSetManager->GetVkDescriptorSetLayout("Per-frame layout"), DescriptorSetManager->GetVkDescriptorSetLayout("Per-renderable layout")};
+    std::vector<VkDescriptorSetLayout> PipelineSetLayouts = {DescriptorSetManager->GetVkDescriptorSetLayout(PerFrameLayoutName), DescriptorSetManager->GetVkDescriptorSetLayout(PerRenderableLayoutName)};
     PipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     PipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(PipelineSetLayouts.size());
     PipelineLayoutInfo.pSetLayouts = PipelineSetLayouts.data();
@@ -1150,44 +1153,28 @@ void FContext::CreateUniformBuffers()
 void FContext::CreateDescriptorPool()
 {
     auto ModelsCount = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>()->Size();
+    auto NumberOfSwapChainImages = Swapchain->Size();
 
-    AddDescriptor(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain->Size() * ModelsCount));
-    AddDescriptor(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(Swapchain->Size() * ModelsCount));
-    AddDescriptor(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain->Size() * ModelsCount));
-    AddDescriptor(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(Swapchain->Size()));
+    /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
+    DescriptorSetManager->AddDescriptorSet(PerFrameLayoutName, NumberOfSwapChainImages);
+    DescriptorSetManager->AddDescriptorSet(PerRenderableLayoutName, NumberOfSwapChainImages * ModelsCount);
 
-    std::vector<VkDescriptorPoolSize> PoolSizes{};
-    for (auto Entry : Descriptors)
-    {
-        PoolSizes.push_back({Entry.first, Entry.second});
-    }
-
-    VkDescriptorPoolCreateInfo PoolInfo{};
-    PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    PoolInfo.poolSizeCount = static_cast<uint32_t>(PoolSizes.size());
-    PoolInfo.pPoolSizes = PoolSizes.data();
-    PoolInfo.maxSets = static_cast<uint32_t>(Swapchain->Size() * ModelsCount + Swapchain->Size());
-
-    if (vkCreateDescriptorPool(LogicalDevice, &PoolInfo, nullptr, &DescriptorPool) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create descriptor pool!");
-    }
+    DescriptorSetManager->ReserveDescriptorPool();
 }
 
 void FContext::CreateDescriptorSet()
 {
-    auto ModelsCount = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>()->Size();
+    auto& Coordinator = ECS::GetCoordinator();
+    auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
+    auto ModelsCount = MeshSystem->Size();
 
-    /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-
-    DescriptorSetManager->AddDescriptorSet("Per-frame layout", Swapchain->Size());
-    DescriptorSetManager->AddDescriptorSet("Per-renderable layout", Swapchain->Size() * ModelsCount);
-    /// And create them
-    DescriptorSetManager->CreateDescriptorSets();
+    /// Create descriptor sets
+    DescriptorSetManager->CreateAllDescriptorSets();
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
-        for (uint32_t j = 0; j < ModelsCount; ++j)
+        uint32_t j = 0;
+        for (auto Mesh : *MeshSystem)
         {
             VkDescriptorBufferInfo TransformBufferInfo{};
             TransformBufferInfo.buffer = DeviceTransformBuffers[i].Buffer;
@@ -1201,7 +1188,7 @@ void FContext::CreateDescriptorSet()
 
             std::vector<VkWriteDescriptorSet> DescriptorWrites{2};
             DescriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            DescriptorWrites[0].dstSet = RenderebleDescriptorSet[j * Swapchain->Size() + i];
+            DescriptorWrites[0].dstSet = DescriptorSetManager->GetSet(PerRenderableLayoutName, j * Swapchain->Size() + i);
             DescriptorWrites[0].dstBinding = 0;
             DescriptorWrites[0].dstArrayElement = 0;
             DescriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -1209,7 +1196,7 @@ void FContext::CreateDescriptorSet()
             DescriptorWrites[0].pBufferInfo = &TransformBufferInfo;
 
             DescriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            DescriptorWrites[1].dstSet = RenderebleDescriptorSet[j * Swapchain->Size() + i];
+            DescriptorWrites[1].dstSet = DescriptorSetManager->GetSet(PerRenderableLayoutName, j * Swapchain->Size() + i);
             DescriptorWrites[1].dstBinding = 1;
             DescriptorWrites[1].dstArrayElement = 0;
             DescriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -1217,6 +1204,7 @@ void FContext::CreateDescriptorSet()
             DescriptorWrites[1].pBufferInfo = &RenderableBufferInfo;
 
             vkUpdateDescriptorSets(LogicalDevice, static_cast<uint32_t>(DescriptorWrites.size()), DescriptorWrites.data(), 0, nullptr);
+            ++j;
         }
     }
 
@@ -1236,7 +1224,7 @@ void FContext::CreateDescriptorSet()
         std::array<VkWriteDescriptorSet, 2> DescriptorWrites{};
 
         DescriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        DescriptorWrites[0].dstSet = FrameDescriptorSet[i];
+        DescriptorWrites[0].dstSet = DescriptorSetManager->GetSet(PerFrameLayoutName, i);
         DescriptorWrites[0].dstBinding = 0;
         DescriptorWrites[0].dstArrayElement = 0;
         DescriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -1244,7 +1232,7 @@ void FContext::CreateDescriptorSet()
         DescriptorWrites[0].pBufferInfo = &CameraBufferInfo;
 
         DescriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        DescriptorWrites[1].dstSet = FrameDescriptorSet[i];
+        DescriptorWrites[1].dstSet = DescriptorSetManager->GetSet(PerFrameLayoutName, i);
         DescriptorWrites[1].dstBinding = 1;
         DescriptorWrites[1].dstArrayElement = 0;
         DescriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1298,15 +1286,16 @@ void FContext::CreateCommandBuffers()
         vkCmdBeginRenderPass(CommandBuffers[i], &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline);
 
-        vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &FrameDescriptorSet[i], 0,
+        vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSetManager->GetSet(PerFrameLayoutName, i), 0,
                                 nullptr);
-
-        auto MeshSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>();
+        auto& Coordinator = ECS::GetCoordinator();
+        auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
 
         uint32_t j = 0;
         for (auto Entity : *MeshSystem)
         {
-            vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 1, 1, &RenderebleDescriptorSet[j * Swapchain->Size() + i], 0,
+            vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 1, 1,
+                                    &DescriptorSetManager->GetSet(PerRenderableLayoutName, j * Swapchain->Size() + i), 0,
                                     nullptr);
             auto& Coordinator = ECS::GetCoordinator();
             auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
@@ -1492,7 +1481,7 @@ void FContext::CleanUpSwapChain()
 
     Swapchain = nullptr;
 
-    vkDestroyDescriptorPool(LogicalDevice, DescriptorPool, nullptr);
+    DescriptorSetManager->FreeDescriptorPool();
 }
 
 void FContext::UpdateUniformBuffer(uint32_t CurrentImage)
@@ -1525,11 +1514,6 @@ void FContext::LoadDataIntoBuffer(FBuffer &Buffer, void* DataToLoad, size_t Size
     memcpy(Data, DataToLoad, Size);
     vkUnmapMemory(LogicalDevice, Buffer.Memory);
 
-}
-
-void FContext::AddDescriptor(VkDescriptorType Type, uint32_t Count)
-{
-    Descriptors[Type] += Count;
 }
 
 void FContext::FreeData(FBuffer Buffer)
@@ -1571,8 +1555,8 @@ void FContext::CleanUp()
     vkDestroyImage(LogicalDevice, TextureImage, nullptr);
     vkFreeMemory(LogicalDevice, TextureImageMemory, nullptr);
 
-    vkDestroyDescriptorSetLayout(LogicalDevice, FrameDescriptorSetLayout.GetDescriptorSetLayout(), nullptr);
-    vkDestroyDescriptorSetLayout(LogicalDevice, RenderableDescriptorSetLayout.GetDescriptorSetLayout(), nullptr);
+    DescriptorSetManager->DestroyDescriptorSetLayout(PerFrameLayoutName);
+    DescriptorSetManager->DestroyDescriptorSetLayout(PerRenderableLayoutName);
 
     auto& Coordinator = ECS::GetCoordinator();
     Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>()->FreeAllDeviceData();
