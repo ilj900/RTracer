@@ -586,11 +586,11 @@ VkFormat FContext::FindSupportedFormat(const std::vector<VkFormat>& Candidates, 
 
 void FContext::CreateDescriptorSetLayouts()
 {
-    DescriptorSetManager->AddDescriptorLayout(PerFrameLayoutName, 0, {"Camera", 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-    DescriptorSetManager->AddDescriptorLayout(PerFrameLayoutName, 0, {"Sampler", 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
+    DescriptorSetManager->AddDescriptorLayout(PerFrameLayoutName, 0, "Camera", {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
+    DescriptorSetManager->AddDescriptorLayout(PerFrameLayoutName, 0, "Sampler", {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
 
-    DescriptorSetManager->AddDescriptorLayout(PerRenderableLayoutName, 1, {"Transform", 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-    DescriptorSetManager->AddDescriptorLayout(PerRenderableLayoutName, 1, {"Renderable", 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
+    DescriptorSetManager->AddDescriptorLayout(PerRenderableLayoutName, 1, "Transform", {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
+    DescriptorSetManager->AddDescriptorLayout(PerRenderableLayoutName, 1, "Renderable", {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
 
     DescriptorSetManager->CreateDescriptorSetLayouts();
 }
@@ -1166,7 +1166,6 @@ void FContext::CreateDescriptorSet()
 {
     auto& Coordinator = ECS::GetCoordinator();
     auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
-    auto ModelsCount = MeshSystem->Size();
 
     /// Create descriptor sets
     DescriptorSetManager->CreateAllDescriptorSets();
@@ -1180,30 +1179,14 @@ void FContext::CreateDescriptorSet()
             TransformBufferInfo.buffer = DeviceTransformBuffers[i].Buffer;
             TransformBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceTransformComponent) * j;
             TransformBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceTransformComponent);
+            DescriptorSetManager->UpdateDescriptorSetInfo(PerRenderableLayoutName, "Transform", j * Swapchain->Size() + i, TransformBufferInfo);
 
             VkDescriptorBufferInfo RenderableBufferInfo{};
             RenderableBufferInfo.buffer = DeviceRenderableBuffers[i].Buffer;
             RenderableBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent) * j;
             RenderableBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent);
+            DescriptorSetManager->UpdateDescriptorSetInfo(PerRenderableLayoutName, "Renderable", j * Swapchain->Size() + i, RenderableBufferInfo);
 
-            std::vector<VkWriteDescriptorSet> DescriptorWrites{2};
-            DescriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            DescriptorWrites[0].dstSet = DescriptorSetManager->GetSet(PerRenderableLayoutName, j * Swapchain->Size() + i);
-            DescriptorWrites[0].dstBinding = 0;
-            DescriptorWrites[0].dstArrayElement = 0;
-            DescriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            DescriptorWrites[0].descriptorCount = 1;
-            DescriptorWrites[0].pBufferInfo = &TransformBufferInfo;
-
-            DescriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            DescriptorWrites[1].dstSet = DescriptorSetManager->GetSet(PerRenderableLayoutName, j * Swapchain->Size() + i);
-            DescriptorWrites[1].dstBinding = 1;
-            DescriptorWrites[1].dstArrayElement = 0;
-            DescriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            DescriptorWrites[1].descriptorCount = 1;
-            DescriptorWrites[1].pBufferInfo = &RenderableBufferInfo;
-
-            vkUpdateDescriptorSets(LogicalDevice, static_cast<uint32_t>(DescriptorWrites.size()), DescriptorWrites.data(), 0, nullptr);
             ++j;
         }
     }
@@ -1215,31 +1198,13 @@ void FContext::CreateDescriptorSet()
         CameraBufferInfo.buffer = DeviceCameraBuffers[i].Buffer;
         CameraBufferInfo.offset = 0;
         CameraBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
+        DescriptorSetManager->UpdateDescriptorSetInfo(PerRenderableLayoutName, "Camera", i, CameraBufferInfo);
 
         VkDescriptorImageInfo ImageBufferInfo{};
         ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         ImageBufferInfo.imageView = TextureImageView;
         ImageBufferInfo.sampler = TextureSampler;
-
-        std::array<VkWriteDescriptorSet, 2> DescriptorWrites{};
-
-        DescriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        DescriptorWrites[0].dstSet = DescriptorSetManager->GetSet(PerFrameLayoutName, i);
-        DescriptorWrites[0].dstBinding = 0;
-        DescriptorWrites[0].dstArrayElement = 0;
-        DescriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        DescriptorWrites[0].descriptorCount = 1;
-        DescriptorWrites[0].pBufferInfo = &CameraBufferInfo;
-
-        DescriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        DescriptorWrites[1].dstSet = DescriptorSetManager->GetSet(PerFrameLayoutName, i);
-        DescriptorWrites[1].dstBinding = 1;
-        DescriptorWrites[1].dstArrayElement = 0;
-        DescriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        DescriptorWrites[1].descriptorCount = 1;
-        DescriptorWrites[1].pImageInfo = &ImageBufferInfo;
-
-        vkUpdateDescriptorSets(LogicalDevice, static_cast<uint32_t>(DescriptorWrites.size()), DescriptorWrites.data(), 0, nullptr);
+        DescriptorSetManager->UpdateDescriptorSetInfo(PerRenderableLayoutName, "Sampler", i, ImageBufferInfo);
     }
 }
 

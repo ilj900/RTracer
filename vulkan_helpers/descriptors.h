@@ -8,7 +8,6 @@
 
 struct FDescriptor
 {
-    std::string Name;
     uint32_t BindingIndex = 0;
     VkDescriptorType Type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     VkShaderStageFlags StageFlags = VK_SHADER_STAGE_VERTEX_BIT;
@@ -20,7 +19,7 @@ struct FDescriptor
 struct FDescriptorSetLayout
 {
     FDescriptorSetLayout();
-    std::vector<FDescriptor> Descriptors;
+    std::map<std::string, FDescriptor> Descriptors;
 };
 
 class FDescriptorSetManager
@@ -29,7 +28,7 @@ public:
     FDescriptorSetManager(VkDevice LogicalDevice);
 
     /// Layout business
-    void AddDescriptorLayout(const std::string& DescriptorSetLayoutName, uint32_t DescriptorSetLayoutIndex, const FDescriptor& Descriptor);
+    void AddDescriptorLayout(const std::string& DescriptorSetLayoutName, uint32_t DescriptorSetLayoutIndex, const std::string& DescriptorLayoutName, const FDescriptor& Descriptor);
     void CreateDescriptorSetLayouts();
     VkDescriptorSetLayout GetVkDescriptorSetLayout(const std::string& DescriptorSetLayoutName);
     void DestroyDescriptorSetLayout(const std::string& DescriptorSetLayoutName);
@@ -37,7 +36,8 @@ public:
     /// Descriptor set part
     void AddDescriptorSet(const std::string& DescriptorSetLayoutName, uint32_t Count);
     void CreateAllDescriptorSets();
-//    VkDescriptorSet CreateDescriptorSets(const std::string& DescriptorSetLayoutName);
+    void UpdateDescriptorSetInfo(const std::string& DescriptorSetName, const std::string& DescriptorName, uint32_t Index, VkDescriptorBufferInfo& BufferInfo);
+    void UpdateDescriptorSetInfo(const std::string& DescriptorSetName, const std::string& DescriptorName, uint32_t Index, VkDescriptorImageInfo& ImageInfo);
     VkDescriptorSet& GetSet(const std::string& Name, uint32_t Index);
 
     /// Pool

@@ -12,7 +12,6 @@ namespace ECS
 
             FBuffer VertexBuffer;
             FBuffer IndexBuffer;
-            FBuffer StagingBuffer;
         };
     }
 }
