@@ -198,7 +198,7 @@ void FDescriptorSetManager::UpdateDescriptorSetInfo(const std::string& Descripto
     auto& Layout = DescriptorSetLayouts[DescriptorSetName];
     auto& DescriptorBinding = Layout.first.Descriptors[DescriptorName];
 
-    VkWriteDescriptorSet DescriptorWrites;
+    VkWriteDescriptorSet DescriptorWrites{};
     DescriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     DescriptorWrites.dstSet = GetSet(DescriptorSetName, Index);
     DescriptorWrites.dstBinding = DescriptorBinding.BindingIndex;
@@ -215,7 +215,7 @@ void FDescriptorSetManager::UpdateDescriptorSetInfo(const std::string& Descripto
     auto& Layout = DescriptorSetLayouts[DescriptorSetName];
     auto& DescriptorBinding = Layout.first.Descriptors[DescriptorName];
 
-    VkWriteDescriptorSet DescriptorWrites;
+    VkWriteDescriptorSet DescriptorWrites{};
     DescriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     DescriptorWrites.dstSet = GetSet(DescriptorSetName, Index);
     DescriptorWrites.dstBinding = DescriptorBinding.BindingIndex;

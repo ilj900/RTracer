@@ -1198,13 +1198,13 @@ void FContext::CreateDescriptorSet()
         CameraBufferInfo.buffer = DeviceCameraBuffers[i].Buffer;
         CameraBufferInfo.offset = 0;
         CameraBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
-        DescriptorSetManager->UpdateDescriptorSetInfo(PerRenderableLayoutName, "Camera", i, CameraBufferInfo);
+        DescriptorSetManager->UpdateDescriptorSetInfo(PerFrameLayoutName, "Camera", i, CameraBufferInfo);
 
         VkDescriptorImageInfo ImageBufferInfo{};
         ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         ImageBufferInfo.imageView = TextureImageView;
         ImageBufferInfo.sampler = TextureSampler;
-        DescriptorSetManager->UpdateDescriptorSetInfo(PerRenderableLayoutName, "Sampler", i, ImageBufferInfo);
+        DescriptorSetManager->UpdateDescriptorSetInfo(PerFrameLayoutName, "Sampler", i, ImageBufferInfo);
     }
 }
 
