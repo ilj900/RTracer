@@ -1523,7 +1523,10 @@ void FContext::RenderImGui()
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::ShowDemoWindow();
+    ImGui::Begin("Info", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar);
+    ImGui::SetWindowPos({0.f, 0.f});
+    ImGui::TextColored({0.f, 1.f, 0.f, 1.f}, "Test text");
+    ImGui::End();
 
     auto CommandBuffer = BeginSingleTimeCommands();
 
