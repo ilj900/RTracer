@@ -16,8 +16,17 @@ include_directories(
         math
         src
         ECS
+        imgui
+        imgui/backends
         components
         systems)
+
+set(IMGUI_SOURCE
+        imgui/backends/imgui_impl_glfw.cpp
+        imgui/backends/imgui_impl_vulkan.cpp
+        imgui/imgui.cpp imgui/imgui_draw.cpp
+        imgui/imgui_demo.cpp imgui/imgui_tables.cpp
+        imgui/imgui_widgets.cpp)
 
 set(ECS_SOURCE
         ECS/coordinator.h
@@ -53,7 +62,8 @@ set(SOURCE
         vulkan_helpers/function_loader.cpp
         vulkan_helpers/swapchain.cpp
         vulkan_helpers/descriptors.cpp
-        math/maths.cpp)
+        math/maths.cpp
+        ${IMGUI_SOURCE})
 
 set(INCLUDE
         ${ECS_SOURCE}

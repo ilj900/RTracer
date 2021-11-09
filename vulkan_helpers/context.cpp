@@ -1,5 +1,4 @@
 #include "context.h"
-#include "descriptors.h"
 
 #include "systems/camera_system.h"
 #include "systems/mesh_system.h"
@@ -8,6 +7,10 @@
 #include "components/device_renderable_component.h"
 #include "components/mesh_component.h"
 #include "coordinator.h"
+
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_vulkan.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -81,6 +84,7 @@ void FContext::Init(GLFWwindow *Window, FController *Controller)
         CreateDescriptorSet();
         CreateCommandBuffers();
         CreateSyncObjects();
+        CreateImguiContext();
     }
     catch (std::runtime_error &Error) {
         std::cout << Error.what() << std::endl;
@@ -522,7 +526,7 @@ void FContext::CreateRenderPass()
     ColorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     ColorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     ColorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    ColorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    ColorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     VkAttachmentReference ColorAttachmentResolveRef{};
     ColorAttachmentResolveRef.attachment = 2;
@@ -1300,6 +1304,8 @@ void FContext::CreateSyncObjects()
     RenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     RenderingFinishedFences.resize(MAX_FRAMES_IN_FLIGHT);
     ImagesInFlight.resize(MAX_FRAMES_IN_FLIGHT, VK_NULL_HANDLE);
+    ImGuiFinishedFences.resize(MAX_FRAMES_IN_FLIGHT);
+    ImGuiFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 
     VkSemaphoreCreateInfo SemaphoreInfo{};
     SemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -1312,6 +1318,8 @@ void FContext::CreateSyncObjects()
     {
         if (vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &ImageAvailableSemaphores[i]) != VK_SUCCESS ||
             vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &RenderFinishedSemaphores[i]) != VK_SUCCESS ||
+            vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &ImGuiFinishedSemaphores[i]) != VK_SUCCESS ||
+            vkCreateFence(LogicalDevice, &FenceInfo, nullptr, &ImGuiFinishedFences[i]) != VK_SUCCESS ||
             vkCreateFence(LogicalDevice, &FenceInfo, nullptr, &RenderingFinishedFences[i]) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create synchronization objects for a frame!");
@@ -1319,10 +1327,143 @@ void FContext::CreateSyncObjects()
     }
 }
 
+void FContext::CreateImguiContext()
+{
+    {
+        VkDescriptorPoolSize PoolSizes[] =
+                {
+                        { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+                        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+                        { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+                        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+                        { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+                        { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+                        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+                        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+                        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+                        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+                        { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+                };
+        VkDescriptorPoolCreateInfo PoolInfo = {};
+        PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        PoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        PoolInfo.maxSets = 1000 * IM_ARRAYSIZE(PoolSizes);
+        PoolInfo.poolSizeCount = (uint32_t)IM_ARRAYSIZE(PoolSizes);
+        PoolInfo.pPoolSizes = PoolSizes;
+        if(vkCreateDescriptorPool(LogicalDevice, &PoolInfo, nullptr, &ImGuiDescriptorPool) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to create descriptor pool for ImGui!");
+        }
+    }
+
+    {
+        VkAttachmentDescription AttachmentDescription{};
+        AttachmentDescription.format = Swapchain->GetImageFormat();
+        AttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+        AttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+        AttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        AttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        AttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        AttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        AttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+        VkAttachmentReference AttachmentReference{};
+        AttachmentReference.attachment = 0;
+        AttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        VkSubpassDescription SubpassDescription{};
+        SubpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        SubpassDescription.colorAttachmentCount = 1;
+        SubpassDescription.pColorAttachments = &AttachmentReference;
+
+        VkSubpassDependency SubpassDependency{};
+        SubpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+        SubpassDependency.dstSubpass = 0;
+        SubpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        SubpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        SubpassDependency.srcAccessMask = 0;
+        SubpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+        VkRenderPassCreateInfo RenderPassCreateInfo{};
+        RenderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        RenderPassCreateInfo.attachmentCount = 1;
+        RenderPassCreateInfo.pAttachments = &AttachmentDescription;
+        RenderPassCreateInfo.subpassCount = 1;
+        RenderPassCreateInfo.pSubpasses = &SubpassDescription;
+        RenderPassCreateInfo.dependencyCount = 1;
+        RenderPassCreateInfo.pDependencies = &SubpassDependency;
+
+        if (vkCreateRenderPass(LogicalDevice, &RenderPassCreateInfo, nullptr, &ImGuiRenderPass) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to create renderpass for ImGui!");
+        }
+    }
+
+    {
+        ImGuiFramebuffers.resize(Swapchain->Size());
+
+        for(uint32_t i = 0; i < Swapchain->Size(); ++i)
+        {
+            VkImageView Attachment[1];
+            Attachment[0] = Swapchain->ImageViews[i];
+
+            VkFramebufferCreateInfo FramebufferCreateInfo{};
+            FramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+            FramebufferCreateInfo.renderPass = ImGuiRenderPass;
+            FramebufferCreateInfo.attachmentCount = 1;
+            FramebufferCreateInfo.pAttachments = Attachment;
+            FramebufferCreateInfo.width = Swapchain->GetWidth();
+            FramebufferCreateInfo.height = Swapchain->GetHeight();
+            FramebufferCreateInfo.layers = 1;
+
+            if (vkCreateFramebuffer(LogicalDevice, &FramebufferCreateInfo, nullptr, &ImGuiFramebuffers[i]) != VK_SUCCESS)
+            {
+                throw std::runtime_error("Failed to create framebuffers for ImGui!");
+            }
+
+        }
+    }
+
+    auto CheckResultFunction = [](VkResult Err)
+            {
+                if (Err == 0)
+                    return;
+                std::cout << "[vulkan] Error: VkResult = " << Err << std::endl;
+                if (Err < 0)
+                    abort();
+            };
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& IO = ImGui::GetIO();
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplGlfw_InitForVulkan(Window, true);
+    ImGui_ImplVulkan_InitInfo InitInfo{};
+    InitInfo.Instance = Instance;
+    InitInfo.PhysicalDevice = PhysicalDevice;
+    InitInfo.Device = LogicalDevice;
+    InitInfo.QueueFamily = GraphicsQueueIndex;
+    InitInfo.Queue = GraphicsQueue;
+    InitInfo.DescriptorPool = ImGuiDescriptorPool;
+    InitInfo.MinImageCount = MAX_FRAMES_IN_FLIGHT;
+    InitInfo.ImageCount = MAX_FRAMES_IN_FLIGHT;
+    InitInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    InitInfo.CheckVkResultFn = CheckResultFunction;
+    ImGui_ImplVulkan_Init(&InitInfo, ImGuiRenderPass);
+
+    {
+        auto UploadFonts = BeginSingleTimeCommands();
+        ImGui_ImplVulkan_CreateFontsTexture(UploadFonts);
+        EndSingleTimeCommand(UploadFonts);
+    }
+}
+
 void FContext::Render()
 {
     /// Previous rendering iteration of the frame might still be in use, so we wait for it
-    vkWaitForFences(LogicalDevice, 1, &RenderingFinishedFences[CurrentFrame], VK_TRUE, UINT64_MAX);
+    vkWaitForFences(LogicalDevice, 1, &ImGuiFinishedFences[CurrentFrame], VK_TRUE, UINT64_MAX);
 
     /// Acquire next image from swapchain, also it's index and provide semaphore to signal when image is ready to be used
     VkResult Result = Swapchain->GetNextImage(CurrentImage, ImageAvailableSemaphores[CurrentFrame], ImageIndex);
@@ -1345,7 +1486,7 @@ void FContext::Render()
     }
 
     /// Mark this image as is being in use
-    ImagesInFlight[ImageIndex] = RenderingFinishedFences[CurrentFrame];
+    ImagesInFlight[ImageIndex] = ImGuiFinishedFences[CurrentFrame];
 
     UpdateUniformBuffer(ImageIndex);
 
@@ -1367,16 +1508,67 @@ void FContext::Render()
     /// Reset frame state to unsignaled, just before rendering
     vkResetFences(LogicalDevice, 1, &RenderingFinishedFences[CurrentFrame]);
 
-    /// Submit rendering. When rendering finished, apropriate fence will be signalled
+    /// Submit rendering. When rendering finished, appropriate fence will be signalled
     if (vkQueueSubmit(GraphicsQueue, 1, &SubmitInfo, RenderingFinishedFences[CurrentFrame]) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to submit draw command buffer!");
     }
 }
 
+void FContext::RenderImGui()
+{
+    vkWaitForFences(LogicalDevice, 1, &RenderingFinishedFences[CurrentFrame], VK_TRUE, UINT64_MAX);
+
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::ShowDemoWindow();
+
+    auto CommandBuffer = BeginSingleTimeCommands();
+
+    {
+        VkRenderPassBeginInfo RenderPassBeginInfo{};
+        RenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        RenderPassBeginInfo.renderPass = ImGuiRenderPass;
+        RenderPassBeginInfo.framebuffer = ImGuiFramebuffers[CurrentFrame % Swapchain->Size()];
+        RenderPassBeginInfo.renderArea.extent = Swapchain->GetExtent2D();
+        RenderPassBeginInfo.clearValueCount = 0;
+        vkCmdBeginRenderPass(CommandBuffer, &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    }
+
+    ImGui::Render();
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), CommandBuffer);
+
+    vkCmdEndRenderPass(CommandBuffer);
+    vkEndCommandBuffer(CommandBuffer);
+
+    VkSubmitInfo SubmitInfo{};
+    SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    VkSemaphore WaitSemaphores[] = {RenderFinishedSemaphores[CurrentFrame]};
+    VkPipelineStageFlags WaitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    SubmitInfo.waitSemaphoreCount = 1;
+    SubmitInfo.pWaitSemaphores = WaitSemaphores;
+    SubmitInfo.pWaitDstStageMask = WaitStages;
+    SubmitInfo.commandBufferCount = 1;
+    SubmitInfo.pCommandBuffers = &CommandBuffer;
+
+    VkSemaphore SignalSemaphores[] = {ImGuiFinishedSemaphores[CurrentFrame]};
+    SubmitInfo.signalSemaphoreCount = 1;
+    SubmitInfo.pSignalSemaphores = SignalSemaphores;
+
+    vkResetFences(LogicalDevice, 1, &ImGuiFinishedFences[CurrentFrame]);
+
+    if (vkQueueSubmit(GraphicsQueue, 1, &SubmitInfo, ImGuiFinishedFences[CurrentFrame]) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to submit ImGui draw command buffer!");
+    }
+}
+
 void FContext::Present()
 {
-    VkSemaphore SignalSemaphores[] = {RenderFinishedSemaphores[CurrentFrame]};
+    VkSemaphore SignalSemaphores[] = {ImGuiFinishedSemaphores[CurrentFrame]};
 
     VkPresentInfoKHR PresentInfo{};
     PresentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -1447,11 +1639,17 @@ void FContext::CleanUpSwapChain()
         vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
     }
 
+    for (auto Framebuffer : ImGuiFramebuffers)
+    {
+        vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
+    }
+
     vkFreeCommandBuffers(LogicalDevice, CommandPool, static_cast<uint32_t>(CommandBuffers.size()), CommandBuffers.data());
 
     vkDestroyPipeline(LogicalDevice, GraphicsPipeline, nullptr);
     vkDestroyPipelineLayout(LogicalDevice, PipelineLayout, nullptr);
     vkDestroyRenderPass(LogicalDevice, RenderPass, nullptr);
+    vkDestroyRenderPass(LogicalDevice, ImGuiRenderPass, nullptr);
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
@@ -1463,6 +1661,7 @@ void FContext::CleanUpSwapChain()
     Swapchain = nullptr;
 
     DescriptorSetManager->FreeDescriptorPool();
+    vkDestroyDescriptorPool(LogicalDevice, ImGuiDescriptorPool, nullptr);
 }
 
 void FContext::UpdateUniformBuffer(uint32_t CurrentImage)
@@ -1539,6 +1738,10 @@ void FContext::CleanUp()
     DescriptorSetManager->DestroyDescriptorSetLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME);
     DescriptorSetManager->DestroyDescriptorSetLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME);
 
+    ImGui_ImplVulkan_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
     auto& Coordinator = ECS::GetCoordinator();
     Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>()->FreeAllDeviceData();
 
@@ -1546,7 +1749,9 @@ void FContext::CleanUp()
     {
         vkDestroySemaphore(LogicalDevice, RenderFinishedSemaphores[i], nullptr);
         vkDestroySemaphore(LogicalDevice, ImageAvailableSemaphores[i], nullptr);
+        vkDestroySemaphore(LogicalDevice, ImGuiFinishedSemaphores[i], nullptr);
         vkDestroyFence(LogicalDevice, RenderingFinishedFences[i], nullptr);
+        vkDestroyFence(LogicalDevice, ImGuiFinishedFences[i], nullptr);
     }
 
     vkDestroyCommandPool(LogicalDevice, CommandPool, nullptr);

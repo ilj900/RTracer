@@ -49,12 +49,14 @@ public:
     void CreateDescriptorSet();
     void CreateCommandBuffers();
     void CreateSyncObjects();
+    void CreateImguiContext();
     void RecreateSwapChain();
     void CleanUpSwapChain();
     void CleanUp();
     void DestroyDebugUtilsMessengerEXT();
     void UpdateUniformBuffer(uint32_t CurrentImage);
 
+    void RenderImGui();
     void Render();
     void Present();
     void WaitIdle();
@@ -88,10 +90,6 @@ public:
     std::vector<std::string> DeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
     std::vector<std::string> ValidationLayers = {"VK_LAYER_KHRONOS_validation"};
 
-    VkSurfaceCapabilitiesKHR Capabilities;
-    std::vector<VkSurfaceFormatKHR> Formats;
-    std::vector<VkPresentModeKHR> PresentModes;
-
     VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
     VkInstance Instance;
@@ -111,10 +109,11 @@ public:
     VkImage CurrentImage = VK_NULL_HANDLE;
     std::vector<VkFramebuffer> SwapChainFramebuffers;
 
-    VkRenderPass RenderPass;
+    VkDescriptorPool ImGuiDescriptorPool;
+    VkRenderPass ImGuiRenderPass;
+    std::vector<VkFramebuffer> ImGuiFramebuffers;
 
-    FDescriptorSetLayout FrameDescriptorSetLayout;
-    FDescriptorSetLayout RenderableDescriptorSetLayout;
+    VkRenderPass RenderPass;
 
     VkPipelineLayout PipelineLayout;
     VkPipeline GraphicsPipeline;
@@ -148,7 +147,9 @@ public:
 
     std::vector<VkSemaphore> ImageAvailableSemaphores;
     std::vector<VkSemaphore> RenderFinishedSemaphores;
+    std::vector<VkSemaphore> ImGuiFinishedSemaphores;
     std::vector<VkFence> RenderingFinishedFences;
+    std::vector<VkFence> ImGuiFinishedFences;
     std::vector<VkFence> ImagesInFlight;
     size_t CurrentFrame = 0;
     uint32_t ImageIndex = 0;

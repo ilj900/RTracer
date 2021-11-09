@@ -118,7 +118,6 @@ int main()
     glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
     GLFWwindow* Window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_NAME.c_str(), nullptr, nullptr);
     glfwSetCursorPos(Window, 0.f, 0.f);
-    glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     InitECS();
 
@@ -139,6 +138,7 @@ int main()
 
         Controller.Update(Time);
         Context.Render();
+        Context.RenderImGui();
         Context.Present();
         glfwPollEvents();
     }
