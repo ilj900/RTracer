@@ -34,8 +34,9 @@ flat layout(location = 5) out uint RenderablePropertyMask;
 
 void main()
 {
-    gl_Position = CameraBuffer.ProjectionMatrix * CameraBuffer.ViewMatrix * TransformBuffer.TransformMatrix * vec4(Position, 1.0);
-    FragPosition = vec3(gl_Position);
+    vec4 WorldSpacePosition = TransformBuffer.TransformMatrix * vec4(Position, 1.0);
+    gl_Position = CameraBuffer.ProjectionMatrix * CameraBuffer.ViewMatrix * WorldSpacePosition;
+    FragPosition = vec3(WorldSpacePosition);
     FragNormal = Normal;
     FragTexCoord = TexCoord;
     FragColor = RenderableBuffer.RenderableColor;
