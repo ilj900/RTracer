@@ -79,13 +79,13 @@ void LoadModels()
 
     enum MeshType {Tetrahedron, Hexahedron, Icosahedron, Model};
 
-    auto AddMesh = [&Coordinator, &MeshSystem, &TransformSystem](const FVector3& Color, const FVector3& Position, MeshType Type, const std::string& Path){
+    auto AddMesh = [&Coordinator, &MeshSystem, &TransformSystem](const FVector3& Color, const FVector3& Position, MeshType Type, const std::string& Path, uint32_t RenderableMask){
         Models.push_back(Coordinator.CreateEntity());
         Coordinator.AddComponent<ECS::COMPONENTS::FMeshComponent>(Models.back(), {});
         Coordinator.AddComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Models.back(), {});
         static uint32_t Index = 0;
         Coordinator.AddComponent<ECS::COMPONENTS::FDeviceRenderableComponent>
-                (Models.back(), {FVector3{1.f, 1.f, 1.f}, 0, Index++, 0, 0, 0});
+                (Models.back(), {FVector3{1.f, 1.f, 1.f}, Index++, RenderableMask});
         Coordinator.AddComponent<ECS::COMPONENTS::FTransformComponent>(Models.back(), {});
         Coordinator.AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Models.back(), {});
         switch(Type)
@@ -108,9 +108,9 @@ void LoadModels()
         TransformSystem->UpdateDeviceComponentData(Models.back());
     };
 
-    AddMesh({0.9f, 0.6f, 0.3f}, {-2.f, 0.f, -2.f}, Tetrahedron, std::string());
-    AddMesh({0.6f, 0.3f, 0.9f}, {0.f, 0.f, -2.f}, Hexahedron, std::string());
-    AddMesh({0.3f, 0.9f, 0.6f}, {2.f, 0.f, -2.f}, Icosahedron, std::string());
+    AddMesh({0.9f, 0.6f, 0.3f}, {-2.f, 0.f, -2.f}, Tetrahedron, std::string(), 0);
+    AddMesh({0.6f, 0.3f, 0.9f}, {0.f, 0.f, -2.f}, Hexahedron, std::string(), ECS::COMPONENTS::RENDERABLE_SELECTED_BIT);
+    AddMesh({0.3f, 0.9f, 0.6f}, {2.f, 0.f, -2.f}, Icosahedron, std::string(), 0);
 }
 
 int main()

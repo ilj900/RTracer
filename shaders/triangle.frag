@@ -14,7 +14,19 @@ layout(set = 0, binding = 1) uniform sampler2D TexSampler;
 
 vec3 LightPosition = vec3(20.f, 20.f, 0.f);
 
-uint Selected = 1;
+const uint RENDERABLE_SELECTED_BIT = 1 << 5;
+
+bool GetSelected(uint Mask)
+{
+    if ((Mask & RENDERABLE_SELECTED_BIT) == RENDERABLE_SELECTED_BIT)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
 
 void main()
 {
@@ -30,7 +42,7 @@ void main()
     }
     vec3 DiffuseColor = Color * 0.9 * LightAngle;
 
-    if (RenderableIndex == Selected)
+    if (GetSelected(RenderablePropertyMask))
     {
         OutColor = vec4(1.f, 1.f, 1.f, 1.f);
     }

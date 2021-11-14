@@ -14,6 +14,8 @@ namespace ECS
 
         public:
             void SetRenderableColor(FEntity Entity, float Red, float Green, float Blue);
+            void SetSelected(FEntity Entity);
+            void SetNotSelected(FEntity Entity);
         };
     }
 }
