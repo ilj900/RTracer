@@ -1,3 +1,2 @@
-glslc.exe triangle.vert -o triangle_vert.spv
-glslc.exe triangle.frag -o triangle_frag.spv
-Start-Sleep -s 1
+glslc.exe F:\Work\Projects\_C++_Home_Projects\RTracer\shaders\triangle.vert -o F:\Work\Projects\_C++_Home_Projects\RTracer\shaders\triangle_vert.spv
+glslc.exe F:\Work\Projects\_C++_Home_Projects\RTracer\shaders\triangle.frag -o F:\Work\Projects\_C++_Home_Projects\RTracer\shaders\triangle_frag.spv

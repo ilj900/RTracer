@@ -14,6 +14,8 @@ layout(set = 0, binding = 1) uniform sampler2D TexSampler;
 
 vec3 LightPosition = vec3(20.f, 20.f, 0.f);
 
+uint Selected = 1;
+
 void main()
 {
     vec3 LightDirection = normalize(LightPosition - FragPosition);
@@ -27,7 +29,16 @@ void main()
         LightAngle = 0.f;
     }
     vec3 DiffuseColor = Color * 0.9 * LightAngle;
-    OutColor = vec4(DiffuseColor + AmbientColor, 1.f);
+
+    if (RenderableIndex == Selected)
+    {
+        OutColor = vec4(1.f, 1.f, 1.f, 1.f);
+    }
+    else
+    {
+        OutColor = vec4(DiffuseColor + AmbientColor, 1.f);
+    }
+
 
 //    OutColor = texture(TexSampler, FragTexCoord);
 }

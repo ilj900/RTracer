@@ -34,7 +34,7 @@ void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int
 
 void MouseMoved(GLFWwindow* Window, double XPos, double YPos)
 {
-    FController* Controller = static_cast<FController*>(glfwGetWindowUserPointer(Window));
+    auto Controller = static_cast<FController*>(glfwGetWindowUserPointer(Window));
     Controller->XCurrent = XPos;
     Controller->YCurrent = YPos;
 }
@@ -49,7 +49,7 @@ void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, in
             {
                 case GLFW_PRESS:
                 {
-                    FController *Controller = static_cast<FController *>(glfwGetWindowUserPointer(Window));
+                    auto Controller = static_cast<FController*>(glfwGetWindowUserPointer(Window));
                     glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
                     Controller->Active = true;
                     Controller->FirstUpdateSinceRMB = true;
@@ -57,7 +57,7 @@ void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, in
                 }
                 case GLFW_RELEASE:
                 {
-                    FController *Controller = static_cast<FController *>(glfwGetWindowUserPointer(Window));
+                    auto Controller = static_cast<FController*>(glfwGetWindowUserPointer(Window));
                     Controller->Active = false;
                     glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                     break;

@@ -9,10 +9,13 @@ namespace ECS
         struct FDeviceRenderableComponent
         {
 
-            alignas(16) FVector3 RenderableColor = {0.3f, 0.1f, 0.2f};
+            FVector3 RenderableColor = {0.3f, 0.1f, 0.2f};
+            uint32_t Dummy1;
 
-            alignas(16) uint32_t RenderableIndex = 0;
-            alignas(16) uint32_t RenderablePropertyMask = 0;
+            uint32_t RenderableIndex = 0;
+            uint32_t RenderablePropertyMask = 0;
+            uint32_t Dummy2;
+            uint32_t Dummy3;
         };
     }
 }

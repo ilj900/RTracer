@@ -27,16 +27,16 @@ static FContext Context{};
 
 namespace LAYOUT_SETS
 {
-    static const std::string PER_FRAME_LAYOUT_NAME = "Per-frame layout";
-    static const std::string PER_RENDERABLE_LAYOUT_NAME = "Per-renderable layout";
+    const std::string PER_FRAME_LAYOUT_NAME = "Per-frame layout";
+    const std::string PER_RENDERABLE_LAYOUT_NAME = "Per-renderable layout";
 }
 
 namespace LAYOUTS
 {
-    static const std::string TEXTURE_SAMPLER_LAYOUT_NAME = "Texture sampler layout";
-    static const std::string CAMERA_LAYOUT_NAME = "Camera layout";
-    static const std::string TRANSFORM_LAYOUT_NAME = "Transform layout";
-    static const std::string RENDERABLE_LAYOUT_NAME = "Renderable layout";
+    const std::string TEXTURE_SAMPLER_LAYOUT_NAME = "Texture sampler layout";
+    const std::string CAMERA_LAYOUT_NAME = "Camera layout";
+    const std::string TRANSFORM_LAYOUT_NAME = "Transform layout";
+    const std::string RENDERABLE_LAYOUT_NAME = "Renderable layout";
 }
 
 FContext& GetContext()
@@ -1282,8 +1282,6 @@ void FContext::CreateCommandBuffers()
             vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 1, 1,
                                     &DescriptorSetManager->GetSet(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, j * Swapchain->Size() + i), 0,
                                     nullptr);
-            auto& Coordinator = ECS::GetCoordinator();
-            auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
 
             MeshSystem->Bind(Entity, CommandBuffers[i]);
             MeshSystem->Draw(Entity, CommandBuffers[i]);

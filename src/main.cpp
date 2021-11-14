@@ -83,7 +83,9 @@ void LoadModels()
         Models.push_back(Coordinator.CreateEntity());
         Coordinator.AddComponent<ECS::COMPONENTS::FMeshComponent>(Models.back(), {});
         Coordinator.AddComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Models.back(), {});
-        Coordinator.AddComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Models.back(), {});
+        static uint32_t Index = 0;
+        Coordinator.AddComponent<ECS::COMPONENTS::FDeviceRenderableComponent>
+                (Models.back(), {FVector3{1.f, 1.f, 1.f}, 0, Index++, 0, 0, 0});
         Coordinator.AddComponent<ECS::COMPONENTS::FTransformComponent>(Models.back(), {});
         Coordinator.AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Models.back(), {});
         switch(Type)
@@ -113,6 +115,7 @@ void LoadModels()
 
 int main()
 {
+    system("powershell.exe F:\\Work\\Projects\\_C++_Home_Projects\\RTracer\\shaders\\compile.ps1");
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);

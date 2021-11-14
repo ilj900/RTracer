@@ -14,7 +14,6 @@ namespace ECS
 
         public:
             void SetRenderableColor(FEntity Entity, float Red, float Green, float Blue);
-            void UpdateDescriptorSet(FEntity Entity);
         };
     }
 }
