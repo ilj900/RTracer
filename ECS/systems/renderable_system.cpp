@@ -22,5 +22,17 @@ namespace ECS
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
             RenderableComponent.RenderableColor = {Red, Green, Blue};
         }
+
+        void FRenderableSystem::SetSelected(FEntity Entity)
+        {
+            auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
+            RenderableComponent.RenderablePropertyMask |= COMPONENTS::RENDERABLE_SELECTED_BIT;
+        }
+
+        void FRenderableSystem::SetNotSelected(FEntity Entity)
+        {
+            auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
+            RenderableComponent.RenderablePropertyMask &= ~COMPONENTS::RENDERABLE_SELECTED_BIT;
+        }
     }
 }
