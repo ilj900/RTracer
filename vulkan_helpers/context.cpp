@@ -541,6 +541,18 @@ void FContext::CreateRenderPass()
     RenderToAndSaveColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     RenderToAndSaveColorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+    VkAttachmentDescription DepthAttachment{};
+    DepthAttachment.format = FindSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
+                                                 VK_IMAGE_TILING_OPTIMAL,
+                                                 VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    DepthAttachment.samples = MSAASamples;
+    DepthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    DepthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    DepthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    DepthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    DepthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    DepthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
     VkAttachmentDescription ColorAttachmentResolve{};
     ColorAttachmentResolve.format = Swapchain->GetImageFormat();
     ColorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -561,18 +573,6 @@ void FContext::CreateRenderPass()
     RenderToAndSaveColorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     RenderToAndSaveColorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    VkAttachmentDescription DepthAttachment{};
-    DepthAttachment.format = FindSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
-                                                 VK_IMAGE_TILING_OPTIMAL,
-                                                 VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-    DepthAttachment.samples = MSAASamples;
-    DepthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    DepthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    DepthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    DepthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    DepthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    DepthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
     VkAttachmentReference ColorAttachmentRef{};
     ColorAttachmentRef.attachment = 0;
     ColorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -581,17 +581,17 @@ void FContext::CreateRenderPass()
     RenderToAndSaveColorAttachmentRef.attachment = 1;
     RenderToAndSaveColorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+    VkAttachmentReference DepthAttachmentRef{};
+    DepthAttachmentRef.attachment = 2;
+    DepthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
     VkAttachmentReference ColorAttachmentResolveRef{};
-    ColorAttachmentResolveRef.attachment = 2;
+    ColorAttachmentResolveRef.attachment = 3;
     ColorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     VkAttachmentReference RenderToAndSaveColorAttachmentResolveRef{};
-    RenderToAndSaveColorAttachmentResolveRef.attachment = 3;
+    RenderToAndSaveColorAttachmentResolveRef.attachment = 4;
     RenderToAndSaveColorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentReference DepthAttachmentRef{};
-    DepthAttachmentRef.attachment = 4;
-    DepthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkSubpassDependency Dependency{};
     Dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -611,7 +611,7 @@ void FContext::CreateRenderPass()
     Subpass.pDepthStencilAttachment = &DepthAttachmentRef;
     Subpass.pResolveAttachments = ResolveAttachments.data();
 
-    std::vector<VkAttachmentDescription> Attachments = {ColorAttachment, RenderToAndSaveColorAttachment, ColorAttachmentResolve, RenderToAndSaveColorAttachmentResolve, DepthAttachment};
+    std::vector<VkAttachmentDescription> Attachments = {ColorAttachment, RenderToAndSaveColorAttachment, DepthAttachment, ColorAttachmentResolve, RenderToAndSaveColorAttachmentResolve};
     VkRenderPassCreateInfo RenderPassInfo{};
     RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     RenderPassInfo.attachmentCount = static_cast<uint32_t>(Attachments.size());
@@ -1006,7 +1006,7 @@ void FContext::CreateFramebuffers()
 {
     SwapChainFramebuffers.resize(Swapchain->Size());
     for (std::size_t i = 0; i < Swapchain->Size(); ++i) {
-        std::vector<VkImageView> Attachments = {ResolvedColorImageView, ResolvedImageToRenderToAndSaveView, Swapchain->GetImageViews()[i], ImageViewsForImageToRenderToAndThenSave[i], DepthImageView};
+        std::vector<VkImageView> Attachments = {ResolvedColorImageView, ResolvedImageToRenderToAndSaveView, DepthImageView, Swapchain->GetImageViews()[i], ImageViewsForImageToRenderToAndThenSave[i]};
 
         VkFramebufferCreateInfo FramebufferInfo{};
         FramebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -1313,9 +1313,10 @@ void FContext::CreateCommandBuffers()
         RenderPassInfo.renderArea.offset = {0, 0};
         RenderPassInfo.renderArea.extent = Swapchain->GetExtent2D();
 
-        std::array<VkClearValue, 2> ClearValues{};
+        std::vector<VkClearValue> ClearValues{3};
         ClearValues[0].color = {0.f, 0.f, 0.f, 1.f};
-        ClearValues[1].depthStencil = {1.f, 0};
+        ClearValues[1].color = {0.2f, 0.f, 0.f, 1.f};
+        ClearValues[2].depthStencil = {1.f, 0};
         RenderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
         RenderPassInfo.pClearValues = ClearValues.data();
 
