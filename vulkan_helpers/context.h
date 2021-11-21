@@ -122,14 +122,24 @@ public:
 
     VkDebugUtilsMessengerEXT DebugMessenger;
 
-    VkImage ColorImage;
-    VkDeviceMemory ColorImageMemory;
-    VkImageView ColorImageView;
+    /// Images
+    std::vector<VkImage> ImagesToRenderToAndSave;
+    std::vector<VkDeviceMemory> ImagesToRenderToAndSaveMemory;
+    std::vector<VkImageView> ImageViewsForImageToRenderToAndThenSave;
+
+    VkImage ResolvedImageToRenderToAndSave;
+    VkDeviceMemory ResolvedImageToRenderToAndSaveMemory;
+    VkImageView ResolvedImageToRenderToAndSaveView;
+
+    VkImage ResolvedColorImage;
+    VkDeviceMemory ResolvedColorImageMemory;
+    VkImageView ResolvedColorImageView;
 
     VkImage DepthImage;
     VkDeviceMemory DepthImageMemory;
     VkImageView DepthImageView;
 
+    /// Texture used to pain the model
     VkImage TextureImage;
     VkDeviceMemory TextureImageMemory;
     VkImageView TextureImageView;

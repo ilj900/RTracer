@@ -74,9 +74,9 @@ void FContext::Init(GLFWwindow *Window, FController *Controller)
         CreateRenderPass();
         CreateDescriptorSetLayouts();
         CreateGraphicsPipeline();
-        CreateFramebuffers();
         CreateTextureImage(TexturePath);
         CreateTextureImageView();
+        CreateFramebuffers();
         CreateTextureSampler();
         LoadModelDataToGPU();
         CreateUniformBuffers();
@@ -467,11 +467,28 @@ void FContext::CreateDepthAndAAImages()
     /// Create Image and ImageView for AA
     VkFormat ColorFormat = Swapchain->GetImageFormat();
 
-    CreateImage(Swapchain->GetWidth(), Swapchain->GetHeight(), 1, MSAASamples, ColorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ColorImage, ColorImageMemory);
+    CreateImage(Swapchain->GetWidth(), Swapchain->GetHeight(), 1, MSAASamples, ColorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ResolvedColorImage, ResolvedColorImageMemory);
+    ResolvedColorImageView = CreateImageView(ResolvedColorImage, ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 
-    ColorImageView = CreateImageView(ColorImage, ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+    CreateImage(Swapchain->GetWidth(), Swapchain->GetHeight(), 1, MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ResolvedImageToRenderToAndSave, ResolvedImageToRenderToAndSaveMemory);
+    ResolvedImageToRenderToAndSaveView = CreateImageView(ResolvedImageToRenderToAndSave, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 
-    // Create Image and ImageView for Depth
+    /// Create Image that will be used to save some data from shaders
+    for(uint32_t i = 0; i < Swapchain->Size(); ++i)
+    {
+        VkImage ImageToRenderToAndSave;
+        VkDeviceMemory ImageToRenderToAndSaveMemory;
+        CreateImage(Swapchain->GetWidth(), Swapchain->GetHeight(), 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ImageToRenderToAndSave, ImageToRenderToAndSaveMemory);
+        ImagesToRenderToAndSave.push_back(ImageToRenderToAndSave);
+        ImagesToRenderToAndSaveMemory.push_back(ImageToRenderToAndSaveMemory);
+    }
+
+    for (uint32_t i = 0; i < Swapchain->Size(); ++i)
+    {
+        ImageViewsForImageToRenderToAndThenSave.push_back(CreateImageView(ImagesToRenderToAndSave[i], VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, 1));
+    }
+
+    /// Create Image and ImageView for Depth
     VkFormat DepthFormat = FindDepthFormat();
 
     CreateImage(Swapchain->GetWidth(), Swapchain->GetHeight(), 1, MSAASamples, DepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, DepthImage, DepthImageMemory);
@@ -514,9 +531,15 @@ void FContext::CreateRenderPass()
     ColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     ColorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    VkAttachmentReference ColorAttachmentRef{};
-    ColorAttachmentRef.attachment = 0;
-    ColorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    VkAttachmentDescription RenderToAndSaveColorAttachment{};
+    RenderToAndSaveColorAttachment.format = VK_FORMAT_R8G8B8A8_SRGB;
+    RenderToAndSaveColorAttachment.samples = MSAASamples;
+    RenderToAndSaveColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    RenderToAndSaveColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    RenderToAndSaveColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    RenderToAndSaveColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    RenderToAndSaveColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    RenderToAndSaveColorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     VkAttachmentDescription ColorAttachmentResolve{};
     ColorAttachmentResolve.format = Swapchain->GetImageFormat();
@@ -528,9 +551,15 @@ void FContext::CreateRenderPass()
     ColorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     ColorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    VkAttachmentReference ColorAttachmentResolveRef{};
-    ColorAttachmentResolveRef.attachment = 2;
-    ColorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    VkAttachmentDescription RenderToAndSaveColorAttachmentResolve{};
+    RenderToAndSaveColorAttachmentResolve.format = VK_FORMAT_R8G8B8A8_SRGB;
+    RenderToAndSaveColorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+    RenderToAndSaveColorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    RenderToAndSaveColorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    RenderToAndSaveColorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    RenderToAndSaveColorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    RenderToAndSaveColorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    RenderToAndSaveColorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     VkAttachmentDescription DepthAttachment{};
     DepthAttachment.format = FindSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
@@ -544,8 +573,24 @@ void FContext::CreateRenderPass()
     DepthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     DepthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+    VkAttachmentReference ColorAttachmentRef{};
+    ColorAttachmentRef.attachment = 0;
+    ColorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference RenderToAndSaveColorAttachmentRef{};
+    RenderToAndSaveColorAttachmentRef.attachment = 1;
+    RenderToAndSaveColorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference ColorAttachmentResolveRef{};
+    ColorAttachmentResolveRef.attachment = 2;
+    ColorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference RenderToAndSaveColorAttachmentResolveRef{};
+    RenderToAndSaveColorAttachmentResolveRef.attachment = 3;
+    RenderToAndSaveColorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
     VkAttachmentReference DepthAttachmentRef{};
-    DepthAttachmentRef.attachment = 1;
+    DepthAttachmentRef.attachment = 4;
     DepthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkSubpassDependency Dependency{};
@@ -556,14 +601,17 @@ void FContext::CreateRenderPass()
     Dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
     Dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
+    std::vector<VkAttachmentReference> ColorAttachments{ColorAttachmentRef, RenderToAndSaveColorAttachmentRef};
+    std::vector<VkAttachmentReference> ResolveAttachments{ColorAttachmentResolveRef, RenderToAndSaveColorAttachmentResolveRef};
+
     VkSubpassDescription Subpass{};
     Subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    Subpass.colorAttachmentCount = 1;
-    Subpass.pColorAttachments = &ColorAttachmentRef;
+    Subpass.colorAttachmentCount = ColorAttachments.size();
+    Subpass.pColorAttachments = ColorAttachments.data();
     Subpass.pDepthStencilAttachment = &DepthAttachmentRef;
-    Subpass.pResolveAttachments = &ColorAttachmentResolveRef;
+    Subpass.pResolveAttachments = ResolveAttachments.data();
 
-    std::array<VkAttachmentDescription, 3> Attachments = {ColorAttachment, DepthAttachment, ColorAttachmentResolve};
+    std::vector<VkAttachmentDescription> Attachments = {ColorAttachment, RenderToAndSaveColorAttachment, ColorAttachmentResolve, RenderToAndSaveColorAttachmentResolve, DepthAttachment};
     VkRenderPassCreateInfo RenderPassInfo{};
     RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     RenderPassInfo.attachmentCount = static_cast<uint32_t>(Attachments.size());
@@ -720,12 +768,14 @@ void FContext::CreateGraphicsPipeline()
     ColorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
     ColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
+    std::vector<VkPipelineColorBlendAttachmentState> ColorBlendingAttachments{ColorBlendAttachment, ColorBlendAttachment};
+
     VkPipelineColorBlendStateCreateInfo ColorBlending{};
     ColorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     ColorBlending.logicOpEnable = VK_FALSE;
     ColorBlending.logicOp = VK_LOGIC_OP_COPY;
-    ColorBlending.attachmentCount = 1;
-    ColorBlending.pAttachments = &ColorBlendAttachment;
+    ColorBlending.attachmentCount = 2;
+    ColorBlending.pAttachments = ColorBlendingAttachments.data();
     ColorBlending.blendConstants[0] = 0.f;
     ColorBlending.blendConstants[1] = 0.f;
     ColorBlending.blendConstants[2] = 0.f;
@@ -956,7 +1006,7 @@ void FContext::CreateFramebuffers()
 {
     SwapChainFramebuffers.resize(Swapchain->Size());
     for (std::size_t i = 0; i < Swapchain->Size(); ++i) {
-        std::array<VkImageView, 3> Attachments = {ColorImageView, DepthImageView, Swapchain->GetImageViews()[i]};
+        std::vector<VkImageView> Attachments = {ResolvedColorImageView, ResolvedImageToRenderToAndSaveView, Swapchain->GetImageViews()[i], ImageViewsForImageToRenderToAndThenSave[i], DepthImageView};
 
         VkFramebufferCreateInfo FramebufferInfo{};
         FramebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -1001,6 +1051,7 @@ void FContext::CreateTextureImage(std::string& TexturePath)
     CopyBufferToImage(TempStagingBuffer, TextureImage, static_cast<uint32_t>(TexWidth), static_cast<uint32_t>(TexHeight));
 
     GenerateMipmaps(TextureImage, VK_FORMAT_R8G8B8A8_SRGB, TexWidth, TexHeight, MipLevels);
+
     ResourceAllocator->DestroyBuffer(TempStagingBuffer);
 }
 
@@ -1627,9 +1678,9 @@ void FContext::RecreateSwapChain()
 
 void FContext::CleanUpSwapChain()
 {
-    vkDestroyImageView(LogicalDevice, ColorImageView, nullptr);
-    vkDestroyImage(LogicalDevice, ColorImage, nullptr);
-    vkFreeMemory(LogicalDevice, ColorImageMemory, nullptr);
+    vkDestroyImageView(LogicalDevice, ResolvedColorImageView, nullptr);
+    vkDestroyImage(LogicalDevice, ResolvedColorImage, nullptr);
+    vkFreeMemory(LogicalDevice, ResolvedColorImageMemory, nullptr);
 
     vkDestroyImageView(LogicalDevice, DepthImageView, nullptr);
     vkDestroyImage(LogicalDevice, DepthImage, nullptr);
