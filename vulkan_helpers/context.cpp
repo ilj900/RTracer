@@ -15,13 +15,15 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 #include <stdexcept>
 #include <iostream>
 #include <fstream>
 #include <set>
 #include <array>
 #include <unordered_map>
-#include <chrono>
 
 static FContext Context{};
 
@@ -478,7 +480,7 @@ void FContext::CreateDepthAndAAImages()
     {
         VkImage ImageToRenderToAndSave;
         VkDeviceMemory ImageToRenderToAndSaveMemory;
-        CreateImage(Swapchain->GetWidth(), Swapchain->GetHeight(), 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ImageToRenderToAndSave, ImageToRenderToAndSaveMemory);
+        CreateImage(Swapchain->GetWidth(), Swapchain->GetHeight(), 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ImageToRenderToAndSave, ImageToRenderToAndSaveMemory);
         ImagesToRenderToAndSave.push_back(ImageToRenderToAndSave);
         ImagesToRenderToAndSaveMemory.push_back(ImageToRenderToAndSaveMemory);
     }
@@ -936,6 +938,14 @@ void FContext::TransitionImageLayout(VkImage Image, VkFormat Format, VkImageLayo
         SourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         DestinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
     }
+    else if (OldLayout == VK_IMAGE_LAYOUT_UNDEFINED && NewLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+    {
+        Barrier.srcAccessMask = 0;
+        Barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+        SourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        DestinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    }
     else if(OldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && NewLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
     {
         Barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -1073,6 +1083,28 @@ void FContext::CopyBufferToImage(FBuffer &Buffer, VkImage Image, uint32_t Width,
     Region.imageExtent = {Width, Height, 1};
 
     vkCmdCopyBufferToImage(CommandBuffer, Buffer.Buffer, Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &Region);
+
+    EndSingleTimeCommand(CommandBuffer);
+}
+
+void FContext::CopyImageToBuffer(VkImage Image, FBuffer& Buffer)
+{
+    auto CommandBuffer = BeginSingleTimeCommands();
+
+    VkBufferImageCopy Region{};
+    Region.bufferOffset = 0;
+    Region.bufferRowLength = 0;
+    Region.bufferImageHeight = 0;
+
+    Region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    Region.imageSubresource.mipLevel = 0;
+    Region.imageSubresource.baseArrayLayer = 0;
+    Region.imageSubresource.layerCount = 1;
+
+    Region.imageOffset = {0, 0, 0};
+    Region.imageExtent = {Swapchain->GetWidth(), Swapchain->GetHeight(), 1};
+
+    vkCmdCopyImageToBuffer(CommandBuffer, ImagesToRenderToAndSave[0], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, Buffer.Buffer, 1, &Region);
 
     EndSingleTimeCommand(CommandBuffer);
 }
@@ -1315,7 +1347,7 @@ void FContext::CreateCommandBuffers()
 
         std::vector<VkClearValue> ClearValues{3};
         ClearValues[0].color = {0.f, 0.f, 0.f, 1.f};
-        ClearValues[1].color = {0.2f, 0.f, 0.f, 1.f};
+        ClearValues[1].color = {0.0f, 0.f, 0.f, 1.f};
         ClearValues[2].depthStencil = {1.f, 0};
         RenderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
         RenderPassInfo.pClearValues = ClearValues.data();
@@ -1646,6 +1678,26 @@ void FContext::Present()
     }
 
     CurrentFrame = (CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void FContext::SaveImage(VkImage Image)
+{
+    uint32_t Size = Swapchain->GetHeight() * Swapchain->GetWidth() * 4;
+    FBuffer Buffer = ResourceAllocator->CreateBuffer(Size, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    TransitionImageLayout(Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
+    CopyImageToBuffer(Image, Buffer);
+    TransitionImageLayout(Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
+
+    std::vector<char> Data(Size);
+
+    void* BufferData;
+    vkMapMemory(LogicalDevice, Buffer.Memory, 0, Buffer.Size, 0, &BufferData);
+    memcpy(Data.data(), BufferData, (std::size_t)Buffer.Size);
+    vkUnmapMemory(LogicalDevice, Buffer.Memory);
+
+    stbi_write_bmp("Output.png", Swapchain->GetWidth(), Swapchain->GetHeight(), 4, Data.data());
+
+    ResourceAllocator->DestroyBuffer(Buffer);
 }
 
 void FContext::WaitIdle()

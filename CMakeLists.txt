@@ -75,6 +75,7 @@ set(INCLUDE
         vulkan_helpers/buffer.h
         vulkan_helpers/descriptors.h
         include/stb_image.h
+        include/stb_image_write.h
         include/tiny_obj_loader.h
         math/maths.h)
 

@@ -60,6 +60,7 @@ public:
     void Render();
     void Present();
     void WaitIdle();
+    void SaveImage(VkImage Image);
 
     void CreateImage(uint32_t Width, uint32_t Height, uint32_t MipLevels, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties, VkImage& Image, VkDeviceMemory& ImageMemory);
     VkImageView CreateImageView(VkImage Image, VkFormat Format, VkImageAspectFlags AspectFlags, uint32_t MipLevels);
@@ -71,6 +72,7 @@ public:
     void EndSingleTimeCommand(VkCommandBuffer CommandBuffer);
     bool HasStensilComponent(VkFormat Format);
     void CopyBufferToImage(FBuffer &Buffer, VkImage Image, uint32_t Width, uint32_t Height);
+    void CopyImageToBuffer(VkImage Image, FBuffer& Buffer);
     void GenerateMipmaps(VkImage Image, VkFormat ImageFormat, int32_t TexWidth, int32_t TexHeight, uint32_t mipLevels);
     void LoadDataIntoBuffer(FBuffer &Buffer, void* Data, size_t Size);
     FBuffer LoadDataIntoGPU(void* Data, uint32_t Size);

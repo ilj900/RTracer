@@ -1,7 +1,7 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(location = 0) out vec4 OutColor;
+layout(location = 0) out vec4 MainColorOutput;
 layout(location = 1) out vec4 SecondaryOutput;
 
 layout(location = 0) in vec3 FragPosition;
@@ -45,37 +45,15 @@ void main()
 
     if (!GetSelected(RenderablePropertyMask))
     {
-        OutColor = vec4(DiffuseColor + AmbientColor, 1.f);
+        MainColorOutput = vec4(DiffuseColor + AmbientColor, 1.f);
     }
 
     if (GetSelected(RenderablePropertyMask))
     {
-        OutColor = vec4(1.f, 1.f, 1.f, 1.f);
+        MainColorOutput = vec4(1.f, 1.f, 1.f, 1.f);
     }
 
-    if (gl_FragCoord.x < 500)
-    {
-        if (gl_FragCoord.y < 500)
-        {
-            SecondaryOutput = vec4(1.f, 0.f, 0.f, 1.f);
-        }
-        else
-        {
-            SecondaryOutput = vec4(0.f, 1.f, 0.f, 1.f);
-        }
-    }
-    else
-    {
-        if (gl_FragCoord.y < 500)
-        {
-            SecondaryOutput = vec4(0.f, 0.f, 1.f, 1.f);
-        }
-        else
-        {
-            SecondaryOutput = vec4(1.f, 1.f, 1.f, 1.f);
-        }
-    }
-
-
+    SecondaryOutput = vec4(Normal, 1.f);
+    
 //    OutColor = texture(TexSampler, FragTexCoord);
 }
