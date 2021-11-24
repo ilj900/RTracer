@@ -108,10 +108,10 @@ void LoadModels()
         TransformSystem->UpdateDeviceComponentData(Models.back());
     };
 
-//    AddMesh({0.9f, 0.6f, 0.3f}, {-2.f, 0.f, -2.f}, Tetrahedron, std::string(), 0);
-//    AddMesh({0.6f, 0.3f, 0.9f}, {0.f, 0.f, -2.f}, Hexahedron, std::string(), ECS::COMPONENTS::RENDERABLE_SELECTED_BIT);
-//    AddMesh({0.3f, 0.9f, 0.6f}, {2.f, 0.f, -2.f}, Icosahedron, std::string(), 0);
-    AddMesh({0.3f, 0.9f, 0.6f}, {2.f, 0.f, -2.f}, Model, "../models/viking_room/viking_room.obj", 0);
+    AddMesh({0.9f, 0.6f, 0.3f}, {-2.f, 0.f, -2.f}, Tetrahedron, std::string(), 0);
+    AddMesh({0.6f, 0.3f, 0.9f}, {0.f, 0.f, -2.f}, Hexahedron, std::string(), ECS::COMPONENTS::RENDERABLE_SELECTED_BIT);
+    AddMesh({0.3f, 0.9f, 0.6f}, {2.f, 0.f, -2.f}, Icosahedron, std::string(), 0);
+//    AddMesh({0.3f, 0.9f, 0.6f}, {2.f, 0.f, -2.f}, Model, "../models/viking_room/viking_room.obj", 0);
 }
 
 int main()

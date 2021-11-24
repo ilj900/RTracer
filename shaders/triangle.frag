@@ -31,29 +31,29 @@ bool GetSelected(uint Mask)
 
 void main()
 {
-//    vec3 LightDirection = normalize(LightPosition - FragPosition);
-//    vec3 Normal = normalize(FragNormal);
-//    float LightAngle = dot(LightDirection, Normal);
-//    vec3 Color = FragColor;
-//
-//    vec3 AmbientColor = Color * 0.1f;
-//    if (LightAngle < 0.f)
-//    {
-//        LightAngle = 0.f;
-//    }
-//    vec3 DiffuseColor = Color * 0.9 * LightAngle;
-//
-//    if (!GetSelected(RenderablePropertyMask))
-//    {
-//        MainColorOutput = vec4(DiffuseColor + AmbientColor, 1.f);
-//    }
-//
-//    if (GetSelected(RenderablePropertyMask))
-//    {
-//        MainColorOutput = vec4(1.f, 1.f, 1.f, 1.f);
-//    }
-//
-//    SecondaryOutput = vec4(Normal, 1.f);
+    vec3 LightDirection = normalize(LightPosition - FragPosition);
+    vec3 Normal = normalize(FragNormal);
+    float LightAngle = dot(LightDirection, Normal);
+    vec3 Color = FragColor;
 
-    MainColorOutput = texture(TexSampler, FragTexCoord);
+    vec3 AmbientColor = Color * 0.1f;
+    if (LightAngle < 0.f)
+    {
+        LightAngle = 0.f;
+    }
+    vec3 DiffuseColor = Color * 0.9 * LightAngle;
+
+    if (!GetSelected(RenderablePropertyMask))
+    {
+        MainColorOutput = vec4(DiffuseColor + AmbientColor, 1.f);
+    }
+
+    if (GetSelected(RenderablePropertyMask))
+    {
+        MainColorOutput = vec4(1.f, 1.f, 1.f, 1.f);
+    }
+
+    SecondaryOutput = vec4(Normal, 1.f);
+
+//    MainColorOutput = texture(TexSampler, FragTexCoord);
 }
