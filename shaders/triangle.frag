@@ -54,6 +54,6 @@ void main()
     }
 
     SecondaryOutput = vec4(Normal, 1.f);
-    
+
 //    OutColor = texture(TexSampler, FragTexCoord);
 }

@@ -11,6 +11,7 @@
 #include "controller.h"
 #include "buffer.h"
 #include "descriptors.h"
+#include "image.h"
 
 #include <vector>
 #include <string>
@@ -125,26 +126,14 @@ public:
     VkDebugUtilsMessengerEXT DebugMessenger;
 
     /// Images
-    std::vector<VkImage> ImagesToRenderToAndSave;
-    std::vector<VkDeviceMemory> ImagesToRenderToAndSaveMemory;
-    std::vector<VkImageView> ImageViewsForImageToRenderToAndThenSave;
+    std::vector<FImage> ImagesToRenderToAndSave;
 
-    VkImage ResolvedImageToRenderToAndSave;
-    VkDeviceMemory ResolvedImageToRenderToAndSaveMemory;
-    VkImageView ResolvedImageToRenderToAndSaveView;
-
-    VkImage ResolvedColorImage;
-    VkDeviceMemory ResolvedColorImageMemory;
-    VkImageView ResolvedColorImageView;
-
-    VkImage DepthImage;
-    VkDeviceMemory DepthImageMemory;
-    VkImageView DepthImageView;
+    std::shared_ptr<FImage> ResolvedImageToRenderToAndSave = nullptr;
+    std::shared_ptr<FImage> ResolvedColorImage = nullptr;
+    std::shared_ptr<FImage> DepthImage = nullptr;
 
     /// Texture used to pain the model
-    VkImage TextureImage;
-    VkDeviceMemory TextureImageMemory;
-    VkImageView TextureImageView;
+    std::shared_ptr<FImage> TextureImage = nullptr;
 
     VkSampler TextureSampler;
 

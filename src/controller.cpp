@@ -34,7 +34,7 @@ void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int
         {
             if (Action == GLFW_PRESS) {
                 auto& Context = GetContext();
-                Context.SaveImage(Context.ImagesToRenderToAndSave[0]);
+                Context.SaveImage(Context.ImagesToRenderToAndSave[0].Image);
             }
         }
     }

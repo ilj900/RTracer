@@ -77,7 +77,6 @@ void FContext::Init(GLFWwindow *Window, FController *Controller)
         CreateDescriptorSetLayouts();
         CreateGraphicsPipeline();
         CreateTextureImage(TexturePath);
-        CreateTextureImageView();
         CreateFramebuffers();
         CreateTextureSampler();
         LoadModelDataToGPU();
@@ -468,35 +467,33 @@ void FContext::CreateDepthAndAAImages()
 {
     /// Create Image and ImageView for AA
     VkFormat ColorFormat = Swapchain->GetImageFormat();
+    auto Width = Swapchain->GetWidth();
+    auto Height = Swapchain->GetHeight();
 
-    CreateImage(Swapchain->GetWidth(), Swapchain->GetHeight(), 1, MSAASamples, ColorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ResolvedColorImage, ResolvedColorImageMemory);
-    ResolvedColorImageView = CreateImageView(ResolvedColorImage, ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-
-    CreateImage(Swapchain->GetWidth(), Swapchain->GetHeight(), 1, MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ResolvedImageToRenderToAndSave, ResolvedImageToRenderToAndSaveMemory);
-    ResolvedImageToRenderToAndSaveView = CreateImageView(ResolvedImageToRenderToAndSave, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+    ResolvedColorImage = std::make_shared<FImage>(Width, Height, 1, MSAASamples, ColorFormat, VK_IMAGE_TILING_OPTIMAL,
+                                                  VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                  VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
+    ResolvedImageToRenderToAndSave = std::make_shared<FImage>(Width, Height, 1, MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+                                                              VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                              VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
 
     /// Create Image that will be used to save some data from shaders
+    ImagesToRenderToAndSave.reserve(Swapchain->Size());
     for(uint32_t i = 0; i < Swapchain->Size(); ++i)
     {
-        VkImage ImageToRenderToAndSave;
-        VkDeviceMemory ImageToRenderToAndSaveMemory;
-        CreateImage(Swapchain->GetWidth(), Swapchain->GetHeight(), 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, ImageToRenderToAndSave, ImageToRenderToAndSaveMemory);
-        ImagesToRenderToAndSave.push_back(ImageToRenderToAndSave);
-        ImagesToRenderToAndSaveMemory.push_back(ImageToRenderToAndSaveMemory);
-    }
-
-    for (uint32_t i = 0; i < Swapchain->Size(); ++i)
-    {
-        ImageViewsForImageToRenderToAndThenSave.push_back(CreateImageView(ImagesToRenderToAndSave[i], VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, 1));
+        ImagesToRenderToAndSave.emplace_back(Width, Height, 1 , VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+                                                    VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                    VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
     }
 
     /// Create Image and ImageView for Depth
     VkFormat DepthFormat = FindDepthFormat();
+    DepthImage = std::make_shared<FImage>(Width, Height, 1, MSAASamples, DepthFormat, VK_IMAGE_TILING_OPTIMAL,
+                                          VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                          VK_IMAGE_ASPECT_DEPTH_BIT, LogicalDevice);
 
-    CreateImage(Swapchain->GetWidth(), Swapchain->GetHeight(), 1, MSAASamples, DepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, DepthImage, DepthImageMemory);
-    DepthImageView = CreateImageView(DepthImage, DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 
-    TransitionImageLayout(DepthImage, DepthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
+    TransitionImageLayout(DepthImage->Image, DepthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
 }
 
 VkImageView FContext::CreateImageView(VkImage Image, VkFormat Format, VkImageAspectFlags AspectFlags, uint32_t MipLevels)
@@ -1016,7 +1013,7 @@ void FContext::CreateFramebuffers()
 {
     SwapChainFramebuffers.resize(Swapchain->Size());
     for (std::size_t i = 0; i < Swapchain->Size(); ++i) {
-        std::vector<VkImageView> Attachments = {ResolvedColorImageView, ResolvedImageToRenderToAndSaveView, DepthImageView, Swapchain->GetImageViews()[i], ImageViewsForImageToRenderToAndThenSave[i]};
+        std::vector<VkImageView> Attachments = {ResolvedColorImage->View, ResolvedImageToRenderToAndSave->View, DepthImage->View, Swapchain->GetImageViews()[i], ImagesToRenderToAndSave[i].View};
 
         VkFramebufferCreateInfo FramebufferInfo{};
         FramebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -1055,12 +1052,14 @@ void FContext::CreateTextureImage(std::string& TexturePath)
     vkUnmapMemory(LogicalDevice, TempStagingBuffer.Memory);
     stbi_image_free(Pixels);
 
-    CreateImage(TexWidth, TexHeight, MipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, TextureImage, TextureImageMemory);
+    TextureImage = std::make_shared<FImage>(TexWidth, TexHeight, MipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+                                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                            VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
 
-    TransitionImageLayout(TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, MipLevels);
-    CopyBufferToImage(TempStagingBuffer, TextureImage, static_cast<uint32_t>(TexWidth), static_cast<uint32_t>(TexHeight));
+    TransitionImageLayout(TextureImage->Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, MipLevels);
+    CopyBufferToImage(TempStagingBuffer, TextureImage->Image, static_cast<uint32_t>(TexWidth), static_cast<uint32_t>(TexHeight));
 
-    GenerateMipmaps(TextureImage, VK_FORMAT_R8G8B8A8_SRGB, TexWidth, TexHeight, MipLevels);
+    GenerateMipmaps(TextureImage->Image, VK_FORMAT_R8G8B8A8_SRGB, TexWidth, TexHeight, MipLevels);
 
     ResourceAllocator->DestroyBuffer(TempStagingBuffer);
 }
@@ -1104,7 +1103,7 @@ void FContext::CopyImageToBuffer(VkImage Image, FBuffer& Buffer)
     Region.imageOffset = {0, 0, 0};
     Region.imageExtent = {Swapchain->GetWidth(), Swapchain->GetHeight(), 1};
 
-    vkCmdCopyImageToBuffer(CommandBuffer, ImagesToRenderToAndSave[0], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, Buffer.Buffer, 1, &Region);
+    vkCmdCopyImageToBuffer(CommandBuffer, ImagesToRenderToAndSave[0].Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, Buffer.Buffer, 1, &Region);
 
     EndSingleTimeCommand(CommandBuffer);
 }
@@ -1198,11 +1197,6 @@ void FContext::LoadModelDataToGPU()
         MeshSystem->LoadToGPU(Mesh);
     }
 
-}
-
-void FContext::CreateTextureImageView()
-{
-    TextureImageView = CreateImageView(TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, MipLevels);
 }
 
 void FContext::CreateTextureSampler()
@@ -1305,7 +1299,7 @@ void FContext::CreateDescriptorSet()
 
         VkDescriptorImageInfo ImageBufferInfo{};
         ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        ImageBufferInfo.imageView = TextureImageView;
+        ImageBufferInfo.imageView = TextureImage->View;
         ImageBufferInfo.sampler = TextureSampler;
         DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME, i, ImageBufferInfo);
     }
@@ -1731,13 +1725,12 @@ void FContext::RecreateSwapChain()
 
 void FContext::CleanUpSwapChain()
 {
-    vkDestroyImageView(LogicalDevice, ResolvedColorImageView, nullptr);
-    vkDestroyImage(LogicalDevice, ResolvedColorImage, nullptr);
-    vkFreeMemory(LogicalDevice, ResolvedColorImageMemory, nullptr);
+    ResolvedColorImage = nullptr;
+    ResolvedImageToRenderToAndSave = nullptr;
 
-    vkDestroyImageView(LogicalDevice, DepthImageView, nullptr);
-    vkDestroyImage(LogicalDevice, DepthImage, nullptr);
-    vkFreeMemory(LogicalDevice, DepthImageMemory, nullptr);
+    ImagesToRenderToAndSave.clear();
+
+    DepthImage = nullptr;
 
     for (auto Framebuffer : SwapChainFramebuffers)
     {
@@ -1835,10 +1828,7 @@ void FContext::CleanUp()
     CleanUpSwapChain();
 
     vkDestroySampler(LogicalDevice, TextureSampler, nullptr);
-    vkDestroyImageView(LogicalDevice, TextureImageView, nullptr);
-
-    vkDestroyImage(LogicalDevice, TextureImage, nullptr);
-    vkFreeMemory(LogicalDevice, TextureImageMemory, nullptr);
+    TextureImage = nullptr;
 
     DescriptorSetManager->DestroyDescriptorSetLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME);
     DescriptorSetManager->DestroyDescriptorSetLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME);
