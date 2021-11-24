@@ -56,10 +56,10 @@ namespace ECS
             auto& DeviceMeshComponent = GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Entity);
 
             auto& Context = GetContext();
-            DeviceMeshComponent.VertexBuffer = Context.LoadDataIntoGPU(MeshComponent.Vertices.data(), MeshComponent.Vertices.size() * sizeof(FVertex));
+            DeviceMeshComponent.VertexBuffer = Context.LoadDataIntoGPU(MeshComponent.Vertices.data(), MeshComponent.Vertices.size() * sizeof(FVertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
             if (MeshComponent.Indexed)
             {
-                DeviceMeshComponent.IndexBuffer = Context.LoadDataIntoGPU(MeshComponent.Indices.data(), MeshComponent.Indices.size() * sizeof(uint32_t));
+                DeviceMeshComponent.IndexBuffer = Context.LoadDataIntoGPU(MeshComponent.Indices.data(), MeshComponent.Indices.size() * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
             }
         }
 

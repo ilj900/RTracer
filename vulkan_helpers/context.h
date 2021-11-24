@@ -76,7 +76,7 @@ public:
     void CopyImageToBuffer(VkImage Image, FBuffer& Buffer);
     void GenerateMipmaps(VkImage Image, VkFormat ImageFormat, int32_t TexWidth, int32_t TexHeight, uint32_t mipLevels);
     void LoadDataIntoBuffer(FBuffer &Buffer, void* Data, size_t Size);
-    FBuffer LoadDataIntoGPU(void* Data, uint32_t Size);
+    FBuffer LoadDataIntoGPU(void* Data, uint32_t Size, VkBufferUsageFlags Flags);
     void FreeData(FBuffer Buffer);
 
     bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device);
