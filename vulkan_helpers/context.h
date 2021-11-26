@@ -61,14 +61,12 @@ public:
     void Render();
     void Present();
     void WaitIdle();
-    void SaveImage(VkImage Image);
+    void SaveImage(FImage& Image);
 
-    void CreateImage(uint32_t Width, uint32_t Height, uint32_t MipLevels, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties, VkImage& Image, VkDeviceMemory& ImageMemory);
     VkImageView CreateImageView(VkImage Image, VkFormat Format, VkImageAspectFlags AspectFlags, uint32_t MipLevels);
     VkFormat FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features);
     VkShaderModule CreateShaderFromFile(const std::string& FileName);
     VkFormat FindDepthFormat();
-    void TransitionImageLayout(VkImage Image, VkFormat Format, VkImageLayout OldLayout, VkImageLayout NewLayout, uint32_t MipLevels);
     VkCommandBuffer BeginSingleTimeCommands();
     void EndSingleTimeCommand(VkCommandBuffer CommandBuffer);
     bool HasStensilComponent(VkFormat Format);
@@ -78,6 +76,7 @@ public:
     void LoadDataIntoBuffer(FBuffer &Buffer, void* Data, size_t Size);
     FBuffer LoadDataIntoGPU(void* Data, uint32_t Size, VkBufferUsageFlags Flags);
     void FreeData(FBuffer Buffer);
+    void FetchImage(FImage& Image, std::vector<char>& Data);
 
     bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device);
     bool CheckDeviceQueueSupport(VkPhysicalDevice Device);

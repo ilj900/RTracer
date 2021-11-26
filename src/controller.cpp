@@ -2,6 +2,8 @@
 #include "components/camera_component.h"
 #include "components/device_camera_component.h"
 #include "systems/camera_system.h"
+#include "components/device_renderable_component.h"
+#include "systems/renderable_system.h"
 #include "context.h"
 
 FController::FController(GLFWwindow* Window):
@@ -34,7 +36,7 @@ void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int
         {
             if (Action == GLFW_PRESS) {
                 auto& Context = GetContext();
-                Context.SaveImage(Context.ImagesToRenderToAndSave[0].Image);
+                Context.SaveImage(Context.ImagesToRenderToAndSave[0]);
             }
         }
     }
