@@ -3,7 +3,7 @@
 #include "context.h"
 
 FImage::FImage(uint32_t Width, uint32_t Height, uint32_t MipLevels, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties,  VkImageAspectFlags AspectFlags, VkDevice Device) :
-Device(Device), Width(Width), Height(Height), MipLevels(MipLevels), Format(Format), CurrentLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+Device(Device), Width(Width), Height(Height), MipLevels(MipLevels), Format(Format)
 {
     VkImageCreateInfo ImageInfo{};
     ImageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -64,7 +64,7 @@ FImage::~FImage()
     vkFreeMemory(Device, Memory, nullptr);
 }
 
-void FImage::Transition(VkImageLayout NewLayout)
+void FImage::Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout)
 {
     auto& Context = GetContext();
 
@@ -139,7 +139,4 @@ void FImage::Transition(VkImageLayout NewLayout)
     vkCmdPipelineBarrier(CommandBuffer, SourceStage, DestinationStage, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
 
     Context.EndSingleTimeCommand(CommandBuffer);
-
-    OldLayout = CurrentLayout;
-    CurrentLayout = NewLayout;
 }

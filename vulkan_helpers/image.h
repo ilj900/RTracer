@@ -7,7 +7,7 @@ struct FImage
     FImage(uint32_t Width, uint32_t Height, uint32_t MipLevels, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties, VkImageAspectFlags AspectFlags, VkDevice Device);
     ~FImage();
 
-    void Transition(VkImageLayout NewLayout);
+    void Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout);
 
 
     VkImage Image;
@@ -16,8 +16,6 @@ struct FImage
 
     VkFormat Format;
     VkDevice Device;
-    VkImageLayout CurrentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    VkImageLayout OldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     uint32_t Width;
     uint32_t Height;

@@ -2,9 +2,10 @@
 #include "components/camera_component.h"
 #include "components/device_camera_component.h"
 #include "systems/camera_system.h"
-#include "components/device_renderable_component.h"
 #include "systems/renderable_system.h"
 #include "context.h"
+
+#include <iostream>
 
 FController::FController(GLFWwindow* Window):
 Window(Window)
@@ -36,7 +37,7 @@ void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int
         {
             if (Action == GLFW_PRESS) {
                 auto& Context = GetContext();
-                Context.SaveImage(Context.ImagesToRenderToAndSave[0]);
+                Context.SaveImage(Context.NormalImages[0]);
             }
         }
     }
@@ -74,6 +75,24 @@ void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, in
                 }
             }
             break;
+        }
+        case GLFW_MOUSE_BUTTON_LEFT:
+        {
+            switch (Action)
+            {
+                case GLFW_PRESS:
+                {
+                    auto& Context = GetContext();
+                    std::vector<uint32_t> Data;
+
+                    Context.FetchImage(Context.RenderableIndexImages[0], Data);
+                    double X, Y;
+                    glfwGetCursorPos(Window, &X, &Y);
+                    uint32_t RenderableIndex = Data[uint32_t(Y) * 1920 + uint32_t(X)];
+                    auto RenderableSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FRenderableSystem>();
+                    RenderableSystem->SetSelectedByIndex(RenderableIndex);
+                }
+            }
         }
     }
 }

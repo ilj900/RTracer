@@ -25,8 +25,34 @@ namespace ECS
 
         void FRenderableSystem::SetSelected(FEntity Entity)
         {
-            auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
-            RenderableComponent.RenderablePropertyMask |= COMPONENTS::RENDERABLE_SELECTED_BIT;
+            for (auto E : Entities)
+            {
+                auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(E);
+                if (Entity == E)
+                {
+                    RenderableComponent.RenderablePropertyMask |= COMPONENTS::RENDERABLE_SELECTED_BIT;
+                }
+                else
+                {
+                    RenderableComponent.RenderablePropertyMask &= ~COMPONENTS::RENDERABLE_SELECTED_BIT;
+                }
+            }
+        }
+
+        void FRenderableSystem::SetSelectedByIndex(uint32_t Index)
+        {
+            for (auto Entity : Entities)
+            {
+                auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
+                if (RenderableComponent.RenderableIndex == Index)
+                {
+                    RenderableComponent.RenderablePropertyMask |= COMPONENTS::RENDERABLE_SELECTED_BIT;
+                }
+                else
+                {
+                    RenderableComponent.RenderablePropertyMask &= ~COMPONENTS::RENDERABLE_SELECTED_BIT;
+                }
+            }
         }
 
         void FRenderableSystem::SetNotSelected(FEntity Entity)

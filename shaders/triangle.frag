@@ -3,6 +3,7 @@
 
 layout(location = 0) out vec4 MainColorOutput;
 layout(location = 1) out vec4 SecondaryOutput;
+layout(location = 2) out uint RenderableIndexOutput;
 
 layout(location = 0) in vec3 FragPosition;
 layout(location = 1) in vec3 FragNormal;
@@ -54,6 +55,7 @@ void main()
     }
 
     SecondaryOutput = vec4(Normal, 1.f);
+    RenderableIndexOutput = RenderableIndex;
 
 //    MainColorOutput = texture(TexSampler, FragTexCoord);
 }

@@ -71,12 +71,13 @@ public:
     void EndSingleTimeCommand(VkCommandBuffer CommandBuffer);
     bool HasStensilComponent(VkFormat Format);
     void CopyBufferToImage(FBuffer &Buffer, VkImage Image, uint32_t Width, uint32_t Height);
-    void CopyImageToBuffer(VkImage Image, FBuffer& Buffer);
+    void CopyImageToBuffer(FImage& Image, FBuffer& Buffer);
     void GenerateMipmaps(VkImage Image, VkFormat ImageFormat, int32_t TexWidth, int32_t TexHeight, uint32_t mipLevels);
     void LoadDataIntoBuffer(FBuffer &Buffer, void* Data, size_t Size);
     FBuffer LoadDataIntoGPU(void* Data, uint32_t Size, VkBufferUsageFlags Flags);
     void FreeData(FBuffer Buffer);
     void FetchImage(FImage& Image, std::vector<char>& Data);
+    void FetchImage(FImage& Image, std::vector<uint32_t>& Data);
 
     bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device);
     bool CheckDeviceQueueSupport(VkPhysicalDevice Device);
@@ -125,9 +126,11 @@ public:
     VkDebugUtilsMessengerEXT DebugMessenger;
 
     /// Images
-    std::vector<FImage> ImagesToRenderToAndSave;
+    std::vector<FImage> NormalImages;
+    std::vector<FImage> RenderableIndexImages;
 
-    std::shared_ptr<FImage> ResolvedImageToRenderToAndSave = nullptr;
+    std::shared_ptr<FImage> ResolvedNormalsImage = nullptr;
+    std::shared_ptr<FImage> ResolvedRenderableIndexImage = nullptr;
     std::shared_ptr<FImage> ResolvedColorImage = nullptr;
     std::shared_ptr<FImage> DepthImage = nullptr;
 
