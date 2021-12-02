@@ -3,7 +3,7 @@
 #include "context.h"
 
 FImage::FImage(uint32_t Width, uint32_t Height, uint32_t MipLevels, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties,  VkImageAspectFlags AspectFlags, VkDevice Device) :
-Device(Device), Width(Width), Height(Height), MipLevels(MipLevels), Format(Format)
+Device(Device), Width(Width), Height(Height), MipLevels(MipLevels), Format(Format), Samples(NumSamples)
 {
     VkImageCreateInfo ImageInfo{};
     ImageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -57,11 +57,44 @@ Device(Device), Width(Width), Height(Height), MipLevels(MipLevels), Format(Forma
     }
 }
 
+size_t FImage::GetHash()
+{
+    return std::hash<FImage>()(*this);
+}
+
+void FImage::Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, uint32_t MipLevels, VkDevice LogicalDevice, FImage& Image)
+{
+    Image.Image = ImageToWrap;
+    Image.Format = Format;
+    Image.Device = LogicalDevice;
+
+    Image.bIsWrappedImage = true;
+
+    VkImageViewCreateInfo ViewInfo{};
+    ViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    ViewInfo.image = ImageToWrap;
+    ViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    ViewInfo.format = Format;
+    ViewInfo.subresourceRange.aspectMask = AspectFlags;
+    ViewInfo.subresourceRange.baseMipLevel = 0;
+    ViewInfo.subresourceRange.levelCount = MipLevels;
+    ViewInfo.subresourceRange.baseArrayLayer = 0;
+    ViewInfo.subresourceRange.layerCount = 1;
+
+    if (vkCreateImageView(LogicalDevice, &ViewInfo, nullptr, &Image.View) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create texture image view!");
+    }
+}
+
 FImage::~FImage()
 {
     vkDestroyImageView(Device, View, nullptr);
-    vkDestroyImage(Device, Image, nullptr);
-    vkFreeMemory(Device, Memory, nullptr);
+    if (!bIsWrappedImage)
+    {
+        vkDestroyImage(Device, Image, nullptr);
+        vkFreeMemory(Device, Memory, nullptr);
+    }
 }
 
 void FImage::Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout)
@@ -139,4 +172,9 @@ void FImage::Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout)
     vkCmdPipelineBarrier(CommandBuffer, SourceStage, DestinationStage, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
 
     Context.EndSingleTimeCommand(CommandBuffer);
+}
+
+bool operator<(const FImage& A, const FImage& B)
+{
+    return A.Image < B.Image;
 }

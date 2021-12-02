@@ -503,162 +503,18 @@ void FContext::CreateDepthAndAAImages()
     DepthImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
-VkImageView FContext::CreateImageView(VkImage Image, VkFormat Format, VkImageAspectFlags AspectFlags, uint32_t MipLevels)
-{
-    VkImageViewCreateInfo ViewInfo{};
-    ViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    ViewInfo.image = Image;
-    ViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    ViewInfo.format = Format;
-    ViewInfo.subresourceRange.aspectMask = AspectFlags;
-    ViewInfo.subresourceRange.baseMipLevel = 0;
-    ViewInfo.subresourceRange.levelCount = MipLevels;
-    ViewInfo.subresourceRange.baseArrayLayer = 0;
-    ViewInfo.subresourceRange.layerCount = 1;
-
-    VkImageView ImageView;
-    if (vkCreateImageView(LogicalDevice, &ViewInfo, nullptr, &ImageView) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create texture image view!");
-    }
-
-    return ImageView;
-}
-
 void FContext::CreateRenderPass()
 {
-    VkAttachmentDescription ColorAttachment{};
-    ColorAttachment.format = Swapchain->GetImageFormat();
-    ColorAttachment.samples = MSAASamples;
-    ColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    ColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    ColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    ColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    ColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    ColorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    RenderPass = std::make_shared<FRenderPass>();
+    RenderPass->AddImageAsAttachment(Swapchain->Images[0], AttachmentType::Color);
+    RenderPass->AddImageAsAttachment(NormalImages[0], AttachmentType::Color);
+    RenderPass->AddImageAsAttachment(RenderableIndexImages[0], AttachmentType::Color);
+    RenderPass->AddImageAsAttachment(*DepthImage, AttachmentType::DepthStencil);
+    RenderPass->AddImageAsAttachment(*ResolvedColorImage, AttachmentType::Resolve);
+    RenderPass->AddImageAsAttachment(*ResolvedNormalsImage, AttachmentType::Resolve);
+    RenderPass->AddImageAsAttachment(*ResolvedRenderableIndexImage, AttachmentType::Resolve);
 
-    VkAttachmentDescription RenderToAndSaveColorAttachment{};
-    RenderToAndSaveColorAttachment.format = VK_FORMAT_R8G8B8A8_SRGB;
-    RenderToAndSaveColorAttachment.samples = MSAASamples;
-    RenderToAndSaveColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    RenderToAndSaveColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    RenderToAndSaveColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    RenderToAndSaveColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    RenderToAndSaveColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    RenderToAndSaveColorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentDescription RenderableIndexColorAttachment{};
-    RenderableIndexColorAttachment.format = VK_FORMAT_R32_UINT;
-    RenderableIndexColorAttachment.samples = MSAASamples;
-    RenderableIndexColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    RenderableIndexColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    RenderableIndexColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    RenderableIndexColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    RenderableIndexColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    RenderableIndexColorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentDescription DepthAttachment{};
-    DepthAttachment.format = FindSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
-                                                 VK_IMAGE_TILING_OPTIMAL,
-                                                 VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-    DepthAttachment.samples = MSAASamples;
-    DepthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    DepthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    DepthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    DepthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    DepthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    DepthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentDescription ColorAttachmentResolve{};
-    ColorAttachmentResolve.format = Swapchain->GetImageFormat();
-    ColorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
-    ColorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    ColorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    ColorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    ColorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    ColorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    ColorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentDescription RenderToAndSaveColorAttachmentResolve{};
-    RenderToAndSaveColorAttachmentResolve.format = VK_FORMAT_R8G8B8A8_SRGB;
-    RenderToAndSaveColorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
-    RenderToAndSaveColorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    RenderToAndSaveColorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    RenderToAndSaveColorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    RenderToAndSaveColorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    RenderToAndSaveColorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    RenderToAndSaveColorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentDescription RenderableIndexColorAttachmentResolved{};
-    RenderableIndexColorAttachmentResolved.format = VK_FORMAT_R32_UINT;
-    RenderableIndexColorAttachmentResolved.samples = VK_SAMPLE_COUNT_1_BIT;
-    RenderableIndexColorAttachmentResolved.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    RenderableIndexColorAttachmentResolved.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    RenderableIndexColorAttachmentResolved.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    RenderableIndexColorAttachmentResolved.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    RenderableIndexColorAttachmentResolved.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    RenderableIndexColorAttachmentResolved.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentReference ColorAttachmentRef{};
-    ColorAttachmentRef.attachment = 0;
-    ColorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentReference RenderToAndSaveColorAttachmentRef{};
-    RenderToAndSaveColorAttachmentRef.attachment = 1;
-    RenderToAndSaveColorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentReference RenderableIndexColorAttachmentRef{};
-    RenderableIndexColorAttachmentRef.attachment = 2;
-    RenderableIndexColorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentReference DepthAttachmentRef{};
-    DepthAttachmentRef.attachment = 3;
-    DepthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentReference ColorAttachmentResolveRef{};
-    ColorAttachmentResolveRef.attachment = 4;
-    ColorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentReference RenderToAndSaveColorAttachmentResolveRef{};
-    RenderToAndSaveColorAttachmentResolveRef.attachment = 5;
-    RenderToAndSaveColorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentReference RenderableIndexColorAttachmentResolvedRef{};
-    RenderableIndexColorAttachmentResolvedRef.attachment = 6;
-    RenderableIndexColorAttachmentResolvedRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkSubpassDependency Dependency{};
-    Dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    Dependency.dstSubpass = 0;
-    Dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    Dependency.srcAccessMask = 0;
-    Dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    Dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-    std::vector<VkAttachmentReference> ColorAttachments{ColorAttachmentRef, RenderToAndSaveColorAttachmentRef, RenderableIndexColorAttachmentRef};
-    std::vector<VkAttachmentReference> ResolveAttachments{ColorAttachmentResolveRef, RenderToAndSaveColorAttachmentResolveRef, RenderableIndexColorAttachmentResolvedRef};
-
-    VkSubpassDescription Subpass{};
-    Subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    Subpass.colorAttachmentCount = ColorAttachments.size();
-    Subpass.pColorAttachments = ColorAttachments.data();
-    Subpass.pDepthStencilAttachment = &DepthAttachmentRef;
-    Subpass.pResolveAttachments = ResolveAttachments.data();
-
-    std::vector<VkAttachmentDescription> Attachments = {ColorAttachment, RenderToAndSaveColorAttachment, RenderableIndexColorAttachment, DepthAttachment, ColorAttachmentResolve, RenderToAndSaveColorAttachmentResolve, RenderableIndexColorAttachmentResolved};
-    VkRenderPassCreateInfo RenderPassInfo{};
-    RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    RenderPassInfo.attachmentCount = static_cast<uint32_t>(Attachments.size());
-    RenderPassInfo.pAttachments = Attachments.data();
-    RenderPassInfo.subpassCount = 1;
-    RenderPassInfo.pSubpasses = &Subpass;
-    RenderPassInfo.dependencyCount = 1;
-    RenderPassInfo.pDependencies  = &Dependency;
-
-    if (vkCreateRenderPass(LogicalDevice, &RenderPassInfo, nullptr, &RenderPass) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create render pass!");
-    }
+    RenderPass->Construct(LogicalDevice);
 }
 
 VkFormat FContext::FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features)
@@ -855,7 +711,7 @@ void FContext::CreateGraphicsPipeline()
     PipelineInfo.pColorBlendState = &ColorBlending;
     PipelineInfo.pDepthStencilState = &DepthStencil;
     PipelineInfo.layout = PipelineLayout;
-    PipelineInfo.renderPass = RenderPass;
+    PipelineInfo.renderPass = RenderPass->RenderPass;
     PipelineInfo.subpass = 0;
     PipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     PipelineInfo.basePipelineIndex = -1;
@@ -936,12 +792,12 @@ void FContext::CreateFramebuffers()
     SwapChainFramebuffers.resize(Swapchain->Size());
     for (std::size_t i = 0; i < Swapchain->Size(); ++i) {
         std::vector<VkImageView> Attachments = {ResolvedColorImage->View, ResolvedNormalsImage->View, ResolvedRenderableIndexImage->View,
-                                                DepthImage->View,
-                                                Swapchain->GetImageViews()[i], NormalImages[i].View, RenderableIndexImages[i].View};
+                                                Swapchain->GetImages()[i].View, NormalImages[i].View, RenderableIndexImages[i].View,
+                                                DepthImage->View};
 
         VkFramebufferCreateInfo FramebufferInfo{};
         FramebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        FramebufferInfo.renderPass = RenderPass;
+        FramebufferInfo.renderPass = RenderPass->RenderPass;
         FramebufferInfo.attachmentCount = static_cast<uint32_t>(Attachments.size());
         FramebufferInfo.pAttachments = Attachments.data();
         FramebufferInfo.width = Swapchain->GetWidth();
@@ -1258,16 +1114,19 @@ void FContext::CreateCommandBuffers()
 
         VkRenderPassBeginInfo RenderPassInfo{};
         RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        RenderPassInfo.renderPass = RenderPass;
+        RenderPassInfo.renderPass = RenderPass->RenderPass;
         RenderPassInfo.framebuffer = SwapChainFramebuffers[i];
         RenderPassInfo.renderArea.offset = {0, 0};
         RenderPassInfo.renderArea.extent = Swapchain->GetExtent2D();
 
-        std::vector<VkClearValue> ClearValues{4};
-        ClearValues[0].color = {0.f, 0.f, 0.f, 1.f};
-        ClearValues[1].color = {0.0f, 0.f, 0.f, 1.f};
+        std::vector<VkClearValue> ClearValues{7};
+        ClearValues[0].color = {0.f, 0.f, 0.f, 0.f};
+        ClearValues[1].color = {0.f, 0.f, 0.f, 0.f};
         ClearValues[2].color = {0, 0, 0, 0};
-        ClearValues[3].depthStencil = {1.f, 0};
+        ClearValues[3].color = {0.f, 0.f, 0.f, 1.f};
+        ClearValues[4].color = {0.0f, 0.f, 0.f, 1.f};
+        ClearValues[5].color = {0, 0, 0, 0};
+        ClearValues[6].depthStencil = {1.f, 0};
         RenderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
         RenderPassInfo.pClearValues = ClearValues.data();
 
@@ -1406,7 +1265,7 @@ void FContext::CreateImguiContext()
         for(uint32_t i = 0; i < Swapchain->Size(); ++i)
         {
             VkImageView Attachment[1];
-            Attachment[0] = Swapchain->ImageViews[i];
+            Attachment[0] = Swapchain->Images[i].View;
 
             VkFramebufferCreateInfo FramebufferCreateInfo{};
             FramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -1662,7 +1521,7 @@ void FContext::CleanUpSwapChain()
 
     vkDestroyPipeline(LogicalDevice, GraphicsPipeline, nullptr);
     vkDestroyPipelineLayout(LogicalDevice, PipelineLayout, nullptr);
-    vkDestroyRenderPass(LogicalDevice, RenderPass, nullptr);
+    RenderPass = nullptr;
     vkDestroyRenderPass(LogicalDevice, ImGuiRenderPass, nullptr);
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)

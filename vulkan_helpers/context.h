@@ -12,6 +12,7 @@
 #include "buffer.h"
 #include "descriptors.h"
 #include "image.h"
+#include "renderpass.h"
 
 #include <vector>
 #include <string>
@@ -43,7 +44,6 @@ public:
     void CreateFramebuffers();
     void LoadModelDataToGPU();
     void CreateTextureImage(std::string& TexturePath);
-    void CreateTextureImageView();
     void CreateTextureSampler();
     void CreateUniformBuffers();
     void CreateDescriptorPool();
@@ -100,6 +100,8 @@ public:
     VkPhysicalDevice PhysicalDevice;
     VkDevice LogicalDevice;
 
+    std::shared_ptr<FRenderPass> RenderPass = nullptr;
+
     // Queues
     VkQueue GraphicsQueue;
     VkQueue ComputeQueue;
@@ -115,8 +117,6 @@ public:
     VkDescriptorPool ImGuiDescriptorPool;
     VkRenderPass ImGuiRenderPass;
     std::vector<VkFramebuffer> ImGuiFramebuffers;
-
-    VkRenderPass RenderPass;
 
     VkPipelineLayout PipelineLayout;
     VkPipeline GraphicsPipeline;

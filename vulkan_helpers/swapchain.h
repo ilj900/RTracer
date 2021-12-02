@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vulkan/vulkan.h"
+#include "image.h"
 
 #include <vector>
 
@@ -18,7 +19,7 @@ struct FSwapchain
     uint32_t GetWidth();
     uint32_t GetHeight();
     VkExtent2D GetExtent2D();
-    std::vector<VkImageView>& GetImageViews();
+    std::vector<FImage>& GetImages();
     VkSwapchainKHR GetSwapchain();
 
 
@@ -26,8 +27,7 @@ struct FSwapchain
     VkSurfaceFormatKHR SurfaceFormat;
     VkPresentModeKHR PresentMode;
     VkExtent2D Extent;
-    std::vector<VkImage> Images;
-    std::vector<VkImageView> ImageViews;
+    std::vector<FImage> Images;
 
     VkDevice LogicalDevice = VK_NULL_HANDLE;
 };

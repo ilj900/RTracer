@@ -120,24 +120,19 @@ FSwapchain::FSwapchain(FContext &Context, VkPhysicalDevice PhysicalDevice, VkDev
 
     /// Queue SwapChain for it's images
     vkGetSwapchainImagesKHR(LogicalDevice, Swapchain, &ImageCount, nullptr);
+    std::vector<VkImage> SwapchainImages(ImageCount);
+    vkGetSwapchainImagesKHR(LogicalDevice, Swapchain, &ImageCount, SwapchainImages.data());
     Images.resize(ImageCount);
-    vkGetSwapchainImagesKHR(LogicalDevice, Swapchain, &ImageCount, Images.data());
 
-    /// Create ImageViews for SwapChain Images
-    ImageViews.resize(ImageCount);
-
-    for (std::size_t i = 0; i < ImageCount; ++i)
+    for (uint32_t i = 0; i < SwapchainImages.size(); ++i)
     {
-        ImageViews[i] = Context.CreateImageView(Images[i], SurfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+        FImage::Wrap(SwapchainImages[i], SurfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, LogicalDevice, Images[i]);
     }
 }
 
 FSwapchain::~FSwapchain()
 {
-    for (auto ImageView : ImageViews)
-    {
-        vkDestroyImageView(LogicalDevice, ImageView, nullptr);
-    }
+    Images.clear();
     vkDestroySwapchainKHR(LogicalDevice, Swapchain, nullptr);
 }
 
@@ -166,9 +161,9 @@ VkExtent2D FSwapchain::GetExtent2D()
     return Extent;
 }
 
-std::vector<VkImageView>& FSwapchain::GetImageViews()
+std::vector<FImage>& FSwapchain::GetImages()
 {
-    return ImageViews;
+    return Images;
 }
 
 VkSwapchainKHR FSwapchain::GetSwapchain()
@@ -179,6 +174,6 @@ VkSwapchainKHR FSwapchain::GetSwapchain()
 VkResult FSwapchain::GetNextImage(VkImage& Image, VkSemaphore &Semaphore, uint32_t& ImageIndex)
 {
     VkResult Result = vkAcquireNextImageKHR(LogicalDevice, Swapchain, UINT64_MAX, Semaphore, VK_NULL_HANDLE, &ImageIndex);
-    Image = Images[ImageIndex];
+    Image = Images[ImageIndex].Image;
     return Result;
 }
