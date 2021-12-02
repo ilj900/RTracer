@@ -12,29 +12,40 @@ struct FImage
 
     void Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout);
 
+    VkImage Image = VK_NULL_HANDLE;
+    VkDeviceMemory Memory = VK_NULL_HANDLE;
+    VkImageView View = VK_NULL_HANDLE;
 
-    VkImage Image;
-    VkDeviceMemory Memory;
-    VkImageView View;
-
-    VkFormat Format;
+    VkFormat Format = VK_FORMAT_R8G8B8A8_SRGB;
     VkSampleCountFlagBits Samples= VK_SAMPLE_COUNT_1_BIT;
-    VkDevice Device;
+    VkDevice Device = VK_NULL_HANDLE;
+    VkImageTiling Tiling = VK_IMAGE_TILING_OPTIMAL;
+    VkImageUsageFlags Usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    VkMemoryPropertyFlags Properties;
+    VkImageAspectFlags AspectFlags;
 
-    uint32_t Width;
-    uint32_t Height;
-    uint32_t MipLevels;
+    uint32_t Width = 0;
+    uint32_t Height = 0;
+    uint32_t MipLevels = 0;
 
+    /// We might need to wrap images provided to us
+    /// For example swapchain images
     bool bIsWrappedImage = false;
 
+    /// In case we need to put an image into a map or set
     size_t GetHash();
+    friend bool operator<(const FImage& A, const FImage& B);
 
     static void Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, uint32_t MipLevels, VkDevice LogicalDevice, FImage& Image);
 
-    friend bool operator<(const FImage& A, const FImage& B);
+private:
+    void CreateImage();
+    void AllocateMemory();
+    void BindMemoryToImage();
+    void CreateImageView();
 };
 
-/// FVertex hash function, to we could use them in maps/sets
+/// FImage hash function, to we could use them in maps/sets
 template<>
 struct std::hash<FImage>
 {
