@@ -126,7 +126,7 @@ FSwapchain::FSwapchain(FContext &Context, VkPhysicalDevice PhysicalDevice, VkDev
 
     for (uint32_t i = 0; i < SwapchainImages.size(); ++i)
     {
-        FImage::Wrap(SwapchainImages[i], SurfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, LogicalDevice, Images[i]);
+        FImage::Wrap(SwapchainImages[i], SurfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, Images[i]);
     }
 }
 

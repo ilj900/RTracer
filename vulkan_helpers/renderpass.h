@@ -18,13 +18,13 @@ public:
 
 public:
     std::vector<VkAttachmentDescription> ColorAttachmentDescriptions;
-    std::map<uint32_t, uint32_t> ColorImageToIndexMap;
+    std::map<size_t, uint32_t> ColorImageToIndexMap;
 
     std::vector<VkAttachmentDescription> ResolvedAttachmentDescriptions;
-    std::map<uint32_t, uint32_t> ResolvedImageToIndexMap;
+    std::map<size_t, uint32_t> ResolvedImageToIndexMap;
 
     std::vector<VkAttachmentDescription> DepthStencilAttachmentDescriptions;
-    std::map<uint32_t, uint32_t> DepthStencilImageToIndexMap;
+    std::map<size_t, uint32_t> DepthStencilImageToIndexMap;
 
     VkDevice LogicalDevice;
     VkRenderPass RenderPass;

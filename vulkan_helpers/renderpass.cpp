@@ -6,7 +6,7 @@
 void FRenderPass::AddImageAsAttachment(FImage &Image, AttachmentType Type)
 {
     std::vector<VkAttachmentDescription>* AttachmentDescriptions;
-    std::map<uint32_t , uint32_t>* ImageToIndexMap;
+    std::map<size_t , uint32_t>* ImageToIndexMap;
 
     switch (Type)
     {

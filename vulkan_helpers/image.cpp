@@ -7,9 +7,9 @@ size_t FImage::GetHash()
     return std::hash<FImage>()(*this);
 }
 
-FImage::FImage(uint32_t Width, uint32_t Height, uint32_t MipLevels, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling,
+FImage::FImage(uint32_t Width, uint32_t Height, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling,
                VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties,  VkImageAspectFlags AspectFlags, VkDevice Device) :
-Device(Device), Width(Width), Height(Height), MipLevels(MipLevels), Samples(NumSamples), Format(Format),
+Device(Device), Width(Width), MipLevels(1), Height(Height), Samples(NumSamples), Format(Format),
 Tiling(Tiling), Usage(Usage), Properties(Properties), AspectFlags(AspectFlags)
 {
     CreateImage();
@@ -19,13 +19,13 @@ Tiling(Tiling), Usage(Usage), Properties(Properties), AspectFlags(AspectFlags)
 }
 
 
-void FImage::Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, uint32_t MipLevels, VkDevice LogicalDevice, FImage& Image)
+void FImage::Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, FImage& Image)
 {
     Image.Image = ImageToWrap;
     Image.Format = Format;
     Image.Device = LogicalDevice;
     Image.AspectFlags = AspectFlags;
-    Image.MipLevels = MipLevels;
+    Image.MipLevels = 1;
     Image.bIsWrappedImage = true;
 
     Image.CreateImageView();
@@ -179,6 +179,89 @@ void FImage::CreateImageView()
     {
         throw std::runtime_error("Failed to create texture image view!");
     }
+}
+
+void FImage::GenerateMipMaps()
+{
+    auto& Context = GetContext();
+    VkFormatProperties FormatProperties;
+    vkGetPhysicalDeviceFormatProperties(Context.PhysicalDevice, Format, &FormatProperties);
+
+    if (!(FormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+    {
+        throw std::runtime_error("Texture image format does not support linear blitting!");
+    }
+
+    VkCommandBuffer CommandBuffer = Context.BeginSingleTimeCommands();
+
+    VkImageMemoryBarrier Barrier{};
+    Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    Barrier.image = Image;
+    Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    Barrier.subresourceRange.baseArrayLayer = 0;
+    Barrier.subresourceRange.layerCount = 1;
+    Barrier.subresourceRange.levelCount = 1;
+
+    int32_t MipWidth = Width;
+    int32_t MipHeight = Height;
+
+    MipLevels = static_cast<uint32_t>(std::floor(static_cast<float>(std::log2(std::max(Width, Height))))) + 1;
+
+    for (uint32_t i = 1; i < MipLevels; ++i)
+    {
+        Barrier.subresourceRange.baseMipLevel = i - 1;
+        Barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        Barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        Barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        Barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+        vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
+
+        VkImageBlit Blit{};
+        Blit.srcOffsets[0] = {0, 0, 0};
+        Blit.srcOffsets[1] = {MipWidth, MipHeight, 1};
+        Blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        Blit.srcSubresource.mipLevel = i - 1;
+        Blit.srcSubresource.baseArrayLayer = 0;
+        Blit.srcSubresource.layerCount = 1;
+        Blit.dstOffsets[0] = {0, 0, 0};
+        Blit.dstOffsets[1] = {MipWidth > 1 ? MipWidth / 2 : 1, MipHeight > 1 ? MipHeight / 2 : 1, 1};
+        Blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        Blit.dstSubresource.mipLevel = i;
+        Blit.dstSubresource.baseArrayLayer = 0;
+        Blit.dstSubresource.layerCount = 1;
+
+        vkCmdBlitImage(CommandBuffer, Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &Blit, VK_FILTER_LINEAR);
+
+        Barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        Barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        Barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        Barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,nullptr, 0, nullptr, 1, &Barrier);
+
+        if (MipWidth > 1)
+        {
+            MipWidth /= 2;
+        }
+
+        if (MipHeight > 1)
+        {
+            MipHeight /= 2;
+        }
+    }
+
+    Barrier.subresourceRange.baseMipLevel = MipLevels - 1;
+    Barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    Barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    Barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    Barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,nullptr, 0, nullptr, 1, &Barrier);
+
+    Context.EndSingleTimeCommand(CommandBuffer);
 }
 
 bool operator<(const FImage& A, const FImage& B)

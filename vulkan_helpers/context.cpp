@@ -470,13 +470,13 @@ void FContext::CreateDepthAndAAImages()
     auto Width = Swapchain->GetWidth();
     auto Height = Swapchain->GetHeight();
 
-    ResolvedColorImage = std::make_shared<FImage>(Width, Height, 1, MSAASamples, ColorFormat, VK_IMAGE_TILING_OPTIMAL,
+    ResolvedColorImage = std::make_shared<FImage>(Width, Height, MSAASamples, ColorFormat, VK_IMAGE_TILING_OPTIMAL,
                                                   VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                                   VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
-    ResolvedNormalsImage = std::make_shared<FImage>(Width, Height, 1, MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+    ResolvedNormalsImage = std::make_shared<FImage>(Width, Height, MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                                                               VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                                     VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
-    ResolvedRenderableIndexImage = std::make_shared<FImage>(Width, Height, 1, MSAASamples, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
+    ResolvedRenderableIndexImage = std::make_shared<FImage>(Width, Height, MSAASamples, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
                                                             VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                                             VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
 
@@ -485,17 +485,17 @@ void FContext::CreateDepthAndAAImages()
     RenderableIndexImages.reserve(Swapchain->Size());
     for(uint32_t i = 0; i < Swapchain->Size(); ++i)
     {
-        NormalImages.emplace_back(Width, Height, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+        NormalImages.emplace_back(Width, Height, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                                                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                   VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
-        RenderableIndexImages.emplace_back(Width, Height, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
+        RenderableIndexImages.emplace_back(Width, Height, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
                                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                            VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
     }
 
     /// Create Image and ImageView for Depth
     VkFormat DepthFormat = FindDepthFormat();
-    DepthImage = std::make_shared<FImage>(Width, Height, 1, MSAASamples, DepthFormat, VK_IMAGE_TILING_OPTIMAL,
+    DepthImage = std::make_shared<FImage>(Width, Height, MSAASamples, DepthFormat, VK_IMAGE_TILING_OPTIMAL,
                                           VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                           VK_IMAGE_ASPECT_DEPTH_BIT, LogicalDevice);
 
@@ -817,7 +817,6 @@ void FContext::CreateTextureImage(std::string& TexturePath)
     int TexWidth, TexHeight, TexChannels;
     stbi_uc* Pixels = stbi_load(TexturePath.c_str(), &TexWidth, &TexHeight, &TexChannels, STBI_rgb_alpha);
     VkDeviceSize ImageSize = TexWidth * TexHeight * 4;
-    MipLevels = static_cast<uint32_t>(std::floor(static_cast<float>(std::log2(std::max(TexWidth, TexHeight))))) + 1;
 
     if (!Pixels)
     {
@@ -832,14 +831,13 @@ void FContext::CreateTextureImage(std::string& TexturePath)
     vkUnmapMemory(LogicalDevice, TempStagingBuffer.Memory);
     stbi_image_free(Pixels);
 
-    TextureImage = std::make_shared<FImage>(TexWidth, TexHeight, MipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+    TextureImage = std::make_shared<FImage>(TexWidth, TexHeight, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                                             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                             VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
 
     TextureImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     CopyBufferToImage(TempStagingBuffer, TextureImage->Image, static_cast<uint32_t>(TexWidth), static_cast<uint32_t>(TexHeight));
-
-    GenerateMipmaps(TextureImage->Image, VK_FORMAT_R8G8B8A8_SRGB, TexWidth, TexHeight, MipLevels);
+    TextureImage->GenerateMipMaps();
 
     ResourceAllocator->DestroyBuffer(TempStagingBuffer);
 }
@@ -890,82 +888,7 @@ void FContext::CopyImageToBuffer(FImage& Image, FBuffer& Buffer)
 
 void FContext::GenerateMipmaps(VkImage Image, VkFormat ImageFormat, int32_t TexWidth, int32_t TexHeight, uint32_t mipLevels)
 {
-    VkFormatProperties FormatFroperties;
-    vkGetPhysicalDeviceFormatProperties(PhysicalDevice, ImageFormat, &FormatFroperties);
 
-    if (!(FormatFroperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
-    {
-        throw std::runtime_error("Texture image format does not support linear blitting!");
-    }
-
-    VkCommandBuffer CommandBuffer = BeginSingleTimeCommands();
-
-    VkImageMemoryBarrier Barrier{};
-    Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    Barrier.image = Image;
-    Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    Barrier.subresourceRange.baseArrayLayer = 0;
-    Barrier.subresourceRange.layerCount = 1;
-    Barrier.subresourceRange.levelCount = 1;
-
-    int32_t MipWidth = TexWidth;
-    int32_t MipHeight = TexHeight;
-
-    for (uint32_t i = 1; i < MipLevels; ++i)
-    {
-        Barrier.subresourceRange.baseMipLevel = i - 1;
-        Barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        Barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        Barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        Barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-        vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
-
-        VkImageBlit Blit{};
-        Blit.srcOffsets[0] = {0, 0, 0};
-        Blit.srcOffsets[1] = {MipWidth, MipHeight, 1};
-        Blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        Blit.srcSubresource.mipLevel = i - 1;
-        Blit.srcSubresource.baseArrayLayer = 0;
-        Blit.srcSubresource.layerCount = 1;
-        Blit.dstOffsets[0] = {0, 0, 0};
-        Blit.dstOffsets[1] = {MipWidth > 1 ? MipWidth / 2 : 1, MipHeight > 1 ? MipHeight / 2 : 1, 1};
-        Blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        Blit.dstSubresource.mipLevel = i;
-        Blit.dstSubresource.baseArrayLayer = 0;
-        Blit.dstSubresource.layerCount = 1;
-
-        vkCmdBlitImage(CommandBuffer, Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &Blit, VK_FILTER_LINEAR);
-
-        Barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        Barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        Barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-        Barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-        vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,nullptr, 0, nullptr, 1, &Barrier);
-
-        if (MipWidth > 1)
-        {
-            MipWidth /= 2;
-        }
-
-        if (MipHeight > 1)
-        {
-            MipHeight /= 2;
-        }
-    }
-
-    Barrier.subresourceRange.baseMipLevel = MipLevels - 1;
-    Barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    Barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    Barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    Barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-    vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,nullptr, 0, nullptr, 1, &Barrier);
-
-    EndSingleTimeCommand(CommandBuffer);
 }
 
 void FContext::LoadModelDataToGPU()

@@ -7,7 +7,7 @@
 struct FImage
 {
     FImage() = default;
-    FImage(uint32_t Width, uint32_t Height, uint32_t MipLevels, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties, VkImageAspectFlags AspectFlags, VkDevice Device);
+    FImage(uint32_t Width, uint32_t Height, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties, VkImageAspectFlags AspectFlags, VkDevice Device);
     ~FImage();
 
     void Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout);
@@ -26,7 +26,7 @@ struct FImage
 
     uint32_t Width = 0;
     uint32_t Height = 0;
-    uint32_t MipLevels = 0;
+    uint32_t MipLevels = 1;
 
     /// We might need to wrap images provided to us
     /// For example swapchain images
@@ -36,7 +36,8 @@ struct FImage
     size_t GetHash();
     friend bool operator<(const FImage& A, const FImage& B);
 
-    static void Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, uint32_t MipLevels, VkDevice LogicalDevice, FImage& Image);
+    static void Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, FImage& Image);
+    void GenerateMipMaps();
 
 private:
     void CreateImage();
