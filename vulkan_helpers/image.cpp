@@ -7,11 +7,16 @@ size_t FImage::GetHash()
     return std::hash<FImage>()(*this);
 }
 
-FImage::FImage(uint32_t Width, uint32_t Height, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling,
+FImage::FImage(uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling,
                VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties,  VkImageAspectFlags AspectFlags, VkDevice Device) :
 Device(Device), Width(Width), MipLevels(1), Height(Height), Samples(NumSamples), Format(Format),
 Tiling(Tiling), Usage(Usage), Properties(Properties), AspectFlags(AspectFlags)
 {
+    /// Calculate number of MipLevels in advance
+    if (bMipMapsRequired)
+    {
+        MipLevels = static_cast<uint32_t>(std::floor(static_cast<float>(std::log2(std::max(Width, Height))))) + 1;
+    }
     CreateImage();
     AllocateMemory();
     BindMemoryToImage();
@@ -206,8 +211,6 @@ void FImage::GenerateMipMaps()
 
     int32_t MipWidth = Width;
     int32_t MipHeight = Height;
-
-    MipLevels = static_cast<uint32_t>(std::floor(static_cast<float>(std::log2(std::max(Width, Height))))) + 1;
 
     for (uint32_t i = 1; i < MipLevels; ++i)
     {

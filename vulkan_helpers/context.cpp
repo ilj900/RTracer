@@ -470,13 +470,13 @@ void FContext::CreateDepthAndAAImages()
     auto Width = Swapchain->GetWidth();
     auto Height = Swapchain->GetHeight();
 
-    ResolvedColorImage = std::make_shared<FImage>(Width, Height, MSAASamples, ColorFormat, VK_IMAGE_TILING_OPTIMAL,
+    ResolvedColorImage = std::make_shared<FImage>(Width, Height, false, MSAASamples, ColorFormat, VK_IMAGE_TILING_OPTIMAL,
                                                   VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                                   VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
-    ResolvedNormalsImage = std::make_shared<FImage>(Width, Height, MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+    ResolvedNormalsImage = std::make_shared<FImage>(Width, Height, false, MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                                                               VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                                     VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
-    ResolvedRenderableIndexImage = std::make_shared<FImage>(Width, Height, MSAASamples, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
+    ResolvedRenderableIndexImage = std::make_shared<FImage>(Width, Height, false, MSAASamples, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
                                                             VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                                             VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
 
@@ -485,17 +485,17 @@ void FContext::CreateDepthAndAAImages()
     RenderableIndexImages.reserve(Swapchain->Size());
     for(uint32_t i = 0; i < Swapchain->Size(); ++i)
     {
-        NormalImages.emplace_back(Width, Height, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+        NormalImages.emplace_back(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                                                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                   VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
-        RenderableIndexImages.emplace_back(Width, Height, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
+        RenderableIndexImages.emplace_back(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
                                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                            VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
     }
 
     /// Create Image and ImageView for Depth
     VkFormat DepthFormat = FindDepthFormat();
-    DepthImage = std::make_shared<FImage>(Width, Height, MSAASamples, DepthFormat, VK_IMAGE_TILING_OPTIMAL,
+    DepthImage = std::make_shared<FImage>(Width, Height, false, MSAASamples, DepthFormat, VK_IMAGE_TILING_OPTIMAL,
                                           VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                           VK_IMAGE_ASPECT_DEPTH_BIT, LogicalDevice);
 
@@ -664,7 +664,7 @@ void FContext::CreateGraphicsPipeline()
     ColorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     ColorBlending.logicOpEnable = VK_FALSE;
     ColorBlending.logicOp = VK_LOGIC_OP_COPY;
-    ColorBlending.attachmentCount = ColorBlendingAttachments.size();
+    ColorBlending.attachmentCount = static_cast<uint32_t>(ColorBlendingAttachments.size());
     ColorBlending.pAttachments = ColorBlendingAttachments.data();
     ColorBlending.blendConstants[0] = 0.f;
     ColorBlending.blendConstants[1] = 0.f;
@@ -831,12 +831,13 @@ void FContext::CreateTextureImage(std::string& TexturePath)
     vkUnmapMemory(LogicalDevice, TempStagingBuffer.Memory);
     stbi_image_free(Pixels);
 
-    TextureImage = std::make_shared<FImage>(TexWidth, TexHeight, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+    TextureImage = std::make_shared<FImage>(TexWidth, TexHeight, true, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                                             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                             VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
 
     TextureImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     CopyBufferToImage(TempStagingBuffer, TextureImage->Image, static_cast<uint32_t>(TexWidth), static_cast<uint32_t>(TexHeight));
+    /// Generate MipMaps only after we loaded image data
     TextureImage->GenerateMipMaps();
 
     ResourceAllocator->DestroyBuffer(TempStagingBuffer);

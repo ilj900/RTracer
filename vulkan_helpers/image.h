@@ -7,7 +7,7 @@
 struct FImage
 {
     FImage() = default;
-    FImage(uint32_t Width, uint32_t Height, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties, VkImageAspectFlags AspectFlags, VkDevice Device);
+    FImage(uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties, VkImageAspectFlags AspectFlags, VkDevice Device);
     ~FImage();
 
     void Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout);
