@@ -125,13 +125,14 @@ public:
 
     VkDebugUtilsMessengerEXT DebugMessenger;
 
-    /// Images
-    std::vector<FImage> NormalImages;
-    std::vector<FImage> RenderableIndexImages;
+    /// Images for presentation
+    std::vector<FImage> ResolvedNormalImages;
+    std::vector<FImage> ResolvedRenderableIndexImages;
 
-    std::shared_ptr<FImage> ResolvedNormalsImage = nullptr;
-    std::shared_ptr<FImage> ResolvedRenderableIndexImage = nullptr;
-    std::shared_ptr<FImage> ResolvedColorImage = nullptr;
+    /// Images for drawing
+    std::shared_ptr<FImage> NormalsImage = nullptr;
+    std::shared_ptr<FImage> RenderableIndexImage = nullptr;
+    std::shared_ptr<FImage> ColorImage = nullptr;
     std::shared_ptr<FImage> DepthImage = nullptr;
 
     /// Texture used to pain the model

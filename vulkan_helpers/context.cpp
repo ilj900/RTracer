@@ -470,27 +470,27 @@ void FContext::CreateDepthAndAAImages()
     auto Width = Swapchain->GetWidth();
     auto Height = Swapchain->GetHeight();
 
-    ResolvedColorImage = std::make_shared<FImage>(Width, Height, false, MSAASamples, ColorFormat, VK_IMAGE_TILING_OPTIMAL,
-                                                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                  VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
-    ResolvedNormalsImage = std::make_shared<FImage>(Width, Height, false, MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                                                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    ColorImage = std::make_shared<FImage>(Width, Height, false, MSAASamples, ColorFormat, VK_IMAGE_TILING_OPTIMAL,
+                                          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                          VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
+    NormalsImage = std::make_shared<FImage>(Width, Height, false, MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+                                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                            VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
+    RenderableIndexImage = std::make_shared<FImage>(Width, Height, false, MSAASamples, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
+                                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                                     VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
-    ResolvedRenderableIndexImage = std::make_shared<FImage>(Width, Height, false, MSAASamples, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
-                                                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                            VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
 
     /// Create Image that will be used to save some data from shaders
-    NormalImages.reserve(Swapchain->Size());
-    RenderableIndexImages.reserve(Swapchain->Size());
+    ResolvedNormalImages.reserve(Swapchain->Size());
+    ResolvedRenderableIndexImages.reserve(Swapchain->Size());
     for(uint32_t i = 0; i < Swapchain->Size(); ++i)
     {
-        NormalImages.emplace_back(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+        ResolvedNormalImages.emplace_back(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                                                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                  VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
-        RenderableIndexImages.emplace_back(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
+                                          VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
+        ResolvedRenderableIndexImages.emplace_back(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
                                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                           VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
+                                                   VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice);
     }
 
     /// Create Image and ImageView for Depth
@@ -506,13 +506,13 @@ void FContext::CreateDepthAndAAImages()
 void FContext::CreateRenderPass()
 {
     RenderPass = std::make_shared<FRenderPass>();
-    RenderPass->AddImageAsAttachment(Swapchain->Images[0], AttachmentType::Color);
-    RenderPass->AddImageAsAttachment(NormalImages[0], AttachmentType::Color);
-    RenderPass->AddImageAsAttachment(RenderableIndexImages[0], AttachmentType::Color);
+    RenderPass->AddImageAsAttachment(*ColorImage, AttachmentType::Color);
+    RenderPass->AddImageAsAttachment(*NormalsImage, AttachmentType::Color);
+    RenderPass->AddImageAsAttachment(*RenderableIndexImage, AttachmentType::Color);
     RenderPass->AddImageAsAttachment(*DepthImage, AttachmentType::DepthStencil);
-    RenderPass->AddImageAsAttachment(*ResolvedColorImage, AttachmentType::Resolve);
-    RenderPass->AddImageAsAttachment(*ResolvedNormalsImage, AttachmentType::Resolve);
-    RenderPass->AddImageAsAttachment(*ResolvedRenderableIndexImage, AttachmentType::Resolve);
+    RenderPass->AddImageAsAttachment(Swapchain->Images[0], AttachmentType::Resolve);
+    RenderPass->AddImageAsAttachment(ResolvedNormalImages[0], AttachmentType::Resolve);
+    RenderPass->AddImageAsAttachment(ResolvedRenderableIndexImages[0], AttachmentType::Resolve);
 
     RenderPass->Construct(LogicalDevice);
 }
@@ -791,9 +791,9 @@ void FContext::CreateFramebuffers()
 {
     SwapChainFramebuffers.resize(Swapchain->Size());
     for (std::size_t i = 0; i < Swapchain->Size(); ++i) {
-        std::vector<VkImageView> Attachments = {ResolvedColorImage->View, ResolvedNormalsImage->View, ResolvedRenderableIndexImage->View,
-                                                Swapchain->GetImages()[i].View, NormalImages[i].View, RenderableIndexImages[i].View,
-                                                DepthImage->View};
+        std::vector<VkImageView> Attachments = {ColorImage->View, NormalsImage->View, RenderableIndexImage->View,
+                                                DepthImage->View,
+                                                Swapchain->GetImages()[i].View, ResolvedNormalImages[i].View, ResolvedRenderableIndexImages[i].View};
 
         VkFramebufferCreateInfo FramebufferInfo{};
         FramebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -1044,13 +1044,13 @@ void FContext::CreateCommandBuffers()
         RenderPassInfo.renderArea.extent = Swapchain->GetExtent2D();
 
         std::vector<VkClearValue> ClearValues{7};
-        ClearValues[0].color = {0.f, 0.f, 0.f, 0.f};
-        ClearValues[1].color = {0.f, 0.f, 0.f, 0.f};
+        ClearValues[0].color = {0.f, 0.f, 0.f, 1.f};
+        ClearValues[1].color = {0.0f, 0.f, 0.f, 1.f};
         ClearValues[2].color = {0, 0, 0, 0};
-        ClearValues[3].color = {0.f, 0.f, 0.f, 1.f};
-        ClearValues[4].color = {0.0f, 0.f, 0.f, 1.f};
-        ClearValues[5].color = {0, 0, 0, 0};
-        ClearValues[6].depthStencil = {1.f, 0};
+        ClearValues[3].depthStencil = {1.f, 0};
+        ClearValues[4].color = {0.f, 0.f, 0.f, 0.f};
+        ClearValues[5].color = {0.f, 0.f, 0.f, 0.f};
+        ClearValues[6].color = {0, 0, 0, 0};
         RenderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
         RenderPassInfo.pClearValues = ClearValues.data();
 
@@ -1422,12 +1422,12 @@ void FContext::RecreateSwapChain()
 
 void FContext::CleanUpSwapChain()
 {
-    ResolvedColorImage = nullptr;
-    ResolvedNormalsImage = nullptr;
-    ResolvedRenderableIndexImage = nullptr;
+    ColorImage = nullptr;
+    NormalsImage = nullptr;
+    RenderableIndexImage = nullptr;
 
-    NormalImages.clear();
-    RenderableIndexImages.clear();
+    ResolvedNormalImages.clear();
+    ResolvedRenderableIndexImages.clear();
 
     DepthImage = nullptr;
 

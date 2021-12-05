@@ -62,11 +62,14 @@ void FRenderPass::Construct(VkDevice LogicalDevice)
     this->LogicalDevice = LogicalDevice;
 
     std::vector<VkAttachmentDescription> AllAttachments;
-    AllAttachments.insert(AllAttachments.end(), ResolvedAttachmentDescriptions.begin(), ResolvedAttachmentDescriptions.end());
-    uint32_t  ColorAttachmentOffset = AllAttachments.size();
+
     AllAttachments.insert(AllAttachments.end(), ColorAttachmentDescriptions.begin(), ColorAttachmentDescriptions.end());
+
     uint32_t DepthAttachmentOffset = AllAttachments.size();
     AllAttachments.insert(AllAttachments.end(), DepthStencilAttachmentDescriptions.begin(), DepthStencilAttachmentDescriptions.end());
+
+    uint32_t  ResolvedAttachmentOffset = AllAttachments.size();
+    AllAttachments.insert(AllAttachments.end(), ResolvedAttachmentDescriptions.begin(), ResolvedAttachmentDescriptions.end());
 
     std::vector<VkAttachmentReference> ColorAttachmentReferences(ColorAttachmentDescriptions.size());
     for (uint32_t i = 0; i < ColorAttachmentDescriptions.size(); ++i)
@@ -75,16 +78,16 @@ void FRenderPass::Construct(VkDevice LogicalDevice)
         ColorAttachmentReferences[i].attachment = i;
     }
 
+    VkAttachmentReference DepthAttachmentReference{};
+    DepthAttachmentReference.attachment = DepthAttachmentOffset;
+    DepthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
     std::vector<VkAttachmentReference> ResolvedAttachmentReferences(ResolvedAttachmentDescriptions.size());
     for (uint32_t i = 0; i < ResolvedAttachmentDescriptions.size(); ++i)
     {
         ResolvedAttachmentReferences[i].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        ResolvedAttachmentReferences[i].attachment = i + ColorAttachmentOffset;
+        ResolvedAttachmentReferences[i].attachment = i + ResolvedAttachmentOffset;
     }
-
-    VkAttachmentReference DepthAttachmentReference{};
-    DepthAttachmentReference.attachment = DepthAttachmentOffset;
-    DepthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkSubpassDependency Dependency{};
     Dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
