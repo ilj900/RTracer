@@ -63,7 +63,6 @@ public:
     void WaitIdle();
     void SaveImage(FImage& Image);
 
-    VkImageView CreateImageView(VkImage Image, VkFormat Format, VkImageAspectFlags AspectFlags, uint32_t MipLevels);
     VkFormat FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features);
     VkShaderModule CreateShaderFromFile(const std::string& FileName);
     VkFormat FindDepthFormat();
@@ -72,7 +71,6 @@ public:
     bool HasStensilComponent(VkFormat Format);
     void CopyBufferToImage(FBuffer &Buffer, VkImage Image, uint32_t Width, uint32_t Height);
     void CopyImageToBuffer(FImage& Image, FBuffer& Buffer);
-    void GenerateMipmaps(VkImage Image, VkFormat ImageFormat, int32_t TexWidth, int32_t TexHeight, uint32_t mipLevels);
     void LoadDataIntoBuffer(FBuffer &Buffer, void* Data, size_t Size);
     FBuffer LoadDataIntoGPU(void* Data, uint32_t Size, VkBufferUsageFlags Flags);
     void FreeData(FBuffer Buffer);
@@ -125,15 +123,13 @@ public:
 
     VkDebugUtilsMessengerEXT DebugMessenger;
 
-    /// Images for presentation
-    std::vector<FImage> ResolvedNormalImages;
-    std::vector<FImage> ResolvedRenderableIndexImages;
-
     /// Images for drawing
     std::shared_ptr<FImage> NormalsImage = nullptr;
     std::shared_ptr<FImage> RenderableIndexImage = nullptr;
     std::shared_ptr<FImage> ColorImage = nullptr;
     std::shared_ptr<FImage> DepthImage = nullptr;
+    std::shared_ptr<FImage> UtilityImageR32 = nullptr;
+    std::shared_ptr<FImage> UtilityImageR8G8B8A8_SRGB = nullptr;
 
     /// Texture used to pain the model
     std::shared_ptr<FImage> TextureImage = nullptr;

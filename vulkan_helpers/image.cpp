@@ -267,6 +267,36 @@ void FImage::GenerateMipMaps()
     Context.EndSingleTimeCommand(CommandBuffer);
 }
 
+void FImage::Resolve(FImage& ImageToResolveTo)
+{
+    if (ImageToResolveTo.Format != Format)
+    {
+        throw std::runtime_error("Failed to resolve image because formats are different.");
+    }
+
+    auto& Context = GetContext();
+    auto CommandBuffer = Context.BeginSingleTimeCommands();
+
+    VkImageResolve ImageResolve{};
+    ImageResolve.srcOffset = {0, 0, 0};
+    ImageResolve.dstOffset = {0, 0, 0};
+    ImageResolve.extent = {Width, Height, 1};
+
+    ImageResolve.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    ImageResolve.srcSubresource.mipLevel = 0;
+    ImageResolve.srcSubresource.baseArrayLayer = 0;
+    ImageResolve.srcSubresource.layerCount = 1;
+
+    ImageResolve.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    ImageResolve.dstSubresource.mipLevel = 0;
+    ImageResolve.dstSubresource.baseArrayLayer = 0;
+    ImageResolve.dstSubresource.layerCount = 1;
+
+    vkCmdResolveImage(CommandBuffer, Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, ImageToResolveTo.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &ImageResolve);
+
+    Context.EndSingleTimeCommand(CommandBuffer);
+}
+
 bool operator<(const FImage& A, const FImage& B)
 {
     return A.Image < B.Image;

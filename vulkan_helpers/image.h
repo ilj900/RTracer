@@ -38,6 +38,7 @@ struct FImage
 
     static void Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, FImage& Image);
     void GenerateMipMaps();
+    void Resolve(FImage& Image);
 
 private:
     void CreateImage();

@@ -82,7 +82,8 @@ void FRenderPass::Construct(VkDevice LogicalDevice)
     DepthAttachmentReference.attachment = DepthAttachmentOffset;
     DepthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    std::vector<VkAttachmentReference> ResolvedAttachmentReferences(ResolvedAttachmentDescriptions.size());
+    auto ColorAttachmentsCount = ColorAttachmentDescriptions.size();
+    std::vector<VkAttachmentReference> ResolvedAttachmentReferences(ColorAttachmentsCount, {VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
     for (uint32_t i = 0; i < ResolvedAttachmentDescriptions.size(); ++i)
     {
         ResolvedAttachmentReferences[i].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
