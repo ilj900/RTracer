@@ -32,13 +32,16 @@ void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int
             if (Action == GLFW_PRESS) {
                 glfwSetWindowShouldClose(Window, GLFW_TRUE);
             }
+            break;
         }
         case GLFW_KEY_U:
         {
             if (Action == GLFW_PRESS) {
                 auto& Context = GetContext();
-                Context.SaveImage(*Context.UtilityImageR8G8B8A8_SRGB);
+                (*Context.ImageManager)(Context.NormalsImage).Resolve((*Context.ImageManager)(Context.UtilityImageR8G8B8A8_SRGB));
+                Context.ImageManager->SaveImage(Context.UtilityImageR8G8B8A8_SRGB);
             }
+            break;
         }
     }
 }
@@ -83,13 +86,19 @@ void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, in
                 case GLFW_PRESS:
                 {
                     auto& Context = GetContext();
-                    std::vector<uint32_t> Data;
+                    std::vector<char> Data;
 
-                    Context.RenderableIndexImage->Resolve(*Context.UtilityImageR32);
-                    Context.FetchImage(*Context.UtilityImageR32, Data);
+                    (*Context.ImageManager)(Context.RenderableIndexImage).Resolve((*Context.ImageManager)(Context.UtilityImageR32));
+                    (*Context.ImageManager).FetchImageData(Context.UtilityImageR32, Data);
                     double X, Y;
                     glfwGetCursorPos(Window, &X, &Y);
-                    uint32_t RenderableIndex = Data[uint32_t(Y) * 1920 + uint32_t(X)];
+
+                    auto Index = (uint32_t(Y) * 1920 + uint32_t(X)) * 4;
+                    auto R = Data[Index];
+                    auto G = Data[Index + 1];
+                    auto B = Data[Index + 2];
+                    auto A = Data[Index + 3];
+                    uint32_t RenderableIndex = static_cast<uint32_t>(A) << 24 | static_cast<uint32_t>(B) << 16 | static_cast<uint32_t>(G) << 8 | static_cast<uint32_t>(R);
                     auto RenderableSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FRenderableSystem>();
                     RenderableSystem->SetSelectedByIndex(RenderableIndex);
                 }

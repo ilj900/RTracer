@@ -64,6 +64,7 @@ set(SOURCE
         vulkan_helpers/swapchain.cpp
         vulkan_helpers/renderpass.cpp
         vulkan_helpers/descriptors.cpp
+        vulkan_helpers/image_manager.cpp
         math/maths.cpp
         ${IMGUI_SOURCE})
 
@@ -78,6 +79,7 @@ set(INCLUDE
         vulkan_helpers/renderpass.h
         vulkan_helpers/buffer.h
         vulkan_helpers/descriptors.h
+        vulkan_helpers/image_manager.h
         include/stb_image.h
         include/stb_image_write.h
         include/tiny_obj_loader.h

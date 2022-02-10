@@ -2,6 +2,8 @@
 
 #include "context.h"
 
+#include "iostream"
+
 size_t FImage::GetHash()
 {
     return std::hash<FImage>()(*this);
@@ -13,16 +15,17 @@ Device(Device), Width(Width), MipLevels(1), Height(Height), Samples(NumSamples),
 Tiling(Tiling), Usage(Usage), Properties(Properties), AspectFlags(AspectFlags)
 {
     /// Calculate number of MipLevels in advance
+    std::cout << "FImage constructor called" << std::endl;
     if (bMipMapsRequired)
     {
         MipLevels = static_cast<uint32_t>(std::floor(static_cast<float>(std::log2(std::max(Width, Height))))) + 1;
     }
+
     CreateImage();
     AllocateMemory();
     BindMemoryToImage();
     CreateImageView();
 }
-
 
 void FImage::Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, FImage& Image)
 {
@@ -39,6 +42,7 @@ void FImage::Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags Aspec
 FImage::~FImage()
 {
     vkDestroyImageView(Device, View, nullptr);
+    std::cout << "FImage destructor called" << std::endl;
     if (!bIsWrappedImage)
     {
         vkDestroyImage(Device, Image, nullptr);
@@ -121,6 +125,55 @@ void FImage::Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout)
     vkCmdPipelineBarrier(CommandBuffer, SourceStage, DestinationStage, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
 
     Context.EndSingleTimeCommand(CommandBuffer);
+}
+
+void FImage::SwapData(FImage& Other)
+{
+    VkImage TempImage = Image;
+    VkDeviceMemory TempMemory = Memory;
+    VkImageView TempView = View;
+
+    VkFormat TempFormat = Format;
+    VkSampleCountFlagBits TempSamples= Samples;
+    VkDevice TempDevice = Device;
+    VkImageTiling TempTiling = Tiling;
+    VkImageUsageFlags TempUsage = Usage;
+    VkMemoryPropertyFlags TempProperties = Properties;
+    VkImageAspectFlags TempAspectFlags = AspectFlags;
+
+    uint32_t TempWidth = Width;
+    uint32_t TempHeight = Height;
+    uint32_t TempMipLevels = MipLevels;
+
+    Image = Other.Image;
+    Memory = Other.Memory;
+    View = Other.View;
+
+    Format = Other.Format;
+    Samples = Other.Samples;
+    Device = Other.Device;
+    Tiling = Other.Tiling;
+    Usage = Other.Usage;
+    Properties = Other.Properties;
+    AspectFlags = Other.AspectFlags;
+
+    Width = Other.Width;
+    Height = Other.Height;;
+    MipLevels = Other.MipLevels;
+
+    Other.Image = TempImage;
+    Other.Memory = TempMemory;
+    Other.View = TempView;
+    Other.Format = TempFormat;
+    Other.Samples = TempSamples;
+    Other.Device = TempDevice;
+    Other.Tiling = TempTiling;
+    Other.Usage = TempUsage;
+    Other.Properties = TempProperties;
+    Other.AspectFlags = TempAspectFlags;
+    Other.Width = TempWidth;
+    Other.Height = TempHeight;
+    Other.MipLevels = TempMipLevels;
 }
 
 void FImage::CreateImage()

@@ -12,6 +12,7 @@
 #include "buffer.h"
 #include "descriptors.h"
 #include "image.h"
+#include "image_manager.h"
 #include "renderpass.h"
 
 #include <vector>
@@ -43,7 +44,6 @@ public:
     void CreateCommandPool();
     void CreateFramebuffers();
     void LoadModelDataToGPU();
-    void CreateTextureImage(std::string& TexturePath);
     void CreateTextureSampler();
     void CreateUniformBuffers();
     void CreateDescriptorPool();
@@ -61,7 +61,6 @@ public:
     void Render();
     void Present();
     void WaitIdle();
-    void SaveImage(FImage& Image);
 
     VkFormat FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features);
     VkShaderModule CreateShaderFromFile(const std::string& FileName);
@@ -69,13 +68,9 @@ public:
     VkCommandBuffer BeginSingleTimeCommands();
     void EndSingleTimeCommand(VkCommandBuffer CommandBuffer);
     bool HasStensilComponent(VkFormat Format);
-    void CopyBufferToImage(FBuffer &Buffer, VkImage Image, uint32_t Width, uint32_t Height);
-    void CopyImageToBuffer(FImage& Image, FBuffer& Buffer);
     void LoadDataIntoBuffer(FBuffer &Buffer, void* Data, size_t Size);
     FBuffer LoadDataIntoGPU(void* Data, uint32_t Size, VkBufferUsageFlags Flags);
     void FreeData(FBuffer Buffer);
-    void FetchImage(FImage& Image, std::vector<char>& Data);
-    void FetchImage(FImage& Image, std::vector<uint32_t>& Data);
 
     bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device);
     bool CheckDeviceQueueSupport(VkPhysicalDevice Device);
@@ -86,6 +81,7 @@ public:
 
     std::shared_ptr<FResourceAllocator> ResourceAllocator = nullptr;
     std::shared_ptr<FVulkanFunctionLoader> FunctionLoader = nullptr;
+    std::shared_ptr<FImageManager> ImageManager = nullptr;
 
     std::vector<std::string> InstanceExtensions;
     std::vector<std::string> DeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
@@ -124,15 +120,15 @@ public:
     VkDebugUtilsMessengerEXT DebugMessenger;
 
     /// Images for drawing
-    std::shared_ptr<FImage> NormalsImage = nullptr;
-    std::shared_ptr<FImage> RenderableIndexImage = nullptr;
-    std::shared_ptr<FImage> ColorImage = nullptr;
-    std::shared_ptr<FImage> DepthImage = nullptr;
-    std::shared_ptr<FImage> UtilityImageR32 = nullptr;
-    std::shared_ptr<FImage> UtilityImageR8G8B8A8_SRGB = nullptr;
+    std::string ColorImage = "ColorImage";
+    std::string NormalsImage = "NormalsImage";
+    std::string RenderableIndexImage = "RenderableIndexImage";
+    std::string DepthImage = "DepthImage";
+    std::string UtilityImageR32 = "UtilityImageR32";
+    std::string UtilityImageR8G8B8A8_SRGB = "UtilityImageR8G8B8A8_SRGB";
 
     /// Texture used to pain the model
-    std::shared_ptr<FImage> TextureImage = nullptr;
+    std::string TextureImage = "TextureImage";
 
     VkSampler TextureSampler;
 

@@ -11,6 +11,7 @@ struct FImage
     ~FImage();
 
     void Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout);
+    void SwapData(FImage& Other);
 
     VkImage Image = VK_NULL_HANDLE;
     VkDeviceMemory Memory = VK_NULL_HANDLE;
