@@ -11,6 +11,25 @@ FResourceAllocator::FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice
     vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &MemProperties);
 }
 
+FBuffer FResourceAllocator::CreateBufferWidthData(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, void* Data)
+{
+    VkDeviceSize BufferSize = Size;
+
+    /// Create staging buffer
+    FBuffer StagingBuffer = CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    void* StagingData;
+    vkMapMemory(Device, StagingBuffer.Memory, 0, BufferSize, 0, &StagingData);
+    memcpy(StagingData, Data, (std::size_t)BufferSize);
+    vkUnmapMemory(Device, StagingBuffer.Memory);
+
+    FBuffer Buffer = CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | Usage, Properties);
+    CopyBuffer(StagingBuffer, Buffer, BufferSize);
+    DestroyBuffer(StagingBuffer);
+
+    return Buffer;
+}
+
 FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties)
 {
     FBuffer Buffer;
@@ -72,11 +91,10 @@ uint32_t FResourceAllocator::FindMemoryType(uint32_t TypeFilter, VkMemoryPropert
 
 void FResourceAllocator::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size)
 {
-    VkCommandBuffer CommandBuffer = Context->BeginSingleTimeCommands();
-
-    VkBufferCopy CopyRegion{};
-    CopyRegion.size = Size;
-    vkCmdCopyBuffer(CommandBuffer, SrcBuffer.Buffer, DstBuffer.Buffer, 1, &CopyRegion);
-
-    Context->EndSingleTimeCommand(CommandBuffer);
+    Context->CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    {
+        VkBufferCopy CopyRegion{};
+        CopyRegion.size = Size;
+        vkCmdCopyBuffer(CommandBuffer, SrcBuffer.Buffer, DstBuffer.Buffer, 1, &CopyRegion);
+    });
 }

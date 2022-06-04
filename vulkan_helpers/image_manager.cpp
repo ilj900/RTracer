@@ -90,51 +90,49 @@ FImage& FImageManager::operator()(const std::string& ImageName)
 
 void FImageManager::CopyBufferToImage(const FBuffer& Buffer, const std::string& ImageName)
 {
-    VkCommandBuffer CommandBuffer = Context->BeginSingleTimeCommands();
+    Context->CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    {
+        auto& Image = operator()(ImageName);
 
-    auto& Image = operator()(ImageName);
+        VkBufferImageCopy Region{};
+        Region.bufferOffset = 0;
+        Region.bufferRowLength = 0;
+        Region.bufferImageHeight = 0;
 
-    VkBufferImageCopy Region{};
-    Region.bufferOffset = 0;
-    Region.bufferRowLength = 0;
-    Region.bufferImageHeight = 0;
+        Region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        Region.imageSubresource.mipLevel = 0;
+        Region.imageSubresource.baseArrayLayer = 0;
+        Region.imageSubresource.layerCount = 1;
 
-    Region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    Region.imageSubresource.mipLevel = 0;
-    Region.imageSubresource.baseArrayLayer = 0;
-    Region.imageSubresource.layerCount = 1;
-
-    Region.imageOffset = {0, 0, 0};
-    Region.imageExtent = {Image.Width, Image.Height, 1};
+        Region.imageOffset = {0, 0, 0};
+        Region.imageExtent = {Image.Width, Image.Height, 1};
 
 
-    vkCmdCopyBufferToImage(CommandBuffer, Buffer.Buffer, Image.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &Region);
-
-    Context->EndSingleTimeCommand(CommandBuffer);
+        vkCmdCopyBufferToImage(CommandBuffer, Buffer.Buffer, Image.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &Region);
+    });
 }
 
 void FImageManager::CopyImageToBuffer(const std::string& ImageName, const FBuffer& Buffer)
 {
-    auto CommandBuffer = Context->BeginSingleTimeCommands();
+    Context->CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    {
+        auto& Image = operator()(ImageName);
 
-    auto& Image = operator()(ImageName);
+        VkBufferImageCopy Region{};
+        Region.bufferOffset = 0;
+        Region.bufferRowLength = 0;
+        Region.bufferImageHeight = 0;
 
-    VkBufferImageCopy Region{};
-    Region.bufferOffset = 0;
-    Region.bufferRowLength = 0;
-    Region.bufferImageHeight = 0;
+        Region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        Region.imageSubresource.mipLevel = 0;
+        Region.imageSubresource.baseArrayLayer = 0;
+        Region.imageSubresource.layerCount = 1;
 
-    Region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    Region.imageSubresource.mipLevel = 0;
-    Region.imageSubresource.baseArrayLayer = 0;
-    Region.imageSubresource.layerCount = 1;
+        Region.imageOffset = {0, 0, 0};
+        Region.imageExtent = {Image.Width, Image.Height, 1};
 
-    Region.imageOffset = {0, 0, 0};
-    Region.imageExtent = {Image.Width, Image.Height, 1};
-
-    vkCmdCopyImageToBuffer(CommandBuffer, Image.Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, Buffer.Buffer, 1, &Region);
-
-    Context->EndSingleTimeCommand(CommandBuffer);
+        vkCmdCopyImageToBuffer(CommandBuffer, Image.Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, Buffer.Buffer, 1, &Region);
+    });
 }
 
 void FImageManager::SaveImage(const std::string& ImageName)

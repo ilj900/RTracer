@@ -66,7 +66,7 @@ void FContext::Init(GLFWwindow *Window, FController *Controller)
         CreateSurface();
         PickPhysicalDevice();
         CreateLogicalDevice();
-        CreateCommandPool();
+        CommandBufferManager = std::make_shared<FCommandBufferManager>(LogicalDevice, this, GraphicsQueue, GraphicsQueueIndex);
         Swapchain = std::make_shared<FSwapchain>(*this, PhysicalDevice, LogicalDevice, Surface, Window, GraphicsQueueIndex, PresentQueueIndex, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
         CreateDepthAndAAImages();
         CreateRenderPass();
@@ -715,19 +715,6 @@ void FContext::CreateGraphicsPipeline()
     vkDestroyShaderModule(LogicalDevice, VertexShaderModule, nullptr);
 }
 
-void FContext::CreateCommandPool()
-{
-    VkCommandPoolCreateInfo PoolInfo{};
-    PoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    PoolInfo.queueFamilyIndex = GraphicsQueueIndex;
-    PoolInfo.flags = 0;
-
-    if (vkCreateCommandPool(LogicalDevice, &PoolInfo, nullptr, &CommandPool) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create command pool!");
-    }
-}
-
 VkFormat FContext::FindDepthFormat()
 {
     return FindSupportedFormat(
@@ -740,41 +727,6 @@ VkFormat FContext::FindDepthFormat()
 bool FContext::HasStensilComponent(VkFormat Format)
 {
     return Format == VK_FORMAT_D32_SFLOAT_S8_UINT || Format == VK_FORMAT_D24_UNORM_S8_UINT;
-}
-
-VkCommandBuffer FContext::BeginSingleTimeCommands()
-{
-    VkCommandBufferAllocateInfo AllocInfo{};
-    AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    AllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    AllocInfo.commandPool = CommandPool;
-    AllocInfo.commandBufferCount = 1;
-
-    VkCommandBuffer CommandBuffer;
-    vkAllocateCommandBuffers(LogicalDevice, &AllocInfo, &CommandBuffer);
-
-    VkCommandBufferBeginInfo BeginInfo{};
-    BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    BeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-    vkBeginCommandBuffer(CommandBuffer, &BeginInfo);
-
-    return CommandBuffer;
-}
-
-void FContext::EndSingleTimeCommand(VkCommandBuffer CommandBuffer)
-{
-    vkEndCommandBuffer(CommandBuffer);
-
-    VkSubmitInfo SubmitInfo{};
-    SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    SubmitInfo.commandBufferCount = 1;
-    SubmitInfo.pCommandBuffers = &CommandBuffer;
-
-    vkQueueSubmit(GraphicsQueue, 1, &SubmitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(GraphicsQueue);
-
-    vkFreeCommandBuffers(LogicalDevice, CommandPool, 1, &CommandBuffer);
 }
 
 void FContext::CreateFramebuffers()
@@ -923,70 +875,47 @@ void FContext::CreateCommandBuffers()
 {
     CommandBuffers.resize(SwapChainFramebuffers.size());
 
-    VkCommandBufferAllocateInfo AllocInfo{};
-    AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    AllocInfo.commandPool = CommandPool;
-    AllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    AllocInfo.commandBufferCount = (uint32_t) CommandBuffers.size();
-
-    if (vkAllocateCommandBuffers(LogicalDevice, &AllocInfo, CommandBuffers.data()) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to allocate command buffers!");
-    }
-
     for (std::size_t i = 0; i <CommandBuffers.size(); ++i)
     {
-        VkCommandBufferBeginInfo BeginInfo{};
-        BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        BeginInfo.flags = 0;
-        BeginInfo.pInheritanceInfo = nullptr;
-
-        if (vkBeginCommandBuffer(CommandBuffers[i], &BeginInfo) != VK_SUCCESS)
+        CommandBuffers[i] = CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
-            throw std::runtime_error("Failed to begin recording command buffer!");
-        }
+            VkRenderPassBeginInfo RenderPassInfo{};
+            RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            RenderPassInfo.renderPass = RenderPass->RenderPass;
+            RenderPassInfo.framebuffer = SwapChainFramebuffers[i];
+            RenderPassInfo.renderArea.offset = {0, 0};
+            RenderPassInfo.renderArea.extent = Swapchain->GetExtent2D();
 
-        VkRenderPassBeginInfo RenderPassInfo{};
-        RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        RenderPassInfo.renderPass = RenderPass->RenderPass;
-        RenderPassInfo.framebuffer = SwapChainFramebuffers[i];
-        RenderPassInfo.renderArea.offset = {0, 0};
-        RenderPassInfo.renderArea.extent = Swapchain->GetExtent2D();
+            std::vector<VkClearValue> ClearValues{7};
+            ClearValues[0].color = {0.f, 0.f, 0.f, 1.f};
+            ClearValues[1].color = {0.0f, 0.f, 0.f, 1.f};
+            ClearValues[2].color = {0, 0, 0, 0};
+            ClearValues[3].depthStencil = {1.f, 0};
+            ClearValues[4].color = {0.f, 0.f, 0.f, 0.f};
+            RenderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
+            RenderPassInfo.pClearValues = ClearValues.data();
 
-        std::vector<VkClearValue> ClearValues{7};
-        ClearValues[0].color = {0.f, 0.f, 0.f, 1.f};
-        ClearValues[1].color = {0.0f, 0.f, 0.f, 1.f};
-        ClearValues[2].color = {0, 0, 0, 0};
-        ClearValues[3].depthStencil = {1.f, 0};
-        ClearValues[4].color = {0.f, 0.f, 0.f, 0.f};
-        RenderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
-        RenderPassInfo.pClearValues = ClearValues.data();
+            vkCmdBeginRenderPass(CommandBuffer, &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline);
 
-        vkCmdBeginRenderPass(CommandBuffers[i], &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline);
-
-        vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSetManager->GetSet(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, i), 0,
-                                nullptr);
-        auto& Coordinator = ECS::GetCoordinator();
-        auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
-
-        uint32_t j = 0;
-        for (auto Entity : *MeshSystem)
-        {
-            vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 1, 1,
-                                    &DescriptorSetManager->GetSet(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, j * Swapchain->Size() + i), 0,
+            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 0, 1, &DescriptorSetManager->GetSet(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, i), 0,
                                     nullptr);
+            auto& Coordinator = ECS::GetCoordinator();
+            auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
 
-            MeshSystem->Bind(Entity, CommandBuffers[i]);
-            MeshSystem->Draw(Entity, CommandBuffers[i]);
-            ++j;
-        }
-        vkCmdEndRenderPass(CommandBuffers[i]);
+            uint32_t j = 0;
+            for (auto Entity : *MeshSystem)
+            {
+                vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 1, 1,
+                                        &DescriptorSetManager->GetSet(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, j * Swapchain->Size() + i), 0,
+                                        nullptr);
 
-        if (vkEndCommandBuffer(CommandBuffers[i]) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to record command buffer!");
-        }
+                MeshSystem->Bind(Entity, CommandBuffer);
+                MeshSystem->Draw(Entity, CommandBuffer);
+                ++j;
+            }
+            vkCmdEndRenderPass(CommandBuffer);
+        });
     }
 }
 
@@ -1146,9 +1075,7 @@ void FContext::CreateImguiContext()
     ImGui_ImplVulkan_Init(&InitInfo, ImGuiRenderPass);
 
     {
-        auto UploadFonts = BeginSingleTimeCommands();
-        ImGui_ImplVulkan_CreateFontsTexture(UploadFonts);
-        EndSingleTimeCommand(UploadFonts);
+        CommandBufferManager->RunSingletimeCommand(ImGui_ImplVulkan_CreateFontsTexture);
     }
 }
 
@@ -1220,45 +1147,48 @@ void FContext::RenderImGui()
     ImGui::TextColored({0.f, 1.f, 0.f, 1.f}, "Test text");
     ImGui::End();
 
-    auto CommandBuffer = BeginSingleTimeCommands();
+    auto CommandBuffer = CommandBufferManager->BeginCommand();
 
+    CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer)
     {
-        VkRenderPassBeginInfo RenderPassBeginInfo{};
-        RenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        RenderPassBeginInfo.renderPass = ImGuiRenderPass;
-        RenderPassBeginInfo.framebuffer = ImGuiFramebuffers[CurrentFrame % Swapchain->Size()];
-        RenderPassBeginInfo.renderArea.extent = Swapchain->GetExtent2D();
-        RenderPassBeginInfo.clearValueCount = 0;
-        vkCmdBeginRenderPass(CommandBuffer, &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-    }
+        {
+            VkRenderPassBeginInfo RenderPassBeginInfo{};
+            RenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            RenderPassBeginInfo.renderPass = ImGuiRenderPass;
+            RenderPassBeginInfo.framebuffer = ImGuiFramebuffers[CurrentFrame % Swapchain->Size()];
+            RenderPassBeginInfo.renderArea.extent = Swapchain->GetExtent2D();
+            RenderPassBeginInfo.clearValueCount = 0;
+            vkCmdBeginRenderPass(CommandBuffer, &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        }
 
-    ImGui::Render();
-    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), CommandBuffer);
+        ImGui::Render();
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), CommandBuffer);
 
-    vkCmdEndRenderPass(CommandBuffer);
-    vkEndCommandBuffer(CommandBuffer);
+        vkCmdEndRenderPass(CommandBuffer);
+        vkEndCommandBuffer(CommandBuffer);
 
-    VkSubmitInfo SubmitInfo{};
-    SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        VkSubmitInfo SubmitInfo{};
+        SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore WaitSemaphores[] = {RenderFinishedSemaphores[CurrentFrame]};
-    VkPipelineStageFlags WaitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    SubmitInfo.waitSemaphoreCount = 1;
-    SubmitInfo.pWaitSemaphores = WaitSemaphores;
-    SubmitInfo.pWaitDstStageMask = WaitStages;
-    SubmitInfo.commandBufferCount = 1;
-    SubmitInfo.pCommandBuffers = &CommandBuffer;
+        VkSemaphore WaitSemaphores[] = {RenderFinishedSemaphores[CurrentFrame]};
+        VkPipelineStageFlags WaitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+        SubmitInfo.waitSemaphoreCount = 1;
+        SubmitInfo.pWaitSemaphores = WaitSemaphores;
+        SubmitInfo.pWaitDstStageMask = WaitStages;
+        SubmitInfo.commandBufferCount = 1;
+        SubmitInfo.pCommandBuffers = &CommandBuffer;
 
-    VkSemaphore SignalSemaphores[] = {ImGuiFinishedSemaphores[CurrentFrame]};
-    SubmitInfo.signalSemaphoreCount = 1;
-    SubmitInfo.pSignalSemaphores = SignalSemaphores;
+        VkSemaphore SignalSemaphores[] = {ImGuiFinishedSemaphores[CurrentFrame]};
+        SubmitInfo.signalSemaphoreCount = 1;
+        SubmitInfo.pSignalSemaphores = SignalSemaphores;
 
-    vkResetFences(LogicalDevice, 1, &ImGuiFinishedFences[CurrentFrame]);
+        vkResetFences(LogicalDevice, 1, &ImGuiFinishedFences[CurrentFrame]);
 
-    if (vkQueueSubmit(GraphicsQueue, 1, &SubmitInfo, ImGuiFinishedFences[CurrentFrame]) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to submit ImGui draw command buffer!");
-    }
+        if (vkQueueSubmit(GraphicsQueue, 1, &SubmitInfo, ImGuiFinishedFences[CurrentFrame]) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to submit ImGui draw command buffer!");
+        }
+    });
 }
 
 void FContext::Present()
@@ -1338,7 +1268,10 @@ void FContext::CleanUpSwapChain()
         vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
     }
 
-    vkFreeCommandBuffers(LogicalDevice, CommandPool, static_cast<uint32_t>(CommandBuffers.size()), CommandBuffers.data());
+    for (auto& CommandBuffer : CommandBuffers)
+    {
+        CommandBufferManager->FreeCommandBuffer(CommandBuffer);
+    }
 
     vkDestroyPipeline(LogicalDevice, GraphicsPipeline, nullptr);
     vkDestroyPipelineLayout(LogicalDevice, PipelineLayout, nullptr);
@@ -1395,25 +1328,6 @@ void FContext::FreeData(FBuffer Buffer)
     ResourceAllocator->DestroyBuffer(Buffer);
 }
 
-FBuffer FContext::LoadDataIntoGPU(void* Data, uint32_t Size, VkBufferUsageFlags Flags)
-{
-    VkDeviceSize BufferSize = Size;
-
-    /// Create staging buffer
-    FBuffer StagingBuffer = ResourceAllocator->CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    void* StagingData;
-    vkMapMemory(LogicalDevice, StagingBuffer.Memory, 0, BufferSize, 0, &StagingData);
-    memcpy(StagingData, Data, (std::size_t)BufferSize);
-    vkUnmapMemory(LogicalDevice, StagingBuffer.Memory);
-
-    FBuffer Buffer = ResourceAllocator->CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | Flags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    ResourceAllocator->CopyBuffer(StagingBuffer, Buffer, BufferSize);
-    ResourceAllocator->DestroyBuffer(StagingBuffer);
-
-    return Buffer;
-}
-
 void FContext::DestroyDebugUtilsMessengerEXT()
 {
     FunctionLoader->vkDestroyDebugUtilsMessengerEXT(Instance, DebugMessenger, nullptr);
@@ -1445,7 +1359,7 @@ void FContext::CleanUp()
         vkDestroyFence(LogicalDevice, ImGuiFinishedFences[i], nullptr);
     }
 
-    vkDestroyCommandPool(LogicalDevice, CommandPool, nullptr);
+    CommandBufferManager = nullptr;
     vkDestroyDevice(LogicalDevice, nullptr);
 
     if (!ValidationLayers.empty())

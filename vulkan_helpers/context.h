@@ -6,6 +6,7 @@
 
 #include "resource_allocation.h"
 #include "function_loader.h"
+#include "command_buffer_manager.h"
 #include "maths.h"
 #include "swapchain.h"
 #include "controller.h"
@@ -41,7 +42,6 @@ public:
     void CreateRenderPass();
     void CreateDescriptorSetLayouts();
     void CreateGraphicsPipeline();
-    void CreateCommandPool();
     void CreateFramebuffers();
     void LoadModelDataToGPU();
     void CreateTextureSampler();
@@ -65,11 +65,8 @@ public:
     VkFormat FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features);
     VkShaderModule CreateShaderFromFile(const std::string& FileName);
     VkFormat FindDepthFormat();
-    VkCommandBuffer BeginSingleTimeCommands();
-    void EndSingleTimeCommand(VkCommandBuffer CommandBuffer);
     bool HasStensilComponent(VkFormat Format);
     void LoadDataIntoBuffer(FBuffer &Buffer, void* Data, size_t Size);
-    FBuffer LoadDataIntoGPU(void* Data, uint32_t Size, VkBufferUsageFlags Flags);
     void FreeData(FBuffer Buffer);
 
     bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device);
@@ -81,6 +78,7 @@ public:
 
     std::shared_ptr<FResourceAllocator> ResourceAllocator = nullptr;
     std::shared_ptr<FVulkanFunctionLoader> FunctionLoader = nullptr;
+    std::shared_ptr<FCommandBufferManager> CommandBufferManager = nullptr;
     std::shared_ptr<FImageManager> ImageManager = nullptr;
 
     std::vector<std::string> InstanceExtensions;
@@ -114,8 +112,6 @@ public:
 
     VkPipelineLayout PipelineLayout;
     VkPipeline GraphicsPipeline;
-
-    VkCommandPool CommandPool;
 
     VkDebugUtilsMessengerEXT DebugMessenger;
 

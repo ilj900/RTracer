@@ -54,7 +54,7 @@ void FRenderPass::AddImageAsAttachment(FImage &Image, AttachmentType Type)
 
     AttachmentDescriptions->emplace_back(AttachmentDescription);
 
-    (*ImageToIndexMap)[Image.GetHash()] = AttachmentDescriptions->size() - 1;
+    (*ImageToIndexMap)[Image.GetHash()] = static_cast<uint32_t>(AttachmentDescriptions->size() - 1);
 }
 
 void FRenderPass::Construct(VkDevice LogicalDevice)

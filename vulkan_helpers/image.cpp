@@ -54,77 +54,67 @@ void FImage::Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout)
 {
     auto& Context = GetContext();
 
-    VkCommandBuffer CommandBuffer = Context.BeginSingleTimeCommands();
-
-    VkImageMemoryBarrier Barrier{};
-    Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    Barrier.oldLayout = OldLayout;
-    Barrier.newLayout = NewLayout;
-    Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    Barrier.image = Image;
-    Barrier.subresourceRange.baseMipLevel = 0;
-    Barrier.subresourceRange.levelCount = MipLevels;
-    Barrier.subresourceRange.baseArrayLayer = 0;
-    Barrier.subresourceRange.layerCount = 1;
-
-    if (NewLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+    Context.CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
     {
-        Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        VkImageMemoryBarrier Barrier{};
+        Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        Barrier.oldLayout = OldLayout;
+        Barrier.newLayout = NewLayout;
+        Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        Barrier.image = Image;
+        Barrier.subresourceRange.baseMipLevel = 0;
+        Barrier.subresourceRange.levelCount = MipLevels;
+        Barrier.subresourceRange.baseArrayLayer = 0;
+        Barrier.subresourceRange.layerCount = 1;
 
-        if (Context.HasStensilComponent(Format))
-        {
-            Barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        if (NewLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+            Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+
+            if (Context.HasStensilComponent(Format)) {
+                Barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+            }
+        } else {
+            Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         }
-    }
-    else
-    {
-        Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    }
 
-    VkPipelineStageFlags SourceStage;
-    VkPipelineStageFlags DestinationStage;
+        VkPipelineStageFlags SourceStage;
+        VkPipelineStageFlags DestinationStage;
 
-    if (OldLayout == VK_IMAGE_LAYOUT_UNDEFINED && NewLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-    {
-        Barrier.srcAccessMask = 0;
-        Barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        if (OldLayout == VK_IMAGE_LAYOUT_UNDEFINED && NewLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+            Barrier.srcAccessMask = 0;
+            Barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
-        SourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        DestinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    }
-    else if (OldLayout == VK_IMAGE_LAYOUT_UNDEFINED && NewLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
-    {
-        Barrier.srcAccessMask = 0;
-        Barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+            SourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            DestinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        } else if (OldLayout == VK_IMAGE_LAYOUT_UNDEFINED && NewLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+            Barrier.srcAccessMask = 0;
+            Barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 
-        SourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        DestinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    }
-    else if(OldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && NewLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-    {
-        Barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        Barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            SourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            DestinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        } else if (OldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL &&
+                   NewLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+            Barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            Barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-        SourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        DestinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    }
-    else if(OldLayout == VK_IMAGE_LAYOUT_UNDEFINED && NewLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-    {
-        Barrier.srcAccessMask = 0;
-        Barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            SourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            DestinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        } else if (OldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
+                   NewLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+            Barrier.srcAccessMask = 0;
+            Barrier.dstAccessMask =
+                    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-        SourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        DestinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    }
-    else
-    {
-        throw std::invalid_argument("Unsupported layout transition!");
-    }
+            SourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            DestinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        } else {
+            throw std::invalid_argument("Unsupported layout transition!");
+        }
 
-    vkCmdPipelineBarrier(CommandBuffer, SourceStage, DestinationStage, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
+        vkCmdPipelineBarrier(CommandBuffer, SourceStage, DestinationStage, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
 
-    Context.EndSingleTimeCommand(CommandBuffer);
+    });
 }
 
 void FImage::SwapData(FImage& Other)
@@ -250,74 +240,75 @@ void FImage::GenerateMipMaps()
         throw std::runtime_error("Texture image format does not support linear blitting!");
     }
 
-    VkCommandBuffer CommandBuffer = Context.BeginSingleTimeCommands();
+    Context.CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer& CommandBuffer) {
 
-    VkImageMemoryBarrier Barrier{};
-    Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    Barrier.image = Image;
-    Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    Barrier.subresourceRange.baseArrayLayer = 0;
-    Barrier.subresourceRange.layerCount = 1;
-    Barrier.subresourceRange.levelCount = 1;
+        VkImageMemoryBarrier Barrier{};
+        Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        Barrier.image = Image;
+        Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        Barrier.subresourceRange.baseArrayLayer = 0;
+        Barrier.subresourceRange.layerCount = 1;
+        Barrier.subresourceRange.levelCount = 1;
 
-    int32_t MipWidth = Width;
-    int32_t MipHeight = Height;
+        int32_t MipWidth = Width;
+        int32_t MipHeight = Height;
 
-    for (uint32_t i = 1; i < MipLevels; ++i)
-    {
-        Barrier.subresourceRange.baseMipLevel = i - 1;
+        for (uint32_t i = 1; i < MipLevels; ++i) {
+            Barrier.subresourceRange.baseMipLevel = i - 1;
+            Barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            Barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            Barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            Barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+            vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
+                                 nullptr, 0, nullptr, 1, &Barrier);
+
+            VkImageBlit Blit{};
+            Blit.srcOffsets[0] = {0, 0, 0};
+            Blit.srcOffsets[1] = {MipWidth, MipHeight, 1};
+            Blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            Blit.srcSubresource.mipLevel = i - 1;
+            Blit.srcSubresource.baseArrayLayer = 0;
+            Blit.srcSubresource.layerCount = 1;
+            Blit.dstOffsets[0] = {0, 0, 0};
+            Blit.dstOffsets[1] = {MipWidth > 1 ? MipWidth / 2 : 1, MipHeight > 1 ? MipHeight / 2 : 1, 1};
+            Blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            Blit.dstSubresource.mipLevel = i;
+            Blit.dstSubresource.baseArrayLayer = 0;
+            Blit.dstSubresource.layerCount = 1;
+
+            vkCmdBlitImage(CommandBuffer, Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, Image,
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &Blit, VK_FILTER_LINEAR);
+
+            Barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            Barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            Barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+            Barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+            vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                                 0, 0, nullptr, 0, nullptr, 1, &Barrier);
+
+            if (MipWidth > 1) {
+                MipWidth /= 2;
+            }
+
+            if (MipHeight > 1) {
+                MipHeight /= 2;
+            }
+        }
+
+        Barrier.subresourceRange.baseMipLevel = MipLevels - 1;
         Barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        Barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        Barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        Barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-        vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
-
-        VkImageBlit Blit{};
-        Blit.srcOffsets[0] = {0, 0, 0};
-        Blit.srcOffsets[1] = {MipWidth, MipHeight, 1};
-        Blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        Blit.srcSubresource.mipLevel = i - 1;
-        Blit.srcSubresource.baseArrayLayer = 0;
-        Blit.srcSubresource.layerCount = 1;
-        Blit.dstOffsets[0] = {0, 0, 0};
-        Blit.dstOffsets[1] = {MipWidth > 1 ? MipWidth / 2 : 1, MipHeight > 1 ? MipHeight / 2 : 1, 1};
-        Blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        Blit.dstSubresource.mipLevel = i;
-        Blit.dstSubresource.baseArrayLayer = 0;
-        Blit.dstSubresource.layerCount = 1;
-
-        vkCmdBlitImage(CommandBuffer, Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &Blit, VK_FILTER_LINEAR);
-
-        Barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         Barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        Barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        Barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
         Barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-        vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,nullptr, 0, nullptr, 1, &Barrier);
+        vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,
+                             nullptr, 0, nullptr, 1, &Barrier);
 
-        if (MipWidth > 1)
-        {
-            MipWidth /= 2;
-        }
-
-        if (MipHeight > 1)
-        {
-            MipHeight /= 2;
-        }
-    }
-
-    Barrier.subresourceRange.baseMipLevel = MipLevels - 1;
-    Barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    Barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    Barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    Barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-    vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,nullptr, 0, nullptr, 1, &Barrier);
-
-    Context.EndSingleTimeCommand(CommandBuffer);
+    });
 }
 
 void FImage::Resolve(FImage& ImageToResolveTo)
@@ -328,26 +319,28 @@ void FImage::Resolve(FImage& ImageToResolveTo)
     }
 
     auto& Context = GetContext();
-    auto CommandBuffer = Context.BeginSingleTimeCommands();
 
-    VkImageResolve ImageResolve{};
-    ImageResolve.srcOffset = {0, 0, 0};
-    ImageResolve.dstOffset = {0, 0, 0};
-    ImageResolve.extent = {Width, Height, 1};
+    Context.CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer& CommandBuffer)
+    {
+        VkImageResolve ImageResolve{};
+        ImageResolve.srcOffset = {0, 0, 0};
+        ImageResolve.dstOffset = {0, 0, 0};
+        ImageResolve.extent = {Width, Height, 1};
 
-    ImageResolve.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    ImageResolve.srcSubresource.mipLevel = 0;
-    ImageResolve.srcSubresource.baseArrayLayer = 0;
-    ImageResolve.srcSubresource.layerCount = 1;
+        ImageResolve.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        ImageResolve.srcSubresource.mipLevel = 0;
+        ImageResolve.srcSubresource.baseArrayLayer = 0;
+        ImageResolve.srcSubresource.layerCount = 1;
 
-    ImageResolve.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    ImageResolve.dstSubresource.mipLevel = 0;
-    ImageResolve.dstSubresource.baseArrayLayer = 0;
-    ImageResolve.dstSubresource.layerCount = 1;
+        ImageResolve.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        ImageResolve.dstSubresource.mipLevel = 0;
+        ImageResolve.dstSubresource.baseArrayLayer = 0;
+        ImageResolve.dstSubresource.layerCount = 1;
 
-    vkCmdResolveImage(CommandBuffer, Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, ImageToResolveTo.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &ImageResolve);
-
-    Context.EndSingleTimeCommand(CommandBuffer);
+        vkCmdResolveImage(CommandBuffer, Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, ImageToResolveTo.Image,
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &ImageResolve);
+    }
+    );
 }
 
 bool operator<(const FImage& A, const FImage& B)
