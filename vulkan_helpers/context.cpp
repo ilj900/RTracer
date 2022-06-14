@@ -1147,9 +1147,9 @@ void FContext::RenderImGui()
     ImGui::TextColored({0.f, 1.f, 0.f, 1.f}, "Test text");
     ImGui::End();
 
-    auto CommandBuffer = CommandBufferManager->BeginCommand();
+    auto CommandBuffer = CommandBufferManager->BeginSingleTimeCommand();
 
-    CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer)
+    CommandBufferManager->RecordCommand([&, this](VkCommandBuffer)
     {
         {
             VkRenderPassBeginInfo RenderPassBeginInfo{};
