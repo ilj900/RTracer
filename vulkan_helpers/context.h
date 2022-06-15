@@ -3,6 +3,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
 #include "vulkan/vulkan.h"
+#include "vulkan_wrappers.h"
 
 #include "resource_allocation.h"
 #include "function_loader.h"
@@ -73,6 +74,8 @@ public:
     bool CheckDeviceQueueSupport(VkPhysicalDevice Device);
 
 public:
+    V::FInstanceCreationOptions InstanceCreationOptions{};
+
     GLFWwindow* Window = nullptr;
     FController* Controller = nullptr;
 
@@ -81,9 +84,7 @@ public:
     std::shared_ptr<FCommandBufferManager> CommandBufferManager = nullptr;
     std::shared_ptr<FImageManager> ImageManager = nullptr;
 
-    std::vector<std::string> InstanceExtensions;
     std::vector<std::string> DeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-    std::vector<std::string> ValidationLayers = {"VK_LAYER_KHRONOS_validation"};
 
     VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
@@ -113,6 +114,7 @@ public:
     VkPipelineLayout PipelineLayout;
     VkPipeline GraphicsPipeline;
 
+    VkDebugUtilsMessengerCreateInfoEXT DebugUtilsMessengerCreateInfoEXT{};
     VkDebugUtilsMessengerEXT DebugMessenger;
 
     /// Images for drawing
@@ -145,8 +147,6 @@ public:
     std::vector<VkFence> ImagesInFlight;
     size_t CurrentFrame = 0;
     uint32_t ImageIndex = 0;
-
-    VkDebugUtilsMessengerCreateInfoEXT DebugCreateInfo = {};
 
     const int MAX_FRAMES_IN_FLIGHT = 2;
     bool bFramebufferResized = false;

@@ -12,6 +12,8 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
 
+#include "vulkan_wrappers.h"
+
 #include <stdexcept>
 #include <iostream>
 #include <fstream>
@@ -91,103 +93,35 @@ void FContext::Init(GLFWwindow *Window, FController *Controller)
 
 void FContext::CreateInstance()
 {
-    /// Check supported Layers
-    {
-        uint32_t LayerCount;
-        vkEnumerateInstanceLayerProperties(&LayerCount, nullptr);
+    /// Add instance layers
+    InstanceCreationOptions.AddLayer("VK_LAYER_KHRONOS_validation");
 
-        std::vector<VkLayerProperties> AvailableLayers(LayerCount);
-        vkEnumerateInstanceLayerProperties(&LayerCount, AvailableLayers.data());
-
-        for (const auto &LayerName : ValidationLayers) {
-            bool LayerFound = false;
-
-            for (const auto &LayerProperties : AvailableLayers) {
-                if (LayerName == LayerProperties.layerName) {
-                    LayerFound = true;
-                    break;
-                }
-            }
-            if (!LayerFound) {
-                throw std::runtime_error("Validation layers requested, but not available!");
-            }
-        }
-    }
-
-    // Fill in instance creation data
-    VkApplicationInfo AppInfo{};
-    AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    AppInfo.pApplicationName = "Hello Triangle";
-    AppInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    AppInfo.pEngineName = "No Engine";
-    AppInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    AppInfo.apiVersion = VK_API_VERSION_1_0;
-
-    VkInstanceCreateInfo CreateInfo{};
-    CreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    CreateInfo.pApplicationInfo = &AppInfo;
-
-    // Resolve and add extensions and layers
+    /// Add GLFW instance extensions
     uint32_t Counter = 0;
     auto ExtensionsRequiredByGLFW = glfwGetRequiredInstanceExtensions(&Counter);
     for (uint32_t i = 0; i < Counter; ++i)
     {
-        InstanceExtensions.push_back(ExtensionsRequiredByGLFW[i]);
+        InstanceCreationOptions.AddInstanceExtension(ExtensionsRequiredByGLFW[i]);
     }
 
-    if (!ValidationLayers.empty())
-    {
-        InstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-    }
+    /// Add other extensions
+    DebugUtilsMessengerCreateInfoEXT.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    DebugUtilsMessengerCreateInfoEXT.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    DebugUtilsMessengerCreateInfoEXT.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    DebugUtilsMessengerCreateInfoEXT.pfnUserCallback = DebugCallback;
+    InstanceCreationOptions.AddInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, &DebugUtilsMessengerCreateInfoEXT, sizeof(VkDebugUtilsMessengerCreateInfoEXT));
 
-    // Generate char* names for layers and extensions
-    std::vector<const char*> CharExtensions;
-    for (const auto& Extension : InstanceExtensions)
-    {
-        CharExtensions.push_back(Extension.c_str());
-    }
-    std::vector<const char*> CharLayers;
-    for (const auto& Layer : ValidationLayers)
-    {
-        CharLayers.push_back(Layer.c_str());
-    }
-
-    CreateInfo.enabledExtensionCount = static_cast<uint32_t>(InstanceExtensions.size());
-    CreateInfo.ppEnabledExtensionNames = CharExtensions.data();
-
-    if (!ValidationLayers.empty())
-    {
-        CreateInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
-        CreateInfo.ppEnabledLayerNames = CharLayers.data();
-
-        DebugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-        DebugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-        DebugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-        DebugCreateInfo.pfnUserCallback = DebugCallback;
-
-        CreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &DebugCreateInfo;
-    }
-    else
-    {
-        CreateInfo.enabledLayerCount = 0;
-
-        CreateInfo.pNext = nullptr;
-    }
-
-    if (vkCreateInstance(&CreateInfo, nullptr, &Instance) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create instance!");
-    }
+    Instance = V::CreateInstance("Hello Triangle", {1, 0, 0}, "No Engine", {1, 0, 0}, VK_API_VERSION_1_0, InstanceCreationOptions);
 }
 
 void FContext::SetupDebugMessenger()
 {
-    if (ValidationLayers.empty())
+    if (!DebugMessenger)
     {
         return;
     }
 
-    FunctionLoader->vkCreateDebugUtilsMessengerEXT(Instance, &DebugCreateInfo, nullptr, &DebugMessenger);
+    FunctionLoader->vkCreateDebugUtilsMessengerEXT(Instance, &DebugUtilsMessengerCreateInfoEXT, nullptr, &DebugMessenger);
 }
 
 void FContext::CreateSurface()
@@ -410,14 +344,14 @@ void FContext::CreateLogicalDevice()
     CreateInfo.ppEnabledExtensionNames = CharExtensions.data();
 
     std::vector<const char*> CharLayers;
-    for (const auto& Layer : ValidationLayers)
+    for (const auto& Layer : InstanceCreationOptions.Layers)
     {
         CharLayers.push_back(Layer.c_str());
     }
 
-    if (!ValidationLayers.empty())
+    if (!InstanceCreationOptions.Layers.empty())
     {
-        CreateInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
+        CreateInfo.enabledLayerCount = static_cast<uint32_t>(InstanceCreationOptions.Layers.size());
         CreateInfo.ppEnabledLayerNames = CharLayers.data();
     }
     else
@@ -1362,7 +1296,7 @@ void FContext::CleanUp()
     CommandBufferManager = nullptr;
     vkDestroyDevice(LogicalDevice, nullptr);
 
-    if (!ValidationLayers.empty())
+    if (DebugMessenger)
     {
         DestroyDebugUtilsMessengerEXT();
     }

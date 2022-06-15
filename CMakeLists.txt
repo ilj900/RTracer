@@ -72,6 +72,8 @@ set(SOURCE
 set(INCLUDE
         ${ECS_SOURCE}
         src/controller.h
+        vulkan_helpers/vulkan_wrappers.h
+        vulkan_helpers/vulkan_wrappers.cpp
         vulkan_helpers/context.h
         vulkan_helpers/image.h
         vulkan_helpers/resource_allocation.h
