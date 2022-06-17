@@ -184,72 +184,16 @@ bool FContext::CheckDeviceExtensionsSupport(VkPhysicalDevice Device)
     return RequiredExtensions.empty();
 }
 
-bool FContext::CheckDeviceQueueSupport(VkPhysicalDevice Device)
+bool FContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice)
 {
-    uint32_t QueueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(Device, &QueueFamilyCount, nullptr);
-
-    std::vector<VkQueueFamilyProperties> QueueFamilyProperties(QueueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(Device, &QueueFamilyCount, QueueFamilyProperties.data());
-
-    for (uint32_t i = 0; i < QueueFamilyCount; ++i) {
-
-        if (GraphicsQueueIndex == UINT32_MAX) {
-            if (bGraphicsCapabilityRequired) {
-                if ((QueueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == VK_QUEUE_GRAPHICS_BIT) {
-                    GraphicsQueueIndex = i;
-                }
-            }
-        }
-
-        if (ComputeQueueIndex == UINT32_MAX) {
-            if (bComputeCapabilityRequired) {
-                if ((QueueFamilyProperties[i].queueFlags & VK_QUEUE_COMPUTE_BIT) == VK_QUEUE_COMPUTE_BIT) {
-                    GraphicsQueueIndex = i;
-                }
-            }
-        }
-
-        if (TransferQueueIndex == UINT32_MAX) {
-            if (bTransferCapabilityRequired) {
-                if ((QueueFamilyProperties[i].queueFlags & VK_QUEUE_TRANSFER_BIT) == VK_QUEUE_TRANSFER_BIT) {
-                    TransferQueueIndex = i;
-                }
-            }
-        }
-
-        if (SparseBindingQueueIndex == UINT32_MAX) {
-            if (bSparseBindingCapabilityRequired) {
-                if ((QueueFamilyProperties[i].queueFlags & VK_QUEUE_SPARSE_BINDING_BIT) ==
-                    VK_QUEUE_SPARSE_BINDING_BIT) {
-                    SparseBindingQueueIndex = i;
-                }
-            }
-        }
-
-        if (PresentQueueIndex == UINT32_MAX) {
-            if (bPresentCapabilityRequired) {
-                VkBool32 PresentSupport = false;
-
-                vkGetPhysicalDeviceSurfaceSupportKHR(Device, i, Surface, &PresentSupport);
-
-                if (PresentSupport) {
-                    PresentQueueIndex = i;
-                }
-            }
-        }
-    }
-
-    if ((bGraphicsCapabilityRequired && (GraphicsQueueIndex == UINT32_MAX)) ||
-        (bComputeCapabilityRequired && (ComputeQueueIndex == UINT32_MAX)) ||
-        (bTransferCapabilityRequired && (TransferQueueIndex == UINT32_MAX)) ||
-        (bSparseBindingCapabilityRequired && (SparseBindingQueueIndex == UINT32_MAX)) ||
-        (bPresentCapabilityRequired && (PresentQueueIndex == UINT32_MAX)))
+    bool GraphicsQueueSupported = V::CheckQueueTypeSupport(PhysicalDevice, VK_QUEUE_GRAPHICS_BIT, GraphicsQueueIndex);
+    bool PresentQueueSupported = V::CheckPresentQueueSupport(PhysicalDevice, Surface, PresentQueueIndex);
+    if (GraphicsQueueSupported && PresentQueueSupported)
     {
-        return false;
+        return true;
     }
 
-    return true;
+    return false;
 }
 
 void FContext::CreateLogicalDevice()

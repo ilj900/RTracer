@@ -170,5 +170,53 @@ namespace V
             return VK_SAMPLE_COUNT_1_BIT;
         }
     }
+
+    bool CheckQueueTypeSupport(VkPhysicalDevice PhysicalDevice, VkQueueFlagBits Type, uint32_t& QueueFamilyIndex)
+    {
+        /// Fetch all queue families
+        uint32_t QueueFamilyCount = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &QueueFamilyCount, nullptr);
+
+        std::vector<VkQueueFamilyProperties> QueueFamilyProperties(QueueFamilyCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &QueueFamilyCount, QueueFamilyProperties.data());
+
+        /// If any queue family has appropriate flag, then the queue is supported
+        for (uint32_t i = 0; i < QueueFamilyCount; ++i)
+        {
+            if ((QueueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == VK_QUEUE_GRAPHICS_BIT) {
+                QueueFamilyIndex = i;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool CheckPresentQueueSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface, uint32_t& QueueFamilyIndex)
+    {
+        /// Fetch all queue families
+        uint32_t QueueFamilyCount = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &QueueFamilyCount, nullptr);
+
+        std::vector<VkQueueFamilyProperties> QueueFamilyProperties(QueueFamilyCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &QueueFamilyCount, QueueFamilyProperties.data());
+
+        /// If any queue family has appropriate flag, then the queue is supported
+        for (uint32_t i = 0; i < QueueFamilyCount; ++i)
+        {
+            VkBool32 PresentSupport = false;
+
+            vkGetPhysicalDeviceSurfaceSupportKHR(PhysicalDevice, i, Surface, &PresentSupport);
+
+            if (PresentSupport)
+            {
+                QueueFamilyIndex = i;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 }
 
