@@ -48,6 +48,7 @@ namespace V
     };
 
     VkInstance CreateInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FInstanceCreationOptions& Options);
+    VkSampleCountFlagBits GetMaxMsaa(VkPhysicalDevice PhysicalDevice);
 
     template <class T>
     T LoadInstanceFunction(const std::string& FunctionName, VkInstance Instance)

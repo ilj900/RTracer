@@ -163,40 +163,7 @@ void FContext::PickPhysicalDevice()
 
 void FContext::QueuePhysicalDeviceProperties()
 {
-    VkPhysicalDeviceProperties PhysicalDeviceProperties;
-
-    vkGetPhysicalDeviceProperties(PhysicalDevice, &PhysicalDeviceProperties);
-
-    VkSampleCountFlags Count = PhysicalDeviceProperties.limits.framebufferColorSampleCounts & PhysicalDeviceProperties.limits.framebufferDepthSampleCounts;
-
-    if (Count & VK_SAMPLE_COUNT_64_BIT)
-    {
-        MSAASamples = VK_SAMPLE_COUNT_64_BIT;
-    }
-    else if (Count & VK_SAMPLE_COUNT_32_BIT)
-    {
-        MSAASamples = VK_SAMPLE_COUNT_32_BIT;
-    }
-    else if (Count & VK_SAMPLE_COUNT_16_BIT)
-    {
-        MSAASamples = VK_SAMPLE_COUNT_16_BIT;
-    }
-    else if (Count & VK_SAMPLE_COUNT_8_BIT)
-    {
-        MSAASamples = VK_SAMPLE_COUNT_8_BIT;
-    }
-    else if (Count & VK_SAMPLE_COUNT_4_BIT)
-    {
-        MSAASamples = VK_SAMPLE_COUNT_4_BIT;
-    }
-    else if (Count & VK_SAMPLE_COUNT_2_BIT)
-    {
-        MSAASamples = VK_SAMPLE_COUNT_2_BIT;
-    }
-    else
-    {
-        MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-    }
+    MSAASamples = V::GetMaxMsaa(PhysicalDevice);
 }
 
 bool FContext::CheckDeviceExtensionsSupport(VkPhysicalDevice Device)
