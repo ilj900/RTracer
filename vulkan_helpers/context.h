@@ -151,15 +151,7 @@ public:
     const int MAX_FRAMES_IN_FLIGHT = 2;
     bool bFramebufferResized = false;
 
-    bool bGraphicsCapabilityRequired = true;
     uint32_t GraphicsQueueIndex = UINT32_MAX;
-    bool bComputeCapabilityRequired = false;
-    uint32_t ComputeQueueIndex = UINT32_MAX;
-    bool bTransferCapabilityRequired = false;
-    uint32_t TransferQueueIndex = UINT32_MAX;
-    bool bSparseBindingCapabilityRequired = false;
-    uint32_t SparseBindingQueueIndex = UINT32_MAX;
-    bool bPresentCapabilityRequired = true;
     uint32_t PresentQueueIndex = UINT32_MAX;
 
     std::string ModelPath = "../models/viking_room/viking_room.obj";

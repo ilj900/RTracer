@@ -206,21 +206,6 @@ void FContext::CreateLogicalDevice()
         UniqueQueueFamilies.insert(GraphicsQueueIndex);
     }
 
-    if (ComputeQueueIndex != UINT32_MAX)
-    {
-        UniqueQueueFamilies.insert(ComputeQueueIndex);
-    }
-
-    if (TransferQueueIndex != UINT32_MAX)
-    {
-        UniqueQueueFamilies.insert(TransferQueueIndex);
-    }
-
-    if (SparseBindingQueueIndex != UINT32_MAX)
-    {
-        UniqueQueueFamilies.insert(SparseBindingQueueIndex);
-    }
-
     if (PresentQueueIndex != UINT32_MAX)
     {
         UniqueQueueFamilies.insert(PresentQueueIndex);
@@ -275,27 +260,12 @@ void FContext::CreateLogicalDevice()
         throw std::runtime_error("Failed to create logical device!");
     }
 
-    if (bGraphicsCapabilityRequired)
+    if (GraphicsQueueIndex != UINT32_MAX)
     {
         vkGetDeviceQueue(LogicalDevice, GraphicsQueueIndex, 0, &GraphicsQueue);
     }
 
-    if (bComputeCapabilityRequired)
-    {
-        vkGetDeviceQueue(LogicalDevice, ComputeQueueIndex, 0, &ComputeQueue);
-    }
-
-    if (bTransferCapabilityRequired)
-    {
-        vkGetDeviceQueue(LogicalDevice, TransferQueueIndex, 0, &TransferQueue);
-    }
-
-    if (bSparseBindingCapabilityRequired)
-    {
-        vkGetDeviceQueue(LogicalDevice, SparseBindingQueueIndex, 0, &SparseBindingQueue);
-    }
-
-    if (bPresentCapabilityRequired)
+    if (PresentQueueIndex != UINT32_MAX)
     {
         vkGetDeviceQueue(LogicalDevice, PresentQueueIndex, 0, &PresentQueue);
     }
