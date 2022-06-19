@@ -218,5 +218,18 @@ namespace V
         return false;
     }
 
+    std::vector<VkPhysicalDevice> GetAllPhysicalDevices(VkInstance Instance)
+    {
+        uint32_t PhysicalDeviceCount = 0;
+        vkEnumeratePhysicalDevices(Instance, &PhysicalDeviceCount, nullptr);
+
+        assert(PhysicalDeviceCount && "Failed to find GPUs with Vulkan support!");
+
+        std::vector<VkPhysicalDevice> PhysicalDevices(PhysicalDeviceCount);
+        vkEnumeratePhysicalDevices(Instance, &PhysicalDeviceCount, PhysicalDevices.data());
+
+        return PhysicalDevices;
+    }
+
 }
 

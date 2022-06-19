@@ -53,6 +53,8 @@ namespace V
     bool CheckQueueTypeSupport(VkPhysicalDevice PhysicalDevice, VkQueueFlagBits Type, uint32_t& QueueFamilyIndex);
     bool CheckPresentQueueSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface, uint32_t& QueueFamilyIndex);
 
+    std::vector<VkPhysicalDevice> GetAllPhysicalDevices(VkInstance Instance);
+
     template <class T>
     T LoadInstanceFunction(const std::string& FunctionName, VkInstance Instance)
     {

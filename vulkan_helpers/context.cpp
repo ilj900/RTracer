@@ -134,18 +134,9 @@ void FContext::CreateSurface()
 
 void FContext::PickPhysicalDevice()
 {
-    uint32_t DeviceCount = 0;
-    vkEnumeratePhysicalDevices(Instance, &DeviceCount, nullptr);
+    auto PhysicalDevices = V::GetAllPhysicalDevices(Instance);
 
-    if (DeviceCount == 0)
-    {
-        throw std::runtime_error("Failed to find GPUs with Vulkan support!");
-    }
-
-    std::vector<VkPhysicalDevice> Devices(DeviceCount);
-    vkEnumeratePhysicalDevices(Instance, &DeviceCount, Devices.data());
-
-    for (const auto& Device : Devices)
+    for (const auto& Device : PhysicalDevices)
     {
         if (CheckDeviceExtensionsSupport(Device) && CheckDeviceQueueSupport(Device))
         {
