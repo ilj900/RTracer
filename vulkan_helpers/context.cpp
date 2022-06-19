@@ -136,11 +136,13 @@ void FContext::PickPhysicalDevice()
 {
     auto PhysicalDevices = V::GetAllPhysicalDevices(Instance);
 
-    for (const auto& Device : PhysicalDevices)
+    for (const auto& PhysicalDeviceEntry : PhysicalDevices)
     {
-        if (CheckDeviceExtensionsSupport(Device) && CheckDeviceQueueSupport(Device))
+        if (V::CheckDeviceExtensionSupport(PhysicalDeviceEntry, DeviceExtensions)
+        && V::CheckQueueTypeSupport(PhysicalDeviceEntry, VK_QUEUE_GRAPHICS_BIT, GraphicsQueueIndex)
+        && V::CheckPresentQueueSupport(PhysicalDeviceEntry, Surface, PresentQueueIndex))
         {
-            PhysicalDevice = Device;
+            PhysicalDevice = PhysicalDeviceEntry;
             QueuePhysicalDeviceProperties();
             break;
         }
@@ -155,36 +157,6 @@ void FContext::PickPhysicalDevice()
 void FContext::QueuePhysicalDeviceProperties()
 {
     MSAASamples = V::GetMaxMsaa(PhysicalDevice);
-}
-
-bool FContext::CheckDeviceExtensionsSupport(VkPhysicalDevice Device)
-{
-    uint32_t ExtensionCount = 0;
-    vkEnumerateDeviceExtensionProperties(Device, nullptr, &ExtensionCount, nullptr);
-
-    std::vector<VkExtensionProperties>AvailableExtensions(ExtensionCount);
-    vkEnumerateDeviceExtensionProperties(Device, nullptr, &ExtensionCount, AvailableExtensions.data());
-
-    std::set<std::string> RequiredExtensions(DeviceExtensions.begin(), DeviceExtensions.end());
-
-    for (const auto& Extension : AvailableExtensions)
-    {
-        RequiredExtensions.erase(Extension.extensionName);
-    }
-
-    return RequiredExtensions.empty();
-}
-
-bool FContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice)
-{
-    bool GraphicsQueueSupported = V::CheckQueueTypeSupport(PhysicalDevice, VK_QUEUE_GRAPHICS_BIT, GraphicsQueueIndex);
-    bool PresentQueueSupported = V::CheckPresentQueueSupport(PhysicalDevice, Surface, PresentQueueIndex);
-    if (GraphicsQueueSupported && PresentQueueSupported)
-    {
-        return true;
-    }
-
-    return false;
 }
 
 void FContext::CreateLogicalDevice()

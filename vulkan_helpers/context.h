@@ -70,9 +70,6 @@ public:
     void LoadDataIntoBuffer(FBuffer &Buffer, void* Data, size_t Size);
     void FreeData(FBuffer Buffer);
 
-    bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device);
-    bool CheckDeviceQueueSupport(VkPhysicalDevice Device);
-
 public:
     V::FInstanceCreationOptions InstanceCreationOptions{};
 

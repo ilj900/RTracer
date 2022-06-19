@@ -1,6 +1,7 @@
 #include "vulkan_wrappers.h"
 
 #include <cassert>
+#include <set>
 
 namespace V
 {
@@ -229,6 +230,24 @@ namespace V
         vkEnumeratePhysicalDevices(Instance, &PhysicalDeviceCount, PhysicalDevices.data());
 
         return PhysicalDevices;
+    }
+
+    bool CheckDeviceExtensionSupport(VkPhysicalDevice PhysicalDevice, std::vector<std::string> RequiredDeviceExtensions)
+    {
+        uint32_t ExtensionCount = 0;
+        vkEnumerateDeviceExtensionProperties(PhysicalDevice, nullptr, &ExtensionCount, nullptr);
+
+        std::vector<VkExtensionProperties>AvailableExtensions(ExtensionCount);
+        vkEnumerateDeviceExtensionProperties(PhysicalDevice, nullptr, &ExtensionCount, AvailableExtensions.data());
+
+        std::set<std::string> RequiredExtensions(RequiredDeviceExtensions.begin(), RequiredDeviceExtensions.end());
+
+        for (const auto& Extension : AvailableExtensions)
+        {
+            RequiredExtensions.erase(Extension.extensionName);
+        }
+
+        return RequiredExtensions.empty();
     }
 
 }

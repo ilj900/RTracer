@@ -52,6 +52,7 @@ namespace V
     /// Check whether device support the requested queue type and if it does fills in QueueFamilyIndex
     bool CheckQueueTypeSupport(VkPhysicalDevice PhysicalDevice, VkQueueFlagBits Type, uint32_t& QueueFamilyIndex);
     bool CheckPresentQueueSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface, uint32_t& QueueFamilyIndex);
+    bool CheckDeviceExtensionSupport(VkPhysicalDevice PhysicalDevice, std::vector<std::string> RequiredDeviceExtensions);
 
     std::vector<VkPhysicalDevice> GetAllPhysicalDevices(VkInstance Instance);
 
