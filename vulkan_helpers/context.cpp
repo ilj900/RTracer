@@ -631,7 +631,7 @@ void FContext::CreateUniformBuffers()
 void FContext::CreateDescriptorPool()
 {
     auto ModelsCount = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>()->Size();
-    auto NumberOfSwapChainImages = Swapchain->Size();
+    uint32_t NumberOfSwapChainImages = static_cast<uint32_t>(Swapchain->Size());
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
     DescriptorSetManager->AddDescriptorSet(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, NumberOfSwapChainImages);
@@ -648,30 +648,31 @@ void FContext::CreateDescriptorSet()
     /// Create descriptor sets
     DescriptorSetManager->CreateAllDescriptorSets();
 
-    for (size_t i = 0; i < Swapchain->Size(); ++i)
+    uint32_t NumberOfSwapChainImages = static_cast<uint32_t>(Swapchain->Size());
+
+    for (uint32_t i = 0; i < Swapchain->Size(); ++i)
     {
         uint32_t j = 0;
         for (auto Mesh : *MeshSystem)
         {
             VkDescriptorBufferInfo TransformBufferInfo{};
             TransformBufferInfo.buffer = DeviceTransformBuffers[i].Buffer;
-            TransformBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceTransformComponent) * j;
+            TransformBufferInfo.offset = static_cast<uint32_t>(sizeof(ECS::COMPONENTS::FDeviceTransformComponent) * j);
             TransformBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceTransformComponent);
-            DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, LAYOUTS::TRANSFORM_LAYOUT_NAME, j * Swapchain->Size() + i, TransformBufferInfo);
+            DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, LAYOUTS::TRANSFORM_LAYOUT_NAME, j * NumberOfSwapChainImages + i, TransformBufferInfo);
 
             VkDescriptorBufferInfo RenderableBufferInfo{};
             RenderableBufferInfo.buffer = DeviceRenderableBuffers[i].Buffer;
-            RenderableBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent) * j;
+            RenderableBufferInfo.offset = static_cast<uint32_t>(sizeof(ECS::COMPONENTS::FDeviceRenderableComponent) * j);
             RenderableBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent);
-            DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, LAYOUTS::RENDERABLE_LAYOUT_NAME, j * Swapchain->Size() + i, RenderableBufferInfo);
+            DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, LAYOUTS::RENDERABLE_LAYOUT_NAME, j * NumberOfSwapChainImages + i, RenderableBufferInfo);
 
             ++j;
         }
     }
 
-    for (size_t i = 0; i < Swapchain->Size(); ++i)
+    for (uint32_t i = 0; i < Swapchain->Size(); ++i)
     {
-
         VkDescriptorBufferInfo CameraBufferInfo{};
         CameraBufferInfo.buffer = DeviceCameraBuffers[i].Buffer;
         CameraBufferInfo.offset = 0;
@@ -690,7 +691,7 @@ void FContext::CreateCommandBuffers()
 {
     CommandBuffers.resize(SwapChainFramebuffers.size());
 
-    for (std::size_t i = 0; i <CommandBuffers.size(); ++i)
+    for (std::uint32_t i = 0; i <CommandBuffers.size(); ++i)
     {
         CommandBuffers[i] = CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
@@ -722,7 +723,7 @@ void FContext::CreateCommandBuffers()
             for (auto Entity : *MeshSystem)
             {
                 vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipelineLayout, 1, 1,
-                                        &DescriptorSetManager->GetSet(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, j * Swapchain->Size() + i), 0,
+                                        &DescriptorSetManager->GetSet(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, j * static_cast<uint32_t>(Swapchain->Size()) + i), 0,
                                         nullptr);
 
                 MeshSystem->Bind(Entity, CommandBuffer);

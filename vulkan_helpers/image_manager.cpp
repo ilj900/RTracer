@@ -53,9 +53,9 @@ void FImageManager::LoadImageFromFile(const std::string& ImageName, const std::s
 void FImageManager::CreateImage(const std::string& ImageName, uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties, VkImageAspectFlags AspectFlags)
 {
     Images.emplace_back(ImageName, Width, Height, bMipMapsRequired, NumSamples, Format, Tiling, Usage, Properties, AspectFlags, Context->LogicalDevice);
-    auto ImageHash = Images.back().Image.GetHash();
-    HashToIndexMap[ImageHash] = Images.size() - 1;
-    NameToHashMap[ImageName] = ImageHash;
+    auto ImageHash = static_cast<uint32_t>(Images.back().Image.GetHash());
+    HashToIndexMap[ImageHash] = static_cast<uint32_t>(Images.size() - 1);
+    NameToHashMap[ImageName] = static_cast<uint32_t>(ImageHash);
 }
 
 void FImageManager::RemoveImage(const std::string& ImageName)

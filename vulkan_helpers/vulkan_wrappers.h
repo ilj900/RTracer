@@ -49,6 +49,7 @@ namespace V
 
     VkInstance CreateInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FInstanceCreationOptions& Options);
     VkSampleCountFlagBits GetMaxMsaa(VkPhysicalDevice PhysicalDevice);
+    /// Check whether device support the requested queue type and if it does fills in QueueFamilyIndex
     bool CheckQueueTypeSupport(VkPhysicalDevice PhysicalDevice, VkQueueFlagBits Type, uint32_t& QueueFamilyIndex);
     bool CheckPresentQueueSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface, uint32_t& QueueFamilyIndex);
 

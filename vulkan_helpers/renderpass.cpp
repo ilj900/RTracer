@@ -65,10 +65,10 @@ void FRenderPass::Construct(VkDevice LogicalDevice)
 
     AllAttachments.insert(AllAttachments.end(), ColorAttachmentDescriptions.begin(), ColorAttachmentDescriptions.end());
 
-    uint32_t DepthAttachmentOffset = AllAttachments.size();
+    uint32_t DepthAttachmentOffset = static_cast<uint32_t>(AllAttachments.size());
     AllAttachments.insert(AllAttachments.end(), DepthStencilAttachmentDescriptions.begin(), DepthStencilAttachmentDescriptions.end());
 
-    uint32_t  ResolvedAttachmentOffset = AllAttachments.size();
+    uint32_t  ResolvedAttachmentOffset = static_cast<uint32_t>(AllAttachments.size());
     AllAttachments.insert(AllAttachments.end(), ResolvedAttachmentDescriptions.begin(), ResolvedAttachmentDescriptions.end());
 
     std::vector<VkAttachmentReference> ColorAttachmentReferences(ColorAttachmentDescriptions.size());
@@ -100,7 +100,7 @@ void FRenderPass::Construct(VkDevice LogicalDevice)
 
     VkSubpassDescription Subpass{};
     Subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    Subpass.colorAttachmentCount = ColorAttachmentReferences.size();
+    Subpass.colorAttachmentCount = static_cast<uint32_t>(ColorAttachmentReferences.size());
     Subpass.pColorAttachments = ColorAttachmentReferences.data();
     Subpass.pDepthStencilAttachment = &DepthAttachmentReference;
     Subpass.pResolveAttachments = ResolvedAttachmentReferences.data();

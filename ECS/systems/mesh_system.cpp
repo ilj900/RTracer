@@ -75,7 +75,7 @@ namespace ECS
 
         uint32_t FMeshSystem::Size()
         {
-            return Entities.size();
+            return static_cast<uint32_t>(Entities.size());
         }
 
         void FMeshSystem::FreeAllDeviceData()
