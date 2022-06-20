@@ -26,6 +26,32 @@ namespace V
         }
     }
 
+    void FLogicalDeviceOptions::AddLayer(const std::string& LayerName)
+    {
+        Layers.push_back(LayerName);
+    }
+
+    void FLogicalDeviceOptions::RequestQueueSupport(uint32_t QueueFamilyIndex)
+    {
+        QueueFamilyIndices.emplace(QueueFamilyIndex);
+    }
+
+    void FLogicalDeviceOptions::AddDeviceExtension(const std::string& ExtensionName, void* ExtensionStructure, uint32_t ExtensionStructureSize)
+    {
+        if (ExtensionStructure)
+        {
+            Extensions.push_back({ExtensionName, ExtensionStructureSize, ExtensionsData.size()});
+
+            auto StartingPosition = ExtensionsData.size();
+            ExtensionsData.resize(ExtensionsData.size() + ExtensionStructureSize);
+            memcpy(&ExtensionsData[StartingPosition], ExtensionStructure, ExtensionStructureSize);
+        }
+        else
+        {
+            Extensions.push_back({ExtensionName, 0, 0});
+        }
+    }
+
     /// Vulkan main functionality functions
 
     VkInstance CreateInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FInstanceCreationOptions& Options)
@@ -82,13 +108,6 @@ namespace V
         {
             CreateInfo.enabledLayerCount = 0;
         }
-
-        /// Just a utility structure
-        struct BaseVulkanStructure
-        {
-            VkStructureType                         sType;
-            const void*                             pNext;
-        };
 
         /// Process instance extensions
         std::vector<const char*> CharExtensions;
@@ -248,6 +267,91 @@ namespace V
         }
 
         return RequiredExtensions.empty();
+    }
+
+    VkDevice CreateLogicalDevice(VkPhysicalDevice PhysicalDevice, FLogicalDeviceOptions& Options)
+    {
+        std::vector<VkDeviceQueueCreateInfo> QueueCreateInfos;
+
+        float QueuePriority = 1.f;
+        for (auto QueueFamilyIndex : Options.QueueFamilyIndices)
+        {
+            VkDeviceQueueCreateInfo QueueCreateInfo{};
+            QueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            QueueCreateInfo.queueFamilyIndex = QueueFamilyIndex;
+            QueueCreateInfo.queueCount = 1;
+            QueueCreateInfo.pQueuePriorities = &QueuePriority;
+            QueueCreateInfos.push_back(QueueCreateInfo);
+        }
+
+        VkPhysicalDeviceFeatures DeviceFeatures{};
+        DeviceFeatures.samplerAnisotropy = VK_TRUE;
+        DeviceFeatures.sampleRateShading = VK_TRUE;
+
+        VkDeviceCreateInfo CreateInfo{};
+        CreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        CreateInfo.pQueueCreateInfos = QueueCreateInfos.data();
+        CreateInfo.queueCreateInfoCount = static_cast<uint32_t>(QueueCreateInfos.size());
+
+        /// Process device extensions
+        std::vector<const char*> CharExtensions;
+        bool bFirstExtension = true;
+        for (uint32_t i = 0; i < Options.Extensions.size(); ++i)
+        {
+            /// Fetch extension
+            auto& Extension = Options.Extensions[i];
+            /// Push extension name to the extension list
+            CharExtensions.push_back(Extension.ExtensionName.c_str());
+            /// If this extension has a structure that was passed as argument
+            if (Extension.ExtensionStructureSize)
+            {
+                /// If it's first extension
+                if (bFirstExtension)
+                {
+                    /// Make the CreateInfo pNext point to this structure
+                    CreateInfo.pNext = &Options.ExtensionsData[Extension.ExtensionStructureOffset];
+                    /// No longer first extension
+                    bFirstExtension = false;
+                }
+                else
+                {
+                    /// Fetch previous extension
+                    auto& PreviousExtension = Options.Extensions[i-1];
+                    /// Fetch data structure of the previous extension
+                    BaseVulkanStructure* PreviousExtensionStructure = reinterpret_cast<BaseVulkanStructure*>(&Options.ExtensionsData[PreviousExtension.ExtensionStructureOffset]);
+                    /// Make it point to the current one
+                    PreviousExtensionStructure->pNext = &Extension;
+                }
+            }
+        }
+
+        CreateInfo.pEnabledFeatures = &DeviceFeatures;
+        CreateInfo.enabledExtensionCount = static_cast<uint32_t>(Options.Extensions.size());
+        CreateInfo.ppEnabledExtensionNames = CharExtensions.data();
+
+        std::vector<const char*> CharLayers;
+        for (const auto& Layer : Options.Layers)
+        {
+            CharLayers.push_back(Layer.c_str());
+        }
+
+        if (!Options.Layers.empty())
+        {
+            CreateInfo.enabledLayerCount = static_cast<uint32_t>(Options.Layers.size());
+            CreateInfo.ppEnabledLayerNames = CharLayers.data();
+        }
+        else
+        {
+            CreateInfo.enabledLayerCount = 0;
+        }
+
+        VkDevice LogicalDevice = nullptr;
+
+        VkResult Result = vkCreateDevice(PhysicalDevice, &CreateInfo, nullptr, &LogicalDevice);
+
+        assert((Result == VK_SUCCESS) && "Failed to create logical device!");
+        
+        return LogicalDevice;
     }
 
 }

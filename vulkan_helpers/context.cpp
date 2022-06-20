@@ -148,10 +148,7 @@ void FContext::PickPhysicalDevice()
         }
     }
 
-    if (PhysicalDevice == VK_NULL_HANDLE)
-    {
-        throw std::runtime_error("Failed to find a suitable GPU!");
-    }
+    assert(PhysicalDevice&& "Failed to find a suitable GPU!");
 }
 
 void FContext::QueuePhysicalDeviceProperties()
@@ -161,67 +158,16 @@ void FContext::QueuePhysicalDeviceProperties()
 
 void FContext::CreateLogicalDevice()
 {
-    std::vector<VkDeviceQueueCreateInfo> QueueCreateInfos;
-    std::set<uint32_t> UniqueQueueFamilies{};
-
-    if (GraphicsQueueIndex != UINT32_MAX)
+    V::FLogicalDeviceOptions Options{};
+    for (auto& DeviceExtension : DeviceExtensions)
     {
-        UniqueQueueFamilies.insert(GraphicsQueueIndex);
+        Options.AddDeviceExtension(DeviceExtension);
     }
 
-    if (PresentQueueIndex != UINT32_MAX)
-    {
-        UniqueQueueFamilies.insert(PresentQueueIndex);
-    }
+    Options.RequestQueueSupport(GraphicsQueueIndex);
+    Options.RequestQueueSupport(PresentQueueIndex);
 
-    float QueuePriority = 1.f;
-    for (auto QueueFamilyIndex : UniqueQueueFamilies)
-    {
-        VkDeviceQueueCreateInfo QueueCreateInfo{};
-        QueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        QueueCreateInfo.queueFamilyIndex = QueueFamilyIndex;
-        QueueCreateInfo.queueCount = 1;
-        QueueCreateInfo.pQueuePriorities = &QueuePriority;
-        QueueCreateInfos.push_back(QueueCreateInfo);
-    }
-
-    VkPhysicalDeviceFeatures DeviceFeatures{};
-    DeviceFeatures.samplerAnisotropy = VK_TRUE;
-    DeviceFeatures.sampleRateShading = VK_TRUE;
-
-    VkDeviceCreateInfo CreateInfo{};
-    CreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    CreateInfo.pQueueCreateInfos = QueueCreateInfos.data();
-    CreateInfo.queueCreateInfoCount = static_cast<uint32_t>(QueueCreateInfos.size());
-    CreateInfo.pEnabledFeatures = &DeviceFeatures;
-    CreateInfo.enabledExtensionCount = static_cast<uint32_t>(DeviceExtensions.size());
-    std::vector<const char*> CharExtensions;
-    for (const auto& Extension : DeviceExtensions)
-    {
-        CharExtensions.push_back(Extension.c_str());
-    }
-    CreateInfo.ppEnabledExtensionNames = CharExtensions.data();
-
-    std::vector<const char*> CharLayers;
-    for (const auto& Layer : InstanceCreationOptions.Layers)
-    {
-        CharLayers.push_back(Layer.c_str());
-    }
-
-    if (!InstanceCreationOptions.Layers.empty())
-    {
-        CreateInfo.enabledLayerCount = static_cast<uint32_t>(InstanceCreationOptions.Layers.size());
-        CreateInfo.ppEnabledLayerNames = CharLayers.data();
-    }
-    else
-    {
-        CreateInfo.enabledLayerCount = 0;
-    }
-
-    if (vkCreateDevice(PhysicalDevice, &CreateInfo, nullptr, &LogicalDevice) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create logical device!");
-    }
+    LogicalDevice = V::CreateLogicalDevice(PhysicalDevice, Options);
 
     if (GraphicsQueueIndex != UINT32_MAX)
     {

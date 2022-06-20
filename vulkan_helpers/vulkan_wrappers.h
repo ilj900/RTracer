@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <set>
 
 struct FVersion3
 {
@@ -23,6 +24,20 @@ auto CheckNotNullptr = [](void* FunctionPointer, const std::string& FunctionName
 
 namespace V
 {
+    /// Just a utility structure
+    struct BaseVulkanStructure
+    {
+        VkStructureType                         sType;
+        const void*                             pNext;
+    };
+
+    struct FExtension
+    {
+        std::string ExtensionName;
+        uint32_t ExtensionStructureSize;
+        size_t ExtensionStructureOffset;
+    };
+
     struct FInstanceCreationOptions
     {
         void AddLayer(const std::string& LayerName);
@@ -35,16 +50,28 @@ namespace V
 
         std::vector<std::string> Layers;
 
-        struct FExtension
-        {
-            std::string ExtensionName;
-            uint32_t ExtensionStructureSize;
-            size_t ExtensionStructureOffset;
-        };
-
         std::vector<FExtension> Extensions;
         std::vector<char> ExtensionsData;
 
+    };
+
+    struct FLogicalDeviceOptions
+    {
+        void AddLayer(const std::string& LayerName);
+        void RequestQueueSupport(uint32_t QueueFamilyIndex);
+
+        /// Add an instance extension, possible with a structure that will be passed in pNext chain. Extension structure should be passed with pNext = nullptr
+        /// \param ExtensionName
+        /// \param ExtensionStructure
+        /// \param ExtensionStructureSize
+        void AddDeviceExtension(const std::string& ExtensionName, void* ExtensionStructure = nullptr, uint32_t ExtensionStructureSize = 0);
+
+        std::set<uint32_t> QueueFamilyIndices{};
+
+        std::vector<std::string> Layers;
+
+        std::vector<FExtension> Extensions;
+        std::vector<char> ExtensionsData;
     };
 
     VkInstance CreateInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FInstanceCreationOptions& Options);
@@ -53,6 +80,7 @@ namespace V
     bool CheckQueueTypeSupport(VkPhysicalDevice PhysicalDevice, VkQueueFlagBits Type, uint32_t& QueueFamilyIndex);
     bool CheckPresentQueueSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface, uint32_t& QueueFamilyIndex);
     bool CheckDeviceExtensionSupport(VkPhysicalDevice PhysicalDevice, std::vector<std::string> RequiredDeviceExtensions);
+    VkDevice CreateLogicalDevice(VkPhysicalDevice PhysicalDevice, FLogicalDeviceOptions& Options);
 
     std::vector<VkPhysicalDevice> GetAllPhysicalDevices(VkInstance Instance);
 

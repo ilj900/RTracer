@@ -94,9 +94,6 @@ public:
 
     // Queues
     VkQueue GraphicsQueue;
-    VkQueue ComputeQueue;
-    VkQueue TransferQueue;
-    VkQueue SparseBindingQueue;
     VkQueue PresentQueue;
 
     // SwapChain
