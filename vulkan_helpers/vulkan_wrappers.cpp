@@ -5,6 +5,71 @@
 
 namespace V
 {
+
+    void FExtensionVector::AddExtension(const std::string& ExtensionName, void* ExtensionStructure, uint32_t ExtensionStructureSize)
+    {
+        /// If there's and extension structure
+        if (ExtensionStructure)
+        {
+            /// Store the extension's data
+            Extensions.push_back({ExtensionName, ExtensionStructureSize, ExtensionsData.size()});
+
+            /// Store the extension's structure data
+            auto StartingPosition = ExtensionsData.size();
+            ExtensionsData.resize(ExtensionsData.size() + ExtensionStructureSize);
+            memcpy(&ExtensionsData[StartingPosition], ExtensionStructure, ExtensionStructureSize);
+        }
+        else
+        {
+            /// Just store the extension name
+            Extensions.push_back({ExtensionName, 0, 0});
+        }
+    }
+
+    void FExtensionVector::BuildPNextChain(BaseVulkanStructure* CreateInfo)
+    {
+        /// Process instance extensions
+        bool bFirstExtension = true;
+        for (uint32_t i = 0; i < Extensions.size(); ++i)
+        {
+            /// Fetch extension
+            auto& Extension = Extensions[i];
+            /// If this extension has a structure that was passed as argument
+            if (Extension.ExtensionStructureSize)
+            {
+                /// If it's first extension
+                if (bFirstExtension)
+                {
+                    /// Make the CreateInfo pNext point to this structure
+                    CreateInfo->pNext = &ExtensionsData[Extension.ExtensionStructureOffset];
+                    /// No longer first extension
+                    bFirstExtension = false;
+                }
+                else
+                {
+                    /// Fetch previous extension
+                    auto& PreviousExtension = Extensions[i-1];
+                    /// Fetch data structure of the previous extension
+                    BaseVulkanStructure* PreviousExtensionStructure = reinterpret_cast<BaseVulkanStructure*>(&ExtensionsData[PreviousExtension.ExtensionStructureOffset]);
+                    /// Make it point to the current one
+                    PreviousExtensionStructure->pNext = &Extension;
+                }
+            }
+        }
+    }
+
+    std::vector<const char*> FExtensionVector::GetExtensionSNamesList()
+    {
+        std::vector<const char*> ExtensionsList;
+
+        for (uint32_t i = 0; i < Extensions.size(); ++i)
+        {
+            ExtensionsList.push_back(Extensions[i].ExtensionName.c_str());
+        }
+
+        return ExtensionsList;
+    }
+
     void FInstanceCreationOptions::AddLayer(const std::string& LayerName)
     {
         Layers.push_back(LayerName);
@@ -12,18 +77,7 @@ namespace V
 
     void FInstanceCreationOptions::AddInstanceExtension(const std::string& ExtensionName, void* ExtensionStructure, uint32_t ExtensionStructureSize)
     {
-        if (ExtensionStructure)
-        {
-            Extensions.push_back({ExtensionName, ExtensionStructureSize, ExtensionsData.size()});
-
-            auto StartingPosition = ExtensionsData.size();
-            ExtensionsData.resize(ExtensionsData.size() + ExtensionStructureSize);
-            memcpy(&ExtensionsData[StartingPosition], ExtensionStructure, ExtensionStructureSize);
-        }
-        else
-        {
-            Extensions.push_back({ExtensionName, 0, 0});
-        }
+        ExtensionVector.AddExtension(ExtensionName, ExtensionStructure, ExtensionStructureSize);
     }
 
     void FLogicalDeviceOptions::AddLayer(const std::string& LayerName)
@@ -38,18 +92,7 @@ namespace V
 
     void FLogicalDeviceOptions::AddDeviceExtension(const std::string& ExtensionName, void* ExtensionStructure, uint32_t ExtensionStructureSize)
     {
-        if (ExtensionStructure)
-        {
-            Extensions.push_back({ExtensionName, ExtensionStructureSize, ExtensionsData.size()});
-
-            auto StartingPosition = ExtensionsData.size();
-            ExtensionsData.resize(ExtensionsData.size() + ExtensionStructureSize);
-            memcpy(&ExtensionsData[StartingPosition], ExtensionStructure, ExtensionStructureSize);
-        }
-        else
-        {
-            Extensions.push_back({ExtensionName, 0, 0});
-        }
+        ExtensionVector.AddExtension(ExtensionName, ExtensionStructure, ExtensionStructureSize);
     }
 
     /// Vulkan main functionality functions
@@ -109,39 +152,10 @@ namespace V
             CreateInfo.enabledLayerCount = 0;
         }
 
-        /// Process instance extensions
-        std::vector<const char*> CharExtensions;
-        bool bFirstExtension = true;
-        for (uint32_t i = 0; i < Options.Extensions.size(); ++i)
-        {
-            /// Fetch extension
-            auto& Extension = Options.Extensions[i];
-            /// Push extension name to the extension list
-            CharExtensions.push_back(Extension.ExtensionName.c_str());
-            /// If this extension has a structure that was passed as argument
-            if (Extension.ExtensionStructureSize)
-            {
-                /// If it's first extension
-                if (bFirstExtension)
-                {
-                    /// Make the CreateInfo pNext point to this structure
-                    CreateInfo.pNext = &Options.ExtensionsData[Extension.ExtensionStructureOffset];
-                    /// No longer first extension
-                    bFirstExtension = false;
-                }
-                else
-                {
-                    /// Fetch previous extension
-                    auto& PreviousExtension = Options.Extensions[i-1];
-                    /// Fetch data structure of the previous extension
-                    BaseVulkanStructure* PreviousExtensionStructure = reinterpret_cast<BaseVulkanStructure*>(&Options.ExtensionsData[PreviousExtension.ExtensionStructureOffset]);
-                    /// Make it point to the current one
-                    PreviousExtensionStructure->pNext = &Extension;
-                }
-            }
-        }
+        Options.ExtensionVector.BuildPNextChain(reinterpret_cast<BaseVulkanStructure*>(&CreateInfo));
+        std::vector<const char*> CharExtensions = Options.ExtensionVector.GetExtensionSNamesList();
 
-        CreateInfo.enabledExtensionCount = static_cast<uint32_t>(Options.Extensions.size());
+        CreateInfo.enabledExtensionCount = static_cast<uint32_t>(Options.ExtensionVector.Extensions.size());
         CreateInfo.ppEnabledExtensionNames = CharExtensions.data();
 
         VkInstance Instance;
@@ -294,39 +308,11 @@ namespace V
         CreateInfo.queueCreateInfoCount = static_cast<uint32_t>(QueueCreateInfos.size());
 
         /// Process device extensions
-        std::vector<const char*> CharExtensions;
-        bool bFirstExtension = true;
-        for (uint32_t i = 0; i < Options.Extensions.size(); ++i)
-        {
-            /// Fetch extension
-            auto& Extension = Options.Extensions[i];
-            /// Push extension name to the extension list
-            CharExtensions.push_back(Extension.ExtensionName.c_str());
-            /// If this extension has a structure that was passed as argument
-            if (Extension.ExtensionStructureSize)
-            {
-                /// If it's first extension
-                if (bFirstExtension)
-                {
-                    /// Make the CreateInfo pNext point to this structure
-                    CreateInfo.pNext = &Options.ExtensionsData[Extension.ExtensionStructureOffset];
-                    /// No longer first extension
-                    bFirstExtension = false;
-                }
-                else
-                {
-                    /// Fetch previous extension
-                    auto& PreviousExtension = Options.Extensions[i-1];
-                    /// Fetch data structure of the previous extension
-                    BaseVulkanStructure* PreviousExtensionStructure = reinterpret_cast<BaseVulkanStructure*>(&Options.ExtensionsData[PreviousExtension.ExtensionStructureOffset]);
-                    /// Make it point to the current one
-                    PreviousExtensionStructure->pNext = &Extension;
-                }
-            }
-        }
+        Options.ExtensionVector.BuildPNextChain(reinterpret_cast<BaseVulkanStructure*>(&CreateInfo));
+        std::vector<const char*> CharExtensions = Options.ExtensionVector.GetExtensionSNamesList();
 
         CreateInfo.pEnabledFeatures = &DeviceFeatures;
-        CreateInfo.enabledExtensionCount = static_cast<uint32_t>(Options.Extensions.size());
+        CreateInfo.enabledExtensionCount = static_cast<uint32_t>(Options.ExtensionVector.Extensions.size());
         CreateInfo.ppEnabledExtensionNames = CharExtensions.data();
 
         std::vector<const char*> CharLayers;
@@ -350,7 +336,7 @@ namespace V
         VkResult Result = vkCreateDevice(PhysicalDevice, &CreateInfo, nullptr, &LogicalDevice);
 
         assert((Result == VK_SUCCESS) && "Failed to create logical device!");
-        
+
         return LogicalDevice;
     }
 

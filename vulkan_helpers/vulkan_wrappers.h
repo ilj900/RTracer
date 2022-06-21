@@ -24,18 +24,30 @@ auto CheckNotNullptr = [](void* FunctionPointer, const std::string& FunctionName
 
 namespace V
 {
-    /// Just a utility structure
+    /// Just a utility structure to simplify access to pNext pointer
     struct BaseVulkanStructure
     {
         VkStructureType                         sType;
         const void*                             pNext;
     };
 
+    /// A structure that represents and extension data parameters
     struct FExtension
     {
         std::string ExtensionName;
         uint32_t ExtensionStructureSize;
         size_t ExtensionStructureOffset;
+    };
+
+    /// A structure used to store extension's parameters and raw extension structure data
+    struct FExtensionVector
+    {
+        void AddExtension(const std::string& ExtensionName, void* ExtensionStructure = nullptr, uint32_t ExtensionStructureSize = 0);
+        void BuildPNextChain(BaseVulkanStructure* CreateInfo);
+        std::vector<const char*> GetExtensionSNamesList();
+
+        std::vector<FExtension> Extensions;
+        std::vector<char> ExtensionsData;
     };
 
     struct FInstanceCreationOptions
@@ -49,10 +61,7 @@ namespace V
         void AddInstanceExtension(const std::string& ExtensionName, void* ExtensionStructure = nullptr, uint32_t ExtensionStructureSize = 0);
 
         std::vector<std::string> Layers;
-
-        std::vector<FExtension> Extensions;
-        std::vector<char> ExtensionsData;
-
+        FExtensionVector ExtensionVector;
     };
 
     struct FLogicalDeviceOptions
@@ -69,9 +78,7 @@ namespace V
         std::set<uint32_t> QueueFamilyIndices{};
 
         std::vector<std::string> Layers;
-
-        std::vector<FExtension> Extensions;
-        std::vector<char> ExtensionsData;
+        FExtensionVector ExtensionVector;
     };
 
     VkInstance CreateInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FInstanceCreationOptions& Options);
@@ -95,7 +102,7 @@ namespace V
     template <class T>
     T LoadDeviceFunction(const std::string& FunctionName, VkDevice Device)
     {
-        T Function = (T) vkGetInstanceProcAddr(Device, FunctionName.c_str());
+        T Function = (T) vkGetDeviceProcAddr(Device, FunctionName.c_str());
         CheckNotNullptr(Function, FunctionName);
         return Function;
     }
