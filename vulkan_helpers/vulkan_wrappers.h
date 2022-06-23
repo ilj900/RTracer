@@ -39,12 +39,22 @@ namespace V
         size_t ExtensionStructureOffset;
     };
 
+    struct FStringStorage
+    {
+        void AddString(const std::string& String);
+
+        std::vector<const char*> GetPointers();
+
+        std::vector<std::string> Strings;
+    };
+
     /// A structure used to store extension's parameters and raw extension structure data
     struct FExtensionVector
     {
         void AddExtension(const std::string& ExtensionName, void* ExtensionStructure = nullptr, uint32_t ExtensionStructureSize = 0);
+        /// Build a chain of pNext data pointers and set's a CreateInfo's pNext to point at it
         void BuildPNextChain(BaseVulkanStructure* CreateInfo);
-        std::vector<const char*> GetExtensionSNamesList();
+        std::vector<const char*> GetExtensionsNamesList();
 
         std::vector<FExtension> Extensions;
         std::vector<char> ExtensionsData;
@@ -53,44 +63,44 @@ namespace V
     struct FInstanceCreationOptions
     {
         void AddLayer(const std::string& LayerName);
+        std::vector<const char*> GetLayers();
 
         /// Add an instance extension, possible with a structure that will be passed in pNext chain. Extension structure should be passed with pNext = nullptr
-        /// \param ExtensionName
-        /// \param ExtensionStructure
-        /// \param ExtensionStructureSize
         void AddInstanceExtension(const std::string& ExtensionName, void* ExtensionStructure = nullptr, uint32_t ExtensionStructureSize = 0);
 
-        std::vector<std::string> Layers;
+        FStringStorage Layers;
         FExtensionVector ExtensionVector;
     };
 
     struct FLogicalDeviceOptions
     {
         void AddLayer(const std::string& LayerName);
+        std::vector<const char*> GetLayers();
+
         void RequestQueueSupport(uint32_t QueueFamilyIndex);
 
         /// Add an instance extension, possible with a structure that will be passed in pNext chain. Extension structure should be passed with pNext = nullptr
-        /// \param ExtensionName
-        /// \param ExtensionStructure
-        /// \param ExtensionStructureSize
         void AddDeviceExtension(const std::string& ExtensionName, void* ExtensionStructure = nullptr, uint32_t ExtensionStructureSize = 0);
 
         std::set<uint32_t> QueueFamilyIndices{};
 
-        std::vector<std::string> Layers;
+        FStringStorage Layers;
         FExtensionVector ExtensionVector;
     };
 
     VkInstance CreateInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FInstanceCreationOptions& Options);
     VkSampleCountFlagBits GetMaxMsaa(VkPhysicalDevice PhysicalDevice);
-    /// Check whether device support the requested queue type and if it does fills in QueueFamilyIndex
+    /// Check whether device supports the requested queue type and if it does fills in QueueFamilyIndex
     bool CheckQueueTypeSupport(VkPhysicalDevice PhysicalDevice, VkQueueFlagBits Type, uint32_t& QueueFamilyIndex);
+    /// Check whether device supports the present queue for the surface, if yes, fills in QueueFamilyIndex
     bool CheckPresentQueueSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface, uint32_t& QueueFamilyIndex);
+    /// Check whether device supports all the extensions from the list
     bool CheckDeviceExtensionSupport(VkPhysicalDevice PhysicalDevice, std::vector<std::string> RequiredDeviceExtensions);
     VkDevice CreateLogicalDevice(VkPhysicalDevice PhysicalDevice, FLogicalDeviceOptions& Options);
-
+    /// Enumerate all physical devices
     std::vector<VkPhysicalDevice> GetAllPhysicalDevices(VkInstance Instance);
 
+    /// Load an instance function
     template <class T>
     T LoadInstanceFunction(const std::string& FunctionName, VkInstance Instance)
     {
@@ -99,6 +109,7 @@ namespace V
         return Function;
     }
 
+    /// Load a device function
     template <class T>
     T LoadDeviceFunction(const std::string& FunctionName, VkDevice Device)
     {

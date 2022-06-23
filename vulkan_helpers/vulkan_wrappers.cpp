@@ -5,6 +5,22 @@
 
 namespace V
 {
+    void FStringStorage::AddString(const std::string& String)
+    {
+        Strings.push_back(String);
+    }
+
+    std::vector<const char*> FStringStorage::GetPointers()
+    {
+        std::vector<const char*> StringVector;
+
+        for (uint32_t i = 0; i < Strings.size(); ++i)
+        {
+            StringVector.push_back(Strings[i].c_str());
+        }
+
+        return StringVector;
+    }
 
     void FExtensionVector::AddExtension(const std::string& ExtensionName, void* ExtensionStructure, uint32_t ExtensionStructureSize)
     {
@@ -28,7 +44,6 @@ namespace V
 
     void FExtensionVector::BuildPNextChain(BaseVulkanStructure* CreateInfo)
     {
-        /// Process instance extensions
         bool bFirstExtension = true;
         for (uint32_t i = 0; i < Extensions.size(); ++i)
         {
@@ -58,12 +73,11 @@ namespace V
         }
     }
 
-    std::vector<const char*> FExtensionVector::GetExtensionSNamesList()
+    std::vector<const char*> FExtensionVector::GetExtensionsNamesList()
     {
-        std::vector<const char*> ExtensionsList;
+        std::vector<const char *> ExtensionsList;
 
-        for (uint32_t i = 0; i < Extensions.size(); ++i)
-        {
+        for (uint32_t i = 0; i < Extensions.size(); ++i) {
             ExtensionsList.push_back(Extensions[i].ExtensionName.c_str());
         }
 
@@ -72,7 +86,12 @@ namespace V
 
     void FInstanceCreationOptions::AddLayer(const std::string& LayerName)
     {
-        Layers.push_back(LayerName);
+        Layers.AddString(LayerName);
+    }
+
+    std::vector<const char*> FInstanceCreationOptions::GetLayers()
+    {
+        return Layers.GetPointers();
     }
 
     void FInstanceCreationOptions::AddInstanceExtension(const std::string& ExtensionName, void* ExtensionStructure, uint32_t ExtensionStructureSize)
@@ -82,7 +101,12 @@ namespace V
 
     void FLogicalDeviceOptions::AddLayer(const std::string& LayerName)
     {
-        Layers.push_back(LayerName);
+        Layers.AddString(LayerName);
+    }
+
+    std::vector<const char*> FLogicalDeviceOptions::GetLayers()
+    {
+        return Layers.GetPointers();
     }
 
     void FLogicalDeviceOptions::RequestQueueSupport(uint32_t QueueFamilyIndex)
@@ -99,6 +123,8 @@ namespace V
 
     VkInstance CreateInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FInstanceCreationOptions& Options)
     {
+        auto InstanceLayers = Options.GetLayers();
+
         /// Check supported Layers
         {
             /// Fetch all available layers
@@ -108,11 +134,11 @@ namespace V
             std::vector<VkLayerProperties> AvailableLayers(LayerCount);
             vkEnumerateInstanceLayerProperties(&LayerCount, AvailableLayers.data());
 
-            for (const auto &Layer : Options.Layers) {
+            for ( auto Layer : InstanceLayers) {
                 bool LayerFound = false;
 
                 for (const auto &LayerProperties : AvailableLayers) {
-                    if (Layer == LayerProperties.layerName) {
+                    if (std::string(Layer) == LayerProperties.layerName) {
                         LayerFound = true;
                         break;
                     }
@@ -134,18 +160,10 @@ namespace V
         CreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         CreateInfo.pApplicationInfo = &AppInfo;
 
-        /// Process instance layers
-        std::vector<const char*> CharLayers;
-
-        for (const auto& Layer : Options.Layers)
+        if (!InstanceLayers.empty())
         {
-            CharLayers.push_back(Layer.c_str());
-        }
-
-        if (!Options.Layers.empty())
-        {
-            CreateInfo.enabledLayerCount = static_cast<uint32_t>(Options.Layers.size());
-            CreateInfo.ppEnabledLayerNames = CharLayers.data();
+            CreateInfo.enabledLayerCount = static_cast<uint32_t>(InstanceLayers.size());
+            CreateInfo.ppEnabledLayerNames = InstanceLayers.data();
         }
         else
         {
@@ -153,7 +171,7 @@ namespace V
         }
 
         Options.ExtensionVector.BuildPNextChain(reinterpret_cast<BaseVulkanStructure*>(&CreateInfo));
-        std::vector<const char*> CharExtensions = Options.ExtensionVector.GetExtensionSNamesList();
+        std::vector<const char*> CharExtensions = Options.ExtensionVector.GetExtensionsNamesList();
 
         CreateInfo.enabledExtensionCount = static_cast<uint32_t>(Options.ExtensionVector.Extensions.size());
         CreateInfo.ppEnabledExtensionNames = CharExtensions.data();
@@ -280,6 +298,7 @@ namespace V
             RequiredExtensions.erase(Extension.extensionName);
         }
 
+        /// If set is empty, then all extensions are supported
         return RequiredExtensions.empty();
     }
 
@@ -309,22 +328,18 @@ namespace V
 
         /// Process device extensions
         Options.ExtensionVector.BuildPNextChain(reinterpret_cast<BaseVulkanStructure*>(&CreateInfo));
-        std::vector<const char*> CharExtensions = Options.ExtensionVector.GetExtensionSNamesList();
+        std::vector<const char*> CharExtensions = Options.ExtensionVector.GetExtensionsNamesList();
 
         CreateInfo.pEnabledFeatures = &DeviceFeatures;
         CreateInfo.enabledExtensionCount = static_cast<uint32_t>(Options.ExtensionVector.Extensions.size());
         CreateInfo.ppEnabledExtensionNames = CharExtensions.data();
 
-        std::vector<const char*> CharLayers;
-        for (const auto& Layer : Options.Layers)
-        {
-            CharLayers.push_back(Layer.c_str());
-        }
+        auto DeviceLayers = Options.GetLayers();
 
-        if (!Options.Layers.empty())
+        if (!DeviceLayers.empty())
         {
-            CreateInfo.enabledLayerCount = static_cast<uint32_t>(Options.Layers.size());
-            CreateInfo.ppEnabledLayerNames = CharLayers.data();
+            CreateInfo.enabledLayerCount = static_cast<uint32_t>(DeviceLayers.size());
+            CreateInfo.ppEnabledLayerNames = DeviceLayers.data();
         }
         else
         {
