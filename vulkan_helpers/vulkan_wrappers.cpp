@@ -355,5 +355,75 @@ namespace V
         return LogicalDevice;
     }
 
+    VkCommandPool CreateCommandPool(VkDevice LogicalDevice, uint32_t QueueIndex)
+    {
+        VkCommandPool CommandPool;
+        VkCommandPoolCreateInfo PoolInfo{};
+        PoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        PoolInfo.queueFamilyIndex = QueueIndex;
+        PoolInfo.flags = 0;
+
+        VkResult  Result = vkCreateCommandPool(LogicalDevice, &PoolInfo, nullptr, &CommandPool);
+
+        assert((Result == VK_SUCCESS) && "Failed to create command pool!");
+
+        return CommandPool;
+    }
+
+    VkCommandBuffer AllocateCommandBuffer(VkDevice LogicalDevice, VkCommandPool CommandPool)
+    {
+        VkCommandBuffer CommandBuffer;
+
+        VkCommandBufferAllocateInfo AllocInfo{};
+        AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        AllocInfo.commandPool = CommandPool;
+        AllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        AllocInfo.commandBufferCount = 1u;
+
+        auto Result = vkAllocateCommandBuffers(LogicalDevice, &AllocInfo, &CommandBuffer);
+        assert((Result == VK_SUCCESS) && "Failed to allocate command buffers!");
+
+        return CommandBuffer;
+    }
+
+    VkCommandBuffer BeginWithAllocation(VkDevice LogicalDevice, VkCommandPool CommandPool)
+    {
+        VkCommandBuffer CommandBuffer = AllocateCommandBuffer(LogicalDevice, CommandPool);
+
+        VkCommandBufferBeginInfo BeginInfo{};
+        BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        BeginInfo.flags = 0;
+
+        vkBeginCommandBuffer(CommandBuffer, &BeginInfo);
+
+        return CommandBuffer;
+    }
+
+    VkCommandBuffer BeginSingleTimeCommand(VkDevice LogicalDevice, VkCommandPool CommandPool)
+    {
+        VkCommandBuffer CommandBuffer = AllocateCommandBuffer(LogicalDevice, CommandPool);
+
+        VkCommandBufferBeginInfo BeginInfo{};
+        BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        BeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+        vkBeginCommandBuffer(CommandBuffer, &BeginInfo);
+
+        return CommandBuffer;
+    }
+
+    void SubmitCommandBuffer(VkDevice LogicalDevice, VkCommandPool CommandPool, VkQueue Queue, VkCommandBuffer &CommandBuffer)
+    {
+        VkSubmitInfo SubmitInfo{};
+        SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        SubmitInfo.commandBufferCount = 1;
+        SubmitInfo.pCommandBuffers = &CommandBuffer;
+
+        vkQueueSubmit(Queue, 1, &SubmitInfo, VK_NULL_HANDLE);
+        vkQueueWaitIdle(Queue);
+
+        vkFreeCommandBuffers(LogicalDevice, CommandPool, 1, &CommandBuffer);
+    }
+
 }
 

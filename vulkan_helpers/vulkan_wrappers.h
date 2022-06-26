@@ -43,6 +43,7 @@ namespace V
     {
         void AddString(const std::string& String);
 
+        /// Returns a vector of pointer to the stored strings
         std::vector<const char*> GetPointers();
 
         std::vector<std::string> Strings;
@@ -99,6 +100,11 @@ namespace V
     VkDevice CreateLogicalDevice(VkPhysicalDevice PhysicalDevice, FLogicalDeviceOptions& Options);
     /// Enumerate all physical devices
     std::vector<VkPhysicalDevice> GetAllPhysicalDevices(VkInstance Instance);
+    VkCommandPool CreateCommandPool(VkDevice LogicalDevice, uint32_t QueueIndex);
+    VkCommandBuffer AllocateCommandBuffer(VkDevice LogicalDevice, VkCommandPool CommandPool);
+    VkCommandBuffer BeginWithAllocation(VkDevice LogicalDevice, VkCommandPool CommandPool);
+    VkCommandBuffer BeginSingleTimeCommand(VkDevice LogicalDevice, VkCommandPool CommandPool);
+    void SubmitCommandBuffer(VkDevice LogicalDevice, VkCommandPool CommandPool, VkQueue Queue, VkCommandBuffer &CommandBuffer);
 
     /// Load an instance function
     template <class T>

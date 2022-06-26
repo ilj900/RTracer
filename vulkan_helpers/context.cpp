@@ -158,6 +158,7 @@ void FContext::QueuePhysicalDeviceProperties()
 
 void FContext::CreateLogicalDevice()
 {
+    /// Fill in the device creation options
     V::FLogicalDeviceOptions Options{};
     for (auto& DeviceExtension : DeviceExtensions)
     {
@@ -169,6 +170,7 @@ void FContext::CreateLogicalDevice()
 
     LogicalDevice = V::CreateLogicalDevice(PhysicalDevice, Options);
 
+    /// Create queues
     if (GraphicsQueueIndex != UINT32_MAX)
     {
         vkGetDeviceQueue(LogicalDevice, GraphicsQueueIndex, 0, &GraphicsQueue);
