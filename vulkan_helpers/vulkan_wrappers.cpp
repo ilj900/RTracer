@@ -1,6 +1,7 @@
 #include "vulkan_wrappers.h"
 
 #include <cassert>
+#include <cmath>
 #include <set>
 
 namespace V
@@ -423,6 +424,105 @@ namespace V
         vkQueueWaitIdle(Queue);
 
         vkFreeCommandBuffers(LogicalDevice, CommandPool, 1, &CommandBuffer);
+    }
+
+    VkImage CreateImage(uint32_t Width, uint32_t Height, uint32_t MipsLevels, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkDevice Device)
+    {
+        VkImage Image;
+
+        VkImageCreateInfo ImageInfo{};
+        ImageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        ImageInfo.imageType = VK_IMAGE_TYPE_2D;
+        ImageInfo.extent.width = Width;
+        ImageInfo.extent.height = Height;
+        ImageInfo.extent.depth = 1;
+        ImageInfo.mipLevels = MipsLevels;
+        ImageInfo.arrayLayers = 1;
+        ImageInfo.format = Format;
+        ImageInfo.tiling = Tiling;
+        ImageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        ImageInfo.usage = Usage;
+        ImageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        ImageInfo.samples = NumSamples;
+
+        auto Result = vkCreateImage(Device, &ImageInfo, nullptr, &Image);
+        assert((Result == VK_SUCCESS) && "Failed to create image!");
+
+        return Image;
+    }
+
+    VkDeviceMemory AllocateMemoryForTheImage(VkImage Image, VkDevice Device, VkMemoryPropertyFlags Properties, uint32_t MemoryTypeIndex)
+    {
+        VkDeviceMemory Memory;
+
+        VkMemoryRequirements MemRequirements;
+        vkGetImageMemoryRequirements(Device, Image, &MemRequirements);
+
+        VkMemoryAllocateInfo AllocInfo{};
+        AllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        AllocInfo.allocationSize = MemRequirements.size;
+        AllocInfo.memoryTypeIndex = MemoryTypeIndex;
+
+        auto Result = vkAllocateMemory(Device, &AllocInfo, nullptr, &Memory);
+        assert((Result == VK_SUCCESS) && "Failed to allocate image memory!");
+
+        return Memory;
+    }
+
+    void BindMemoryToImage(VkDevice Device, VkImage Image, VkDeviceMemory Memory, VkDeviceSize MemoryOffset)
+    {
+        vkBindImageMemory(Device, Image, Memory, MemoryOffset);
+    }
+
+    VkImageView CreateImageView(VkDevice Device, VkImage Image, VkFormat Format, VkImageAspectFlags AspectFlags, uint32_t MipLevelsCount)
+    {
+        VkImageView View;
+
+        VkImageViewCreateInfo ViewInfo{};
+        ViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        ViewInfo.image = Image;
+        ViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        ViewInfo.format = Format;
+        ViewInfo.subresourceRange.aspectMask = AspectFlags;
+        ViewInfo.subresourceRange.baseMipLevel = 0;
+        ViewInfo.subresourceRange.levelCount = MipLevelsCount;
+        ViewInfo.subresourceRange.baseArrayLayer = 0;
+        ViewInfo.subresourceRange.layerCount = 1;
+
+        auto Result = vkCreateImageView(Device, &ViewInfo, nullptr, &View);
+        assert((Result == VK_SUCCESS) && "Failed to create texture image view!");
+
+        return View;
+    }
+
+    uint32_t FindMemoryType(VkPhysicalDeviceMemoryProperties PhysicalDeviceMemoryProperties, uint32_t TypeFilter, VkMemoryPropertyFlags Properties)
+    {
+        for (uint32_t i = 0; i < PhysicalDeviceMemoryProperties.memoryTypeCount; ++i)
+        {
+            if (TypeFilter & (1 << i) && (PhysicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & Properties) == Properties)
+            {
+                return i;
+            }
+        }
+
+        assert("Failed to find suitable memory type!");
+
+        return std::numeric_limits<uint32_t>().max();
+    }
+
+    VkMemoryRequirements GetImageMemoryRequirements(VkDevice Device, VkImage Image)
+    {
+        VkMemoryRequirements MemRequirements;
+        vkGetImageMemoryRequirements(Device, Image, &MemRequirements);
+
+        return MemRequirements;
+    }
+
+    VkPhysicalDeviceMemoryProperties GetPhysicalDeviceMemoryProperties(VkPhysicalDevice PhysicalDevice)
+    {
+        VkPhysicalDeviceMemoryProperties MemProperties;
+        vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &MemProperties);
+        return MemProperties;
     }
 
 }

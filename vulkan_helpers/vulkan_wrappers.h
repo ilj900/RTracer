@@ -100,11 +100,22 @@ namespace V
     VkDevice CreateLogicalDevice(VkPhysicalDevice PhysicalDevice, FLogicalDeviceOptions& Options);
     /// Enumerate all physical devices
     std::vector<VkPhysicalDevice> GetAllPhysicalDevices(VkInstance Instance);
+
     VkCommandPool CreateCommandPool(VkDevice LogicalDevice, uint32_t QueueIndex);
     VkCommandBuffer AllocateCommandBuffer(VkDevice LogicalDevice, VkCommandPool CommandPool);
     VkCommandBuffer BeginWithAllocation(VkDevice LogicalDevice, VkCommandPool CommandPool);
     VkCommandBuffer BeginSingleTimeCommand(VkDevice LogicalDevice, VkCommandPool CommandPool);
     void SubmitCommandBuffer(VkDevice LogicalDevice, VkCommandPool CommandPool, VkQueue Queue, VkCommandBuffer &CommandBuffer);
+
+    VkImage CreateImage(uint32_t Width, uint32_t Height, uint32_t MipsLevels, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkDevice Device);
+    VkDeviceMemory AllocateMemoryForTheImage(VkImage Image, VkDevice Device, VkMemoryPropertyFlags Properties, uint32_t MemoryTypeIndex);
+    void BindMemoryToImage(VkDevice Device, VkImage Image, VkDeviceMemory Memory, VkDeviceSize MemoryOffset = 0);
+    VkImageView CreateImageView(VkDevice Device, VkImage Image, VkFormat Format, VkImageAspectFlags AspectFlags, uint32_t MipLevelsCount);
+
+    uint32_t FindMemoryType(VkPhysicalDeviceMemoryProperties PhysicalDeviceMemoryProperties, uint32_t TypeFilter, VkMemoryPropertyFlags Properties);
+    VkMemoryRequirements GetImageMemoryRequirements(VkDevice Device, VkImage Image);
+
+    VkPhysicalDeviceMemoryProperties GetPhysicalDeviceMemoryProperties(VkPhysicalDevice PhysicalDevice);
 
     /// Load an instance function
     template <class T>

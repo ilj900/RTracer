@@ -13,8 +13,9 @@ struct FBuffer;
 
 struct NameImageEntry
 {
-    NameImageEntry(const std::string& Name, uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties, VkImageAspectFlags AspectFlags, VkDevice Device)
-    : Image(Width, Height, bMipMapsRequired, NumSamples, Format, Tiling, Usage, Properties, AspectFlags, Device),
+    NameImageEntry(const std::string& Name, uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties, VkImageAspectFlags AspectFlags,
+                   VkPhysicalDeviceMemoryProperties PhysicalDeviceMemoryProperties, VkDevice Device)
+    : Image(Width, Height, bMipMapsRequired, NumSamples, Format, Tiling, Usage, Properties, AspectFlags, PhysicalDeviceMemoryProperties, Device),
       Name(Name) {};
 
     std::string Name;
@@ -41,6 +42,7 @@ public:
 
 private:
     FContext* Context;
+    VkPhysicalDeviceMemoryProperties PhysicalDeviceMemoryProperties;
 
     std::map<std::string, uint32_t> NameToHashMap;
     std::map<uint32_t, uint32_t> HashToIndexMap;

@@ -1,4 +1,5 @@
 #include "image_manager.h"
+#include "vulkan_wrappers.h"
 
 #include "buffer.h"
 #include "context.h"
@@ -12,6 +13,7 @@
 void FImageManager::Init(FContext& Context)
 {
     this->Context = &Context;
+    PhysicalDeviceMemoryProperties = V::GetPhysicalDeviceMemoryProperties(Context.PhysicalDevice);
     Images.reserve(1024);
 }
 
@@ -52,7 +54,7 @@ void FImageManager::LoadImageFromFile(const std::string& ImageName, const std::s
 
 void FImageManager::CreateImage(const std::string& ImageName, uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties, VkImageAspectFlags AspectFlags)
 {
-    Images.emplace_back(ImageName, Width, Height, bMipMapsRequired, NumSamples, Format, Tiling, Usage, Properties, AspectFlags, Context->LogicalDevice);
+    Images.emplace_back(ImageName, Width, Height, bMipMapsRequired, NumSamples, Format, Tiling, Usage, Properties, AspectFlags, PhysicalDeviceMemoryProperties, Context->LogicalDevice);
     auto ImageHash = static_cast<uint32_t>(Images.back().Image.GetHash());
     HashToIndexMap[ImageHash] = static_cast<uint32_t>(Images.size() - 1);
     NameToHashMap[ImageName] = static_cast<uint32_t>(ImageHash);

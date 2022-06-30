@@ -7,7 +7,8 @@
 struct FImage
 {
     FImage() = default;
-    FImage(uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties, VkImageAspectFlags AspectFlags, VkDevice Device);
+    FImage(uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties, VkImageAspectFlags AspectFlags,
+           VkPhysicalDeviceMemoryProperties PhysicalDeviceMemoryProperties, VkDevice Device);
     ~FImage();
 
     void Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout);
@@ -40,12 +41,6 @@ struct FImage
     static void Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, FImage& Image);
     void GenerateMipMaps();
     void Resolve(FImage& Image);
-
-private:
-    void CreateImage();
-    void AllocateMemory();
-    void BindMemoryToImage();
-    void CreateImageView();
 };
 
 /// FImage hash function, to we could use them in maps/sets

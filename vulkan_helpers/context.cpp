@@ -59,7 +59,6 @@ void FContext::Init(GLFWwindow *Window, FController *Controller)
     this->Controller = Controller;
     FunctionLoader = std::make_shared<FVulkanFunctionLoader>();
     ImageManager = std::make_shared<FImageManager>();
-    ImageManager->Init(*this);
 
     try {
         CreateInstance();
@@ -67,6 +66,7 @@ void FContext::Init(GLFWwindow *Window, FController *Controller)
         SetupDebugMessenger();
         CreateSurface();
         PickPhysicalDevice();
+        ImageManager->Init(*this);
         CreateLogicalDevice();
         CommandBufferManager = std::make_shared<FCommandBufferManager>(LogicalDevice, this, GraphicsQueue, GraphicsQueueIndex);
         Swapchain = std::make_shared<FSwapchain>(*this, PhysicalDevice, LogicalDevice, Surface, Window, GraphicsQueueIndex, PresentQueueIndex, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
