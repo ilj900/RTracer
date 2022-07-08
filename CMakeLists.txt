@@ -57,7 +57,9 @@ set(ECS_SOURCE
 set(SOURCE
         src/main.cpp
         src/controller.cpp
-        vulkan_helpers/context.cpp
+        vulkan_helpers/vk_context.h
+        vulkan_helpers/vk_utils.cpp
+        vulkan_helpers/vk_context.cpp
         vulkan_helpers/image.cpp
         vulkan_helpers/resource_allocation.cpp
         vulkan_helpers/function_loader.cpp
@@ -72,7 +74,8 @@ set(SOURCE
 set(INCLUDE
         ${ECS_SOURCE}
         src/controller.h
-        vulkan_helpers/context.h
+        vulkan_helpers/vk_utils.h
+        vulkan_helpers/vk_context.h
         vulkan_helpers/image.h
         vulkan_helpers/resource_allocation.h
         vulkan_helpers/function_loader.h

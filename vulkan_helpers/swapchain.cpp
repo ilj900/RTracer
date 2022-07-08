@@ -1,11 +1,11 @@
 #include "GLFW/glfw3.h"
 
 #include "swapchain.h"
-#include "context.h"
+#include "vk_context.h"
 
 #include <stdexcept>
 
-FSwapchain::FSwapchain(FContext &Context, VkPhysicalDevice PhysicalDevice, VkDevice LogicalDevice, VkSurfaceKHR Surface,
+FSwapchain::FSwapchain(FVulkanContext &Context, VkPhysicalDevice PhysicalDevice, VkDevice LogicalDevice, VkSurfaceKHR Surface,
                        GLFWwindow* Window, uint32_t GraphicsQueueFamilyIndex, uint32_t PresentQueueFamilyIndex,
                        VkFormat Format, VkColorSpaceKHR ColorSpace, VkPresentModeKHR PresentMode):
                        LogicalDevice(LogicalDevice)

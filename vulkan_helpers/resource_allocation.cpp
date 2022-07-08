@@ -1,10 +1,10 @@
 #include "resource_allocation.h"
 #include "buffer.h"
-#include "context.h"
+#include "vk_context.h"
 
 #include <stdexcept>
 
-FResourceAllocator::FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice Device, FContext* Context)
+FResourceAllocator::FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice Device, FVulkanContext* Context)
     :Device(Device),
      Context(Context)
 {

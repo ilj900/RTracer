@@ -1,4 +1,4 @@
-#include "context.h"
+#include "vk_context.h"
 
 #include "systems/camera_system.h"
 #include "systems/mesh_system.h"
@@ -19,7 +19,7 @@
 #include <array>
 #include <unordered_map>
 
-static FContext Context{};
+static FVulkanContext Context{};
 
 namespace LAYOUT_SETS
 {
@@ -35,7 +35,7 @@ namespace LAYOUTS
     const std::string RENDERABLE_LAYOUT_NAME = "Renderable layout";
 }
 
-FContext& GetContext()
+FVulkanContext& GetContext()
 {
     return Context;
 }
@@ -51,7 +51,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     return VK_FALSE;
 }
 
-void FContext::Init(GLFWwindow *Window, FController *Controller)
+void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
 {
     this->Window = Window;
     this->Controller = Controller;
@@ -89,31 +89,13 @@ void FContext::Init(GLFWwindow *Window, FController *Controller)
     }
 }
 
-void FContext::CreateInstance()
+void FVulkanContext::CreateInstance()
 {
-    /// Check supported Layers
+    auto InstanceLayers = VulkanContextOptions.GetInstanceLayers();
+    if (CheckInstanceLayersSupport(InstanceLayers))
     {
-        uint32_t LayerCount;
-        vkEnumerateInstanceLayerProperties(&LayerCount, nullptr);
-
-        std::vector<VkLayerProperties> AvailableLayers(LayerCount);
-        vkEnumerateInstanceLayerProperties(&LayerCount, AvailableLayers.data());
-
-        for (const auto &LayerName : ValidationLayers) {
-            bool LayerFound = false;
-
-            for (const auto &LayerProperties : AvailableLayers) {
-                if (LayerName == LayerProperties.layerName) {
-                    LayerFound = true;
-                    break;
-                }
-            }
-            if (!LayerFound) {
-                throw std::runtime_error("Validation layers requested, but not available!");
-            }
-        }
+        assert("Validation layers requested, but not available!");
     }
-
     // Fill in instance creation data
     VkApplicationInfo AppInfo{};
     AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -180,7 +162,7 @@ void FContext::CreateInstance()
     }
 }
 
-void FContext::SetupDebugMessenger()
+void FVulkanContext::SetupDebugMessenger()
 {
     if (ValidationLayers.empty())
     {
@@ -190,7 +172,7 @@ void FContext::SetupDebugMessenger()
     FunctionLoader->vkCreateDebugUtilsMessengerEXT(Instance, &DebugCreateInfo, nullptr, &DebugMessenger);
 }
 
-void FContext::CreateSurface()
+void FVulkanContext::CreateSurface()
 {
     if (glfwCreateWindowSurface(Instance, Window, nullptr, &Surface) != VK_SUCCESS)
     {
@@ -198,7 +180,7 @@ void FContext::CreateSurface()
     }
 }
 
-void FContext::PickPhysicalDevice()
+void FVulkanContext::PickPhysicalDevice()
 {
     uint32_t DeviceCount = 0;
     vkEnumeratePhysicalDevices(Instance, &DeviceCount, nullptr);
@@ -227,7 +209,7 @@ void FContext::PickPhysicalDevice()
     }
 }
 
-void FContext::QueuePhysicalDeviceProperties()
+void FVulkanContext::QueuePhysicalDeviceProperties()
 {
     VkPhysicalDeviceProperties PhysicalDeviceProperties;
 
@@ -265,7 +247,33 @@ void FContext::QueuePhysicalDeviceProperties()
     }
 }
 
-bool FContext::CheckDeviceExtensionsSupport(VkPhysicalDevice Device)
+bool FVulkanContext::CheckInstanceLayersSupport(const std::vector<const char*>& Layers)
+{
+    /// Check supported Layers
+    uint32_t LayerCount;
+    vkEnumerateInstanceLayerProperties(&LayerCount, nullptr);
+
+    std::vector<VkLayerProperties> AvailableLayers(LayerCount);
+    vkEnumerateInstanceLayerProperties(&LayerCount, AvailableLayers.data());
+
+    for (const auto &LayerName : Layers) {
+        bool LayerFound = false;
+
+        for (const auto &LayerProperties : AvailableLayers) {
+            if (LayerName == LayerProperties.layerName) {
+                LayerFound = true;
+                break;
+            }
+        }
+        if (!LayerFound) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool FVulkanContext::CheckDeviceExtensionsSupport(VkPhysicalDevice Device)
 {
     uint32_t ExtensionCount = 0;
     vkEnumerateDeviceExtensionProperties(Device, nullptr, &ExtensionCount, nullptr);
@@ -283,7 +291,7 @@ bool FContext::CheckDeviceExtensionsSupport(VkPhysicalDevice Device)
     return RequiredExtensions.empty();
 }
 
-bool FContext::CheckDeviceQueueSupport(VkPhysicalDevice Device)
+bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice Device)
 {
     uint32_t QueueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(Device, &QueueFamilyCount, nullptr);
@@ -351,7 +359,7 @@ bool FContext::CheckDeviceQueueSupport(VkPhysicalDevice Device)
     return true;
 }
 
-void FContext::CreateLogicalDevice()
+void FVulkanContext::CreateLogicalDevice()
 {
     std::vector<VkDeviceQueueCreateInfo> QueueCreateInfos;
     std::set<uint32_t> UniqueQueueFamilies{};
@@ -459,7 +467,7 @@ void FContext::CreateLogicalDevice()
     DescriptorSetManager = std::make_shared<FDescriptorSetManager>(LogicalDevice);
 }
 
-void FContext::CreateDepthAndAAImages()
+void FVulkanContext::CreateDepthAndAAImages()
 {
     /// Create Image and ImageView for AA
     VkFormat ColorFormat = Swapchain->GetImageFormat();
@@ -495,7 +503,7 @@ void FContext::CreateDepthAndAAImages()
     DepthImg.Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
-void FContext::CreateRenderPass()
+void FVulkanContext::CreateRenderPass()
 {
     RenderPass = std::make_shared<FRenderPass>();
     RenderPass->AddImageAsAttachment((*ImageManager)(ColorImage), AttachmentType::Color);
@@ -507,7 +515,7 @@ void FContext::CreateRenderPass()
     RenderPass->Construct(LogicalDevice);
 }
 
-VkFormat FContext::FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features)
+VkFormat FVulkanContext::FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features)
 {
     for (VkFormat Format : Candidates)
     {
@@ -527,7 +535,7 @@ VkFormat FContext::FindSupportedFormat(const std::vector<VkFormat>& Candidates, 
     throw std::runtime_error("Failed to find supported format!");
 }
 
-void FContext::CreateDescriptorSetLayouts()
+void FVulkanContext::CreateDescriptorSetLayouts()
 {
     DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, 0, LAYOUTS::CAMERA_LAYOUT_NAME,
                                               {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
@@ -542,7 +550,7 @@ void FContext::CreateDescriptorSetLayouts()
     DescriptorSetManager->CreateDescriptorSetLayouts();
 }
 
-VkShaderModule FContext::CreateShaderFromFile(const std::string& FileName)
+VkShaderModule FVulkanContext::CreateShaderFromFile(const std::string& FileName)
 {
     auto ShaderCode = ReadFile(FileName);
 
@@ -560,7 +568,7 @@ VkShaderModule FContext::CreateShaderFromFile(const std::string& FileName)
     return ShaderModule;
 }
 
-void FContext::CreateGraphicsPipeline()
+void FVulkanContext::CreateGraphicsPipeline()
 {
     VkShaderModule VertexShaderModule = CreateShaderFromFile("../shaders/triangle_vert.spv");
     VkShaderModule FragmentShaderModule = CreateShaderFromFile("../shaders/triangle_frag.spv");
@@ -715,7 +723,7 @@ void FContext::CreateGraphicsPipeline()
     vkDestroyShaderModule(LogicalDevice, VertexShaderModule, nullptr);
 }
 
-VkFormat FContext::FindDepthFormat()
+VkFormat FVulkanContext::FindDepthFormat()
 {
     return FindSupportedFormat(
             {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
@@ -724,12 +732,12 @@ VkFormat FContext::FindDepthFormat()
     );
 }
 
-bool FContext::HasStensilComponent(VkFormat Format)
+bool FVulkanContext::HasStensilComponent(VkFormat Format)
 {
     return Format == VK_FORMAT_D32_SFLOAT_S8_UINT || Format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-void FContext::CreateFramebuffers()
+void FVulkanContext::CreateFramebuffers()
 {
     SwapChainFramebuffers.resize(Swapchain->Size());
     for (std::size_t i = 0; i < Swapchain->Size(); ++i) {
@@ -754,7 +762,7 @@ void FContext::CreateFramebuffers()
 
 }
 
-void FContext::LoadModelDataToGPU()
+void FVulkanContext::LoadModelDataToGPU()
 {
     auto MeshSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>();
 
@@ -765,7 +773,7 @@ void FContext::LoadModelDataToGPU()
 
 }
 
-void FContext::CreateTextureSampler()
+void FVulkanContext::CreateTextureSampler()
 {
     VkSamplerCreateInfo SamplerInfo{};
     SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -794,7 +802,7 @@ void FContext::CreateTextureSampler()
     }
 }
 
-void FContext::CreateUniformBuffers()
+void FVulkanContext::CreateUniformBuffers()
 {
     auto& Coordinator = ECS::GetCoordinator();
     VkDeviceSize TransformBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>();
@@ -813,7 +821,7 @@ void FContext::CreateUniformBuffers()
     }
 }
 
-void FContext::CreateDescriptorPool()
+void FVulkanContext::CreateDescriptorPool()
 {
     auto ModelsCount = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>()->Size();
     auto NumberOfSwapChainImages = Swapchain->Size();
@@ -825,7 +833,7 @@ void FContext::CreateDescriptorPool()
     DescriptorSetManager->ReserveDescriptorPool();
 }
 
-void FContext::CreateDescriptorSet()
+void FVulkanContext::CreateDescriptorSet()
 {
     auto& Coordinator = ECS::GetCoordinator();
     auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
@@ -871,7 +879,7 @@ void FContext::CreateDescriptorSet()
     }
 }
 
-void FContext::CreateCommandBuffers()
+void FVulkanContext::CreateCommandBuffers()
 {
     CommandBuffers.resize(SwapChainFramebuffers.size());
 
@@ -919,7 +927,7 @@ void FContext::CreateCommandBuffers()
     }
 }
 
-void FContext::CreateSyncObjects()
+void FVulkanContext::CreateSyncObjects()
 {
     ImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     RenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -948,7 +956,7 @@ void FContext::CreateSyncObjects()
     }
 }
 
-void FContext::CreateImguiContext()
+void FVulkanContext::CreateImguiContext()
 {
     {
         VkDescriptorPoolSize PoolSizes[] =
@@ -1079,7 +1087,7 @@ void FContext::CreateImguiContext()
     }
 }
 
-void FContext::Render()
+void FVulkanContext::Render()
 {
     /// Previous rendering iteration of the frame might still be in use, so we wait for it
     vkWaitForFences(LogicalDevice, 1, &ImGuiFinishedFences[CurrentFrame], VK_TRUE, UINT64_MAX);
@@ -1134,7 +1142,7 @@ void FContext::Render()
     }
 }
 
-void FContext::RenderImGui()
+void FVulkanContext::RenderImGui()
 {
     vkWaitForFences(LogicalDevice, 1, &RenderingFinishedFences[CurrentFrame], VK_TRUE, UINT64_MAX);
 
@@ -1191,7 +1199,7 @@ void FContext::RenderImGui()
     });
 }
 
-void FContext::Present()
+void FVulkanContext::Present()
 {
     VkSemaphore SignalSemaphores[] = {ImGuiFinishedSemaphores[CurrentFrame]};
 
@@ -1220,12 +1228,12 @@ void FContext::Present()
     CurrentFrame = (CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void FContext::WaitIdle()
+void FVulkanContext::WaitIdle()
 {
     vkDeviceWaitIdle(LogicalDevice);
 }
 
-void FContext::RecreateSwapChain()
+void FVulkanContext::RecreateSwapChain()
 {
     int Width = 0;
     int Height = 0;
@@ -1249,7 +1257,7 @@ void FContext::RecreateSwapChain()
     CreateCommandBuffers();
 }
 
-void FContext::CleanUpSwapChain()
+void FVulkanContext::CleanUpSwapChain()
 {
     ImageManager->RemoveImage(ColorImage);
     ImageManager->RemoveImage(UtilityImageR8G8B8A8_SRGB);
@@ -1291,7 +1299,7 @@ void FContext::CleanUpSwapChain()
     vkDestroyDescriptorPool(LogicalDevice, ImGuiDescriptorPool, nullptr);
 }
 
-void FContext::UpdateUniformBuffer(uint32_t CurrentImage)
+void FVulkanContext::UpdateUniformBuffer(uint32_t CurrentImage)
 {
     auto& Coordinator = ECS::GetCoordinator();
     auto CameraSystem = Coordinator.GetSystem<ECS::SYSTEMS::FCameraSystem>();
@@ -1310,7 +1318,7 @@ void FContext::UpdateUniformBuffer(uint32_t CurrentImage)
     LoadDataIntoBuffer(DeviceRenderableBuffers[CurrentImage], RenderableComponentData, RenderableComponentSize);
 }
 
-void FContext::LoadDataIntoBuffer(FBuffer &Buffer, void* DataToLoad, size_t Size)
+void FVulkanContext::LoadDataIntoBuffer(FBuffer &Buffer, void* DataToLoad, size_t Size)
 {
     if (Size > Buffer.Size)
     {
@@ -1323,17 +1331,17 @@ void FContext::LoadDataIntoBuffer(FBuffer &Buffer, void* DataToLoad, size_t Size
 
 }
 
-void FContext::FreeData(FBuffer Buffer)
+void FVulkanContext::FreeData(FBuffer Buffer)
 {
     ResourceAllocator->DestroyBuffer(Buffer);
 }
 
-void FContext::DestroyDebugUtilsMessengerEXT()
+void FVulkanContext::DestroyDebugUtilsMessengerEXT()
 {
     FunctionLoader->vkDestroyDebugUtilsMessengerEXT(Instance, DebugMessenger, nullptr);
 }
 
-void FContext::CleanUp()
+void FVulkanContext::CleanUp()
 {
     CleanUpSwapChain();
 
@@ -1371,7 +1379,7 @@ void FContext::CleanUp()
     vkDestroyInstance(Instance, nullptr);
 }
 
-FContext::~FContext()
+FVulkanContext::~FVulkanContext()
 {
 }
 

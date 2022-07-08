@@ -15,6 +15,7 @@
 #include "image.h"
 #include "image_manager.h"
 #include "renderpass.h"
+#include "vk_utils.h"
 
 #include <vector>
 #include <string>
@@ -22,13 +23,13 @@
 #include <memory>
 #include <map>
 
-class FContext
+class FVulkanContext
 {
 public:
-    FContext() = default;
-    FContext operator=(const FContext* Other) = delete;
-    FContext(const FContext& Other) = delete;
-    ~FContext();
+    FVulkanContext() = default;
+    FVulkanContext operator=(const FVulkanContext* Other) = delete;
+    FVulkanContext(const FVulkanContext& Other) = delete;
+    ~FVulkanContext();
 
     void Init(GLFWwindow* Window, FController* Controller);
 
@@ -69,10 +70,12 @@ public:
     void LoadDataIntoBuffer(FBuffer &Buffer, void* Data, size_t Size);
     void FreeData(FBuffer Buffer);
 
+    bool CheckInstanceLayersSupport(const std::vector<const char*>& Layers);
     bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device);
     bool CheckDeviceQueueSupport(VkPhysicalDevice Device);
 
 public:
+    FVulkanContextOptions VulkanContextOptions;
     GLFWwindow* Window = nullptr;
     FController* Controller = nullptr;
 
@@ -166,6 +169,6 @@ public:
     std::string TexturePath = "../models/viking_room/viking_room.png";
 };
 
-FContext& GetContext();
+FVulkanContext& GetContext();
 
 std::vector<char> ReadFile(const std::string& FileName);

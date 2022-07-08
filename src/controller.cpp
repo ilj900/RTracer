@@ -3,7 +3,7 @@
 #include "components/device_camera_component.h"
 #include "systems/camera_system.h"
 #include "systems/renderable_system.h"
-#include "context.h"
+#include "vk_context.h"
 
 #include <iostream>
 

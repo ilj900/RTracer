@@ -1,7 +1,7 @@
 #include "image_manager.h"
 
 #include "buffer.h"
-#include "context.h"
+#include "vk_context.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -9,7 +9,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-void FImageManager::Init(FContext& Context)
+void FImageManager::Init(FVulkanContext& Context)
 {
     this->Context = &Context;
     Images.reserve(1024);

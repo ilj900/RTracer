@@ -4,7 +4,7 @@
 
 #include <functional>
 
-class FContext;
+class FVulkanContext;
 
 /**
  * A class that manages recording and submitting commands
@@ -13,7 +13,7 @@ class FContext;
 class FCommandBufferManager
 {
 public:
-    FCommandBufferManager(VkDevice Device, FContext* Context, VkQueue Queue, uint32_t QueueIndex);
+    FCommandBufferManager(VkDevice Device, FVulkanContext* Context, VkQueue Queue, uint32_t QueueIndex);
 
     VkCommandBuffer AllocateCommandBuffer();
     void FreeCommandBuffer(VkCommandBuffer& CommandBuffer);
@@ -39,7 +39,7 @@ private:
 
 private:
     VkDevice Device = VK_NULL_HANDLE;
-    FContext *Context = nullptr;
+    FVulkanContext *Context = nullptr;
     VkQueue Queue;
     uint32_t QueueIndex;
 
