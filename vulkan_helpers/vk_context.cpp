@@ -55,13 +55,12 @@ void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
 {
     this->Window = Window;
     this->Controller = Controller;
-    FunctionLoader = std::make_shared<FVulkanFunctionLoader>();
     ImageManager = std::make_shared<FImageManager>();
     ImageManager->Init(*this);
 
     try {
         CreateInstance();
-        FunctionLoader->LoadFunctions(Instance);
+        LoadFunctionPointers();
         SetupDebugMessenger();
         CreateSurface();
         PickPhysicalDevice();
@@ -91,11 +90,30 @@ void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
 
 void FVulkanContext::CreateInstance()
 {
-    auto InstanceLayers = VulkanContextOptions.GetInstanceLayers();
-    if (CheckInstanceLayersSupport(InstanceLayers))
+    VulkanContextOptions.AddInstanceLayer("VK_LAYER_KHRONOS_validation");
+    auto CharLayers = VulkanContextOptions.GetInstanceLayers();
+    if (!CheckInstanceLayersSupport(CharLayers))
     {
-        assert("Validation layers requested, but not available!");
+        assert(0 && "Validation layers requested, but not available!");
     }
+
+#ifndef NDEBUG
+    VkDebugUtilsMessengerCreateInfoEXT DebugCreateInfo = {};
+    DebugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    DebugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    DebugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    DebugCreateInfo.pfnUserCallback = DebugCallback;
+    VulkanContextOptions.AddInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, &DebugCreateInfo, sizeof(VkDebugUtilsMessengerCreateInfoEXT));
+#endif
+
+    // Resolve and add extensions and layers
+    uint32_t Counter = 0;
+    auto ExtensionsRequiredByGLFW = glfwGetRequiredInstanceExtensions(&Counter);
+    for (uint32_t i = 0; i < Counter; ++i)
+    {
+        VulkanContextOptions.AddInstanceExtension(ExtensionsRequiredByGLFW[i]);
+    }
+
     // Fill in instance creation data
     VkApplicationInfo AppInfo{};
     AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -105,56 +123,19 @@ void FVulkanContext::CreateInstance()
     AppInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
     AppInfo.apiVersion = VK_API_VERSION_1_0;
 
+    /// Generate char* names for layers and extensions
+    std::vector<const char*> CharExtensions = VulkanContextOptions.GetInstanceExtensionsList();
+
     VkInstanceCreateInfo CreateInfo{};
     CreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     CreateInfo.pApplicationInfo = &AppInfo;
 
-    // Resolve and add extensions and layers
-    uint32_t Counter = 0;
-    auto ExtensionsRequiredByGLFW = glfwGetRequiredInstanceExtensions(&Counter);
-    for (uint32_t i = 0; i < Counter; ++i)
-    {
-        InstanceExtensions.push_back(ExtensionsRequiredByGLFW[i]);
-    }
-
-    if (!ValidationLayers.empty())
-    {
-        InstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-    }
-
-    // Generate char* names for layers and extensions
-    std::vector<const char*> CharExtensions;
-    for (const auto& Extension : InstanceExtensions)
-    {
-        CharExtensions.push_back(Extension.c_str());
-    }
-    std::vector<const char*> CharLayers;
-    for (const auto& Layer : ValidationLayers)
-    {
-        CharLayers.push_back(Layer.c_str());
-    }
-
-    CreateInfo.enabledExtensionCount = static_cast<uint32_t>(InstanceExtensions.size());
+    CreateInfo.enabledExtensionCount = static_cast<uint32_t>(CharExtensions.size());
     CreateInfo.ppEnabledExtensionNames = CharExtensions.data();
+    VulkanContextOptions.BuildInstancePNextChain(reinterpret_cast<BaseVulkanStructure*>(&CreateInfo));
 
-    if (!ValidationLayers.empty())
-    {
-        CreateInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
-        CreateInfo.ppEnabledLayerNames = CharLayers.data();
-
-        DebugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-        DebugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-        DebugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-        DebugCreateInfo.pfnUserCallback = DebugCallback;
-
-        CreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &DebugCreateInfo;
-    }
-    else
-    {
-        CreateInfo.enabledLayerCount = 0;
-
-        CreateInfo.pNext = nullptr;
-    }
+    CreateInfo.enabledLayerCount = CharLayers.size();
+    CreateInfo.ppEnabledLayerNames = CharLayers.data();
 
     if (vkCreateInstance(&CreateInfo, nullptr, &Instance) != VK_SUCCESS)
     {
@@ -162,14 +143,30 @@ void FVulkanContext::CreateInstance()
     }
 }
 
+void FVulkanContext::LoadFunctionPointers()
+{
+    vkCreateDebugUtilsMessengerEXT = LoadInstanceFunction<PFN_vkCreateDebugUtilsMessengerEXT>("vkCreateDebugUtilsMessengerEXT", Instance);
+    vkDestroyDebugUtilsMessengerEXT = LoadInstanceFunction<PFN_vkDestroyDebugUtilsMessengerEXT>("vkDestroyDebugUtilsMessengerEXT", Instance);
+    vkSetDebugUtilsObjectNameEXT = LoadInstanceFunction<PFN_vkSetDebugUtilsObjectNameEXT>("vkSetDebugUtilsObjectNameEXT", Instance);
+    vkCreateAccelerationStructureKHR = LoadInstanceFunction<PFN_vkCreateAccelerationStructureKHR>("vkCreateAccelerationStructureKHR", Instance);
+    vkDestroyAccelerationStructureKHR = LoadInstanceFunction<PFN_vkDestroyAccelerationStructureKHR>("vkDestroyAccelerationStructureKHR", Instance);
+    vkGetAccelerationStructureBuildSizesKHR = LoadInstanceFunction<PFN_vkGetAccelerationStructureBuildSizesKHR>("vkGetAccelerationStructureBuildSizesKHR", Instance);
+    vkCmdBuildAccelerationStructuresKHR = LoadInstanceFunction<PFN_vkCmdBuildAccelerationStructuresKHR>("vkCmdBuildAccelerationStructuresKHR", Instance);
+    vkCmdWriteAccelerationStructuresPropertiesKHR = LoadInstanceFunction<PFN_vkCmdWriteAccelerationStructuresPropertiesKHR>("vkCmdWriteAccelerationStructuresPropertiesKHR", Instance);
+    vkCmdCopyAccelerationStructureKHR = LoadInstanceFunction<PFN_vkCmdCopyAccelerationStructureKHR>("vkCmdCopyAccelerationStructureKHR", Instance);
+    vkGetAccelerationStructureDeviceAddressKHR = LoadInstanceFunction<PFN_vkGetAccelerationStructureDeviceAddressKHR>("vkGetAccelerationStructureDeviceAddressKHR", Instance);
+    vkGetRayTracingShaderGroupHandlesKHR = LoadInstanceFunction<PFN_vkGetRayTracingShaderGroupHandlesKHR>("vkGetRayTracingShaderGroupHandlesKHR", Instance);
+    vkCreateRayTracingPipelinesKHR = LoadInstanceFunction<PFN_vkCreateRayTracingPipelinesKHR>("vkCreateRayTracingPipelinesKHR", Instance);
+    vkCmdTraceRaysKHR = LoadInstanceFunction<PFN_vkCmdTraceRaysKHR>("vkCmdTraceRaysKHR", Instance);
+}
+
 void FVulkanContext::SetupDebugMessenger()
 {
-    if (ValidationLayers.empty())
-    {
-        return;
-    }
+#ifndef NDEBUG
+    VkDebugUtilsMessengerCreateInfoEXT* DebugCreateInfo = VulkanContextOptions.GetExtensionStructurePtr<VkDebugUtilsMessengerCreateInfoEXT>(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
 
-    FunctionLoader->vkCreateDebugUtilsMessengerEXT(Instance, &DebugCreateInfo, nullptr, &DebugMessenger);
+    vkCreateDebugUtilsMessengerEXT(Instance, DebugCreateInfo, nullptr, &DebugMessenger);
+#endif
 }
 
 void FVulkanContext::CreateSurface()
@@ -260,7 +257,7 @@ bool FVulkanContext::CheckInstanceLayersSupport(const std::vector<const char*>& 
         bool LayerFound = false;
 
         for (const auto &LayerProperties : AvailableLayers) {
-            if (LayerName == LayerProperties.layerName) {
+            if (std::string(LayerName) == std::string(LayerProperties.layerName)) {
                 LayerFound = true;
                 break;
             }
@@ -1338,7 +1335,9 @@ void FVulkanContext::FreeData(FBuffer Buffer)
 
 void FVulkanContext::DestroyDebugUtilsMessengerEXT()
 {
-    FunctionLoader->vkDestroyDebugUtilsMessengerEXT(Instance, DebugMessenger, nullptr);
+#ifndef NDEBUG
+    vkDestroyDebugUtilsMessengerEXT(Instance, DebugMessenger, nullptr);
+#endif
 }
 
 void FVulkanContext::CleanUp()

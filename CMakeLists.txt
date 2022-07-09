@@ -62,7 +62,6 @@ set(SOURCE
         vulkan_helpers/vk_context.cpp
         vulkan_helpers/image.cpp
         vulkan_helpers/resource_allocation.cpp
-        vulkan_helpers/function_loader.cpp
         vulkan_helpers/swapchain.cpp
         vulkan_helpers/renderpass.cpp
         vulkan_helpers/descriptors.cpp
@@ -78,7 +77,6 @@ set(INCLUDE
         vulkan_helpers/vk_context.h
         vulkan_helpers/image.h
         vulkan_helpers/resource_allocation.h
-        vulkan_helpers/function_loader.h
         vulkan_helpers/swapchain.h
         vulkan_helpers/renderpass.h
         vulkan_helpers/buffer.h

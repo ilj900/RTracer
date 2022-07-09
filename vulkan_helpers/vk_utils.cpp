@@ -130,6 +130,11 @@ std::vector<const char*> FVulkanContextOptions::GetInstanceLayers()
     return InstanceOptions.GetLayers();
 }
 
+std::vector<const char*> FVulkanContextOptions::GetInstanceExtensionsList()
+{
+    return InstanceOptions.ExtensionVector.GetExtensionsNamesList();
+}
+
 void FVulkanContextOptions::BuildInstancePNextChain(BaseVulkanStructure* CreateInfo)
 {
     InstanceOptions.ExtensionVector.BuildPNextChain(CreateInfo);
@@ -149,6 +154,11 @@ void FVulkanContextOptions::AddDeviceExtension(const std::string& ExtensionName,
 std::vector<const char*> FVulkanContextOptions::GetDeviceLayers()
 {
     return DeviceOptions.GetLayers();
+}
+
+std::vector<const char*> FVulkanContextOptions::GetDeviceExtensionsList()
+{
+    return DeviceOptions.ExtensionVector.GetExtensionsNamesList();
 }
 
 void FVulkanContextOptions::BuildDevicePNextChain(BaseVulkanStructure* CreateInfo)

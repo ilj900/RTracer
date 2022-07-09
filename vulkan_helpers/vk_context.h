@@ -5,7 +5,6 @@
 #include "vulkan/vulkan.h"
 
 #include "resource_allocation.h"
-#include "function_loader.h"
 #include "command_buffer_manager.h"
 #include "maths.h"
 #include "swapchain.h"
@@ -34,6 +33,7 @@ public:
     void Init(GLFWwindow* Window, FController* Controller);
 
     void CreateInstance();
+    void LoadFunctionPointers();
     void SetupDebugMessenger();
     void CreateSurface();
     void PickPhysicalDevice();
@@ -74,13 +74,26 @@ public:
     bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device);
     bool CheckDeviceQueueSupport(VkPhysicalDevice Device);
 
+    PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = nullptr;
+    PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = nullptr;
+    PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = nullptr;
+    PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR = nullptr;
+    PFN_vkDestroyAccelerationStructureKHR vkDestroyAccelerationStructureKHR = nullptr;
+    PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR = nullptr;
+    PFN_vkCmdBuildAccelerationStructuresKHR vkCmdBuildAccelerationStructuresKHR = nullptr;
+    PFN_vkCmdWriteAccelerationStructuresPropertiesKHR vkCmdWriteAccelerationStructuresPropertiesKHR = nullptr;
+    PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR = nullptr;
+    PFN_vkCmdCopyAccelerationStructureKHR vkCmdCopyAccelerationStructureKHR = nullptr;
+    PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR = nullptr;
+    PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR = nullptr;
+    PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR = nullptr;
+
 public:
     FVulkanContextOptions VulkanContextOptions;
     GLFWwindow* Window = nullptr;
     FController* Controller = nullptr;
 
     std::shared_ptr<FResourceAllocator> ResourceAllocator = nullptr;
-    std::shared_ptr<FVulkanFunctionLoader> FunctionLoader = nullptr;
     std::shared_ptr<FCommandBufferManager> CommandBufferManager = nullptr;
     std::shared_ptr<FImageManager> ImageManager = nullptr;
 
@@ -116,8 +129,9 @@ public:
     VkPipelineLayout PipelineLayout;
     VkPipeline GraphicsPipeline;
 
+#ifndef NDEBUG
     VkDebugUtilsMessengerEXT DebugMessenger;
-
+#endif
     /// Images for drawing
     std::string ColorImage = "ColorImage";
     std::string NormalsImage = "NormalsImage";
@@ -148,8 +162,6 @@ public:
     std::vector<VkFence> ImagesInFlight;
     size_t CurrentFrame = 0;
     uint32_t ImageIndex = 0;
-
-    VkDebugUtilsMessengerCreateInfoEXT DebugCreateInfo = {};
 
     const int MAX_FRAMES_IN_FLIGHT = 2;
     bool bFramebufferResized = false;

@@ -85,12 +85,29 @@ struct FVulkanContextOptions
     void AddInstanceLayer(const std::string& InstanceLayerName);
     void AddInstanceExtension(const std::string& ExtensionName, void* ExtensionStructure = nullptr, uint32_t ExtensionStructureSize = 0);
     std::vector<const char*> GetInstanceLayers();
+    std::vector<const char*> GetInstanceExtensionsList();
     void BuildInstancePNextChain(BaseVulkanStructure* CreateInfo);
 
     void AddDeviceLayer(const std::string& DeviceLayerName);
     void AddDeviceExtension(const std::string& ExtensionName, void* ExtensionStructure = nullptr, uint32_t ExtensionStructureSize = 0);
     std::vector<const char*> GetDeviceLayers();
+    std::vector<const char*> GetDeviceExtensionsList();
     void BuildDevicePNextChain(BaseVulkanStructure* CreateInfo);
+
+    template <class T>
+    T* GetExtensionStructurePtr(VkStructureType StructureType)
+    {
+        for (auto Extension : InstanceOptions.ExtensionVector.Extensions)
+        {
+            void* Ptr = &InstanceOptions.ExtensionVector.ExtensionsData[Extension.ExtensionStructureOffset];
+            auto CastedStruct = reinterpret_cast<BaseVulkanStructure*>(Ptr);
+            if (CastedStruct->sType == StructureType)
+            {
+                return reinterpret_cast<T*>(Ptr);;
+            }
+        }
+        return nullptr;
+    }
 
     FInstanceOptions InstanceOptions;
     FDeviceOptions DeviceOptions;

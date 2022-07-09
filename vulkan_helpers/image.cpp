@@ -15,7 +15,6 @@ Device(Device), Width(Width), MipLevels(1), Height(Height), Samples(NumSamples),
 Tiling(Tiling), Usage(Usage), Properties(Properties), AspectFlags(AspectFlags)
 {
     /// Calculate number of MipLevels in advance
-    std::cout << "FImage constructor called" << std::endl;
     if (bMipMapsRequired)
     {
         MipLevels = static_cast<uint32_t>(std::floor(static_cast<float>(std::log2(std::max(Width, Height))))) + 1;
@@ -42,7 +41,6 @@ void FImage::Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags Aspec
 FImage::~FImage()
 {
     vkDestroyImageView(Device, View, nullptr);
-    std::cout << "FImage destructor called" << std::endl;
     if (!bIsWrappedImage)
     {
         vkDestroyImage(Device, Image, nullptr);
