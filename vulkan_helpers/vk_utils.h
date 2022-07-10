@@ -6,6 +6,13 @@
 #include <stdexcept>
 #include <vector>
 
+struct FVersion3
+{
+    uint32_t Major = 1u;
+    uint32_t Minor = 0u;
+    uint32_t Patch = 0u;
+};
+
 auto CheckNotNullptr = [](void* FunctionPointer, const std::string& FunctionName)
 {
     if (FunctionPointer == nullptr)

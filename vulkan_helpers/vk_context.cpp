@@ -91,11 +91,6 @@ void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
 void FVulkanContext::CreateInstance()
 {
     VulkanContextOptions.AddInstanceLayer("VK_LAYER_KHRONOS_validation");
-    auto CharLayers = VulkanContextOptions.GetInstanceLayers();
-    if (!CheckInstanceLayersSupport(CharLayers))
-    {
-        assert(0 && "Validation layers requested, but not available!");
-    }
 
 #ifndef NDEBUG
     VkDebugUtilsMessengerCreateInfoEXT DebugCreateInfo = {};
@@ -114,33 +109,7 @@ void FVulkanContext::CreateInstance()
         VulkanContextOptions.AddInstanceExtension(ExtensionsRequiredByGLFW[i]);
     }
 
-    // Fill in instance creation data
-    VkApplicationInfo AppInfo{};
-    AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    AppInfo.pApplicationName = "Hello Triangle";
-    AppInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    AppInfo.pEngineName = "No Engine";
-    AppInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    AppInfo.apiVersion = VK_API_VERSION_1_0;
-
-    /// Generate char* names for layers and extensions
-    std::vector<const char*> CharExtensions = VulkanContextOptions.GetInstanceExtensionsList();
-
-    VkInstanceCreateInfo CreateInfo{};
-    CreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    CreateInfo.pApplicationInfo = &AppInfo;
-
-    CreateInfo.enabledExtensionCount = static_cast<uint32_t>(CharExtensions.size());
-    CreateInfo.ppEnabledExtensionNames = CharExtensions.data();
-    VulkanContextOptions.BuildInstancePNextChain(reinterpret_cast<BaseVulkanStructure*>(&CreateInfo));
-
-    CreateInfo.enabledLayerCount = CharLayers.size();
-    CreateInfo.ppEnabledLayerNames = CharLayers.data();
-
-    if (vkCreateInstance(&CreateInfo, nullptr, &Instance) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create instance!");
-    }
+    Instance = CreateVkInstance("Hello Triangle", {1, 0, 0}, "No Engine", {1, 0, 0}, VK_API_VERSION_1_0, VulkanContextOptions);
 }
 
 void FVulkanContext::LoadFunctionPointers()
@@ -171,10 +140,8 @@ void FVulkanContext::SetupDebugMessenger()
 
 void FVulkanContext::CreateSurface()
 {
-    if (glfwCreateWindowSurface(Instance, Window, nullptr, &Surface) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create window surface!");
-    }
+    VkResult Result = glfwCreateWindowSurface(Instance, Window, nullptr, &Surface);
+    assert((Result == VK_SUCCESS) && "Failed to create window surface!");
 }
 
 void FVulkanContext::PickPhysicalDevice()
@@ -286,6 +253,44 @@ bool FVulkanContext::CheckDeviceExtensionsSupport(VkPhysicalDevice Device)
     }
 
     return RequiredExtensions.empty();
+}
+
+VkInstance FVulkanContext::CreateVkInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FVulkanContextOptions& Options)
+{
+    /// Check whether instance supports requested layers
+    auto CharLayers = VulkanContextOptions.GetInstanceLayers();
+    if (!CheckInstanceLayersSupport(CharLayers))
+    {
+        assert(0 && "Validation layers requested, but not available!");
+    }
+
+    /// Fill in instance creation data
+    VkApplicationInfo AppInfo{};
+    AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    AppInfo.pApplicationName = AppName.c_str();
+    AppInfo.applicationVersion = VK_MAKE_VERSION(AppVersion.Major, AppVersion.Minor, AppVersion.Patch);
+    AppInfo.pEngineName = EngineName.c_str();
+    AppInfo.engineVersion = VK_MAKE_VERSION(EngineVersion.Major, EngineVersion.Minor, EngineVersion.Patch);
+    AppInfo.apiVersion = ApiVersion;
+
+    /// Generate char* names for layers and extensions
+    std::vector<const char*> CharExtensions = VulkanContextOptions.GetInstanceExtensionsList();
+
+    VkInstanceCreateInfo CreateInfo{};
+    CreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    CreateInfo.pApplicationInfo = &AppInfo;
+
+    CreateInfo.enabledExtensionCount = static_cast<uint32_t>(CharExtensions.size());
+    CreateInfo.ppEnabledExtensionNames = CharExtensions.data();
+    VulkanContextOptions.BuildInstancePNextChain(reinterpret_cast<BaseVulkanStructure*>(&CreateInfo));
+
+    CreateInfo.enabledLayerCount = CharLayers.size();
+    CreateInfo.ppEnabledLayerNames = CharLayers.data();
+
+    VkInstance ResultingInstance;
+    VkResult Result = vkCreateInstance(&CreateInfo, nullptr, &ResultingInstance);
+    assert((Result == VK_SUCCESS) && "Failed to create instance!");
+    return ResultingInstance;
 }
 
 bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice Device)
