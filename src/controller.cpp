@@ -97,7 +97,6 @@ void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, in
                     auto Index = (uint32_t(Y) * 1920 + uint32_t(X));
 
                     uint32_t RenderableIndex = Data[Index];
-                    std::cout << "Index: " << Index << " - RenderableIndex: " << RenderableIndex << std::endl;
                     auto RenderableSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FRenderableSystem>();
                     RenderableSystem->SetSelectedByIndex(RenderableIndex);
                 }

@@ -173,7 +173,6 @@ void FImageManager::FetchImageData(const std::string& ImageName, std::vector<T>&
     auto& Context = GetContext();
     uint32_t Size = Image.Height * Image.Width * NumberOfComponents * sizeof(T);
     FBuffer Buffer = Context.ResourceAllocator->CreateBuffer(Size, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    Image.Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     CopyImageToBuffer(ImageName, Buffer);
 
     Data.resize(Size);
