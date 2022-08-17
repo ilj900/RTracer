@@ -37,7 +37,8 @@ public:
     void CopyBufferToImage(const FBuffer& Buffer, const std::string& ImageName);
     void CopyImageToBuffer(const std::string& ImageName, const FBuffer& Buffer);
     void SaveImage(const std::string& ImageName);
-    void FetchImageData(const std::string& ImageName, std::vector<char>& Data);
+    template <typename T>
+    void FetchImageData(const std::string& ImageName, std::vector<T>& Data);
 
 private:
     FVulkanContext* Context;

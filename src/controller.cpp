@@ -6,6 +6,7 @@
 #include "vk_context.h"
 
 #include <iostream>
+#include <map>
 
 FController::FController(GLFWwindow* Window):
 Window(Window)
@@ -86,19 +87,17 @@ void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, in
                 case GLFW_PRESS:
                 {
                     auto& Context = GetContext();
-                    std::vector<char> Data;
+                    std::vector<uint32_t> Data;
 
                     (*Context.ImageManager)(Context.RenderableIndexImage).Resolve((*Context.ImageManager)(Context.UtilityImageR32));
                     (*Context.ImageManager).FetchImageData(Context.UtilityImageR32, Data);
                     double X, Y;
                     glfwGetCursorPos(Window, &X, &Y);
 
-                    auto Index = (uint32_t(Y) * 1920 + uint32_t(X)) * 4;
-                    auto R = Data[Index];
-                    auto G = Data[Index + 1];
-                    auto B = Data[Index + 2];
-                    auto A = Data[Index + 3];
-                    uint32_t RenderableIndex = static_cast<uint32_t>(A) << 24 | static_cast<uint32_t>(B) << 16 | static_cast<uint32_t>(G) << 8 | static_cast<uint32_t>(R);
+                    auto Index = (uint32_t(Y) * 1920 + uint32_t(X));
+
+                    uint32_t RenderableIndex = Data[Index];
+                    std::cout << "Index: " << Index << " - RenderableIndex: " << RenderableIndex << std::endl;
                     auto RenderableSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FRenderableSystem>();
                     RenderableSystem->SetSelectedByIndex(RenderableIndex);
                 }
