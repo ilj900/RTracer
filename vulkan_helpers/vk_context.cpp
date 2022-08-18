@@ -472,11 +472,10 @@ void FVulkanContext::CreateLogicalDevice()
 void FVulkanContext::CreateDepthAndAAImages()
 {
     /// Create Image and ImageView for AA
-    VkFormat ColorFormat = Swapchain->GetImageFormat();
     auto Width = Swapchain->GetWidth();
     auto Height = Swapchain->GetHeight();
 
-    ImageManager->CreateImage(ColorImage, Width, Height, false, MSAASamples, ColorFormat, VK_IMAGE_TILING_OPTIMAL,
+    ImageManager->CreateImage(ColorImage, Width, Height, false, MSAASamples, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
                               VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                               VK_IMAGE_ASPECT_COLOR_BIT);
 
@@ -491,6 +490,10 @@ void FVulkanContext::CreateDepthAndAAImages()
                                                VK_IMAGE_ASPECT_COLOR_BIT);
     auto& UtilityImgR32 = (*ImageManager)(UtilityImageR32);
     UtilityImgR32.Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+    ImageManager->CreateImage(ResolvedColorImage, Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                              VK_IMAGE_ASPECT_COLOR_BIT);
 
     ImageManager->CreateImage(UtilityImageR8G8B8A8_SRGB, Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                                                          VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -515,7 +518,7 @@ void FVulkanContext::CreateRenderPass()
     RenderPass->AddImageAsAttachment((*ImageManager)(NormalsImage), AttachmentType::Color);
     RenderPass->AddImageAsAttachment((*ImageManager)(RenderableIndexImage), AttachmentType::Color);
     RenderPass->AddImageAsAttachment((*ImageManager)(DepthImage), AttachmentType::DepthStencil);
-    RenderPass->AddImageAsAttachment(Swapchain->Images[0], AttachmentType::Resolve);
+    RenderPass->AddImageAsAttachment((*ImageManager)(ResolvedColorImage), AttachmentType::Resolve);
 
     RenderPass->Construct(LogicalDevice);
 }
@@ -747,8 +750,7 @@ void FVulkanContext::CreateFramebuffers()
     SwapChainFramebuffers.resize(Swapchain->Size());
     for (std::size_t i = 0; i < Swapchain->Size(); ++i) {
         std::vector<VkImageView> Attachments = {(*ImageManager)(ColorImage).View, (*ImageManager)(NormalsImage).View, (*ImageManager)(RenderableIndexImage).View,
-                                                (*ImageManager)(DepthImage).View,
-                                                Swapchain->GetImages()[i].View};
+                                                (*ImageManager)(DepthImage).View, (*ImageManager)(ResolvedColorImage).View};
 
         VkFramebufferCreateInfo FramebufferInfo{};
         FramebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -928,6 +930,65 @@ void FVulkanContext::CreateCommandBuffers()
                 ++j;
             }
             vkCmdEndRenderPass(CommandBuffer);
+
+            VkImageMemoryBarrier RenderBarrier{};
+            RenderBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            RenderBarrier.image = (*ImageManager)(ResolvedColorImage).Image;
+            RenderBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            RenderBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            RenderBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            RenderBarrier.subresourceRange.baseArrayLayer = 0;
+            RenderBarrier.subresourceRange.layerCount = 1;
+            RenderBarrier.subresourceRange.levelCount = 1;
+            RenderBarrier.subresourceRange.baseMipLevel = 0;
+            RenderBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            RenderBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            RenderBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            RenderBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+            VkImageMemoryBarrier BlitBarrier{};
+            BlitBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            BlitBarrier.image = Swapchain->Images[i].Image;
+            BlitBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            BlitBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            BlitBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            BlitBarrier.subresourceRange.baseArrayLayer = 0;
+            BlitBarrier.subresourceRange.layerCount = 1;
+            BlitBarrier.subresourceRange.levelCount = 1;
+            BlitBarrier.subresourceRange.baseMipLevel = 0;
+            BlitBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            BlitBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            BlitBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+            BlitBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+            std::vector<VkImageMemoryBarrier> Barriers{RenderBarrier, BlitBarrier};
+
+            vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                 0, 0, nullptr, 0, nullptr, Barriers.size(), Barriers.data());
+
+            VkImageBlit ImageBlit{};
+            ImageBlit.srcOffsets[0] = {0, 0, 0};
+            ImageBlit.srcOffsets[1] = {1920, 1080, 1};
+            ImageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            ImageBlit.srcSubresource.mipLevel = 0;
+            ImageBlit.srcSubresource.baseArrayLayer = 0;
+            ImageBlit.srcSubresource.layerCount = 1;
+            ImageBlit.dstOffsets[0] = {0, 0, 0};
+            ImageBlit.dstOffsets[1] = {1920, 1080, 1};
+            ImageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            ImageBlit.dstSubresource.mipLevel = 0;
+            ImageBlit.dstSubresource.baseArrayLayer = 0;
+            ImageBlit.dstSubresource.layerCount = 1;
+
+            vkCmdBlitImage(CommandBuffer, (*ImageManager)(ResolvedColorImage).Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, Swapchain->Images[i].Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &ImageBlit, VK_FILTER_LINEAR);
+
+            BlitBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            BlitBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            BlitBarrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+            BlitBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+
+            vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+                                 0, 0, nullptr, 0, nullptr, 1, &BlitBarrier);
         });
     }
 }

@@ -136,6 +136,7 @@ public:
 #endif
     /// Images for drawing
     std::string ColorImage = "ColorImage";
+    std::string ResolvedColorImage = "ResolvedColorImage";
     std::string NormalsImage = "NormalsImage";
     std::string RenderableIndexImage = "RenderableIndexImage";
     std::string DepthImage = "DepthImage";

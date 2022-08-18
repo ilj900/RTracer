@@ -90,7 +90,7 @@ FSwapchain::FSwapchain(FVulkanContext &Context, VkPhysicalDevice PhysicalDevice,
     CreateInfo.imageColorSpace = SurfaceFormat.colorSpace;
     CreateInfo.imageExtent = Extent;
     CreateInfo.imageArrayLayers = 1;
-    CreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    CreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
     uint32_t QueueFamilyIndices[] = {GraphicsQueueFamilyIndex, PresentQueueFamilyIndex};
     if (GraphicsQueueFamilyIndex != PresentQueueFamilyIndex)
