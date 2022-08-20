@@ -24,6 +24,16 @@ void FPipeline::SetMSAA(VkSampleCountFlagBits SampleCountFlagBits)
     MSAASamples = SampleCountFlagBits;
 }
 
+void FPipeline::SetWidth(uint32_t Wdth)
+{
+    Width = Wdth;
+}
+
+void FPipeline::SetHeight(uint32_t Hght)
+{
+    Height = Hght;
+}
+
 void FPipeline::SetExtent2D(VkExtent2D Extent2D)
 {
     Extent = Extent2D;

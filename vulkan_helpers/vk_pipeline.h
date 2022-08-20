@@ -18,6 +18,8 @@ public:
     void SetMSAA(VkSampleCountFlagBits SampleCountFlagBits);
     void SetExtent2D(VkExtent2D Extent2D);
     void AddDescriptorSetLayout(VkDescriptorSetLayout DescriptorSetLayout);
+    void SetWidth(uint32_t Wdth);
+    void SetHeight(uint32_t Hght);
     VkPipelineLayout GetPipelineLayout();
     VkPipeline GetPipeline();
 

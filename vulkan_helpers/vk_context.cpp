@@ -584,6 +584,8 @@ void FVulkanContext::CreateGraphicsPipeline()
 
     GraphicsPipeline.SetMSAA(Context.MSAASamples);
     GraphicsPipeline.SetExtent2D(Swapchain->GetExtent2D());
+    GraphicsPipeline.SetWidth(Swapchain->GetWidth());
+    GraphicsPipeline.SetHeight(Swapchain->GetHeight());
     GraphicsPipeline.AddDescriptorSetLayout(DescriptorSetManager->GetVkDescriptorSetLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME));
     GraphicsPipeline.AddDescriptorSetLayout(DescriptorSetManager->GetVkDescriptorSetLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME));
     GraphicsPipeline.CreateGraphicsPipeline(LogicalDevice, RenderPass->RenderPass);
