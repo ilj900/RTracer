@@ -15,6 +15,7 @@
 #include "image_manager.h"
 #include "renderpass.h"
 #include "vk_utils.h"
+#include "vk_pipeline.h"
 
 #include <vector>
 #include <string>
@@ -64,7 +65,6 @@ public:
     void WaitIdle();
 
     VkFormat FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features);
-    VkShaderModule CreateShaderFromFile(const std::string& FileName);
     VkFormat FindDepthFormat();
     bool HasStensilComponent(VkFormat Format);
     void LoadDataIntoBuffer(FBuffer &Buffer, void* Data, size_t Size);
@@ -76,19 +76,19 @@ public:
 
     VkInstance CreateVkInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FVulkanContextOptions& Options);
 
-    PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = nullptr;
-    PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = nullptr;
-    PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = nullptr;
-    PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR = nullptr;
-    PFN_vkDestroyAccelerationStructureKHR vkDestroyAccelerationStructureKHR = nullptr;
-    PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR = nullptr;
-    PFN_vkCmdBuildAccelerationStructuresKHR vkCmdBuildAccelerationStructuresKHR = nullptr;
-    PFN_vkCmdWriteAccelerationStructuresPropertiesKHR vkCmdWriteAccelerationStructuresPropertiesKHR = nullptr;
-    PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR = nullptr;
-    PFN_vkCmdCopyAccelerationStructureKHR vkCmdCopyAccelerationStructureKHR = nullptr;
-    PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR = nullptr;
-    PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR = nullptr;
-    PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR = nullptr;
+    static PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT;
+    static PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT;
+    static PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT;
+    static PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR ;
+    static PFN_vkDestroyAccelerationStructureKHR vkDestroyAccelerationStructureKHR;
+    static PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR;
+    static PFN_vkCmdBuildAccelerationStructuresKHR vkCmdBuildAccelerationStructuresKHR;
+    static PFN_vkCmdWriteAccelerationStructuresPropertiesKHR vkCmdWriteAccelerationStructuresPropertiesKHR;
+    static PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR;
+    static PFN_vkCmdCopyAccelerationStructureKHR vkCmdCopyAccelerationStructureKHR;
+    static PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR;
+    static PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR;
+    static PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR;
 
 public:
     FVulkanContextOptions VulkanContextOptions;
@@ -128,8 +128,7 @@ public:
     VkRenderPass ImGuiRenderPass;
     std::vector<VkFramebuffer> ImGuiFramebuffers;
 
-    VkPipelineLayout PipelineLayout;
-    VkPipeline GraphicsPipeline;
+    FPipeline GraphicsPipeline;
 
 #ifndef NDEBUG
     VkDebugUtilsMessengerEXT DebugMessenger;
@@ -185,5 +184,3 @@ public:
 };
 
 FVulkanContext& GetContext();
-
-std::vector<char> ReadFile(const std::string& FileName);

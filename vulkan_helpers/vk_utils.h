@@ -137,3 +137,5 @@ T LoadDeviceFunction(const std::string& FunctionName, VkDevice Device)
     CheckNotNullptr(Function, FunctionName);
     return Function;
 }
+
+std::vector<char> ReadFile(const std::string& FileName);

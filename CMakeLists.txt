@@ -83,6 +83,8 @@ set(INCLUDE
         vulkan_helpers/descriptors.h
         vulkan_helpers/image_manager.h
         vulkan_helpers/command_buffer_manager.h
+        vulkan_helpers/vk_pipeline.h
+        vulkan_helpers/vk_pipeline.cpp
         include/stb_image.h
         include/stb_image_write.h
         include/tiny_obj_loader.h

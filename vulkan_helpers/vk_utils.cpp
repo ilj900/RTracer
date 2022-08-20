@@ -1,5 +1,7 @@
 #include "vk_utils.h"
 
+#include <fstream>
+
 void FStringStorage::AddString(const std::string& String)
 {
     Strings.push_back(String);
@@ -164,4 +166,23 @@ std::vector<const char*> FVulkanContextOptions::GetDeviceExtensionsList()
 void FVulkanContextOptions::BuildDevicePNextChain(BaseVulkanStructure* CreateInfo)
 {
     DeviceOptions.ExtensionVector.BuildPNextChain(CreateInfo);
+}
+
+std::vector<char> ReadFile(const std::string& FileName)
+{
+    std::ifstream File(FileName, std::ios::ate | std::ios::binary);
+
+    if (!File.is_open())
+    {
+        throw std::runtime_error("Failed to open file!");
+    }
+
+    std::size_t FileSize = (std::size_t)File.tellg();
+    std::vector<char> Buffer(FileSize);
+
+    File.seekg(0);
+    File.read(Buffer.data(), FileSize);
+    File.close();
+
+    return Buffer;
 }
