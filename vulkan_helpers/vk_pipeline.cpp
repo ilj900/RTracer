@@ -84,8 +84,8 @@ VkPipeline FPipeline::CreateGraphicsPipeline(VkDevice Device, VkRenderPass Rende
 
     VertexInputInfo.vertexBindingDescriptionCount = VertexInputBindingDescriptionVector.size();
     VertexInputInfo.vertexAttributeDescriptionCount = VertexInputAttributeDescriptionVector.size();
-    VertexInputInfo.pVertexBindingDescriptions = VertexInputBindingDescriptionVector.data();
-    VertexInputInfo.pVertexAttributeDescriptions = VertexInputAttributeDescriptionVector.data();
+    VertexInputInfo.pVertexBindingDescriptions = (VertexInputInfo.vertexBindingDescriptionCount > 0) ? VertexInputBindingDescriptionVector.data() : nullptr;
+    VertexInputInfo.pVertexAttributeDescriptions = (VertexInputInfo.vertexAttributeDescriptionCount > 0) ? VertexInputAttributeDescriptionVector.data() : nullptr;
 
     VkPipelineInputAssemblyStateCreateInfo InputAssembly{};
     InputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
