@@ -34,6 +34,11 @@ void FPipeline::SetHeight(uint32_t Hght)
     Height = Hght;
 }
 
+void FPipeline::SetBlendAttachmentsCount(uint32_t Count)    ///TODO: Find a better solution
+{
+    BlendCount = Count;
+}
+
 void FPipeline::SetExtent2D(VkExtent2D Extent2D)
 {
     Extent = Extent2D;
@@ -144,7 +149,11 @@ VkPipeline FPipeline::CreateGraphicsPipeline(VkDevice Device, VkRenderPass Rende
     ColorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
     ColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
-    std::vector<VkPipelineColorBlendAttachmentState> ColorBlendingAttachments{ColorBlendAttachment, ColorBlendAttachment, ColorBlendAttachment};
+    std::vector<VkPipelineColorBlendAttachmentState> ColorBlendingAttachments;
+    for (uint32_t i = 0; i < BlendCount; ++i)
+    {
+        ColorBlendingAttachments.push_back(ColorBlendAttachment);
+    }
 
     VkPipelineColorBlendStateCreateInfo ColorBlending{};
     ColorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -213,6 +222,11 @@ VkPipeline FPipeline::CreateGraphicsPipeline(VkDevice Device, VkRenderPass Rende
     {
         vkDestroyShaderModule(LogicalDevice, Shader.ShaderModule, nullptr);
     }
+
+    ShaderModules.clear();
+    VertexInputBindingDescriptionVector.clear();
+    VertexInputAttributeDescriptionVector.clear();
+    DescriptorSetLayouts.clear();
 
     return Pipeline;
 }
@@ -295,6 +309,11 @@ VkPipeline FPipeline::CreateRayTracingPipeline(VkDevice LogicalDevice)
     {
         vkDestroyShaderModule(LogicalDevice, Stage.module, nullptr);
     }
+
+    ShaderModules.clear();
+    VertexInputBindingDescriptionVector.clear();
+    VertexInputAttributeDescriptionVector.clear();
+    DescriptorSetLayouts.clear();
 
     return Pipeline;
 }

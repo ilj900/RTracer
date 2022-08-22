@@ -37,6 +37,7 @@ namespace LAYOUT_SETS
 {
     const std::string PER_FRAME_LAYOUT_NAME = "Per-frame layout";
     const std::string PER_RENDERABLE_LAYOUT_NAME = "Per-renderable layout";
+    const std::string PASSTHROUGH_LAYOUT_NAME = "Passthrough layout";
 }
 
 namespace LAYOUTS
@@ -81,8 +82,10 @@ void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
         Swapchain = std::make_shared<FSwapchain>(*this, PhysicalDevice, LogicalDevice, Surface, Window, GraphicsQueueIndex, PresentQueueIndex, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
         CreateDepthAndAAImages();
         CreateRenderPass();
+        CreatePassthroughRenderPass();
         CreateDescriptorSetLayouts();
         CreateGraphicsPipeline();
+        CreatePassthroughPipeline();
         ImageManager->LoadImageFromFile(TextureImage, TexturePath);
         CreateFramebuffers();
         CreateTextureSampler();
@@ -523,6 +526,14 @@ void FVulkanContext::CreateDepthAndAAImages()
     DepthImg.Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
+void FVulkanContext::CreatePassthroughRenderPass()
+{
+    PassthroughRenderPass = std::make_shared<FRenderPass>();
+    PassthroughRenderPass->AddImageAsAttachment(Swapchain->Images[0], AttachmentType::Color);
+
+    PassthroughRenderPass->Construct(LogicalDevice);
+}
+
 void FVulkanContext::CreateRenderPass()
 {
     RenderPass = std::make_shared<FRenderPass>();
@@ -567,7 +578,23 @@ void FVulkanContext::CreateDescriptorSetLayouts()
     DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, 1, LAYOUTS::RENDERABLE_LAYOUT_NAME,
                                               {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
 
+    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, 0, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME,
+                                              {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
+
     DescriptorSetManager->CreateDescriptorSetLayouts();
+}
+
+void FVulkanContext::CreatePassthroughPipeline()
+{
+    PassthroughPipeline.AddShader("../shaders/passthrough_vert.spv", eShaderType::VERTEX);
+    PassthroughPipeline.AddShader("../shaders/passthrough_frag.spv", eShaderType::FRAGMENT);
+
+    PassthroughPipeline.SetExtent2D(Swapchain->GetExtent2D());
+    PassthroughPipeline.SetWidth(Swapchain->GetWidth());
+    PassthroughPipeline.SetHeight(Swapchain->GetHeight());
+    PassthroughPipeline.SetBlendAttachmentsCount(1);
+    PassthroughPipeline.AddDescriptorSetLayout(DescriptorSetManager->GetVkDescriptorSetLayout(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME));
+    PassthroughPipeline.CreateGraphicsPipeline(LogicalDevice, PassthroughRenderPass->RenderPass);
 }
 
 void FVulkanContext::CreateGraphicsPipeline()
@@ -586,6 +613,7 @@ void FVulkanContext::CreateGraphicsPipeline()
     GraphicsPipeline.SetExtent2D(Swapchain->GetExtent2D());
     GraphicsPipeline.SetWidth(Swapchain->GetWidth());
     GraphicsPipeline.SetHeight(Swapchain->GetHeight());
+    GraphicsPipeline.SetBlendAttachmentsCount(3);
     GraphicsPipeline.AddDescriptorSetLayout(DescriptorSetManager->GetVkDescriptorSetLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME));
     GraphicsPipeline.AddDescriptorSetLayout(DescriptorSetManager->GetVkDescriptorSetLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME));
     GraphicsPipeline.CreateGraphicsPipeline(LogicalDevice, RenderPass->RenderPass);
@@ -826,15 +854,17 @@ void FVulkanContext::CreateCommandBuffers()
             vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                  0, 0, nullptr, 0, nullptr, Barriers.size(), Barriers.data());
 
+            auto W = static_cast<int32_t>(Swapchain->GetWidth());
+            auto H = static_cast<int32_t>(Swapchain->GetHeight());
             VkImageBlit ImageBlit{};
             ImageBlit.srcOffsets[0] = {0, 0, 0};
-            ImageBlit.srcOffsets[1] = {1920, 1080, 1};
+            ImageBlit.srcOffsets[1] = {W, H, 1};
             ImageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             ImageBlit.srcSubresource.mipLevel = 0;
             ImageBlit.srcSubresource.baseArrayLayer = 0;
             ImageBlit.srcSubresource.layerCount = 1;
             ImageBlit.dstOffsets[0] = {0, 0, 0};
-            ImageBlit.dstOffsets[1] = {1920, 1080, 1};
+            ImageBlit.dstOffsets[1] = {W, H, 1};
             ImageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             ImageBlit.dstSubresource.mipLevel = 0;
             ImageBlit.dstSubresource.baseArrayLayer = 0;
@@ -1209,8 +1239,10 @@ void FVulkanContext::CleanUpSwapChain()
     }
 
     GraphicsPipeline.Delete();
+    PassthroughPipeline.Delete();
 
     RenderPass = nullptr;
+    PassthroughRenderPass = nullptr;
     vkDestroyRenderPass(LogicalDevice, ImGuiRenderPass, nullptr);
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)
@@ -1279,6 +1311,7 @@ void FVulkanContext::CleanUp()
 
     DescriptorSetManager->DestroyDescriptorSetLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME);
     DescriptorSetManager->DestroyDescriptorSetLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME);
+    DescriptorSetManager->DestroyDescriptorSetLayout(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME);
 
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();

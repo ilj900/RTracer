@@ -101,9 +101,9 @@ void FRenderPass::Construct(VkDevice LogicalDevice)
     VkSubpassDescription Subpass{};
     Subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     Subpass.colorAttachmentCount = ColorAttachmentReferences.size();
-    Subpass.pColorAttachments = ColorAttachmentReferences.data();
-    Subpass.pDepthStencilAttachment = &DepthAttachmentReference;
-    Subpass.pResolveAttachments = ResolvedAttachmentReferences.data();
+    Subpass.pColorAttachments = (ColorAttachmentReferences.size() > 0) ? ColorAttachmentReferences.data() : nullptr;
+    Subpass.pDepthStencilAttachment = (DepthStencilAttachmentDescriptions.size() > 0) ? &DepthAttachmentReference : nullptr;
+    Subpass.pResolveAttachments = (ResolvedAttachmentReferences.size() > 0) ? ResolvedAttachmentReferences.data() : nullptr;
 
     VkRenderPassCreateInfo RenderPassInfo{};
     RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;

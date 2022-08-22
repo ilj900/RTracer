@@ -20,6 +20,7 @@ public:
     void AddDescriptorSetLayout(VkDescriptorSetLayout DescriptorSetLayout);
     void SetWidth(uint32_t Wdth);
     void SetHeight(uint32_t Hght);
+    void SetBlendAttachmentsCount(uint32_t Count);
     VkPipelineLayout GetPipelineLayout();
     VkPipeline GetPipeline();
 
@@ -57,4 +58,6 @@ private:
     VkExtent2D Extent = {1920, 1080};
 
     std::vector<VkDescriptorSetLayout> DescriptorSetLayouts;
+
+    uint32_t BlendCount = 0;
 };
