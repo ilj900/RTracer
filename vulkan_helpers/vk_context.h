@@ -46,7 +46,8 @@ public:
     void CreateDescriptorSetLayouts();
     void CreateGraphicsPipeline();
     void CreatePassthroughPipeline();
-    void CreateFramebuffers();
+    void CreateRenderFramebuffers();
+    void CreatePassthroughFramebuffers();
     void LoadModelDataToGPU();
     void CreateTextureSampler();
     void CreateUniformBuffers();
@@ -126,6 +127,7 @@ public:
     std::shared_ptr<FSwapchain> Swapchain = nullptr;
     VkImage CurrentImage = VK_NULL_HANDLE;
     std::vector<VkFramebuffer> SwapChainFramebuffers;
+    std::vector<VkFramebuffer> PassthroughFramebuffers;
 
     VkDescriptorPool ImGuiDescriptorPool;
     VkRenderPass ImGuiRenderPass;
@@ -154,7 +156,8 @@ public:
     uint32_t  MipLevels;
     std::shared_ptr<FDescriptorSetManager>DescriptorSetManager = nullptr;
 
-    std::vector<VkCommandBuffer> CommandBuffers;
+    std::vector<VkCommandBuffer> GraphicsCommandBuffers;
+    std::vector<VkCommandBuffer> PassthroughCommandBuffers;
 
     std::vector<FBuffer> DeviceTransformBuffers;
     std::vector<FBuffer> DeviceCameraBuffers;
@@ -162,6 +165,7 @@ public:
 
     std::vector<VkSemaphore> ImageAvailableSemaphores;
     std::vector<VkSemaphore> RenderFinishedSemaphores;
+    std::vector<VkSemaphore> PassthroughFinishedSemaphore;
     std::vector<VkSemaphore> ImGuiFinishedSemaphores;
     std::vector<VkFence> RenderingFinishedFences;
     std::vector<VkFence> ImGuiFinishedFences;

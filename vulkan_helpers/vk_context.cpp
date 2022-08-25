@@ -87,7 +87,8 @@ void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
         CreateGraphicsPipeline();
         CreatePassthroughPipeline();
         ImageManager->LoadImageFromFile(TextureImage, TexturePath);
-        CreateFramebuffers();
+        CreateRenderFramebuffers();
+        CreatePassthroughFramebuffers();
         CreateTextureSampler();
         LoadModelDataToGPU();
         CreateUniformBuffers();
@@ -507,7 +508,7 @@ void FVulkanContext::CreateDepthAndAAImages()
     UtilityImgR32.Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
     ImageManager->CreateImage(ResolvedColorImage, Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
-                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                               VK_IMAGE_ASPECT_COLOR_BIT);
 
     ImageManager->CreateImage(UtilityImageR8G8B8A8_SRGB, Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
@@ -529,7 +530,7 @@ void FVulkanContext::CreateDepthAndAAImages()
 void FVulkanContext::CreatePassthroughRenderPass()
 {
     PassthroughRenderPass = std::make_shared<FRenderPass>();
-    PassthroughRenderPass->AddImageAsAttachment(Swapchain->Images[0], AttachmentType::Color);
+    PassthroughRenderPass->AddImageAsAttachment(Swapchain->Images[0], AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
     PassthroughRenderPass->Construct(LogicalDevice);
 }
@@ -537,11 +538,11 @@ void FVulkanContext::CreatePassthroughRenderPass()
 void FVulkanContext::CreateRenderPass()
 {
     RenderPass = std::make_shared<FRenderPass>();
-    RenderPass->AddImageAsAttachment((*ImageManager)(ColorImage), AttachmentType::Color);
-    RenderPass->AddImageAsAttachment((*ImageManager)(NormalsImage), AttachmentType::Color);
-    RenderPass->AddImageAsAttachment((*ImageManager)(RenderableIndexImage), AttachmentType::Color);
-    RenderPass->AddImageAsAttachment((*ImageManager)(DepthImage), AttachmentType::DepthStencil);
-    RenderPass->AddImageAsAttachment((*ImageManager)(ResolvedColorImage), AttachmentType::Resolve);
+    RenderPass->AddImageAsAttachment((*ImageManager)(ColorImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    RenderPass->AddImageAsAttachment((*ImageManager)(NormalsImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    RenderPass->AddImageAsAttachment((*ImageManager)(RenderableIndexImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    RenderPass->AddImageAsAttachment((*ImageManager)(DepthImage), AttachmentType::DepthStencil, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+    RenderPass->AddImageAsAttachment((*ImageManager)(ResolvedColorImage), AttachmentType::Resolve, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     RenderPass->Construct(LogicalDevice);
 }
@@ -578,7 +579,7 @@ void FVulkanContext::CreateDescriptorSetLayouts()
     DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, 1, LAYOUTS::RENDERABLE_LAYOUT_NAME,
                                               {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
 
-    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, 0, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME,
+    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, 2, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME,
                                               {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
 
     DescriptorSetManager->CreateDescriptorSetLayouts();
@@ -633,28 +634,50 @@ bool FVulkanContext::HasStensilComponent(VkFormat Format)
     return Format == VK_FORMAT_D32_SFLOAT_S8_UINT || Format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-void FVulkanContext::CreateFramebuffers()
+void FVulkanContext::CreateRenderFramebuffers()
 {
     SwapChainFramebuffers.resize(Swapchain->Size());
     for (std::size_t i = 0; i < Swapchain->Size(); ++i) {
         std::vector<VkImageView> Attachments = {(*ImageManager)(ColorImage).View, (*ImageManager)(NormalsImage).View, (*ImageManager)(RenderableIndexImage).View,
                                                 (*ImageManager)(DepthImage).View, (*ImageManager)(ResolvedColorImage).View};
 
-        VkFramebufferCreateInfo FramebufferInfo{};
-        FramebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        FramebufferInfo.renderPass = RenderPass->RenderPass;
-        FramebufferInfo.attachmentCount = static_cast<uint32_t>(Attachments.size());
-        FramebufferInfo.pAttachments = Attachments.data();
-        FramebufferInfo.width = Swapchain->GetWidth();
-        FramebufferInfo.height = Swapchain->GetHeight();
-        FramebufferInfo.layers = 1;
+        VkFramebufferCreateInfo FramebufferCreateInfo{};
+        FramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        FramebufferCreateInfo.renderPass = RenderPass->RenderPass;
+        FramebufferCreateInfo.attachmentCount = static_cast<uint32_t>(Attachments.size());
+        FramebufferCreateInfo.pAttachments = Attachments.data();
+        FramebufferCreateInfo.width = Swapchain->GetWidth();
+        FramebufferCreateInfo.height = Swapchain->GetHeight();
+        FramebufferCreateInfo.layers = 1;
 
-        if (vkCreateFramebuffer(LogicalDevice, &FramebufferInfo, nullptr, &SwapChainFramebuffers[i]) != VK_SUCCESS)
+        if (vkCreateFramebuffer(LogicalDevice, &FramebufferCreateInfo, nullptr, &SwapChainFramebuffers[i]) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create framebuffer!");
         }
     }
+}
 
+void FVulkanContext::CreatePassthroughFramebuffers()
+{
+    PassthroughFramebuffers.resize(Swapchain->Size());
+    for (std::size_t i = 0; i < PassthroughFramebuffers.size(); ++i)
+    {
+        std::vector<VkImageView> Attachments = {Swapchain->Images[i].View};
+
+        VkFramebufferCreateInfo FramebufferCreateInfo{};
+        FramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        FramebufferCreateInfo.renderPass = PassthroughRenderPass->RenderPass;
+        FramebufferCreateInfo.attachmentCount = static_cast<uint32_t>(Attachments.size());
+        FramebufferCreateInfo.pAttachments = Attachments.data();
+        FramebufferCreateInfo.width = Swapchain->GetWidth();
+        FramebufferCreateInfo.height = Swapchain->GetHeight();
+        FramebufferCreateInfo.layers = 1;
+
+        if (vkCreateFramebuffer(LogicalDevice, &FramebufferCreateInfo, nullptr, &PassthroughFramebuffers[i]) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to create passthrough framebuffer!");
+        }
+    }
 }
 
 void FVulkanContext::LoadModelDataToGPU()
@@ -724,6 +747,7 @@ void FVulkanContext::CreateDescriptorPool()
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
     DescriptorSetManager->AddDescriptorSet(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, NumberOfSwapChainImages);
     DescriptorSetManager->AddDescriptorSet(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, NumberOfSwapChainImages * ModelsCount);
+    DescriptorSetManager->AddDescriptorSet(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, NumberOfSwapChainImages);
 
     DescriptorSetManager->ReserveDescriptorPool();
 }
@@ -772,15 +796,24 @@ void FVulkanContext::CreateDescriptorSet()
         ImageBufferInfo.sampler = TextureSampler;
         DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME, i, ImageBufferInfo);
     }
+
+    for (size_t i = 0; i < Swapchain->Size(); ++i)
+    {
+        VkDescriptorImageInfo ImageBufferInfo{};
+        ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        ImageBufferInfo.imageView = (*ImageManager)(ResolvedColorImage).View;
+        ImageBufferInfo.sampler = TextureSampler;
+        DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME, i, ImageBufferInfo);
+    }
 }
 
 void FVulkanContext::CreateCommandBuffers()
 {
-    CommandBuffers.resize(SwapChainFramebuffers.size());
+    GraphicsCommandBuffers.resize(SwapChainFramebuffers.size());
 
-    for (std::size_t i = 0; i <CommandBuffers.size(); ++i)
+    for (std::size_t i = 0; i < GraphicsCommandBuffers.size(); ++i)
     {
-        CommandBuffers[i] = CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
+        GraphicsCommandBuffers[i] = CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
             VkRenderPassBeginInfo RenderPassInfo{};
             RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -818,67 +851,34 @@ void FVulkanContext::CreateCommandBuffers()
                 ++j;
             }
             vkCmdEndRenderPass(CommandBuffer);
+        });
+    }
 
-            VkImageMemoryBarrier RenderBarrier{};
-            RenderBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            RenderBarrier.image = (*ImageManager)(ResolvedColorImage).Image;
-            RenderBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            RenderBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            RenderBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            RenderBarrier.subresourceRange.baseArrayLayer = 0;
-            RenderBarrier.subresourceRange.layerCount = 1;
-            RenderBarrier.subresourceRange.levelCount = 1;
-            RenderBarrier.subresourceRange.baseMipLevel = 0;
-            RenderBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            RenderBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-            RenderBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-            RenderBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+    PassthroughCommandBuffers.resize(PassthroughFramebuffers.size());
 
-            VkImageMemoryBarrier BlitBarrier{};
-            BlitBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            BlitBarrier.image = Swapchain->Images[i].Image;
-            BlitBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            BlitBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            BlitBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            BlitBarrier.subresourceRange.baseArrayLayer = 0;
-            BlitBarrier.subresourceRange.layerCount = 1;
-            BlitBarrier.subresourceRange.levelCount = 1;
-            BlitBarrier.subresourceRange.baseMipLevel = 0;
-            BlitBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            BlitBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            BlitBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-            BlitBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+    for (std::size_t i = 0; i < PassthroughCommandBuffers.size(); ++i)
+    {
+        PassthroughCommandBuffers[i] = CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
+        {
+            VkRenderPassBeginInfo RenderPassInfo{};
+            RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            RenderPassInfo.renderPass = PassthroughRenderPass->RenderPass;
+            RenderPassInfo.framebuffer = PassthroughFramebuffers[i];
+            RenderPassInfo.renderArea.offset = {0, 0};
+            RenderPassInfo.renderArea.extent = Swapchain->GetExtent2D();
 
-            std::vector<VkImageMemoryBarrier> Barriers{RenderBarrier, BlitBarrier};
+            std::vector<VkClearValue> ClearValues{1};
+            ClearValues[0].color = {0.f, 0.f, 0.f, 1.f};
+            RenderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
+            RenderPassInfo.pClearValues = ClearValues.data();
 
-            vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                 0, 0, nullptr, 0, nullptr, Barriers.size(), Barriers.data());
-
-            auto W = static_cast<int32_t>(Swapchain->GetWidth());
-            auto H = static_cast<int32_t>(Swapchain->GetHeight());
-            VkImageBlit ImageBlit{};
-            ImageBlit.srcOffsets[0] = {0, 0, 0};
-            ImageBlit.srcOffsets[1] = {W, H, 1};
-            ImageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            ImageBlit.srcSubresource.mipLevel = 0;
-            ImageBlit.srcSubresource.baseArrayLayer = 0;
-            ImageBlit.srcSubresource.layerCount = 1;
-            ImageBlit.dstOffsets[0] = {0, 0, 0};
-            ImageBlit.dstOffsets[1] = {W, H, 1};
-            ImageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            ImageBlit.dstSubresource.mipLevel = 0;
-            ImageBlit.dstSubresource.baseArrayLayer = 0;
-            ImageBlit.dstSubresource.layerCount = 1;
-
-            vkCmdBlitImage(CommandBuffer, (*ImageManager)(ResolvedColorImage).Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, Swapchain->Images[i].Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &ImageBlit, VK_FILTER_LINEAR);
-
-            BlitBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            BlitBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            BlitBarrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
-            BlitBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-
-            vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-                                 0, 0, nullptr, 0, nullptr, 1, &BlitBarrier);
+            vkCmdBeginRenderPass(CommandBuffer, &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PassthroughPipeline.GetPipeline());
+            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PassthroughPipeline.GetPipelineLayout(),
+                                    0, 1, &DescriptorSetManager->GetSet(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, i),
+                                    0, nullptr);
+            vkCmdDraw(CommandBuffer, 3, 1, 0, 0);
+            vkCmdEndRenderPass(CommandBuffer);
         });
     }
 }
@@ -887,6 +887,7 @@ void FVulkanContext::CreateSyncObjects()
 {
     ImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     RenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    PassthroughFinishedSemaphore.resize(MAX_FRAMES_IN_FLIGHT);
     RenderingFinishedFences.resize(MAX_FRAMES_IN_FLIGHT);
     ImagesInFlight.resize(MAX_FRAMES_IN_FLIGHT, VK_NULL_HANDLE);
     ImGuiFinishedFences.resize(MAX_FRAMES_IN_FLIGHT);
@@ -903,6 +904,7 @@ void FVulkanContext::CreateSyncObjects()
     {
         if (vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &ImageAvailableSemaphores[i]) != VK_SUCCESS ||
             vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &RenderFinishedSemaphores[i]) != VK_SUCCESS ||
+            vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &PassthroughFinishedSemaphore[i]) != VK_SUCCESS ||
             vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &ImGuiFinishedSemaphores[i]) != VK_SUCCESS ||
             vkCreateFence(LogicalDevice, &FenceInfo, nullptr, &ImGuiFinishedFences[i]) != VK_SUCCESS ||
             vkCreateFence(LogicalDevice, &FenceInfo, nullptr, &RenderingFinishedFences[i]) != VK_SUCCESS)
@@ -1082,7 +1084,7 @@ void FVulkanContext::Render()
     SubmitInfo.pWaitSemaphores = WaitSemaphores;
     SubmitInfo.pWaitDstStageMask = WaitStages;
     SubmitInfo.commandBufferCount = 1;
-    SubmitInfo.pCommandBuffers = &CommandBuffers[ImageIndex];
+    SubmitInfo.pCommandBuffers = &GraphicsCommandBuffers[ImageIndex];
 
     VkSemaphore SignalSemaphores[] = {RenderFinishedSemaphores[CurrentFrame]};
     SubmitInfo.signalSemaphoreCount = 1;
@@ -1092,7 +1094,29 @@ void FVulkanContext::Render()
     vkResetFences(LogicalDevice, 1, &RenderingFinishedFences[CurrentFrame]);
 
     /// Submit rendering. When rendering finished, appropriate fence will be signalled
-    if (vkQueueSubmit(GraphicsQueue, 1, &SubmitInfo, RenderingFinishedFences[CurrentFrame]) != VK_SUCCESS)
+    if (vkQueueSubmit(GraphicsQueue, 1, &SubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to submit draw command buffer!");
+    }
+
+
+    VkSubmitInfo PassThroughSubmitInfo{};
+    PassThroughSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    VkSemaphore PassthroughWaitSemaphores[] = {RenderFinishedSemaphores[CurrentFrame]};
+    VkPipelineStageFlags PassthroughWaitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    PassThroughSubmitInfo.waitSemaphoreCount = 1;
+    PassThroughSubmitInfo.pWaitSemaphores = PassthroughWaitSemaphores;
+    PassThroughSubmitInfo.pWaitDstStageMask = PassthroughWaitStages;
+    PassThroughSubmitInfo.commandBufferCount = 1;
+    PassThroughSubmitInfo.pCommandBuffers = &PassthroughCommandBuffers[ImageIndex];
+
+    VkSemaphore PassthroughSignalSemaphores[] = {PassthroughFinishedSemaphore[CurrentFrame]};
+    PassThroughSubmitInfo.signalSemaphoreCount = 1;
+    PassThroughSubmitInfo.pSignalSemaphores = PassthroughSignalSemaphores;
+
+    /// Submit rendering. When rendering finished, appropriate fence will be signalled
+    if (vkQueueSubmit(GraphicsQueue, 1, &PassThroughSubmitInfo, RenderingFinishedFences[CurrentFrame]) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to submit draw command buffer!");
     }
@@ -1134,7 +1158,7 @@ void FVulkanContext::RenderImGui()
         VkSubmitInfo SubmitInfo{};
         SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        VkSemaphore WaitSemaphores[] = {RenderFinishedSemaphores[CurrentFrame]};
+        VkSemaphore WaitSemaphores[] = {PassthroughFinishedSemaphore[CurrentFrame]};
         VkPipelineStageFlags WaitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
         SubmitInfo.waitSemaphoreCount = 1;
         SubmitInfo.pWaitSemaphores = WaitSemaphores;
@@ -1206,7 +1230,7 @@ void FVulkanContext::RecreateSwapChain()
 
     Swapchain = std::make_shared<FSwapchain>(*this, PhysicalDevice, LogicalDevice, Surface, Window, GraphicsQueueIndex, PresentQueueIndex, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
     CreateGraphicsPipeline();
-    CreateFramebuffers();
+    CreateRenderFramebuffers();
     CreateUniformBuffers();
     CreateDescriptorPool();
     CreateDescriptorSet();
@@ -1233,7 +1257,12 @@ void FVulkanContext::CleanUpSwapChain()
         vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
     }
 
-    for (auto& CommandBuffer : CommandBuffers)
+    for (auto& CommandBuffer : GraphicsCommandBuffers)
+    {
+        CommandBufferManager->FreeCommandBuffer(CommandBuffer);
+    }
+
+    for (auto& CommandBuffer : PassthroughCommandBuffers)
     {
         CommandBufferManager->FreeCommandBuffer(CommandBuffer);
     }
@@ -1324,6 +1353,7 @@ void FVulkanContext::CleanUp()
     {
         vkDestroySemaphore(LogicalDevice, RenderFinishedSemaphores[i], nullptr);
         vkDestroySemaphore(LogicalDevice, ImageAvailableSemaphores[i], nullptr);
+        vkDestroySemaphore(LogicalDevice, PassthroughFinishedSemaphore[i], nullptr);
         vkDestroySemaphore(LogicalDevice, ImGuiFinishedSemaphores[i], nullptr);
         vkDestroyFence(LogicalDevice, RenderingFinishedFences[i], nullptr);
         vkDestroyFence(LogicalDevice, ImGuiFinishedFences[i], nullptr);
