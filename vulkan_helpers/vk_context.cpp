@@ -132,19 +132,6 @@ void FVulkanContext::CreateInstance()
 
 void FVulkanContext::LoadFunctionPointers()
 {
-    vkCreateDebugUtilsMessengerEXT = LoadInstanceFunction<PFN_vkCreateDebugUtilsMessengerEXT>("vkCreateDebugUtilsMessengerEXT", Instance);
-    vkDestroyDebugUtilsMessengerEXT = LoadInstanceFunction<PFN_vkDestroyDebugUtilsMessengerEXT>("vkDestroyDebugUtilsMessengerEXT", Instance);
-    vkSetDebugUtilsObjectNameEXT = LoadInstanceFunction<PFN_vkSetDebugUtilsObjectNameEXT>("vkSetDebugUtilsObjectNameEXT", Instance);
-    vkCreateAccelerationStructureKHR = LoadInstanceFunction<PFN_vkCreateAccelerationStructureKHR>("vkCreateAccelerationStructureKHR", Instance);
-    vkDestroyAccelerationStructureKHR = LoadInstanceFunction<PFN_vkDestroyAccelerationStructureKHR>("vkDestroyAccelerationStructureKHR", Instance);
-    vkGetAccelerationStructureBuildSizesKHR = LoadInstanceFunction<PFN_vkGetAccelerationStructureBuildSizesKHR>("vkGetAccelerationStructureBuildSizesKHR", Instance);
-    vkCmdBuildAccelerationStructuresKHR = LoadInstanceFunction<PFN_vkCmdBuildAccelerationStructuresKHR>("vkCmdBuildAccelerationStructuresKHR", Instance);
-    vkCmdWriteAccelerationStructuresPropertiesKHR = LoadInstanceFunction<PFN_vkCmdWriteAccelerationStructuresPropertiesKHR>("vkCmdWriteAccelerationStructuresPropertiesKHR", Instance);
-    vkCmdCopyAccelerationStructureKHR = LoadInstanceFunction<PFN_vkCmdCopyAccelerationStructureKHR>("vkCmdCopyAccelerationStructureKHR", Instance);
-    vkGetAccelerationStructureDeviceAddressKHR = LoadInstanceFunction<PFN_vkGetAccelerationStructureDeviceAddressKHR>("vkGetAccelerationStructureDeviceAddressKHR", Instance);
-    vkGetRayTracingShaderGroupHandlesKHR = LoadInstanceFunction<PFN_vkGetRayTracingShaderGroupHandlesKHR>("vkGetRayTracingShaderGroupHandlesKHR", Instance);
-    vkCreateRayTracingPipelinesKHR = LoadInstanceFunction<PFN_vkCreateRayTracingPipelinesKHR>("vkCreateRayTracingPipelinesKHR", Instance);
-    vkCmdTraceRaysKHR = LoadInstanceFunction<PFN_vkCmdTraceRaysKHR>("vkCmdTraceRaysKHR", Instance);
     V::LoadVkFunctions(Instance);
 }
 
