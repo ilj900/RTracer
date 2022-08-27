@@ -13,14 +13,6 @@ struct FVersion3
     uint32_t Patch = 0u;
 };
 
-auto CheckNotNullptr = [](void* FunctionPointer, const std::string& FunctionName)
-{
-    if (FunctionPointer == nullptr)
-    {
-        throw std::runtime_error("Failed to load function: " + FunctionName + "\n");
-    }
-};
-
 /// Just a utility structure to simplify access to pNext pointer
 struct BaseVulkanStructure
 {
@@ -119,23 +111,5 @@ struct FVulkanContextOptions
     FInstanceOptions InstanceOptions;
     FDeviceOptions DeviceOptions;
 };
-
-/// Load an instance function
-template <class T>
-T LoadInstanceFunction(const std::string& FunctionName, VkInstance Instance)
-{
-    T Function = (T) vkGetInstanceProcAddr(Instance, FunctionName.c_str());
-    CheckNotNullptr(Function, FunctionName);
-    return Function;
-}
-
-/// Load a device function
-template <class T>
-T LoadDeviceFunction(const std::string& FunctionName, VkDevice Device)
-{
-    T Function = (T) vkGetDeviceProcAddr(Device, FunctionName.c_str());
-    CheckNotNullptr(Function, FunctionName);
-    return Function;
-}
 
 std::vector<char> ReadFile(const std::string& FileName);

@@ -1,4 +1,6 @@
 #include "vk_context.h"
+#include "vk_debug.h"
+#include "vk_functions.h"
 
 #include "systems/camera_system.h"
 #include "systems/mesh_system.h"
@@ -143,14 +145,15 @@ void FVulkanContext::LoadFunctionPointers()
     vkGetRayTracingShaderGroupHandlesKHR = LoadInstanceFunction<PFN_vkGetRayTracingShaderGroupHandlesKHR>("vkGetRayTracingShaderGroupHandlesKHR", Instance);
     vkCreateRayTracingPipelinesKHR = LoadInstanceFunction<PFN_vkCreateRayTracingPipelinesKHR>("vkCreateRayTracingPipelinesKHR", Instance);
     vkCmdTraceRaysKHR = LoadInstanceFunction<PFN_vkCmdTraceRaysKHR>("vkCmdTraceRaysKHR", Instance);
+    V::LoadVkFunctions(Instance);
 }
 
 void FVulkanContext::SetupDebugMessenger()
 {
 #ifndef NDEBUG
-    VkDebugUtilsMessengerCreateInfoEXT* DebugCreateInfo = VulkanContextOptions.GetExtensionStructurePtr<VkDebugUtilsMessengerCreateInfoEXT>(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
+    auto* DebugCreateInfo = VulkanContextOptions.GetExtensionStructurePtr<VkDebugUtilsMessengerCreateInfoEXT>(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
 
-    vkCreateDebugUtilsMessengerEXT(Instance, DebugCreateInfo, nullptr, &DebugMessenger);
+    V::vkCreateDebugUtilsMessengerEXT(Instance, DebugCreateInfo, nullptr, &DebugMessenger);
 #endif
 }
 
@@ -542,7 +545,7 @@ void FVulkanContext::CreateRenderPass()
     RenderPass->AddImageAsAttachment((*ImageManager)(NormalsImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     RenderPass->AddImageAsAttachment((*ImageManager)(RenderableIndexImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     RenderPass->AddImageAsAttachment((*ImageManager)(DepthImage), AttachmentType::DepthStencil, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-    RenderPass->AddImageAsAttachment((*ImageManager)(ResolvedColorImage), AttachmentType::Resolve, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    RenderPass->AddImageAsAttachment((*ImageManager)(ResolvedColorImage), AttachmentType::Resolve, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
     RenderPass->Construct(LogicalDevice);
 }
@@ -868,7 +871,7 @@ void FVulkanContext::CreateCommandBuffers()
             RenderPassInfo.renderArea.extent = Swapchain->GetExtent2D();
 
             std::vector<VkClearValue> ClearValues{1};
-            ClearValues[0].color = {0.f, 0.f, 0.f, 1.f};
+            ClearValues[0].color = {0.f, 0.f, 1.f, 1.f};
             RenderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
             RenderPassInfo.pClearValues = ClearValues.data();
 
@@ -1327,7 +1330,7 @@ void FVulkanContext::FreeData(FBuffer Buffer)
 void FVulkanContext::DestroyDebugUtilsMessengerEXT()
 {
 #ifndef NDEBUG
-    vkDestroyDebugUtilsMessengerEXT(Instance, DebugMessenger, nullptr);
+    V::vkDestroyDebugUtilsMessengerEXT(Instance, DebugMessenger, nullptr);
 #endif
 }
 

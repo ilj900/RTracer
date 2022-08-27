@@ -1,6 +1,7 @@
 #include "vk_context.h"
 #include "vk_pipeline.h"
 #include "vk_utils.h"
+#include "vk_functions.h"
 
 #include <map>
 
@@ -303,7 +304,7 @@ VkPipeline FPipeline::CreateRayTracingPipeline(VkDevice LogicalDevice)
     RayTracingPipelineCreateInfo.maxPipelineRayRecursionDepth = 1;
     RayTracingPipelineCreateInfo.layout = PipelineLayout;
 
-    FVulkanContext::vkCreateRayTracingPipelinesKHR(LogicalDevice, {}, {}, 1, &RayTracingPipelineCreateInfo, nullptr, &Pipeline);
+    V::vkCreateRayTracingPipelinesKHR(LogicalDevice, {}, {}, 1, &RayTracingPipelineCreateInfo, nullptr, &Pipeline);
 
     for (auto& Stage : Stages)
     {
