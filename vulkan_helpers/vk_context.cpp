@@ -484,26 +484,41 @@ void FVulkanContext::CreateDepthAndAAImages()
     ImageManager->CreateImage(ColorImage, Width, Height, false, MSAASamples, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
                               VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                               VK_IMAGE_ASPECT_COLOR_BIT);
+    V::SetName(LogicalDevice, (*ImageManager)(ColorImage).Image, "V_ColorImage");
+    V::SetName(LogicalDevice, (*ImageManager)(ColorImage).View, "V_ColorImagView");
 
     ImageManager->CreateImage(NormalsImage, Width, Height, false, MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                                             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                             VK_IMAGE_ASPECT_COLOR_BIT);
+    V::SetName(LogicalDevice, (*ImageManager)(NormalsImage).Image, "V_NormalsImage");
+    V::SetName(LogicalDevice, (*ImageManager)(NormalsImage).View, "V_NormalsImageView");
+
     ImageManager->CreateImage(RenderableIndexImage, Width, Height, false, MSAASamples, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
                                                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                                     VK_IMAGE_ASPECT_COLOR_BIT);
+    V::SetName(LogicalDevice, (*ImageManager)(RenderableIndexImage).Image, "V_RenderableIndexImage");
+    V::SetName(LogicalDevice, (*ImageManager)(RenderableIndexImage).View, "V_RenderableIndexImageView");
+
     ImageManager->CreateImage(UtilityImageR32, Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
                                                VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                                VK_IMAGE_ASPECT_COLOR_BIT);
+    V::SetName(LogicalDevice, (*ImageManager)(UtilityImageR32).Image, "V_UtilityImageR32");
+    V::SetName(LogicalDevice, (*ImageManager)(UtilityImageR32).View, "V_UtilityImageR32View");
+
     auto& UtilityImgR32 = (*ImageManager)(UtilityImageR32);
     UtilityImgR32.Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
     ImageManager->CreateImage(ResolvedColorImage, Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
                               VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                               VK_IMAGE_ASPECT_COLOR_BIT);
+    V::SetName(LogicalDevice, (*ImageManager)(ResolvedColorImage).Image, "V_ResolvedColorImage");
+    V::SetName(LogicalDevice, (*ImageManager)(ResolvedColorImage).View, "V_ResolvedColorImageView");
 
     ImageManager->CreateImage(UtilityImageR8G8B8A8_SRGB, Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                                                          VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                                          VK_IMAGE_ASPECT_COLOR_BIT);
+    V::SetName(LogicalDevice, (*ImageManager)(UtilityImageR8G8B8A8_SRGB).Image, "V_UtilityImageR8G8B8A8_SRGB");
+    V::SetName(LogicalDevice, (*ImageManager)(UtilityImageR8G8B8A8_SRGB).View, "V_UtilityImageR8G8B8A8_SRGBView");
 
     /// Create Image and ImageView for Depth
     VkFormat DepthFormat = FindDepthFormat();
@@ -512,7 +527,8 @@ void FVulkanContext::CreateDepthAndAAImages()
                                           VK_IMAGE_ASPECT_DEPTH_BIT);
 
 
-
+    V::SetName(LogicalDevice, (*ImageManager)(DepthImage).Image, "V_DepthImage");
+    V::SetName(LogicalDevice, (*ImageManager)(DepthImage).View, "V_DepthImageView");
     auto& DepthImg = (*ImageManager)(DepthImage);
     DepthImg.Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
@@ -523,6 +539,7 @@ void FVulkanContext::CreatePassthroughRenderPass()
     PassthroughRenderPass->AddImageAsAttachment(Swapchain->Images[0], AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
     PassthroughRenderPass->Construct(LogicalDevice);
+    V::SetName(LogicalDevice, PassthroughRenderPass->RenderPass, "V_PassthroughRenderpass");
 }
 
 void FVulkanContext::CreateRenderPass()
@@ -535,6 +552,7 @@ void FVulkanContext::CreateRenderPass()
     RenderPass->AddImageAsAttachment((*ImageManager)(ResolvedColorImage), AttachmentType::Resolve, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
     RenderPass->Construct(LogicalDevice);
+    V::SetName(LogicalDevice, RenderPass->RenderPass, "V_RenderRenderpass");
 }
 
 VkFormat FVulkanContext::FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features)
@@ -569,7 +587,7 @@ void FVulkanContext::CreateDescriptorSetLayouts()
     DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, 1, LAYOUTS::RENDERABLE_LAYOUT_NAME,
                                               {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
 
-    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, 2, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME,
+    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, 0, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME,
                                               {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
 
     DescriptorSetManager->CreateDescriptorSetLayouts();
@@ -644,6 +662,8 @@ void FVulkanContext::CreateRenderFramebuffers()
         {
             throw std::runtime_error("Failed to create framebuffer!");
         }
+
+        V::SetName(LogicalDevice, SwapChainFramebuffers[i], "V_Render_fb_" + std::to_string(i));
     }
 }
 
@@ -667,6 +687,8 @@ void FVulkanContext::CreatePassthroughFramebuffers()
         {
             throw std::runtime_error("Failed to create passthrough framebuffer!");
         }
+
+        V::SetName(LogicalDevice, PassthroughFramebuffers[i], "V_Passthrough_fb_" + std::to_string(i));
     }
 }
 
@@ -850,6 +872,23 @@ void FVulkanContext::CreateCommandBuffers()
     {
         PassthroughCommandBuffers[i] = CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
+            VkImageMemoryBarrier Barrier{};
+            Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            Barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            Barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            Barrier.image = (*ImageManager)(ResolvedColorImage).Image;
+            Barrier.subresourceRange.baseMipLevel = 0;
+            Barrier.subresourceRange.levelCount = 1;
+            Barrier.subresourceRange.baseArrayLayer = 0;
+            Barrier.subresourceRange.layerCount = 1;
+            Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            Barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            Barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+            vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
+
             VkRenderPassBeginInfo RenderPassInfo{};
             RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
             RenderPassInfo.renderPass = PassthroughRenderPass->RenderPass;
@@ -867,6 +906,7 @@ void FVulkanContext::CreateCommandBuffers()
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PassthroughPipeline.GetPipelineLayout(),
                                     0, 1, &DescriptorSetManager->GetSet(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, i),
                                     0, nullptr);
+
             vkCmdDraw(CommandBuffer, 3, 1, 0, 0);
             vkCmdEndRenderPass(CommandBuffer);
         });
@@ -997,6 +1037,8 @@ void FVulkanContext::CreateImguiContext()
             {
                 throw std::runtime_error("Failed to create framebuffers for ImGui!");
             }
+
+            V::SetName(LogicalDevice, ImGuiFramebuffers[i], "V_Imgui_fb_" + std::to_string(i));
 
         }
     }
@@ -1238,6 +1280,11 @@ void FVulkanContext::CleanUpSwapChain()
     ImageManager->RemoveImage(DepthImage);
 
     for (auto Framebuffer : SwapChainFramebuffers)
+    {
+        vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
+    }
+
+    for (auto Framebuffer : PassthroughFramebuffers)
     {
         vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
     }

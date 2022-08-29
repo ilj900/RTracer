@@ -2,6 +2,7 @@
 
 #include "swapchain.h"
 #include "vk_context.h"
+#include "vk_debug.h"
 
 #include <stdexcept>
 
@@ -127,6 +128,8 @@ FSwapchain::FSwapchain(FVulkanContext &Context, VkPhysicalDevice PhysicalDevice,
     for (uint32_t i = 0; i < SwapchainImages.size(); ++i)
     {
         FImage::Wrap(SwapchainImages[i], SurfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, Images[i]);
+        V::SetName(LogicalDevice, SwapchainImages[i], "V_SwapchainImage" + std::to_string(i));
+        V::SetName(LogicalDevice, Images[i].View, "V_SwapchainImageView" + std::to_string(i));
     }
 }
 

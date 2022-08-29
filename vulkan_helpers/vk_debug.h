@@ -5,7 +5,7 @@
 #include "vulkan/vulkan.h"
 
 namespace V {
-    void SetName(VkDevice Device, uint64_t Object, VkDebugReportObjectTypeEXT ObjectType, const std::string &Name);
+    void SetName(VkDevice Device, uint64_t Object, VkObjectType ObjectType, const std::string &Name);
 
     void SetName(VkDevice Device, VkBuffer Buffer, const std::string &Name);
 

@@ -2,6 +2,7 @@
 
 #include "buffer.h"
 #include "vk_context.h"
+#include "vk_debug.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -41,6 +42,9 @@ void FImageManager::LoadImageFromFile(const std::string& ImageName, const std::s
     CreateImage(ImageName, TexWidth, TexHeight, true, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                                      VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                      VK_IMAGE_ASPECT_COLOR_BIT);
+
+    V::SetName(Context->LogicalDevice, Images.back().Image.Image, "V_TextureImage");
+    V::SetName(Context->LogicalDevice, Images.back().Image.View, "V_TextureImageView");
 
     Images.back().Image.Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     CopyBufferToImage(TempStagingBuffer, ImageName);
