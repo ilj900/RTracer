@@ -43,15 +43,18 @@ public:
     void CreateDepthAndAAImages();
     void CreateRenderPass();
     void CreatePassthroughRenderPass();
+    void CreateImguiRenderpasss();
     void CreateDescriptorSetLayouts();
     void CreateGraphicsPipeline();
     void CreatePassthroughPipeline();
     void CreateRenderFramebuffers();
+    void CreateImguiFramebuffers();
     void CreatePassthroughFramebuffers();
     void LoadModelDataToGPU();
     void CreateTextureSampler();
     void CreateUniformBuffers();
     void CreateDescriptorPool();
+    void CreateImguiDescriptorPool();
     void CreateDescriptorSet();
     void CreateCommandBuffers();
     void CreateSyncObjects();

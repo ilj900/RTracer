@@ -85,16 +85,19 @@ void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
         CreateDepthAndAAImages();
         CreateRenderPass();
         CreatePassthroughRenderPass();
+        CreateImguiRenderpasss();
         CreateDescriptorSetLayouts();
         CreateGraphicsPipeline();
         CreatePassthroughPipeline();
         ImageManager->LoadImageFromFile(TextureImage, TexturePath);
         CreateRenderFramebuffers();
         CreatePassthroughFramebuffers();
+        CreateImguiFramebuffers();
         CreateTextureSampler();
         LoadModelDataToGPU();
         CreateUniformBuffers();
         CreateDescriptorPool();
+        CreateImguiDescriptorPool();
         CreateDescriptorSet();
         CreateCommandBuffers();
         CreateSyncObjects();
@@ -692,6 +695,34 @@ void FVulkanContext::CreatePassthroughFramebuffers()
     }
 }
 
+void FVulkanContext::CreateImguiFramebuffers()
+{
+    ImGuiFramebuffers.resize(Swapchain->Size());
+
+    for(uint32_t i = 0; i < Swapchain->Size(); ++i)
+    {
+        VkImageView Attachment[1];
+        Attachment[0] = Swapchain->Images[i].View;
+
+        VkFramebufferCreateInfo FramebufferCreateInfo{};
+        FramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        FramebufferCreateInfo.renderPass = ImGuiRenderPass;
+        FramebufferCreateInfo.attachmentCount = 1;
+        FramebufferCreateInfo.pAttachments = Attachment;
+        FramebufferCreateInfo.width = Swapchain->GetWidth();
+        FramebufferCreateInfo.height = Swapchain->GetHeight();
+        FramebufferCreateInfo.layers = 1;
+
+        if (vkCreateFramebuffer(LogicalDevice, &FramebufferCreateInfo, nullptr, &ImGuiFramebuffers[i]) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to create framebuffers for ImGui!");
+        }
+
+        V::SetName(LogicalDevice, ImGuiFramebuffers[i], "V_Imgui_fb_" + std::to_string(i));
+
+    }
+}
+
 void FVulkanContext::LoadModelDataToGPU()
 {
     auto MeshSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>();
@@ -762,6 +793,78 @@ void FVulkanContext::CreateDescriptorPool()
     DescriptorSetManager->AddDescriptorSet(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, NumberOfSwapChainImages);
 
     DescriptorSetManager->ReserveDescriptorPool();
+}
+
+void FVulkanContext::CreateImguiDescriptorPool()
+{
+    VkDescriptorPoolSize PoolSizes[] =
+            {
+                    { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+                    { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+                    { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+                    { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+                    { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+                    { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+                    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+                    { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+                    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+                    { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+                    { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+            };
+    VkDescriptorPoolCreateInfo PoolInfo = {};
+    PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    PoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    PoolInfo.maxSets = 1000 * IM_ARRAYSIZE(PoolSizes);
+    PoolInfo.poolSizeCount = (uint32_t)IM_ARRAYSIZE(PoolSizes);
+    PoolInfo.pPoolSizes = PoolSizes;
+    if(vkCreateDescriptorPool(LogicalDevice, &PoolInfo, nullptr, &ImGuiDescriptorPool) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create descriptor pool for ImGui!");
+    }
+}
+
+void FVulkanContext::CreateImguiRenderpasss()
+{
+    VkAttachmentDescription AttachmentDescription{};
+    AttachmentDescription.format = Swapchain->GetImageFormat();
+    AttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+    AttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    AttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    AttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    AttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    AttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    AttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkAttachmentReference AttachmentReference{};
+    AttachmentReference.attachment = 0;
+    AttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkSubpassDescription SubpassDescription{};
+    SubpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    SubpassDescription.colorAttachmentCount = 1;
+    SubpassDescription.pColorAttachments = &AttachmentReference;
+
+    VkSubpassDependency SubpassDependency{};
+    SubpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    SubpassDependency.dstSubpass = 0;
+    SubpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    SubpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    SubpassDependency.srcAccessMask = 0;
+    SubpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    VkRenderPassCreateInfo RenderPassCreateInfo{};
+    RenderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    RenderPassCreateInfo.attachmentCount = 1;
+    RenderPassCreateInfo.pAttachments = &AttachmentDescription;
+    RenderPassCreateInfo.subpassCount = 1;
+    RenderPassCreateInfo.pSubpasses = &SubpassDescription;
+    RenderPassCreateInfo.dependencyCount = 1;
+    RenderPassCreateInfo.pDependencies = &SubpassDependency;
+
+    if (vkCreateRenderPass(LogicalDevice, &RenderPassCreateInfo, nullptr, &ImGuiRenderPass) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create renderpass for ImGui!");
+    }
 }
 
 void FVulkanContext::CreateDescriptorSet()
@@ -946,103 +1049,6 @@ void FVulkanContext::CreateSyncObjects()
 
 void FVulkanContext::CreateImguiContext()
 {
-    {
-        VkDescriptorPoolSize PoolSizes[] =
-                {
-                        { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
-                        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
-                        { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
-                        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
-                        { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
-                        { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
-                        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
-                        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
-                        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
-                        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
-                        { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
-                };
-        VkDescriptorPoolCreateInfo PoolInfo = {};
-        PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        PoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-        PoolInfo.maxSets = 1000 * IM_ARRAYSIZE(PoolSizes);
-        PoolInfo.poolSizeCount = (uint32_t)IM_ARRAYSIZE(PoolSizes);
-        PoolInfo.pPoolSizes = PoolSizes;
-        if(vkCreateDescriptorPool(LogicalDevice, &PoolInfo, nullptr, &ImGuiDescriptorPool) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to create descriptor pool for ImGui!");
-        }
-    }
-
-    {
-        VkAttachmentDescription AttachmentDescription{};
-        AttachmentDescription.format = Swapchain->GetImageFormat();
-        AttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
-        AttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-        AttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        AttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        AttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        AttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        AttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-        VkAttachmentReference AttachmentReference{};
-        AttachmentReference.attachment = 0;
-        AttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-        VkSubpassDescription SubpassDescription{};
-        SubpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        SubpassDescription.colorAttachmentCount = 1;
-        SubpassDescription.pColorAttachments = &AttachmentReference;
-
-        VkSubpassDependency SubpassDependency{};
-        SubpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-        SubpassDependency.dstSubpass = 0;
-        SubpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        SubpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        SubpassDependency.srcAccessMask = 0;
-        SubpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-        VkRenderPassCreateInfo RenderPassCreateInfo{};
-        RenderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-        RenderPassCreateInfo.attachmentCount = 1;
-        RenderPassCreateInfo.pAttachments = &AttachmentDescription;
-        RenderPassCreateInfo.subpassCount = 1;
-        RenderPassCreateInfo.pSubpasses = &SubpassDescription;
-        RenderPassCreateInfo.dependencyCount = 1;
-        RenderPassCreateInfo.pDependencies = &SubpassDependency;
-
-        if (vkCreateRenderPass(LogicalDevice, &RenderPassCreateInfo, nullptr, &ImGuiRenderPass) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to create renderpass for ImGui!");
-        }
-    }
-
-    {
-        ImGuiFramebuffers.resize(Swapchain->Size());
-
-        for(uint32_t i = 0; i < Swapchain->Size(); ++i)
-        {
-            VkImageView Attachment[1];
-            Attachment[0] = Swapchain->Images[i].View;
-
-            VkFramebufferCreateInfo FramebufferCreateInfo{};
-            FramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            FramebufferCreateInfo.renderPass = ImGuiRenderPass;
-            FramebufferCreateInfo.attachmentCount = 1;
-            FramebufferCreateInfo.pAttachments = Attachment;
-            FramebufferCreateInfo.width = Swapchain->GetWidth();
-            FramebufferCreateInfo.height = Swapchain->GetHeight();
-            FramebufferCreateInfo.layers = 1;
-
-            if (vkCreateFramebuffer(LogicalDevice, &FramebufferCreateInfo, nullptr, &ImGuiFramebuffers[i]) != VK_SUCCESS)
-            {
-                throw std::runtime_error("Failed to create framebuffers for ImGui!");
-            }
-
-            V::SetName(LogicalDevice, ImGuiFramebuffers[i], "V_Imgui_fb_" + std::to_string(i));
-
-        }
-    }
-
     auto CheckResultFunction = [](VkResult Err)
             {
                 if (Err == 0)
