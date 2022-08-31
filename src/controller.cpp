@@ -94,7 +94,7 @@ void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, in
                     double X, Y;
                     glfwGetCursorPos(Window, &X, &Y);
 
-                    auto Index = (uint32_t(Y) * 1920 + uint32_t(X));
+                    auto Index = (uint32_t(Y) * Context.Swapchain->GetWidth() + uint32_t(X));
 
                     uint32_t RenderableIndex = Data[Index];
                     auto RenderableSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FRenderableSystem>();
