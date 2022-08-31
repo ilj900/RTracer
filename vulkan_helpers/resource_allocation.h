@@ -2,7 +2,7 @@
 
 #include "vulkan/vulkan.h"
 
-class FContext;
+class FVulkanContext;
 
 #include <memory>
 
@@ -11,7 +11,7 @@ struct FBuffer;
 class FResourceAllocator
 {
 public:
-    FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice Device, FContext* Context);
+    FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice Device, FVulkanContext* Context);
 
     FBuffer CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties);
     FBuffer CreateBufferWidthData(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, void* Data);
@@ -21,7 +21,7 @@ public:
 
 private:
     VkDevice Device = VK_NULL_HANDLE;
-    FContext *Context = nullptr;
+    FVulkanContext *Context = nullptr;
 
     VkPhysicalDeviceMemoryProperties MemProperties{};
 };

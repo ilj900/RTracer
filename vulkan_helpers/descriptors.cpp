@@ -1,5 +1,7 @@
 #include "descriptors.h"
 
+#include "vk_debug.h"
+
 #include <stdexcept>
 
 bool operator==(const FDescriptor& A, const FDescriptor& B)
@@ -138,6 +140,8 @@ void FDescriptorSetManager::ReserveDescriptorPool()
     {
         throw std::runtime_error("Failed to create descriptor pool!");
     }
+
+    V::SetName(LogicalDevice, DescriptorPool, "V_MainDescriptorPool");
 }
 
 //VkDescriptorSet FDescriptorSetManager::CreateDescriptorSets(const std::string& DescriptorSetLayoutName)
@@ -166,6 +170,17 @@ void FDescriptorSetManager::ReserveDescriptorPool()
 void FDescriptorSetManager::FreeDescriptorPool()
 {
     vkDestroyDescriptorPool(LogicalDevice, DescriptorPool, nullptr);
+}
+
+void FDescriptorSetManager::Reset()
+{
+    if (DescriptorPool)
+    {
+        FreeDescriptorPool();
+    }
+
+    Sets.clear();
+    DescriptorSets.clear();
 }
 
 void FDescriptorSetManager::CreateAllDescriptorSets()

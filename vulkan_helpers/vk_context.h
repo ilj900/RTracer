@@ -5,7 +5,6 @@
 #include "vulkan/vulkan.h"
 
 #include "resource_allocation.h"
-#include "function_loader.h"
 #include "command_buffer_manager.h"
 #include "maths.h"
 #include "swapchain.h"
@@ -15,6 +14,8 @@
 #include "image.h"
 #include "image_manager.h"
 #include "renderpass.h"
+#include "vk_utils.h"
+#include "vk_pipeline.h"
 
 #include <vector>
 #include <string>
@@ -22,17 +23,18 @@
 #include <memory>
 #include <map>
 
-class FContext
+class FVulkanContext
 {
 public:
-    FContext() = default;
-    FContext operator=(const FContext* Other) = delete;
-    FContext(const FContext& Other) = delete;
-    ~FContext();
+    FVulkanContext() = default;
+    FVulkanContext operator=(const FVulkanContext* Other) = delete;
+    FVulkanContext(const FVulkanContext& Other) = delete;
+    ~FVulkanContext();
 
     void Init(GLFWwindow* Window, FController* Controller);
 
     void CreateInstance();
+    void LoadFunctionPointers();
     void SetupDebugMessenger();
     void CreateSurface();
     void PickPhysicalDevice();
@@ -40,13 +42,19 @@ public:
     void CreateLogicalDevice();
     void CreateDepthAndAAImages();
     void CreateRenderPass();
+    void CreatePassthroughRenderPass();
+    void CreateImguiRenderpasss();
     void CreateDescriptorSetLayouts();
     void CreateGraphicsPipeline();
-    void CreateFramebuffers();
+    void CreatePassthroughPipeline();
+    void CreateRenderFramebuffers();
+    void CreateImguiFramebuffers();
+    void CreatePassthroughFramebuffers();
     void LoadModelDataToGPU();
     void CreateTextureSampler();
     void CreateUniformBuffers();
     void CreateDescriptorPool();
+    void CreateImguiDescriptorPool();
     void CreateDescriptorSet();
     void CreateCommandBuffers();
     void CreateSyncObjects();
@@ -63,21 +71,37 @@ public:
     void WaitIdle();
 
     VkFormat FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features);
-    VkShaderModule CreateShaderFromFile(const std::string& FileName);
     VkFormat FindDepthFormat();
     bool HasStensilComponent(VkFormat Format);
     void LoadDataIntoBuffer(FBuffer &Buffer, void* Data, size_t Size);
     void FreeData(FBuffer Buffer);
 
+    bool CheckInstanceLayersSupport(const std::vector<const char*>& Layers);
     bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device);
     bool CheckDeviceQueueSupport(VkPhysicalDevice Device);
 
+    VkInstance CreateVkInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FVulkanContextOptions& Options);
+
+    static PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT;
+    static PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT;
+    static PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT;
+    static PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR ;
+    static PFN_vkDestroyAccelerationStructureKHR vkDestroyAccelerationStructureKHR;
+    static PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR;
+    static PFN_vkCmdBuildAccelerationStructuresKHR vkCmdBuildAccelerationStructuresKHR;
+    static PFN_vkCmdWriteAccelerationStructuresPropertiesKHR vkCmdWriteAccelerationStructuresPropertiesKHR;
+    static PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR;
+    static PFN_vkCmdCopyAccelerationStructureKHR vkCmdCopyAccelerationStructureKHR;
+    static PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR;
+    static PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR;
+    static PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR;
+
 public:
+    FVulkanContextOptions VulkanContextOptions;
     GLFWwindow* Window = nullptr;
     FController* Controller = nullptr;
 
     std::shared_ptr<FResourceAllocator> ResourceAllocator = nullptr;
-    std::shared_ptr<FVulkanFunctionLoader> FunctionLoader = nullptr;
     std::shared_ptr<FCommandBufferManager> CommandBufferManager = nullptr;
     std::shared_ptr<FImageManager> ImageManager = nullptr;
 
@@ -93,6 +117,8 @@ public:
     VkDevice LogicalDevice;
 
     std::shared_ptr<FRenderPass> RenderPass = nullptr;
+    std::shared_ptr<FRenderPass> PassthroughRenderPass = nullptr;
+    std::shared_ptr<FRenderPass> ImGuiRenderPass = nullptr;
 
     // Queues
     VkQueue GraphicsQueue;
@@ -105,18 +131,20 @@ public:
     std::shared_ptr<FSwapchain> Swapchain = nullptr;
     VkImage CurrentImage = VK_NULL_HANDLE;
     std::vector<VkFramebuffer> SwapChainFramebuffers;
+    std::vector<VkFramebuffer> PassthroughFramebuffers;
 
     VkDescriptorPool ImGuiDescriptorPool;
-    VkRenderPass ImGuiRenderPass;
     std::vector<VkFramebuffer> ImGuiFramebuffers;
 
-    VkPipelineLayout PipelineLayout;
-    VkPipeline GraphicsPipeline;
+    FPipeline GraphicsPipeline;
+    FPipeline PassthroughPipeline;
 
+#ifndef NDEBUG
     VkDebugUtilsMessengerEXT DebugMessenger;
-
+#endif
     /// Images for drawing
     std::string ColorImage = "ColorImage";
+    std::string ResolvedColorImage = "ResolvedColorImage";
     std::string NormalsImage = "NormalsImage";
     std::string RenderableIndexImage = "RenderableIndexImage";
     std::string DepthImage = "DepthImage";
@@ -131,7 +159,8 @@ public:
     uint32_t  MipLevels;
     std::shared_ptr<FDescriptorSetManager>DescriptorSetManager = nullptr;
 
-    std::vector<VkCommandBuffer> CommandBuffers;
+    std::vector<VkCommandBuffer> GraphicsCommandBuffers;
+    std::vector<VkCommandBuffer> PassthroughCommandBuffers;
 
     std::vector<FBuffer> DeviceTransformBuffers;
     std::vector<FBuffer> DeviceCameraBuffers;
@@ -139,14 +168,13 @@ public:
 
     std::vector<VkSemaphore> ImageAvailableSemaphores;
     std::vector<VkSemaphore> RenderFinishedSemaphores;
+    std::vector<VkSemaphore> PassthroughFinishedSemaphore;
     std::vector<VkSemaphore> ImGuiFinishedSemaphores;
     std::vector<VkFence> RenderingFinishedFences;
     std::vector<VkFence> ImGuiFinishedFences;
     std::vector<VkFence> ImagesInFlight;
     size_t CurrentFrame = 0;
     uint32_t ImageIndex = 0;
-
-    VkDebugUtilsMessengerCreateInfoEXT DebugCreateInfo = {};
 
     const int MAX_FRAMES_IN_FLIGHT = 2;
     bool bFramebufferResized = false;
@@ -166,6 +194,4 @@ public:
     std::string TexturePath = "../models/viking_room/viking_room.png";
 };
 
-FContext& GetContext();
-
-std::vector<char> ReadFile(const std::string& FileName);
+FVulkanContext& GetContext();

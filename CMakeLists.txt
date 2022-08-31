@@ -57,10 +57,11 @@ set(ECS_SOURCE
 set(SOURCE
         src/main.cpp
         src/controller.cpp
-        vulkan_helpers/context.cpp
+        vulkan_helpers/vk_context.h
+        vulkan_helpers/vk_utils.cpp
+        vulkan_helpers/vk_context.cpp
         vulkan_helpers/image.cpp
         vulkan_helpers/resource_allocation.cpp
-        vulkan_helpers/function_loader.cpp
         vulkan_helpers/swapchain.cpp
         vulkan_helpers/renderpass.cpp
         vulkan_helpers/descriptors.cpp
@@ -72,16 +73,22 @@ set(SOURCE
 set(INCLUDE
         ${ECS_SOURCE}
         src/controller.h
-        vulkan_helpers/context.h
+        vulkan_helpers/vk_utils.h
+        vulkan_helpers/vk_context.h
         vulkan_helpers/image.h
         vulkan_helpers/resource_allocation.h
-        vulkan_helpers/function_loader.h
         vulkan_helpers/swapchain.h
         vulkan_helpers/renderpass.h
         vulkan_helpers/buffer.h
         vulkan_helpers/descriptors.h
         vulkan_helpers/image_manager.h
         vulkan_helpers/command_buffer_manager.h
+        vulkan_helpers/vk_pipeline.h
+        vulkan_helpers/vk_pipeline.cpp
+        vulkan_helpers/vk_debug.h
+        vulkan_helpers/vk_debug.cpp
+        vulkan_helpers/vk_functions.h
+        vulkan_helpers/vk_functions.cpp
         include/stb_image.h
         include/stb_image_write.h
         include/tiny_obj_loader.h

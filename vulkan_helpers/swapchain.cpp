@@ -1,11 +1,12 @@
 #include "GLFW/glfw3.h"
 
 #include "swapchain.h"
-#include "context.h"
+#include "vk_context.h"
+#include "vk_debug.h"
 
 #include <stdexcept>
 
-FSwapchain::FSwapchain(FContext &Context, VkPhysicalDevice PhysicalDevice, VkDevice LogicalDevice, VkSurfaceKHR Surface,
+FSwapchain::FSwapchain(FVulkanContext &Context, VkPhysicalDevice PhysicalDevice, VkDevice LogicalDevice, VkSurfaceKHR Surface,
                        GLFWwindow* Window, uint32_t GraphicsQueueFamilyIndex, uint32_t PresentQueueFamilyIndex,
                        VkFormat Format, VkColorSpaceKHR ColorSpace, VkPresentModeKHR PresentMode):
                        LogicalDevice(LogicalDevice)
@@ -90,7 +91,7 @@ FSwapchain::FSwapchain(FContext &Context, VkPhysicalDevice PhysicalDevice, VkDev
     CreateInfo.imageColorSpace = SurfaceFormat.colorSpace;
     CreateInfo.imageExtent = Extent;
     CreateInfo.imageArrayLayers = 1;
-    CreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    CreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
     uint32_t QueueFamilyIndices[] = {GraphicsQueueFamilyIndex, PresentQueueFamilyIndex};
     if (GraphicsQueueFamilyIndex != PresentQueueFamilyIndex)
@@ -118,6 +119,11 @@ FSwapchain::FSwapchain(FContext &Context, VkPhysicalDevice PhysicalDevice, VkDev
         throw std::runtime_error("Failed to create swap chain!");
     }
 
+    static int iii = 0;
+    V::SetName(LogicalDevice, Swapchain, "V_Swapchain" + std::to_string(iii));
+    ++iii;
+
+
     /// Queue SwapChain for it's images
     vkGetSwapchainImagesKHR(LogicalDevice, Swapchain, &ImageCount, nullptr);
     std::vector<VkImage> SwapchainImages(ImageCount);
@@ -127,6 +133,8 @@ FSwapchain::FSwapchain(FContext &Context, VkPhysicalDevice PhysicalDevice, VkDev
     for (uint32_t i = 0; i < SwapchainImages.size(); ++i)
     {
         FImage::Wrap(SwapchainImages[i], SurfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, Images[i]);
+        V::SetName(LogicalDevice, SwapchainImages[i], "V_SwapchainImage" + std::to_string(i));
+        V::SetName(LogicalDevice, Images[i].View, "V_SwapchainImageView" + std::to_string(i));
     }
 }
 

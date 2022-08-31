@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-class FContext;
+class FVulkanContext;
 struct FBuffer;
 
 struct NameImageEntry
@@ -27,7 +27,7 @@ public:
     FImageManager() = default;
     ~FImageManager();
 
-    void Init(FContext& Context);
+    void Init(FVulkanContext& Context);
 
     void LoadImageFromFile(const std::string& ImageName, const std::string& Path);
     void CreateImage(const std::string& ImageName, uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties, VkImageAspectFlags AspectFlags);
@@ -37,10 +37,11 @@ public:
     void CopyBufferToImage(const FBuffer& Buffer, const std::string& ImageName);
     void CopyImageToBuffer(const std::string& ImageName, const FBuffer& Buffer);
     void SaveImage(const std::string& ImageName);
-    void FetchImageData(const std::string& ImageName, std::vector<char>& Data);
+    template <typename T>
+    void FetchImageData(const std::string& ImageName, std::vector<T>& Data);
 
 private:
-    FContext* Context;
+    FVulkanContext* Context;
 
     std::map<std::string, uint32_t> NameToHashMap;
     std::map<uint32_t, uint32_t> HashToIndexMap;

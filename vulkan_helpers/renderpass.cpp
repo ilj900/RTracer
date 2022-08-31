@@ -1,9 +1,9 @@
 #include "renderpass.h"
-#include "context.h"
+#include "vk_context.h"
 
 #include <stdexcept>
 
-void FRenderPass::AddImageAsAttachment(FImage &Image, AttachmentType Type)
+void FRenderPass::AddImageAsAttachment(FImage &Image, AttachmentType Type, VkImageLayout InitialLayout, VkImageLayout FinalLayout, VkAttachmentLoadOp AttachmentLoadOp)
 {
     std::vector<VkAttachmentDescription>* AttachmentDescriptions;
     std::map<size_t , uint32_t>* ImageToIndexMap;
@@ -37,19 +37,19 @@ void FRenderPass::AddImageAsAttachment(FImage &Image, AttachmentType Type)
     VkAttachmentDescription AttachmentDescription{};
     AttachmentDescription.format = Image.Format;
     AttachmentDescription.samples = Image.Samples;
-    AttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    AttachmentDescription.loadOp = AttachmentLoadOp;
     AttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     AttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    AttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    AttachmentDescription.initialLayout = InitialLayout;
     if(Type == AttachmentType::DepthStencil)
     {
         AttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        AttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        AttachmentDescription.finalLayout = FinalLayout;
     }
     else
     {
         AttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        AttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        AttachmentDescription.finalLayout = FinalLayout;
     }
 
     AttachmentDescriptions->emplace_back(AttachmentDescription);
@@ -101,9 +101,9 @@ void FRenderPass::Construct(VkDevice LogicalDevice)
     VkSubpassDescription Subpass{};
     Subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     Subpass.colorAttachmentCount = ColorAttachmentReferences.size();
-    Subpass.pColorAttachments = ColorAttachmentReferences.data();
-    Subpass.pDepthStencilAttachment = &DepthAttachmentReference;
-    Subpass.pResolveAttachments = ResolvedAttachmentReferences.data();
+    Subpass.pColorAttachments = (ColorAttachmentReferences.size() > 0) ? ColorAttachmentReferences.data() : nullptr;
+    Subpass.pDepthStencilAttachment = (DepthStencilAttachmentDescriptions.size() > 0) ? &DepthAttachmentReference : nullptr;
+    Subpass.pResolveAttachments = (ResolvedAttachmentReferences.size() > 0) ? ResolvedAttachmentReferences.data() : nullptr;
 
     VkRenderPassCreateInfo RenderPassInfo{};
     RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;

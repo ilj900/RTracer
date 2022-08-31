@@ -1,7 +1,8 @@
 #include "image_manager.h"
 
 #include "buffer.h"
-#include "context.h"
+#include "vk_context.h"
+#include "vk_debug.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -9,7 +10,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-void FImageManager::Init(FContext& Context)
+void FImageManager::Init(FVulkanContext& Context)
 {
     this->Context = &Context;
     Images.reserve(1024);
@@ -41,6 +42,9 @@ void FImageManager::LoadImageFromFile(const std::string& ImageName, const std::s
     CreateImage(ImageName, TexWidth, TexHeight, true, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                                      VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                      VK_IMAGE_ASPECT_COLOR_BIT);
+
+    V::SetName(Context->LogicalDevice, Images.back().Image.Image, "V_TextureImage");
+    V::SetName(Context->LogicalDevice, Images.back().Image.View, "V_TextureImageView");
 
     Images.back().Image.Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     CopyBufferToImage(TempStagingBuffer, ImageName);
@@ -146,24 +150,33 @@ void FImageManager::SaveImage(const std::string& ImageName)
     stbi_write_bmp((ImageName + ".png").c_str(), Image.Width, Image.Height, 4, Data.data());
 }
 
-void FImageManager::FetchImageData(const std::string& ImageName, std::vector<char>& Data)
+template <typename T>
+void FImageManager::FetchImageData(const std::string& ImageName, std::vector<T>& Data)
 {
     auto& Image = this->operator()(ImageName);
-    uint32_t PixelSize = 4;
-    switch (Image.Format)
-    {
-        case VK_FORMAT_R8G8B8A8_SRGB:
-            PixelSize = 4;
+    uint32_t NumberOfComponents = 0;
+
+    switch (Image.Format) {
+        case VK_FORMAT_B8G8R8A8_SRGB:
+        {
+            NumberOfComponents = 4;
             break;
+        }
+        case VK_FORMAT_R32G32B32A32_SFLOAT:
+        {
+            NumberOfComponents = 4;
+            break;
+        }
         case VK_FORMAT_R32_UINT:
-            PixelSize = 4;
+        {
+            NumberOfComponents = 1;
             break;
+        }
     }
 
     auto& Context = GetContext();
-    uint32_t Size = Image.Height * Image.Width * PixelSize;
+    uint32_t Size = Image.Height * Image.Width * NumberOfComponents * sizeof(T);
     FBuffer Buffer = Context.ResourceAllocator->CreateBuffer(Size, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    Image.Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     CopyImageToBuffer(ImageName, Buffer);
 
     Data.resize(Size);
@@ -175,3 +188,5 @@ void FImageManager::FetchImageData(const std::string& ImageName, std::vector<cha
 
     Context.ResourceAllocator->DestroyBuffer(Buffer);
 }
+
+template void FImageManager::FetchImageData<uint32_t>(const std::string& ImageName, std::vector<uint32_t>& Data);

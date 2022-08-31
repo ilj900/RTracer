@@ -13,7 +13,7 @@ public:
     FRenderPass() = default;
     ~FRenderPass();
 
-    void AddImageAsAttachment(FImage& Image, AttachmentType Type);
+    void AddImageAsAttachment(FImage& Image, AttachmentType Type, VkImageLayout InitialLayout, VkImageLayout FinalLayout, VkAttachmentLoadOp AttachmentLoadOp);
     void Construct(VkDevice LogicalDevice);
 
 public:

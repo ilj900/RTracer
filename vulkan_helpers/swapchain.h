@@ -5,11 +5,11 @@
 
 #include <vector>
 
-class FContext;
+class FVulkanContext;
 
 struct FSwapchain
 {
-    FSwapchain(FContext &Context, VkPhysicalDevice PhysicalDevice, VkDevice LogicalDevice, VkSurfaceKHR Surface,
+    FSwapchain(FVulkanContext &Context, VkPhysicalDevice PhysicalDevice, VkDevice LogicalDevice, VkSurfaceKHR Surface,
                GLFWwindow* Window, uint32_t GraphicsQueueFamilyIndex, uint32_t PresentQueueFamilyIndex,
                VkFormat Format, VkColorSpaceKHR ColorSpace, VkPresentModeKHR PresentMode);
     ~FSwapchain();

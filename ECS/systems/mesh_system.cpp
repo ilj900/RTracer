@@ -5,7 +5,7 @@
 #include "components/device_mesh_component.h"
 #include "systems/mesh_system.h"
 #include "coordinator.h"
-#include "context.h"
+#include "vk_context.h"
 
 #include <cassert>
 
