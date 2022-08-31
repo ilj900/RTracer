@@ -933,6 +933,8 @@ void FVulkanContext::CreateCommandBuffers()
             }
             vkCmdEndRenderPass(CommandBuffer);
         });
+
+        V::SetName(LogicalDevice, GraphicsCommandBuffers[i], "V_GraphicsCommandBuffers" + std::to_string(i));
     }
 
     PassthroughCommandBuffers.resize(PassthroughFramebuffers.size());
@@ -979,6 +981,8 @@ void FVulkanContext::CreateCommandBuffers()
             vkCmdDraw(CommandBuffer, 3, 1, 0, 0);
             vkCmdEndRenderPass(CommandBuffer);
         });
+
+        V::SetName(LogicalDevice, PassthroughCommandBuffers[i], "V_PassthroughCommandBuffers" + std::to_string(i));
     }
 }
 
@@ -1141,6 +1145,8 @@ void FVulkanContext::RenderImGui()
 
     auto CommandBuffer = CommandBufferManager->BeginSingleTimeCommand();
 
+    V::SetName(LogicalDevice, CommandBuffer, "V_ImguiCommandBuffer" + std::to_string(CurrentFrame % Swapchain->Size()));
+
     CommandBufferManager->RecordCommand([&, this](VkCommandBuffer)
     {
         {
@@ -1203,6 +1209,7 @@ void FVulkanContext::Present()
     {
         bFramebufferResized = false;
         RecreateSwapChain();
+        return;
     }
     else if (Result != VK_SUCCESS)
     {
@@ -1251,6 +1258,8 @@ void FVulkanContext::RecreateSwapChain()
     CreateDescriptorSet();
 
     CreateCommandBuffers();
+
+    CurrentFrame = 0;
 }
 
 void FVulkanContext::CleanUpSwapChain()
@@ -1360,6 +1369,8 @@ void FVulkanContext::CleanUp()
     }
 
     CleanUpSwapChain();
+
+    vkDestroyDescriptorPool(LogicalDevice, ImGuiDescriptorPool, nullptr);
 
     vkDestroySampler(LogicalDevice, TextureSampler, nullptr);
     ImageManager->RemoveImage(TextureImage);
