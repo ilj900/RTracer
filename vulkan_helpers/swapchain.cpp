@@ -119,6 +119,11 @@ FSwapchain::FSwapchain(FVulkanContext &Context, VkPhysicalDevice PhysicalDevice,
         throw std::runtime_error("Failed to create swap chain!");
     }
 
+    static int iii = 0;
+    V::SetName(LogicalDevice, Swapchain, "V_Swapchain" + std::to_string(iii));
+    ++iii;
+
+
     /// Queue SwapChain for it's images
     vkGetSwapchainImagesKHR(LogicalDevice, Swapchain, &ImageCount, nullptr);
     std::vector<VkImage> SwapchainImages(ImageCount);

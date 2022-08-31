@@ -43,6 +43,7 @@ public:
     /// Pool
     void ReserveDescriptorPool();
     void FreeDescriptorPool();
+    void Reset();
 
 private:
     VkDevice LogicalDevice = VK_NULL_HANDLE;

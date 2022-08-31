@@ -539,7 +539,7 @@ void FVulkanContext::CreateDepthAndAAImages()
 void FVulkanContext::CreatePassthroughRenderPass()
 {
     PassthroughRenderPass = std::make_shared<FRenderPass>();
-    PassthroughRenderPass->AddImageAsAttachment(Swapchain->Images[0], AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    PassthroughRenderPass->AddImageAsAttachment(Swapchain->Images[0], AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
 
     PassthroughRenderPass->Construct(LogicalDevice);
     V::SetName(LogicalDevice, PassthroughRenderPass->RenderPass, "V_PassthroughRenderpass");
@@ -548,14 +548,23 @@ void FVulkanContext::CreatePassthroughRenderPass()
 void FVulkanContext::CreateRenderPass()
 {
     RenderPass = std::make_shared<FRenderPass>();
-    RenderPass->AddImageAsAttachment((*ImageManager)(ColorImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    RenderPass->AddImageAsAttachment((*ImageManager)(NormalsImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    RenderPass->AddImageAsAttachment((*ImageManager)(RenderableIndexImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    RenderPass->AddImageAsAttachment((*ImageManager)(DepthImage), AttachmentType::DepthStencil, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-    RenderPass->AddImageAsAttachment((*ImageManager)(ResolvedColorImage), AttachmentType::Resolve, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    RenderPass->AddImageAsAttachment((*ImageManager)(ColorImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    RenderPass->AddImageAsAttachment((*ImageManager)(NormalsImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    RenderPass->AddImageAsAttachment((*ImageManager)(RenderableIndexImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    RenderPass->AddImageAsAttachment((*ImageManager)(DepthImage), AttachmentType::DepthStencil, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    RenderPass->AddImageAsAttachment((*ImageManager)(ResolvedColorImage), AttachmentType::Resolve, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
 
     RenderPass->Construct(LogicalDevice);
     V::SetName(LogicalDevice, RenderPass->RenderPass, "V_RenderRenderpass");
+}
+
+void FVulkanContext::CreateImguiRenderpasss()
+{
+    ImGuiRenderPass = std::make_shared<FRenderPass>();
+    ImGuiRenderPass->AddImageAsAttachment(Swapchain->Images[0], AttachmentType::Color, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
+
+    ImGuiRenderPass->Construct(LogicalDevice);
+    V::SetName(LogicalDevice, ImGuiRenderPass->RenderPass, "V_ImGuiRenderPass");
 }
 
 VkFormat FVulkanContext::FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features)
@@ -706,7 +715,7 @@ void FVulkanContext::CreateImguiFramebuffers()
 
         VkFramebufferCreateInfo FramebufferCreateInfo{};
         FramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        FramebufferCreateInfo.renderPass = ImGuiRenderPass;
+        FramebufferCreateInfo.renderPass = ImGuiRenderPass->RenderPass;
         FramebufferCreateInfo.attachmentCount = 1;
         FramebufferCreateInfo.pAttachments = Attachment;
         FramebufferCreateInfo.width = Swapchain->GetWidth();
@@ -821,50 +830,7 @@ void FVulkanContext::CreateImguiDescriptorPool()
     {
         throw std::runtime_error("Failed to create descriptor pool for ImGui!");
     }
-}
-
-void FVulkanContext::CreateImguiRenderpasss()
-{
-    VkAttachmentDescription AttachmentDescription{};
-    AttachmentDescription.format = Swapchain->GetImageFormat();
-    AttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
-    AttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-    AttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    AttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    AttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    AttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    AttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-    VkAttachmentReference AttachmentReference{};
-    AttachmentReference.attachment = 0;
-    AttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkSubpassDescription SubpassDescription{};
-    SubpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    SubpassDescription.colorAttachmentCount = 1;
-    SubpassDescription.pColorAttachments = &AttachmentReference;
-
-    VkSubpassDependency SubpassDependency{};
-    SubpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    SubpassDependency.dstSubpass = 0;
-    SubpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    SubpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    SubpassDependency.srcAccessMask = 0;
-    SubpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-    VkRenderPassCreateInfo RenderPassCreateInfo{};
-    RenderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    RenderPassCreateInfo.attachmentCount = 1;
-    RenderPassCreateInfo.pAttachments = &AttachmentDescription;
-    RenderPassCreateInfo.subpassCount = 1;
-    RenderPassCreateInfo.pSubpasses = &SubpassDescription;
-    RenderPassCreateInfo.dependencyCount = 1;
-    RenderPassCreateInfo.pDependencies = &SubpassDependency;
-
-    if (vkCreateRenderPass(LogicalDevice, &RenderPassCreateInfo, nullptr, &ImGuiRenderPass) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create renderpass for ImGui!");
-    }
+    V::SetName(LogicalDevice, ImGuiDescriptorPool, "V_ImGuiDescriptorPool");
 }
 
 void FVulkanContext::CreateDescriptorSet()
@@ -1076,7 +1042,7 @@ void FVulkanContext::CreateImguiContext()
     InitInfo.ImageCount = MAX_FRAMES_IN_FLIGHT;
     InitInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
     InitInfo.CheckVkResultFn = CheckResultFunction;
-    ImGui_ImplVulkan_Init(&InitInfo, ImGuiRenderPass);
+    ImGui_ImplVulkan_Init(&InitInfo, ImGuiRenderPass->RenderPass);
 
     {
         CommandBufferManager->RunSingletimeCommand(ImGui_ImplVulkan_CreateFontsTexture);
@@ -1180,7 +1146,7 @@ void FVulkanContext::RenderImGui()
         {
             VkRenderPassBeginInfo RenderPassBeginInfo{};
             RenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            RenderPassBeginInfo.renderPass = ImGuiRenderPass;
+            RenderPassBeginInfo.renderPass = ImGuiRenderPass->RenderPass;
             RenderPassBeginInfo.framebuffer = ImGuiFramebuffers[CurrentFrame % Swapchain->Size()];
             RenderPassBeginInfo.renderArea.extent = Swapchain->GetExtent2D();
             RenderPassBeginInfo.clearValueCount = 0;
@@ -1267,16 +1233,29 @@ void FVulkanContext::RecreateSwapChain()
     CleanUpSwapChain();
 
     Swapchain = std::make_shared<FSwapchain>(*this, PhysicalDevice, LogicalDevice, Surface, Window, GraphicsQueueIndex, PresentQueueIndex, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
+    CreateDepthAndAAImages();
+
+    CreateRenderPass();
+    CreatePassthroughRenderPass();
+    CreateImguiRenderpasss();
+
     CreateGraphicsPipeline();
+    CreatePassthroughPipeline();
+
     CreateRenderFramebuffers();
-    CreateUniformBuffers();
+    CreatePassthroughFramebuffers();
+    CreateImguiFramebuffers();
+
     CreateDescriptorPool();
+
     CreateDescriptorSet();
+
     CreateCommandBuffers();
 }
 
 void FVulkanContext::CleanUpSwapChain()
 {
+    /// Remove all images which size's dependent on the swapchain's size
     ImageManager->RemoveImage(ColorImage);
     ImageManager->RemoveImage(ResolvedColorImage);
     ImageManager->RemoveImage(UtilityImageR8G8B8A8_SRGB);
@@ -1285,6 +1264,7 @@ void FVulkanContext::CleanUpSwapChain()
     ImageManager->RemoveImage(UtilityImageR32);
     ImageManager->RemoveImage(DepthImage);
 
+    /// Remove all framebuffers
     for (auto Framebuffer : SwapChainFramebuffers)
     {
         vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
@@ -1300,6 +1280,7 @@ void FVulkanContext::CleanUpSwapChain()
         vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
     }
 
+    /// Remove all command buffers
     for (auto& CommandBuffer : GraphicsCommandBuffers)
     {
         CommandBufferManager->FreeCommandBuffer(CommandBuffer);
@@ -1310,24 +1291,18 @@ void FVulkanContext::CleanUpSwapChain()
         CommandBufferManager->FreeCommandBuffer(CommandBuffer);
     }
 
+    /// Remove pipelines
     GraphicsPipeline.Delete();
     PassthroughPipeline.Delete();
 
+    /// Remove renderpasses
     RenderPass = nullptr;
     PassthroughRenderPass = nullptr;
-    vkDestroyRenderPass(LogicalDevice, ImGuiRenderPass, nullptr);
-
-    for (size_t i = 0; i < Swapchain->Size(); ++i)
-    {
-        ResourceAllocator->DestroyBuffer(DeviceTransformBuffers[i]);
-        ResourceAllocator->DestroyBuffer(DeviceCameraBuffers[i]);
-        ResourceAllocator->DestroyBuffer(DeviceRenderableBuffers[i]);
-    }
+    ImGuiRenderPass = nullptr;
 
     Swapchain = nullptr;
 
-    DescriptorSetManager->FreeDescriptorPool();
-    vkDestroyDescriptorPool(LogicalDevice, ImGuiDescriptorPool, nullptr);
+    DescriptorSetManager->Reset();
 }
 
 void FVulkanContext::UpdateUniformBuffer(uint32_t CurrentImage)
@@ -1376,6 +1351,14 @@ void FVulkanContext::DestroyDebugUtilsMessengerEXT()
 
 void FVulkanContext::CleanUp()
 {
+    /// Free all device buffers
+    for (size_t i = 0; i < Swapchain->Size(); ++i)
+    {
+        ResourceAllocator->DestroyBuffer(DeviceTransformBuffers[i]);
+        ResourceAllocator->DestroyBuffer(DeviceCameraBuffers[i]);
+        ResourceAllocator->DestroyBuffer(DeviceRenderableBuffers[i]);
+    }
+
     CleanUpSwapChain();
 
     vkDestroySampler(LogicalDevice, TextureSampler, nullptr);

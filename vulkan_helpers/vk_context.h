@@ -118,6 +118,7 @@ public:
 
     std::shared_ptr<FRenderPass> RenderPass = nullptr;
     std::shared_ptr<FRenderPass> PassthroughRenderPass = nullptr;
+    std::shared_ptr<FRenderPass> ImGuiRenderPass = nullptr;
 
     // Queues
     VkQueue GraphicsQueue;
@@ -133,7 +134,6 @@ public:
     std::vector<VkFramebuffer> PassthroughFramebuffers;
 
     VkDescriptorPool ImGuiDescriptorPool;
-    VkRenderPass ImGuiRenderPass;
     std::vector<VkFramebuffer> ImGuiFramebuffers;
 
     FPipeline GraphicsPipeline;
