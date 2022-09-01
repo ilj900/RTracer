@@ -38,9 +38,9 @@ void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int
         case GLFW_KEY_U:
         {
             if (Action == GLFW_PRESS) {
-                auto& Context = GetContext();
-                (*Context.ImageManager)(Context.NormalsImage).Resolve((*Context.ImageManager)(Context.UtilityImageR8G8B8A8_SRGB));
-                Context.ImageManager->SaveImage(Context.UtilityImageR8G8B8A8_SRGB);
+//                auto& Context = GetContext();
+//                (*Context.ImageManager)(Context.NormalsImage).Resolve((*Context.ImageManager)(Context.UtilityImageR8G8B8A8_SRGB));
+//                Context.ImageManager->SaveImage(Context.UtilityImageR8G8B8A8_SRGB);
             }
             break;
         }
@@ -86,19 +86,19 @@ void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, in
             {
                 case GLFW_PRESS:
                 {
-                    auto& Context = GetContext();
-                    std::vector<uint32_t> Data;
-
-                    (*Context.ImageManager)(Context.RenderableIndexImage).Resolve((*Context.ImageManager)(Context.UtilityImageR32));
-                    (*Context.ImageManager).FetchImageData(Context.UtilityImageR32, Data);
-                    double X, Y;
-                    glfwGetCursorPos(Window, &X, &Y);
-
-                    auto Index = (uint32_t(Y) * Context.Swapchain->GetWidth() + uint32_t(X));
-
-                    uint32_t RenderableIndex = Data[Index];
-                    auto RenderableSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FRenderableSystem>();
-                    RenderableSystem->SetSelectedByIndex(RenderableIndex);
+//                    auto& Context = GetContext();
+//                    std::vector<uint32_t> Data;
+//
+//                    (*Context.ImageManager)(Context.RenderableIndexImage).Resolve((*Context.ImageManager)(Context.UtilityImageR32));
+//                    (*Context.ImageManager).FetchImageData(Context.UtilityImageR32, Data);
+//                    double X, Y;
+//                    glfwGetCursorPos(Window, &X, &Y);
+//
+//                    auto Index = (uint32_t(Y) * Context.Swapchain->GetWidth() + uint32_t(X));
+//
+//                    uint32_t RenderableIndex = Data[Index];
+//                    auto RenderableSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FRenderableSystem>();
+//                    RenderableSystem->SetSelectedByIndex(RenderableIndex);
                 }
             }
         }

@@ -57,6 +57,14 @@ FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags U
     AllocInfo.allocationSize = MemRequirements.size;
     AllocInfo.memoryTypeIndex = FindMemoryType(MemRequirements.memoryTypeBits, Properties);
 
+    if ((Usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) == VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
+    {
+        VkMemoryAllocateFlagsInfo MemoryAllocateFlagsInfo{};
+        MemoryAllocateFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
+        MemoryAllocateFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+        AllocInfo.pNext = &MemoryAllocateFlagsInfo;
+    }
+
     if (vkAllocateMemory(Device, &AllocInfo, nullptr, &Buffer.Memory) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to allocate buffer memory!");
@@ -67,6 +75,19 @@ FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags U
 
     return Buffer;
 }
+
+void* FResourceAllocator::Map(FBuffer& Buffer)
+{
+    void* Data;
+    vkMapMemory(Device, Buffer.Memory, 0, Buffer.Size, 0, &Data);
+    return Data;
+}
+
+void FResourceAllocator::Unmap(FBuffer& Buffer)
+{
+    vkUnmapMemory(Device, Buffer.Memory);
+}
+
 
 void FResourceAllocator::DestroyBuffer(FBuffer& Buffer)
 {

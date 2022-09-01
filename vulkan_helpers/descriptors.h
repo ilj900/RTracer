@@ -38,6 +38,7 @@ public:
     void CreateAllDescriptorSets();
     void UpdateDescriptorSetInfo(const std::string& DescriptorSetName, const std::string& DescriptorName, uint32_t Index, VkDescriptorBufferInfo& BufferInfo);
     void UpdateDescriptorSetInfo(const std::string& DescriptorSetName, const std::string& DescriptorName, uint32_t Index, VkDescriptorImageInfo& ImageInfo);
+    void UpdateDescriptorSetInfo(const std::string& DescriptorSetName, const std::string& DescriptorName, uint32_t Index, VkAccelerationStructureKHR& ACInfo);
     VkDescriptorSet& GetSet(const std::string& Name, uint32_t Index);
 
     /// Pool

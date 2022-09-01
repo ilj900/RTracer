@@ -8,6 +8,7 @@
 #include "components/device_transform_component.h"
 #include "components/device_renderable_component.h"
 #include "components/mesh_component.h"
+#include "components/device_mesh_component.h"
 #include "coordinator.h"
 
 #include "imgui.h"
@@ -48,6 +49,8 @@ namespace LAYOUTS
     const std::string CAMERA_LAYOUT_NAME = "Camera layout";
     const std::string TRANSFORM_LAYOUT_NAME = "Transform layout";
     const std::string RENDERABLE_LAYOUT_NAME = "Renderable layout";
+    const std::string TLAS_LAYOUT_NAME = "TLAS";
+    const std::string RT_OUT_IMAGE_LAYOUT_NAME = "RT out image layout";
 }
 
 FVulkanContext& GetContext()
@@ -75,32 +78,63 @@ void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
 
     try {
         CreateInstance();
+
         LoadFunctionPointers();
+
         SetupDebugMessenger();
+
         CreateSurface();
+
         PickPhysicalDevice();
+
         CreateLogicalDevice();
+
         CommandBufferManager = std::make_shared<FCommandBufferManager>(LogicalDevice, this, GraphicsQueue, GraphicsQueueIndex);
+
         Swapchain = std::make_shared<FSwapchain>(*this, PhysicalDevice, LogicalDevice, Surface, Window, GraphicsQueueIndex, PresentQueueIndex, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
+
         CreateDepthAndAAImages();
-        CreateRenderPass();
+
+        //CreateRenderPass();
         CreatePassthroughRenderPass();
         CreateImguiRenderpasss();
-        CreateDescriptorSetLayouts();
-        CreateGraphicsPipeline();
+
+        //CreateDescriptorSetLayouts();
+        CreateRTDescriptorSetLayouts();
+
+        //CreateGraphicsPipeline();
+        CreateRTPipeline();
         CreatePassthroughPipeline();
-        ImageManager->LoadImageFromFile(TextureImage, TexturePath);
+
+        //ImageManager->LoadImageFromFile(TextureImage, TexturePath);
+
         CreateRenderFramebuffers();
         CreatePassthroughFramebuffers();
         CreateImguiFramebuffers();
+
         CreateTextureSampler();
+
+        CreateBLAS();
+        CreateTLAS();
+
         LoadModelDataToGPU();
+
         CreateUniformBuffers();
-        CreateDescriptorPool();
+
+        //CreateDescriptorPool();
+        CreateRTDescriptorPool();
         CreateImguiDescriptorPool();
-        CreateDescriptorSet();
-        CreateCommandBuffers();
+
+        //CreateDescriptorSet();
+        CreateRTDescriptorSet();
+
+        CreateSBT();
+
+        //CreateCommandBuffers();
+        CreateRTCommandBuffers();
+
         CreateSyncObjects();
+
         CreateImguiContext();
     }
     catch (std::runtime_error &Error) {
@@ -122,6 +156,30 @@ void FVulkanContext::CreateInstance()
     VulkanContextOptions.AddInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, &DebugCreateInfo, sizeof(VkDebugUtilsMessengerCreateInfoEXT));
 #endif
 
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR PhysicalDeviceAccelerationStructureFeatures{};
+    PhysicalDeviceAccelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+    PhysicalDeviceAccelerationStructureFeatures.accelerationStructure = VK_TRUE;
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, &PhysicalDeviceAccelerationStructureFeatures, sizeof(VkPhysicalDeviceAccelerationStructureFeaturesKHR));
+
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR PhysicalDeviceRayTracingPipelineFeatures{};
+    PhysicalDeviceRayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+    PhysicalDeviceRayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, &PhysicalDeviceRayTracingPipelineFeatures, sizeof(VkPhysicalDeviceRayTracingPipelineFeaturesKHR));
+
+    VkPhysicalDeviceBufferDeviceAddressFeatures PhysicalDeviceBufferDeviceAddressFeatures{};
+    PhysicalDeviceBufferDeviceAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+    PhysicalDeviceBufferDeviceAddressFeatures.bufferDeviceAddress = VK_TRUE;
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, &PhysicalDeviceBufferDeviceAddressFeatures, sizeof(VkPhysicalDeviceBufferDeviceAddressFeatures));
+
+    VkPhysicalDeviceHostQueryResetFeatures PhysicalDeviceHostQueryResetFeatures{};
+    PhysicalDeviceHostQueryResetFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES;
+    PhysicalDeviceHostQueryResetFeatures.hostQueryReset = VK_TRUE;
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_RAY_QUERY_EXTENSION_NAME, &PhysicalDeviceHostQueryResetFeatures, sizeof(VkPhysicalDeviceHostQueryResetFeatures));
+
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
     // Resolve and add extensions and layers
     uint32_t Counter = 0;
     auto ExtensionsRequiredByGLFW = glfwGetRequiredInstanceExtensions(&Counter);
@@ -130,7 +188,7 @@ void FVulkanContext::CreateInstance()
         VulkanContextOptions.AddInstanceExtension(ExtensionsRequiredByGLFW[i]);
     }
 
-    Instance = CreateVkInstance("Hello Triangle", {1, 0, 0}, "No Engine", {1, 0, 0}, VK_API_VERSION_1_0, VulkanContextOptions);
+    Instance = CreateVkInstance("Hello Triangle", {1, 3, 0}, "No Engine", {1, 3, 0}, VK_API_VERSION_1_3, VulkanContextOptions);
 }
 
 void FVulkanContext::LoadFunctionPointers()
@@ -155,16 +213,7 @@ void FVulkanContext::CreateSurface()
 
 void FVulkanContext::PickPhysicalDevice()
 {
-    uint32_t DeviceCount = 0;
-    vkEnumeratePhysicalDevices(Instance, &DeviceCount, nullptr);
-
-    if (DeviceCount == 0)
-    {
-        throw std::runtime_error("Failed to find GPUs with Vulkan support!");
-    }
-
-    std::vector<VkPhysicalDevice> Devices(DeviceCount);
-    vkEnumeratePhysicalDevices(Instance, &DeviceCount, Devices.data());
+    std::vector<VkPhysicalDevice> Devices = GetAllPhysicalDevices();
 
     for (const auto& Device : Devices)
     {
@@ -254,6 +303,8 @@ bool FVulkanContext::CheckDeviceExtensionsSupport(VkPhysicalDevice Device)
     std::vector<VkExtensionProperties>AvailableExtensions(ExtensionCount);
     vkEnumerateDeviceExtensionProperties(Device, nullptr, &ExtensionCount, AvailableExtensions.data());
 
+    auto DeviceExtensions = VulkanContextOptions.GetDeviceExtensionsList();
+
     std::set<std::string> RequiredExtensions(DeviceExtensions.begin(), DeviceExtensions.end());
 
     for (const auto& Extension : AvailableExtensions)
@@ -294,13 +345,288 @@ VkInstance FVulkanContext::CreateVkInstance(const std::string& AppName, const FV
     VulkanContextOptions.BuildInstancePNextChain(reinterpret_cast<BaseVulkanStructure*>(&CreateInfo));
 
     CreateInfo.enabledLayerCount = CharLayers.size();
-    CreateInfo.ppEnabledLayerNames = CharLayers.data();
+    CreateInfo.ppEnabledLayerNames = (CreateInfo.enabledLayerCount == 0) ? nullptr : CharLayers.data();
 
     VkInstance ResultingInstance;
     VkResult Result = vkCreateInstance(&CreateInfo, nullptr, &ResultingInstance);
     assert((Result == VK_SUCCESS) && "Failed to create instance!");
     return ResultingInstance;
 }
+
+std::vector<VkPhysicalDevice> FVulkanContext::GetAllPhysicalDevices()
+{
+    uint32_t DeviceCount = 0;
+    vkEnumeratePhysicalDevices(Instance, &DeviceCount, nullptr);
+
+    if (DeviceCount == 0)
+    {
+        assert(0 &&"Failed to find GPUs with Vulkan support!");
+    }
+
+    std::vector<VkPhysicalDevice> Devices(DeviceCount);
+    vkEnumeratePhysicalDevices(Instance, &DeviceCount, Devices.data());
+
+    return Devices;
+}
+
+VkPhysicalDeviceProperties2 FVulkanContext::GetPhysicalDeviceProperties2(VkPhysicalDevice PhysicalDevice, void* pNextStructure)
+{
+    VkPhysicalDeviceProperties2 PhysicalDeviceProperties2{};
+    PhysicalDeviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    PhysicalDeviceProperties2.pNext = pNextStructure;
+
+    vkGetPhysicalDeviceProperties2(PhysicalDevice, &PhysicalDeviceProperties2);
+
+    return PhysicalDeviceProperties2;
+}
+
+FAccelerationStructure FVulkanContext::CreateAccelerationStructure(VkDeviceSize Size, VkAccelerationStructureTypeKHR Type)
+{
+    FAccelerationStructure AccelerationStructure;
+    AccelerationStructure.Type = Type;
+
+    AccelerationStructure.Buffer = ResourceAllocator->CreateBuffer(Size, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    VkAccelerationStructureCreateInfoKHR AccelerationStructureCreateInfoKHR{};
+    AccelerationStructureCreateInfoKHR.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+    AccelerationStructureCreateInfoKHR.type = Type;
+    AccelerationStructureCreateInfoKHR.size = Size;
+    AccelerationStructureCreateInfoKHR.buffer = AccelerationStructure.Buffer.Buffer;
+
+    VkResult Result = vkCreateAccelerationStructureKHR(LogicalDevice, &AccelerationStructureCreateInfoKHR, nullptr, &AccelerationStructure.AccelerationStructure);
+    assert((Result == VK_SUCCESS) && "Failed to create acceleration structure");
+    return AccelerationStructure;
+}
+
+void FVulkanContext::DestroyAccelerationStructure(FAccelerationStructure &AccelerationStructure)
+{
+    vkDestroyAccelerationStructureKHR(LogicalDevice, AccelerationStructure.AccelerationStructure, nullptr);
+    ResourceAllocator->DestroyBuffer(AccelerationStructure.Buffer);
+}
+
+VkDeviceAddress FVulkanContext::GetBufferDeviceAddressInfo(FBuffer& Buffer)
+{
+    VkBufferDeviceAddressInfo BufferDeviceAddressInfo{};
+    BufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    BufferDeviceAddressInfo.buffer = Buffer.Buffer;
+
+    auto Result = vkGetBufferDeviceAddress(LogicalDevice, &BufferDeviceAddressInfo);
+
+    return Result;
+}
+
+VkDeviceAddress FVulkanContext::GetASDeviceAddressInfo(FAccelerationStructure& AS)
+{
+    VkAccelerationStructureDeviceAddressInfoKHR AccelerationStructureDeviceAddressInfo{};
+    AccelerationStructureDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
+    AccelerationStructureDeviceAddressInfo.accelerationStructure = AS.AccelerationStructure;
+    return vkGetAccelerationStructureDeviceAddressKHR(LogicalDevice, &AccelerationStructureDeviceAddressInfo);
+}
+
+VkAccelerationStructureGeometryTrianglesDataKHR FVulkanContext::GetAccelerationStructureGeometryTrianglesData(FBuffer& VertexBuffer, FBuffer& IndexBuffer, uint32_t MaxVertices)
+{
+    VkAccelerationStructureGeometryTrianglesDataKHR AccelerationStructureGeometryTrianglesData{};
+    AccelerationStructureGeometryTrianglesData.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+    AccelerationStructureGeometryTrianglesData.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+    AccelerationStructureGeometryTrianglesData.vertexData.deviceAddress = GetBufferDeviceAddressInfo(VertexBuffer);
+    AccelerationStructureGeometryTrianglesData.vertexStride = sizeof (FVertex);
+    if (IndexBuffer.Buffer)
+    {
+        AccelerationStructureGeometryTrianglesData.indexType = VK_INDEX_TYPE_UINT32;
+        AccelerationStructureGeometryTrianglesData.indexData.deviceAddress = GetBufferDeviceAddressInfo(IndexBuffer);
+    }
+    AccelerationStructureGeometryTrianglesData.maxVertex = MaxVertices;
+
+    return AccelerationStructureGeometryTrianglesData;
+}
+
+VkAccelerationStructureGeometryKHR FVulkanContext::GetAccelerationStructureGeometry(VkAccelerationStructureGeometryTrianglesDataKHR& AccelerationStructureGeometryTrianglesData)
+{
+    VkAccelerationStructureGeometryKHR AccelerationStructureGeometry{};
+    AccelerationStructureGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+    AccelerationStructureGeometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
+    AccelerationStructureGeometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
+    AccelerationStructureGeometry.geometry.triangles = AccelerationStructureGeometryTrianglesData;
+
+    return AccelerationStructureGeometry;
+}
+
+VkAccelerationStructureBuildRangeInfoKHR FVulkanContext::GetAccelerationStructureBuildRangeInfo(uint32_t PrimitiveCount)
+{
+    VkAccelerationStructureBuildRangeInfoKHR AccelerationStructureBuildRangeInfo{};
+    AccelerationStructureBuildRangeInfo.firstVertex = 0;
+    AccelerationStructureBuildRangeInfo.primitiveCount = PrimitiveCount;
+    AccelerationStructureBuildRangeInfo.primitiveOffset = 0;
+    AccelerationStructureBuildRangeInfo.transformOffset = 0;
+
+    return AccelerationStructureBuildRangeInfo;
+}
+
+VkAccelerationStructureBuildGeometryInfoKHR FVulkanContext::GetAccelerationStructureBuildGeometryInfo(VkAccelerationStructureGeometryKHR& AccelerationStructureGeometry, VkBuildAccelerationStructureFlagsKHR Flags)
+{
+    VkAccelerationStructureBuildGeometryInfoKHR AccelerationStructureBuildGeometryInfo{};
+    AccelerationStructureBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    AccelerationStructureBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+    AccelerationStructureBuildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+    AccelerationStructureBuildGeometryInfo.flags = Flags;
+    AccelerationStructureBuildGeometryInfo.geometryCount = 1;
+    AccelerationStructureBuildGeometryInfo.pGeometries = &AccelerationStructureGeometry;
+
+    return AccelerationStructureBuildGeometryInfo;
+}
+
+FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuffer& IndexBuffer, uint32_t MaxVertices)
+{
+    VkAccelerationStructureGeometryTrianglesDataKHR AccelerationStructureGeometryTrianglesData = GetAccelerationStructureGeometryTrianglesData(VertexBuffer, IndexBuffer, MaxVertices);
+    VkAccelerationStructureGeometryKHR AccelerationStructureGeometry = GetAccelerationStructureGeometry(AccelerationStructureGeometryTrianglesData);
+    VkAccelerationStructureBuildGeometryInfoKHR AccelerationStructureBuildGeometryInfo = GetAccelerationStructureBuildGeometryInfo(AccelerationStructureGeometry, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR);
+    VkAccelerationStructureBuildRangeInfoKHR AccelerationStructureBuildRangeInfo = GetAccelerationStructureBuildRangeInfo(MaxVertices/3);
+
+    const VkAccelerationStructureBuildRangeInfoKHR*  VkAccelerationStructureBuildRangeInfoKHRPtr= &AccelerationStructureBuildRangeInfo;
+
+    uint32_t MaxPrimitiveCount = AccelerationStructureBuildRangeInfo.primitiveCount;
+
+    VkAccelerationStructureBuildSizesInfoKHR AccelerationStructureBuildSizesInfo{};
+    AccelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+
+    vkGetAccelerationStructureBuildSizesKHR(LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &AccelerationStructureBuildGeometryInfo, &MaxPrimitiveCount, &AccelerationStructureBuildSizesInfo);
+
+    FAccelerationStructure NotCompactedBLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
+
+    FBuffer ScratchBuffer = ResourceAllocator->CreateBuffer(AccelerationStructureBuildSizesInfo.buildScratchSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    auto ScratchAddress = GetBufferDeviceAddressInfo(ScratchBuffer);
+
+    AccelerationStructureBuildGeometryInfo.dstAccelerationStructure = NotCompactedBLAS.AccelerationStructure;
+    AccelerationStructureBuildGeometryInfo.scratchData.deviceAddress = ScratchAddress;
+
+    VkQueryPool QueryPool{};
+    VkQueryPoolCreateInfo QueryPoolCreateInfo{};
+    QueryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+    QueryPoolCreateInfo.queryCount = 1;
+    QueryPoolCreateInfo.queryType = VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR;
+    vkCreateQueryPool(LogicalDevice, &QueryPoolCreateInfo, nullptr, &QueryPool);
+
+    vkResetQueryPool(LogicalDevice, QueryPool, 0, 1);
+
+    CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+                                               {
+                                                   vkCmdBuildAccelerationStructuresKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometryInfo, &VkAccelerationStructureBuildRangeInfoKHRPtr);
+
+                                                   VkMemoryBarrier Barrier{};
+                                                   Barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+                                                   Barrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+                                                   Barrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+                                                   vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+                                                                        0, 1, &Barrier, 0, nullptr, 0, nullptr);
+
+                                                   vkCmdWriteAccelerationStructuresPropertiesKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometryInfo.dstAccelerationStructure, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR, QueryPool, 0);
+                                               });
+
+    FAccelerationStructure CompactedBLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
+
+    VkDeviceSize CompactedSize = 0;
+    vkGetQueryPoolResults(LogicalDevice, QueryPool, 0, 1, sizeof(VkDeviceSize), &CompactedSize, sizeof(VkDeviceSize), VK_QUERY_RESULT_WAIT_BIT);
+
+    CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+                                               {
+                                                   VkCopyAccelerationStructureInfoKHR CopyAccelerationStructureInfo{};
+                                                   CopyAccelerationStructureInfo.sType = VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR;
+                                                   CopyAccelerationStructureInfo.src = NotCompactedBLAS.AccelerationStructure;
+                                                   CopyAccelerationStructureInfo.dst = CompactedBLAS.AccelerationStructure;
+                                                   CopyAccelerationStructureInfo.mode = VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR;
+
+                                                   vkCmdCopyAccelerationStructureKHR(CommandBuffer, &CopyAccelerationStructureInfo);
+                                               });
+
+    DestroyAccelerationStructure(NotCompactedBLAS);
+
+    std::cout << "Delta in size: " << AccelerationStructureBuildSizesInfo.accelerationStructureSize - CompactedSize
+              << ", not compacted size is: "<< AccelerationStructureBuildSizesInfo.accelerationStructureSize<< ", compacted: " << CompactedSize << "." << std::endl;
+
+    vkDestroyQueryPool(LogicalDevice, QueryPool, nullptr);
+
+    return CompactedBLAS;
+}
+
+FAccelerationStructure FVulkanContext::GenerateTlas(std::vector<FAccelerationStructure> BLASes, std::vector<FMatrix4> TransformMatrices, std::vector<uint32_t> BlasIndices)
+{
+    uint32_t BLASCount = BLASes.size();
+
+    std::vector<VkAccelerationStructureInstanceKHR> AccelerationStructureInstanceVector;
+    AccelerationStructureInstanceVector.reserve(BLASes.size());
+    for (int i = 0; i < BLASCount; ++i)
+    {
+        VkAccelerationStructureInstanceKHR BlasInstance{};
+        auto& T = TransformMatrices[i].Data;
+        BlasInstance.transform = {T[0].X, T[0].Y, T[0].Z, T[0].W,
+                                  T[1].X, T[1].Y, T[1].Z, T[1].W,
+                                  T[2].X, T[2].Y, T[2].Z, T[2].W,};
+        BlasInstance.instanceCustomIndex = BlasIndices[i];
+        BlasInstance.accelerationStructureReference = GetASDeviceAddressInfo(BLASes[i]);
+        BlasInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+        BlasInstance.mask = 0xFF;
+        BlasInstance.instanceShaderBindingTableRecordOffset = 0;
+        AccelerationStructureInstanceVector.emplace_back(BlasInstance);
+    }
+
+    auto BlasInstanceBuffer = ResourceAllocator->CreateBuffer(AccelerationStructureInstanceVector.size() * sizeof(VkAccelerationStructureInstanceKHR), VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    auto BlasInstanceBufferAddress = GetBufferDeviceAddressInfo(BlasInstanceBuffer);
+
+    FAccelerationStructure TLAS;
+    FBuffer ScratchBuffer;
+
+    CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    {
+        VkMemoryBarrier MemoryBarrier{};
+        MemoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+        MemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        MemoryBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+        vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, 0, 1,
+                             &MemoryBarrier, 0, nullptr, 0, nullptr);
+        VkAccelerationStructureGeometryInstancesDataKHR AccelerationStructureGeometryInstancesData{};
+        AccelerationStructureGeometryInstancesData.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+        AccelerationStructureGeometryInstancesData.data.deviceAddress = BlasInstanceBufferAddress;
+        VkAccelerationStructureGeometryKHR AccelerationStructureGeometry{};
+        AccelerationStructureGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+        AccelerationStructureGeometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
+        AccelerationStructureGeometry.geometry.instances = AccelerationStructureGeometryInstancesData;
+        VkAccelerationStructureBuildGeometryInfoKHR AccelerationStructureBuildGeometry{};
+        AccelerationStructureBuildGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+        AccelerationStructureBuildGeometry.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+        AccelerationStructureBuildGeometry.geometryCount = 1;
+        AccelerationStructureBuildGeometry.pGeometries = &AccelerationStructureGeometry;
+        AccelerationStructureBuildGeometry.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+        AccelerationStructureBuildGeometry.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+        AccelerationStructureBuildGeometry.srcAccelerationStructure = VK_NULL_HANDLE;
+        uint32_t CountInstances = BLASCount;
+        VkAccelerationStructureBuildSizesInfoKHR AccelerationStructureBuildSizesInfo{};
+        AccelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+        vkGetAccelerationStructureBuildSizesKHR(LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &AccelerationStructureBuildGeometry, &CountInstances, &AccelerationStructureBuildSizesInfo);
+        TLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
+        ScratchBuffer = ResourceAllocator->CreateBuffer(AccelerationStructureBuildSizesInfo.buildScratchSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        AccelerationStructureBuildGeometry.srcAccelerationStructure = TLAS.AccelerationStructure;
+        AccelerationStructureBuildGeometry.dstAccelerationStructure = TLAS.AccelerationStructure;
+        AccelerationStructureBuildGeometry.scratchData.deviceAddress = GetBufferDeviceAddressInfo(ScratchBuffer);
+        VkAccelerationStructureBuildRangeInfoKHR AccelerationStructureBuildRangeInfo{};
+        AccelerationStructureBuildRangeInfo.primitiveCount = CountInstances;
+        const VkAccelerationStructureBuildRangeInfoKHR* AccelerationStructureBuildRangeInfoPtr = &AccelerationStructureBuildRangeInfo;
+        vkCmdBuildAccelerationStructuresKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometry, &AccelerationStructureBuildRangeInfoPtr);
+    });
+
+    ResourceAllocator->DestroyBuffer(BlasInstanceBuffer);
+    ResourceAllocator->DestroyBuffer(ScratchBuffer);
+
+    return TLAS;
+}
+
+VkPhysicalDeviceRayTracingPipelinePropertiesKHR FVulkanContext::GetRTProperties()
+{
+    VkPhysicalDeviceRayTracingPipelinePropertiesKHR PhysicalDeviceRayTracingPipelinePropertiesKHR{};
+    PhysicalDeviceRayTracingPipelinePropertiesKHR.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+    VkPhysicalDeviceProperties2 PhysicalDeviceProperties2 = GetPhysicalDeviceProperties2(PhysicalDevice, &PhysicalDeviceRayTracingPipelinePropertiesKHR);
+    return PhysicalDeviceRayTracingPipelinePropertiesKHR;
+}
+
 
 bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice Device)
 {
@@ -411,38 +737,26 @@ void FVulkanContext::CreateLogicalDevice()
         QueueCreateInfos.push_back(QueueCreateInfo);
     }
 
-    VkPhysicalDeviceFeatures DeviceFeatures{};
-    DeviceFeatures.samplerAnisotropy = VK_TRUE;
-    DeviceFeatures.sampleRateShading = VK_TRUE;
+    VkPhysicalDeviceFeatures2 DeviceFeatures2{};
+    DeviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    DeviceFeatures2.features.samplerAnisotropy = VK_TRUE;
+    DeviceFeatures2.features.sampleRateShading = VK_TRUE;
+
+    VulkanContextOptions.BuildDevicePNextChain(reinterpret_cast<BaseVulkanStructure*>(&DeviceFeatures2));
 
     VkDeviceCreateInfo CreateInfo{};
     CreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    CreateInfo.pNext = &DeviceFeatures2;
     CreateInfo.pQueueCreateInfos = QueueCreateInfos.data();
     CreateInfo.queueCreateInfoCount = static_cast<uint32_t>(QueueCreateInfos.size());
-    CreateInfo.pEnabledFeatures = &DeviceFeatures;
+
+    auto DeviceExtensions = VulkanContextOptions.GetDeviceExtensionsList();
     CreateInfo.enabledExtensionCount = static_cast<uint32_t>(DeviceExtensions.size());
-    std::vector<const char*> CharExtensions;
-    for (const auto& Extension : DeviceExtensions)
-    {
-        CharExtensions.push_back(Extension.c_str());
-    }
-    CreateInfo.ppEnabledExtensionNames = CharExtensions.data();
+    CreateInfo.ppEnabledExtensionNames = DeviceExtensions.data();
 
-    std::vector<const char*> CharLayers;
-    for (const auto& Layer : ValidationLayers)
-    {
-        CharLayers.push_back(Layer.c_str());
-    }
-
-    if (!ValidationLayers.empty())
-    {
-        CreateInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
-        CreateInfo.ppEnabledLayerNames = CharLayers.data();
-    }
-    else
-    {
-        CreateInfo.enabledLayerCount = 0;
-    }
+    auto DeviceLayers = VulkanContextOptions.GetDeviceLayers();
+    CreateInfo.enabledLayerCount = static_cast<uint32_t>(DeviceLayers.size());
+    CreateInfo.ppEnabledLayerNames = (CreateInfo.enabledLayerCount == 0) ? nullptr : DeviceLayers.data();
 
     if (vkCreateDevice(PhysicalDevice, &CreateInfo, nullptr, &LogicalDevice) != VK_SUCCESS)
     {
@@ -484,32 +798,32 @@ void FVulkanContext::CreateDepthAndAAImages()
     auto Width = Swapchain->GetWidth();
     auto Height = Swapchain->GetHeight();
 
-    ImageManager->CreateImage(ColorImage, Width, Height, false, MSAASamples, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
-                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                              VK_IMAGE_ASPECT_COLOR_BIT);
-    V::SetName(LogicalDevice, (*ImageManager)(ColorImage).Image, "V_ColorImage");
-    V::SetName(LogicalDevice, (*ImageManager)(ColorImage).View, "V_ColorImagView");
+//    ImageManager->CreateImage(ColorImage, Width, Height, false, MSAASamples, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+//                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+//                              VK_IMAGE_ASPECT_COLOR_BIT);
+//    V::SetName(LogicalDevice, (*ImageManager)(ColorImage).Image, "V_ColorImage");
+//    V::SetName(LogicalDevice, (*ImageManager)(ColorImage).View, "V_ColorImagView");
 
-    ImageManager->CreateImage(NormalsImage, Width, Height, false, MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                            VK_IMAGE_ASPECT_COLOR_BIT);
-    V::SetName(LogicalDevice, (*ImageManager)(NormalsImage).Image, "V_NormalsImage");
-    V::SetName(LogicalDevice, (*ImageManager)(NormalsImage).View, "V_NormalsImageView");
+//    ImageManager->CreateImage(NormalsImage, Width, Height, false, MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+//                                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+//                                            VK_IMAGE_ASPECT_COLOR_BIT);
+//    V::SetName(LogicalDevice, (*ImageManager)(NormalsImage).Image, "V_NormalsImage");
+//    V::SetName(LogicalDevice, (*ImageManager)(NormalsImage).View, "V_NormalsImageView");
 
-    ImageManager->CreateImage(RenderableIndexImage, Width, Height, false, MSAASamples, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
-                                                    VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                    VK_IMAGE_ASPECT_COLOR_BIT);
-    V::SetName(LogicalDevice, (*ImageManager)(RenderableIndexImage).Image, "V_RenderableIndexImage");
-    V::SetName(LogicalDevice, (*ImageManager)(RenderableIndexImage).View, "V_RenderableIndexImageView");
+//    ImageManager->CreateImage(RenderableIndexImage, Width, Height, false, MSAASamples, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
+//                                                    VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+//                                                    VK_IMAGE_ASPECT_COLOR_BIT);
+//    V::SetName(LogicalDevice, (*ImageManager)(RenderableIndexImage).Image, "V_RenderableIndexImage");
+//    V::SetName(LogicalDevice, (*ImageManager)(RenderableIndexImage).View, "V_RenderableIndexImageView");
 
-    ImageManager->CreateImage(UtilityImageR32, Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
-                                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                               VK_IMAGE_ASPECT_COLOR_BIT);
-    V::SetName(LogicalDevice, (*ImageManager)(UtilityImageR32).Image, "V_UtilityImageR32");
-    V::SetName(LogicalDevice, (*ImageManager)(UtilityImageR32).View, "V_UtilityImageR32View");
-
-    auto& UtilityImgR32 = (*ImageManager)(UtilityImageR32);
-    UtilityImgR32.Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+//    ImageManager->CreateImage(UtilityImageR32, Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
+//                                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+//                                               VK_IMAGE_ASPECT_COLOR_BIT);
+//    V::SetName(LogicalDevice, (*ImageManager)(UtilityImageR32).Image, "V_UtilityImageR32");
+//    V::SetName(LogicalDevice, (*ImageManager)(UtilityImageR32).View, "V_UtilityImageR32View");
+//
+//    auto& UtilityImgR32 = (*ImageManager)(UtilityImageR32);
+//    UtilityImgR32.Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
     ImageManager->CreateImage(ResolvedColorImage, Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
                               VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -517,23 +831,23 @@ void FVulkanContext::CreateDepthAndAAImages()
     V::SetName(LogicalDevice, (*ImageManager)(ResolvedColorImage).Image, "V_ResolvedColorImage");
     V::SetName(LogicalDevice, (*ImageManager)(ResolvedColorImage).View, "V_ResolvedColorImageView");
 
-    ImageManager->CreateImage(UtilityImageR8G8B8A8_SRGB, Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                                                         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                         VK_IMAGE_ASPECT_COLOR_BIT);
-    V::SetName(LogicalDevice, (*ImageManager)(UtilityImageR8G8B8A8_SRGB).Image, "V_UtilityImageR8G8B8A8_SRGB");
-    V::SetName(LogicalDevice, (*ImageManager)(UtilityImageR8G8B8A8_SRGB).View, "V_UtilityImageR8G8B8A8_SRGBView");
+//    ImageManager->CreateImage(UtilityImageR8G8B8A8_SRGB, Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+//                                                         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+//                                                         VK_IMAGE_ASPECT_COLOR_BIT);
+//    V::SetName(LogicalDevice, (*ImageManager)(UtilityImageR8G8B8A8_SRGB).Image, "V_UtilityImageR8G8B8A8_SRGB");
+//    V::SetName(LogicalDevice, (*ImageManager)(UtilityImageR8G8B8A8_SRGB).View, "V_UtilityImageR8G8B8A8_SRGBView");
 
-    /// Create Image and ImageView for Depth
-    VkFormat DepthFormat = FindDepthFormat();
-    ImageManager->CreateImage(DepthImage, Width, Height, false, MSAASamples, DepthFormat, VK_IMAGE_TILING_OPTIMAL,
-                                          VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                          VK_IMAGE_ASPECT_DEPTH_BIT);
-
-
-    V::SetName(LogicalDevice, (*ImageManager)(DepthImage).Image, "V_DepthImage");
-    V::SetName(LogicalDevice, (*ImageManager)(DepthImage).View, "V_DepthImageView");
-    auto& DepthImg = (*ImageManager)(DepthImage);
-    DepthImg.Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+//    /// Create Image and ImageView for Depth
+//    VkFormat DepthFormat = FindDepthFormat();
+//    ImageManager->CreateImage(DepthImage, Width, Height, false, MSAASamples, DepthFormat, VK_IMAGE_TILING_OPTIMAL,
+//                                          VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+//                                          VK_IMAGE_ASPECT_DEPTH_BIT);
+//
+//
+//    V::SetName(LogicalDevice, (*ImageManager)(DepthImage).Image, "V_DepthImage");
+//    V::SetName(LogicalDevice, (*ImageManager)(DepthImage).View, "V_DepthImageView");
+//    auto& DepthImg = (*ImageManager)(DepthImage);
+//    DepthImg.Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
 void FVulkanContext::CreatePassthroughRenderPass()
@@ -547,15 +861,15 @@ void FVulkanContext::CreatePassthroughRenderPass()
 
 void FVulkanContext::CreateRenderPass()
 {
-    RenderPass = std::make_shared<FRenderPass>();
-    RenderPass->AddImageAsAttachment((*ImageManager)(ColorImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    RenderPass->AddImageAsAttachment((*ImageManager)(NormalsImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    RenderPass->AddImageAsAttachment((*ImageManager)(RenderableIndexImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    RenderPass->AddImageAsAttachment((*ImageManager)(DepthImage), AttachmentType::DepthStencil, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    RenderPass->AddImageAsAttachment((*ImageManager)(ResolvedColorImage), AttachmentType::Resolve, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-
-    RenderPass->Construct(LogicalDevice);
-    V::SetName(LogicalDevice, RenderPass->RenderPass, "V_RenderRenderpass");
+//    RenderPass = std::make_shared<FRenderPass>();
+//    RenderPass->AddImageAsAttachment((*ImageManager)(ColorImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+//    RenderPass->AddImageAsAttachment((*ImageManager)(NormalsImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+//    RenderPass->AddImageAsAttachment((*ImageManager)(RenderableIndexImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+//    RenderPass->AddImageAsAttachment((*ImageManager)(DepthImage), AttachmentType::DepthStencil, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+//    RenderPass->AddImageAsAttachment((*ImageManager)(ResolvedColorImage), AttachmentType::Resolve, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+//
+//    RenderPass->Construct(LogicalDevice);
+//    V::SetName(LogicalDevice, RenderPass->RenderPass, "V_RenderRenderpass");
 }
 
 void FVulkanContext::CreateImguiRenderpasss()
@@ -605,6 +919,16 @@ void FVulkanContext::CreateDescriptorSetLayouts()
     DescriptorSetManager->CreateDescriptorSetLayouts();
 }
 
+void FVulkanContext::CreateRTDescriptorSetLayouts()
+{
+    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, 0, LAYOUTS::TLAS_LAYOUT_NAME,
+                                              {0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
+    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, 0, LAYOUTS::RT_OUT_IMAGE_LAYOUT_NAME,
+                                              {1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+
+    DescriptorSetManager->CreateDescriptorSetLayouts();
+}
+
 void FVulkanContext::CreatePassthroughPipeline()
 {
     PassthroughPipeline.AddShader("../shaders/passthrough_vert.spv", eShaderType::VERTEX);
@@ -620,24 +944,39 @@ void FVulkanContext::CreatePassthroughPipeline()
 
 void FVulkanContext::CreateGraphicsPipeline()
 {
-    GraphicsPipeline.AddShader("../shaders/triangle_vert.spv", eShaderType::VERTEX);
-    GraphicsPipeline.AddShader("../shaders/triangle_frag.spv", eShaderType::FRAGMENT);
+//    GraphicsPipeline.AddShader("../shaders/triangle_vert.spv", eShaderType::VERTEX);
+//    GraphicsPipeline.AddShader("../shaders/triangle_frag.spv", eShaderType::FRAGMENT);
+//
+//    auto AttributeDescriptions = FVertex::GetAttributeDescriptions();
+//    for (auto& Entry : AttributeDescriptions)
+//    {
+//        GraphicsPipeline.AddVertexInputAttributeDescription(Entry);
+//    }
+//    GraphicsPipeline.AddVertexInputBindingDescription(FVertex::GetBindingDescription());
+//
+//    GraphicsPipeline.SetMSAA(Context.MSAASamples);
+//    GraphicsPipeline.SetExtent2D(Swapchain->GetExtent2D());
+//    GraphicsPipeline.SetWidth(Swapchain->GetWidth());
+//    GraphicsPipeline.SetHeight(Swapchain->GetHeight());
+//    GraphicsPipeline.SetBlendAttachmentsCount(3);
+//    GraphicsPipeline.AddDescriptorSetLayout(DescriptorSetManager->GetVkDescriptorSetLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME));
+//    GraphicsPipeline.AddDescriptorSetLayout(DescriptorSetManager->GetVkDescriptorSetLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME));
+//    GraphicsPipeline.CreateGraphicsPipeline(LogicalDevice, RenderPass->RenderPass);
+}
 
-    auto AttributeDescriptions = FVertex::GetAttributeDescriptions();
-    for (auto& Entry : AttributeDescriptions)
-    {
-        GraphicsPipeline.AddVertexInputAttributeDescription(Entry);
-    }
-    GraphicsPipeline.AddVertexInputBindingDescription(FVertex::GetBindingDescription());
+void FVulkanContext::CreateRTPipeline()
+{
+    RTPipeline.AddShader("../shaders/ray_gen.spv", eShaderType::RAYGEN);
+    RTPipeline.AddShader("../shaders/ray_closest_hit.spv", eShaderType::RAYCLOSEHIT);
+    RTPipeline.AddShader("../shaders/ray_miss.spv", eShaderType::RAYMISS);
 
-    GraphicsPipeline.SetMSAA(Context.MSAASamples);
-    GraphicsPipeline.SetExtent2D(Swapchain->GetExtent2D());
-    GraphicsPipeline.SetWidth(Swapchain->GetWidth());
-    GraphicsPipeline.SetHeight(Swapchain->GetHeight());
-    GraphicsPipeline.SetBlendAttachmentsCount(3);
-    GraphicsPipeline.AddDescriptorSetLayout(DescriptorSetManager->GetVkDescriptorSetLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME));
-    GraphicsPipeline.AddDescriptorSetLayout(DescriptorSetManager->GetVkDescriptorSetLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME));
-    GraphicsPipeline.CreateGraphicsPipeline(LogicalDevice, RenderPass->RenderPass);
+    RTPipeline.SetExtent2D(Swapchain->GetExtent2D());
+    RTPipeline.SetWidth(Swapchain->GetWidth());
+    RTPipeline.SetHeight(Swapchain->GetHeight());
+
+    RTPipeline.AddDescriptorSetLayout(DescriptorSetManager->GetVkDescriptorSetLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME));
+
+    RTPipeline.CreateRayTracingPipeline(LogicalDevice);
 }
 
 VkFormat FVulkanContext::FindDepthFormat()
@@ -656,27 +995,27 @@ bool FVulkanContext::HasStensilComponent(VkFormat Format)
 
 void FVulkanContext::CreateRenderFramebuffers()
 {
-    SwapChainFramebuffers.resize(Swapchain->Size());
-    for (std::size_t i = 0; i < Swapchain->Size(); ++i) {
-        std::vector<VkImageView> Attachments = {(*ImageManager)(ColorImage).View, (*ImageManager)(NormalsImage).View, (*ImageManager)(RenderableIndexImage).View,
-                                                (*ImageManager)(DepthImage).View, (*ImageManager)(ResolvedColorImage).View};
-
-        VkFramebufferCreateInfo FramebufferCreateInfo{};
-        FramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        FramebufferCreateInfo.renderPass = RenderPass->RenderPass;
-        FramebufferCreateInfo.attachmentCount = static_cast<uint32_t>(Attachments.size());
-        FramebufferCreateInfo.pAttachments = Attachments.data();
-        FramebufferCreateInfo.width = Swapchain->GetWidth();
-        FramebufferCreateInfo.height = Swapchain->GetHeight();
-        FramebufferCreateInfo.layers = 1;
-
-        if (vkCreateFramebuffer(LogicalDevice, &FramebufferCreateInfo, nullptr, &SwapChainFramebuffers[i]) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to create framebuffer!");
-        }
-
-        V::SetName(LogicalDevice, SwapChainFramebuffers[i], "V_Render_fb_" + std::to_string(i));
-    }
+//    SwapChainFramebuffers.resize(Swapchain->Size());
+//    for (std::size_t i = 0; i < Swapchain->Size(); ++i) {
+//        std::vector<VkImageView> Attachments = {(*ImageManager)(ColorImage).View, (*ImageManager)(NormalsImage).View, (*ImageManager)(RenderableIndexImage).View,
+//                                                (*ImageManager)(DepthImage).View, (*ImageManager)(ResolvedColorImage).View};
+//
+//        VkFramebufferCreateInfo FramebufferCreateInfo{};
+//        FramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+//        FramebufferCreateInfo.renderPass = RenderPass->RenderPass;
+//        FramebufferCreateInfo.attachmentCount = static_cast<uint32_t>(Attachments.size());
+//        FramebufferCreateInfo.pAttachments = Attachments.data();
+//        FramebufferCreateInfo.width = Swapchain->GetWidth();
+//        FramebufferCreateInfo.height = Swapchain->GetHeight();
+//        FramebufferCreateInfo.layers = 1;
+//
+//        if (vkCreateFramebuffer(LogicalDevice, &FramebufferCreateInfo, nullptr, &SwapChainFramebuffers[i]) != VK_SUCCESS)
+//        {
+//            throw std::runtime_error("Failed to create framebuffer!");
+//        }
+//
+//        V::SetName(LogicalDevice, SwapChainFramebuffers[i], "V_Render_fb_" + std::to_string(i));
+//    }
 }
 
 void FVulkanContext::CreatePassthroughFramebuffers()
@@ -730,6 +1069,16 @@ void FVulkanContext::CreateImguiFramebuffers()
         V::SetName(LogicalDevice, ImGuiFramebuffers[i], "V_Imgui_fb_" + std::to_string(i));
 
     }
+}
+
+void FVulkanContext::CreateRTDescriptorPool()
+{
+    auto ModelsCount = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>()->Size();
+    auto NumberOfSwapChainImages = Swapchain->Size();
+
+    DescriptorSetManager->AddDescriptorSet(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, NumberOfSwapChainImages);
+
+    DescriptorSetManager->ReserveDescriptorPool();
 }
 
 void FVulkanContext::LoadModelDataToGPU()
@@ -835,6 +1184,61 @@ void FVulkanContext::CreateImguiDescriptorPool()
 
 void FVulkanContext::CreateDescriptorSet()
 {
+//    auto& Coordinator = ECS::GetCoordinator();
+//    auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
+//
+//    /// Create descriptor sets
+//    DescriptorSetManager->CreateAllDescriptorSets();
+//
+//    for (size_t i = 0; i < Swapchain->Size(); ++i)
+//    {
+//        uint32_t j = 0;
+//        for (auto Mesh : *MeshSystem)
+//        {
+//            VkDescriptorBufferInfo TransformBufferInfo{};
+//            TransformBufferInfo.buffer = DeviceTransformBuffers[i].Buffer;
+//            TransformBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceTransformComponent) * j;
+//            TransformBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceTransformComponent);
+//            DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, LAYOUTS::TRANSFORM_LAYOUT_NAME, j * Swapchain->Size() + i, TransformBufferInfo);
+//
+//            VkDescriptorBufferInfo RenderableBufferInfo{};
+//            RenderableBufferInfo.buffer = DeviceRenderableBuffers[i].Buffer;
+//            RenderableBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent) * j;
+//            RenderableBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent);
+//            DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, LAYOUTS::RENDERABLE_LAYOUT_NAME, j * Swapchain->Size() + i, RenderableBufferInfo);
+//
+//            ++j;
+//        }
+//    }
+//
+//    for (size_t i = 0; i < Swapchain->Size(); ++i)
+//    {
+//
+//        VkDescriptorBufferInfo CameraBufferInfo{};
+//        CameraBufferInfo.buffer = DeviceCameraBuffers[i].Buffer;
+//        CameraBufferInfo.offset = 0;
+//        CameraBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
+//        DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, LAYOUTS::CAMERA_LAYOUT_NAME, i, CameraBufferInfo);
+//
+//        VkDescriptorImageInfo ImageBufferInfo{};
+//        ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+//        ImageBufferInfo.imageView = (*ImageManager)(TextureImage).View;
+//        ImageBufferInfo.sampler = TextureSampler;
+//        DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME, i, ImageBufferInfo);
+//    }
+//
+//    for (size_t i = 0; i < Swapchain->Size(); ++i)
+//    {
+//        VkDescriptorImageInfo ImageBufferInfo{};
+//        ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+//        ImageBufferInfo.imageView = (*ImageManager)(ResolvedColorImage).View;
+//        ImageBufferInfo.sampler = TextureSampler;
+//        DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME, i, ImageBufferInfo);
+//    }
+}
+
+void FVulkanContext::CreateRTDescriptorSet()
+{
     auto& Coordinator = ECS::GetCoordinator();
     auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
 
@@ -843,99 +1247,64 @@ void FVulkanContext::CreateDescriptorSet()
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
-        uint32_t j = 0;
-        for (auto Mesh : *MeshSystem)
-        {
-            VkDescriptorBufferInfo TransformBufferInfo{};
-            TransformBufferInfo.buffer = DeviceTransformBuffers[i].Buffer;
-            TransformBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceTransformComponent) * j;
-            TransformBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceTransformComponent);
-            DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, LAYOUTS::TRANSFORM_LAYOUT_NAME, j * Swapchain->Size() + i, TransformBufferInfo);
 
-            VkDescriptorBufferInfo RenderableBufferInfo{};
-            RenderableBufferInfo.buffer = DeviceRenderableBuffers[i].Buffer;
-            RenderableBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent) * j;
-            RenderableBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent);
-            DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, LAYOUTS::RENDERABLE_LAYOUT_NAME, j * Swapchain->Size() + i, RenderableBufferInfo);
-
-            ++j;
-        }
-    }
-
-    for (size_t i = 0; i < Swapchain->Size(); ++i)
-    {
-
-        VkDescriptorBufferInfo CameraBufferInfo{};
-        CameraBufferInfo.buffer = DeviceCameraBuffers[i].Buffer;
-        CameraBufferInfo.offset = 0;
-        CameraBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
-        DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, LAYOUTS::CAMERA_LAYOUT_NAME, i, CameraBufferInfo);
+        DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, LAYOUTS::TLAS_LAYOUT_NAME, i, TLAS.AccelerationStructure);
 
         VkDescriptorImageInfo ImageBufferInfo{};
-        ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        ImageBufferInfo.imageView = (*ImageManager)(TextureImage).View;
-        ImageBufferInfo.sampler = TextureSampler;
-        DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME, i, ImageBufferInfo);
-    }
-
-    for (size_t i = 0; i < Swapchain->Size(); ++i)
-    {
-        VkDescriptorImageInfo ImageBufferInfo{};
-        ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
         ImageBufferInfo.imageView = (*ImageManager)(ResolvedColorImage).View;
-        ImageBufferInfo.sampler = TextureSampler;
-        DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME, i, ImageBufferInfo);
+        DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, LAYOUTS::RT_OUT_IMAGE_LAYOUT_NAME, i, ImageBufferInfo);
     }
 }
 
 void FVulkanContext::CreateCommandBuffers()
 {
-    GraphicsCommandBuffers.resize(SwapChainFramebuffers.size());
-
-    for (std::size_t i = 0; i < GraphicsCommandBuffers.size(); ++i)
-    {
-        GraphicsCommandBuffers[i] = CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
-        {
-            VkRenderPassBeginInfo RenderPassInfo{};
-            RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            RenderPassInfo.renderPass = RenderPass->RenderPass;
-            RenderPassInfo.framebuffer = SwapChainFramebuffers[i];
-            RenderPassInfo.renderArea.offset = {0, 0};
-            RenderPassInfo.renderArea.extent = Swapchain->GetExtent2D();
-
-            std::vector<VkClearValue> ClearValues{7};
-            ClearValues[0].color = {0.f, 0.f, 0.f, 1.f};
-            ClearValues[1].color = {0.0f, 0.f, 0.f, 1.f};
-            ClearValues[2].color = {0, 0, 0, 0};
-            ClearValues[3].depthStencil = {1.f, 0};
-            ClearValues[4].color = {0.f, 0.f, 0.f, 0.f};
-            RenderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
-            RenderPassInfo.pClearValues = ClearValues.data();
-
-            vkCmdBeginRenderPass(CommandBuffer, &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline.GetPipeline());
-
-            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline.GetPipelineLayout(), 0, 1, &DescriptorSetManager->GetSet(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, i), 0,
-                                    nullptr);
-            auto& Coordinator = ECS::GetCoordinator();
-            auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
-
-            uint32_t j = 0;
-            for (auto Entity : *MeshSystem)
-            {
-                vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline.GetPipelineLayout(), 1, 1,
-                                        &DescriptorSetManager->GetSet(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, j * Swapchain->Size() + i), 0,
-                                        nullptr);
-
-                MeshSystem->Bind(Entity, CommandBuffer);
-                MeshSystem->Draw(Entity, CommandBuffer);
-                ++j;
-            }
-            vkCmdEndRenderPass(CommandBuffer);
-        });
-
-        V::SetName(LogicalDevice, GraphicsCommandBuffers[i], "V_GraphicsCommandBuffers" + std::to_string(i));
-    }
+//    GraphicsCommandBuffers.resize(SwapChainFramebuffers.size());
+//
+//    for (std::size_t i = 0; i < GraphicsCommandBuffers.size(); ++i)
+//    {
+//        GraphicsCommandBuffers[i] = CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
+//        {
+//            VkRenderPassBeginInfo RenderPassInfo{};
+//            RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+//            RenderPassInfo.renderPass = RenderPass->RenderPass;
+//            RenderPassInfo.framebuffer = SwapChainFramebuffers[i];
+//            RenderPassInfo.renderArea.offset = {0, 0};
+//            RenderPassInfo.renderArea.extent = Swapchain->GetExtent2D();
+//
+//            std::vector<VkClearValue> ClearValues{7};
+//            ClearValues[0].color = {0.f, 0.f, 0.f, 1.f};
+//            ClearValues[1].color = {0.0f, 0.f, 0.f, 1.f};
+//            ClearValues[2].color = {0, 0, 0, 0};
+//            ClearValues[3].depthStencil = {1.f, 0};
+//            ClearValues[4].color = {0.f, 0.f, 0.f, 0.f};
+//            RenderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
+//            RenderPassInfo.pClearValues = ClearValues.data();
+//
+//            vkCmdBeginRenderPass(CommandBuffer, &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+//            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline.GetPipeline());
+//
+//            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline.GetPipelineLayout(), 0, 1, &DescriptorSetManager->GetSet(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, i), 0,
+//                                    nullptr);
+//            auto& Coordinator = ECS::GetCoordinator();
+//            auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
+//
+//            uint32_t j = 0;
+//            for (auto Entity : *MeshSystem)
+//            {
+//                vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline.GetPipelineLayout(), 1, 1,
+//                                        &DescriptorSetManager->GetSet(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, j * Swapchain->Size() + i), 0,
+//                                        nullptr);
+//
+//                MeshSystem->Bind(Entity, CommandBuffer);
+//                MeshSystem->Draw(Entity, CommandBuffer);
+//                ++j;
+//            }
+//            vkCmdEndRenderPass(CommandBuffer);
+//        });
+//
+//        V::SetName(LogicalDevice, GraphicsCommandBuffers[i], "V_GraphicsCommandBuffers" + std::to_string(i));
+//    }
 
     PassthroughCommandBuffers.resize(PassthroughFramebuffers.size());
 
@@ -986,10 +1355,25 @@ void FVulkanContext::CreateCommandBuffers()
     }
 }
 
+void FVulkanContext::CreateRTCommandBuffers()
+{
+    RTCommandBuffers.resize(Swapchain->Size());
+
+    for (std::size_t i = 0; i <RTCommandBuffers.size(); ++i)
+    {
+        RTCommandBuffers[i] = CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
+        {
+            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, RTPipeline.GetPipeline());
+            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, RTPipeline.GetPipelineLayout(), 0, 1, &DescriptorSetManager->GetSet(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, i), 0, nullptr);
+            vkCmdTraceRaysKHR(CommandBuffer, &RGenRegion, &RMissRegion, &RHitRegion, &RCallRegion, 1920, 1080, 1);
+        });
+    }
+}
+
 void FVulkanContext::CreateSyncObjects()
 {
     ImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    RenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    RTFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     PassthroughFinishedSemaphore.resize(MAX_FRAMES_IN_FLIGHT);
     RenderingFinishedFences.resize(MAX_FRAMES_IN_FLIGHT);
     ImagesInFlight.resize(MAX_FRAMES_IN_FLIGHT, VK_NULL_HANDLE);
@@ -1006,7 +1390,7 @@ void FVulkanContext::CreateSyncObjects()
     for (std::size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
         if (vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &ImageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &RenderFinishedSemaphores[i]) != VK_SUCCESS ||
+            vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &RTFinishedSemaphores[i]) != VK_SUCCESS ||
             vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &PassthroughFinishedSemaphore[i]) != VK_SUCCESS ||
             vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &ImGuiFinishedSemaphores[i]) != VK_SUCCESS ||
             vkCreateFence(LogicalDevice, &FenceInfo, nullptr, &ImGuiFinishedFences[i]) != VK_SUCCESS ||
@@ -1092,9 +1476,9 @@ void FVulkanContext::Render()
     SubmitInfo.pWaitSemaphores = WaitSemaphores;
     SubmitInfo.pWaitDstStageMask = WaitStages;
     SubmitInfo.commandBufferCount = 1;
-    SubmitInfo.pCommandBuffers = &GraphicsCommandBuffers[ImageIndex];
+    SubmitInfo.pCommandBuffers = &RTCommandBuffers[ImageIndex];
 
-    VkSemaphore SignalSemaphores[] = {RenderFinishedSemaphores[CurrentFrame]};
+    VkSemaphore SignalSemaphores[] = {RTFinishedSemaphores[CurrentFrame]};
     SubmitInfo.signalSemaphoreCount = 1;
     SubmitInfo.pSignalSemaphores = SignalSemaphores;
 
@@ -1111,7 +1495,7 @@ void FVulkanContext::Render()
     VkSubmitInfo PassThroughSubmitInfo{};
     PassThroughSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore PassthroughWaitSemaphores[] = {RenderFinishedSemaphores[CurrentFrame]};
+    VkSemaphore PassthroughWaitSemaphores[] = {RTFinishedSemaphores[CurrentFrame]};
     VkPipelineStageFlags PassthroughWaitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     PassThroughSubmitInfo.waitSemaphoreCount = 1;
     PassThroughSubmitInfo.pWaitSemaphores = PassthroughWaitSemaphores;
@@ -1265,13 +1649,13 @@ void FVulkanContext::RecreateSwapChain()
 void FVulkanContext::CleanUpSwapChain()
 {
     /// Remove all images which size's dependent on the swapchain's size
-    ImageManager->RemoveImage(ColorImage);
+//    ImageManager->RemoveImage(ColorImage);
     ImageManager->RemoveImage(ResolvedColorImage);
-    ImageManager->RemoveImage(UtilityImageR8G8B8A8_SRGB);
-    ImageManager->RemoveImage(NormalsImage);
-    ImageManager->RemoveImage(RenderableIndexImage);
-    ImageManager->RemoveImage(UtilityImageR32);
-    ImageManager->RemoveImage(DepthImage);
+//    ImageManager->RemoveImage(UtilityImageR8G8B8A8_SRGB);
+//    ImageManager->RemoveImage(NormalsImage);
+//    ImageManager->RemoveImage(RenderableIndexImage);
+//    ImageManager->RemoveImage(UtilityImageR32);
+//    ImageManager->RemoveImage(DepthImage);
 
     /// Remove all framebuffers
     for (auto Framebuffer : SwapChainFramebuffers)
@@ -1290,7 +1674,7 @@ void FVulkanContext::CleanUpSwapChain()
     }
 
     /// Remove all command buffers
-    for (auto& CommandBuffer : GraphicsCommandBuffers)
+    for (auto& CommandBuffer : RTCommandBuffers)
     {
         CommandBufferManager->FreeCommandBuffer(CommandBuffer);
     }
@@ -1301,11 +1685,11 @@ void FVulkanContext::CleanUpSwapChain()
     }
 
     /// Remove pipelines
-    GraphicsPipeline.Delete();
+    //GraphicsPipeline.Delete();
     PassthroughPipeline.Delete();
 
     /// Remove renderpasses
-    RenderPass = nullptr;
+    //RenderPass = nullptr;
     PassthroughRenderPass = nullptr;
     ImGuiRenderPass = nullptr;
 
@@ -1373,7 +1757,7 @@ void FVulkanContext::CleanUp()
     vkDestroyDescriptorPool(LogicalDevice, ImGuiDescriptorPool, nullptr);
 
     vkDestroySampler(LogicalDevice, TextureSampler, nullptr);
-    ImageManager->RemoveImage(TextureImage);
+//    ImageManager->RemoveImage(TextureImage);
 
     DescriptorSetManager->DestroyDescriptorSetLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME);
     DescriptorSetManager->DestroyDescriptorSetLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME);
@@ -1388,7 +1772,7 @@ void FVulkanContext::CleanUp()
 
     for(std::size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
-        vkDestroySemaphore(LogicalDevice, RenderFinishedSemaphores[i], nullptr);
+        vkDestroySemaphore(LogicalDevice, RTFinishedSemaphores[i], nullptr);
         vkDestroySemaphore(LogicalDevice, ImageAvailableSemaphores[i], nullptr);
         vkDestroySemaphore(LogicalDevice, PassthroughFinishedSemaphore[i], nullptr);
         vkDestroySemaphore(LogicalDevice, ImGuiFinishedSemaphores[i], nullptr);
@@ -1399,14 +1783,104 @@ void FVulkanContext::CleanUp()
     CommandBufferManager = nullptr;
     vkDestroyDevice(LogicalDevice, nullptr);
 
-    if (!ValidationLayers.empty())
-    {
-        DestroyDebugUtilsMessengerEXT();
-    }
+
+    DestroyDebugUtilsMessengerEXT();
 
     vkDestroySurfaceKHR(Instance, Surface, nullptr);
     vkDestroyInstance(Instance, nullptr);
 }
+
+void FVulkanContext::CreateBLAS()
+{
+    auto MeshSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>();
+
+    for(auto Mesh : *MeshSystem)
+    {
+        auto MeshComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FMeshComponent>(Mesh);
+        auto DeviceMeshComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Mesh);
+        BLASVector.emplace_back(GenerateBlas(DeviceMeshComponent.VertexBuffer, DeviceMeshComponent.IndexBuffer, MeshComponent.Vertices.size()));
+    }
+}
+
+void FVulkanContext::CreateTLAS()
+{
+    auto MeshSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>();
+
+    std::vector<FMatrix4> Transforms;
+    std::vector<uint32_t> BlasIndices;
+    int i = 0;
+
+    for(auto Mesh : *MeshSystem)
+    {
+        Transforms.push_back(ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Mesh).ModelMatrix);
+        BlasIndices.push_back(i++);
+    }
+
+    TLAS = GenerateTlas(BLASVector, Transforms, BlasIndices);
+
+}
+
+void FVulkanContext::CreateSBT()
+{
+    auto RTProperties = GetRTProperties();
+
+    uint32_t MissCount = 1;
+    uint32_t HitCount = 1;
+    auto HandleCount = 1 + MissCount + HitCount;
+    uint32_t HandleSize = RTProperties.shaderGroupHandleSize;
+
+    auto AlignUp = [](uint32_t X, uint32_t A)-> uint32_t
+    {
+        return (X + (A - 1)) & ~(A - 1);
+    };
+
+    uint32_t HandleSizeAligned = AlignUp(HandleSize, RTProperties.shaderGroupHandleAlignment);
+
+    RGenRegion.stride = AlignUp(HandleSize, RTProperties.shaderGroupBaseAlignment);
+    RGenRegion.size = RGenRegion.stride;
+
+    RMissRegion.stride = HandleSizeAligned;
+    RMissRegion.size = AlignUp(MissCount * HandleSizeAligned, RTProperties.shaderGroupBaseAlignment);
+
+    RHitRegion.stride = HandleSizeAligned;
+    RHitRegion.size = AlignUp(HitCount * HandleSizeAligned, RTProperties.shaderGroupBaseAlignment);
+
+    uint32_t DataSize = HandleCount * HandleSize;
+    std::vector<uint8_t> Handles(DataSize);
+
+    auto Result = vkGetRayTracingShaderGroupHandlesKHR(LogicalDevice, RTPipeline.GetPipeline(), 0, HandleCount, DataSize, Handles.data());
+    assert(Result == VK_SUCCESS && "Failed to get handles for SBT");
+
+    VkDeviceSize SBTSize = RGenRegion.size + RMissRegion.size + RHitRegion.size;
+    auto SBTBuffer = ResourceAllocator->CreateBuffer(SBTSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
+                                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    auto SBTBufferAddress = GetBufferDeviceAddressInfo(SBTBuffer);
+    RGenRegion.deviceAddress = SBTBufferAddress;
+    RMissRegion.deviceAddress = RGenRegion.deviceAddress + RGenRegion.size;
+    RHitRegion.deviceAddress = RMissRegion.deviceAddress + RMissRegion.size;
+
+    auto GetHandle = [&](int i)
+    {
+        return Handles.data() + i * HandleSize;
+    };
+
+    auto* SBTBufferPtr = reinterpret_cast<uint8_t*>(ResourceAllocator->Map(SBTBuffer));
+    uint8_t* DataPtr{nullptr};
+    uint32_t HandleIndex{0};
+
+    DataPtr = SBTBufferPtr;
+    memcpy(DataPtr, GetHandle(HandleIndex++), HandleSize);
+
+    DataPtr = SBTBufferPtr + RGenRegion.size;
+    memcpy(DataPtr, GetHandle(HandleIndex++), HandleSize);
+
+    DataPtr = SBTBufferPtr + RGenRegion.size + RMissRegion.size;
+    memcpy(DataPtr, GetHandle(HandleIndex++), HandleSize);
+
+    ResourceAllocator->Unmap(SBTBuffer);
+}
+
 
 FVulkanContext::~FVulkanContext()
 {

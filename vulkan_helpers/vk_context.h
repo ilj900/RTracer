@@ -23,6 +23,13 @@
 #include <memory>
 #include <map>
 
+struct FAccelerationStructure
+{
+    FBuffer Buffer;
+    VkAccelerationStructureKHR AccelerationStructure;
+    VkAccelerationStructureTypeKHR Type;
+};
+
 class FVulkanContext
 {
 public:
@@ -65,6 +72,34 @@ public:
     void DestroyDebugUtilsMessengerEXT();
     void UpdateUniformBuffer(uint32_t CurrentImage);
 
+    /// RT Part begin
+    void CreateRTDescriptorSetLayouts();
+    void CreateRTPipeline();
+    void CreateRTDescriptorPool();
+    void CreateRTDescriptorSet();
+    void CreateRTCommandBuffers();
+    void CreateBLAS();
+    void CreateTLAS();
+    void CreateSBT();
+
+    std::vector<VkPhysicalDevice> GetAllPhysicalDevices();
+    VkPhysicalDeviceProperties2 GetPhysicalDeviceProperties2(VkPhysicalDevice PhysicalDevice, void* pNextStructure);
+
+    FAccelerationStructure CreateAccelerationStructure(VkDeviceSize Size, VkAccelerationStructureTypeKHR Type);
+    void DestroyAccelerationStructure(FAccelerationStructure &AccelerationStructure);
+    VkDeviceAddress GetBufferDeviceAddressInfo(FBuffer& Buffer);
+    VkDeviceAddress GetASDeviceAddressInfo(FAccelerationStructure& AS);
+    VkAccelerationStructureGeometryTrianglesDataKHR GetAccelerationStructureGeometryTrianglesData(FBuffer& VertexBuffer, FBuffer& IndexBuffer, uint32_t MaxVertices);
+    VkAccelerationStructureGeometryKHR GetAccelerationStructureGeometry(VkAccelerationStructureGeometryTrianglesDataKHR& AccelerationStructureGeometryTrianglesData);
+    VkAccelerationStructureBuildRangeInfoKHR GetAccelerationStructureBuildRangeInfo(uint32_t PrimitiveCount);
+    VkAccelerationStructureBuildGeometryInfoKHR GetAccelerationStructureBuildGeometryInfo(VkAccelerationStructureGeometryKHR& AccelerationStructureGeometry, VkBuildAccelerationStructureFlagsKHR Flags);
+    FAccelerationStructure GenerateBlas(FBuffer& VertexBuffer, FBuffer& IndexBuffer, uint32_t MaxVertices);
+    FAccelerationStructure GenerateTlas(std::vector<FAccelerationStructure> BLASes, std::vector<FMatrix4> TransformMatrices, std::vector<uint32_t> BlasIndices);
+
+    VkPhysicalDeviceRayTracingPipelinePropertiesKHR GetRTProperties();
+
+    /// RT Part end
+
     void RenderImGui();
     void Render();
     void Present();
@@ -105,10 +140,6 @@ public:
     std::shared_ptr<FCommandBufferManager> CommandBufferManager = nullptr;
     std::shared_ptr<FImageManager> ImageManager = nullptr;
 
-    std::vector<std::string> InstanceExtensions;
-    std::vector<std::string> DeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-    std::vector<std::string> ValidationLayers = {"VK_LAYER_KHRONOS_validation"};
-
     VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
     VkInstance Instance;
@@ -116,7 +147,7 @@ public:
     VkPhysicalDevice PhysicalDevice;
     VkDevice LogicalDevice;
 
-    std::shared_ptr<FRenderPass> RenderPass = nullptr;
+    //std::shared_ptr<FRenderPass> RenderPass = nullptr;
     std::shared_ptr<FRenderPass> PassthroughRenderPass = nullptr;
     std::shared_ptr<FRenderPass> ImGuiRenderPass = nullptr;
 
@@ -136,38 +167,48 @@ public:
     VkDescriptorPool ImGuiDescriptorPool;
     std::vector<VkFramebuffer> ImGuiFramebuffers;
 
-    FPipeline GraphicsPipeline;
+    //FPipeline GraphicsPipeline;
     FPipeline PassthroughPipeline;
+    FPipeline RTPipeline;
+
+    VkStridedDeviceAddressRegionKHR RGenRegion{};
+    VkStridedDeviceAddressRegionKHR RMissRegion{};
+    VkStridedDeviceAddressRegionKHR RHitRegion{};
+    VkStridedDeviceAddressRegionKHR RCallRegion{};
+
+    std::vector<FAccelerationStructure> BLASVector;
+    FAccelerationStructure TLAS;
 
 #ifndef NDEBUG
     VkDebugUtilsMessengerEXT DebugMessenger;
 #endif
     /// Images for drawing
-    std::string ColorImage = "ColorImage";
+    //std::string ColorImage = "ColorImage";
     std::string ResolvedColorImage = "ResolvedColorImage";
-    std::string NormalsImage = "NormalsImage";
-    std::string RenderableIndexImage = "RenderableIndexImage";
-    std::string DepthImage = "DepthImage";
-    std::string UtilityImageR32 = "UtilityImageR32";
-    std::string UtilityImageR8G8B8A8_SRGB = "UtilityImageR8G8B8A8_SRGB";
+    //std::string NormalsImage = "NormalsImage";
+    //std::string RenderableIndexImage = "RenderableIndexImage";
+    //std::string DepthImage = "DepthImage";
+    //std::string UtilityImageR32 = "UtilityImageR32";
+    //std::string UtilityImageR8G8B8A8_SRGB = "UtilityImageR8G8B8A8_SRGB";
 
     /// Texture used to pain the model
-    std::string TextureImage = "TextureImage";
+    //std::string TextureImage = "TextureImage";
 
     VkSampler TextureSampler;
 
     uint32_t  MipLevels;
     std::shared_ptr<FDescriptorSetManager>DescriptorSetManager = nullptr;
 
-    std::vector<VkCommandBuffer> GraphicsCommandBuffers;
+    //std::vector<VkCommandBuffer> GraphicsCommandBuffers;
     std::vector<VkCommandBuffer> PassthroughCommandBuffers;
+    std::vector<VkCommandBuffer> RTCommandBuffers;
 
     std::vector<FBuffer> DeviceTransformBuffers;
     std::vector<FBuffer> DeviceCameraBuffers;
     std::vector<FBuffer> DeviceRenderableBuffers;
 
     std::vector<VkSemaphore> ImageAvailableSemaphores;
-    std::vector<VkSemaphore> RenderFinishedSemaphores;
+    std::vector<VkSemaphore> RTFinishedSemaphores;
     std::vector<VkSemaphore> PassthroughFinishedSemaphore;
     std::vector<VkSemaphore> ImGuiFinishedSemaphores;
     std::vector<VkFence> RenderingFinishedFences;

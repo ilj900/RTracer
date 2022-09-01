@@ -56,10 +56,10 @@ namespace ECS
             auto& DeviceMeshComponent = GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Entity);
 
             auto& Context = GetContext();
-            DeviceMeshComponent.VertexBuffer = Context.ResourceAllocator->CreateBufferWidthData(MeshComponent.Vertices.size() * sizeof(FVertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, MeshComponent.Vertices.data());
+            DeviceMeshComponent.VertexBuffer = Context.ResourceAllocator->CreateBufferWidthData(MeshComponent.Vertices.size() * sizeof(FVertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, MeshComponent.Vertices.data());
             if (MeshComponent.Indexed)
             {
-                DeviceMeshComponent.IndexBuffer = Context.ResourceAllocator->CreateBufferWidthData(MeshComponent.Indices.size() * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, MeshComponent.Indices.data() );
+                DeviceMeshComponent.IndexBuffer = Context.ResourceAllocator->CreateBufferWidthData(MeshComponent.Indices.size() * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, MeshComponent.Indices.data() );
             }
         }
 
@@ -123,15 +123,21 @@ namespace ECS
                             Attrib.vertices[3 * Index.vertex_index + 2]
                     };
 
-                    Vert.Normal = {Attrib.normals[3 * Index.normal_index + 0],
-                                   Attrib.normals[3 * Index.normal_index + 1],
-                                   Attrib.normals[3 * Index.normal_index + 2]
-                    };
+                    if (!Attrib.normals.empty())
+                    {
+                        Vert.Normal = {Attrib.normals[3 * Index.normal_index + 0],
+                                       Attrib.normals[3 * Index.normal_index + 1],
+                                       Attrib.normals[3 * Index.normal_index + 2]
+                        };
+                    }
 
-                    Vert.TexCoord = {
-                            Attrib.texcoords[2 * Index.texcoord_index + 0],
-                            1.f - Attrib.texcoords[2 * Index.texcoord_index + 1],
-                    };
+                    if (!Attrib.texcoords.empty())
+                    {
+                        Vert.TexCoord = {
+                                Attrib.texcoords[2 * Index.texcoord_index + 0],
+                                1.f - Attrib.texcoords[2 * Index.texcoord_index + 1],
+                        };
+                    }
 
                     if (UniqueVertices.find(Vert) == UniqueVertices.end())
                     {

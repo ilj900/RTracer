@@ -242,6 +242,29 @@ void FDescriptorSetManager::UpdateDescriptorSetInfo(const std::string& Descripto
     vkUpdateDescriptorSets(LogicalDevice, 1, &DescriptorWrites, 0, nullptr);
 }
 
+void FDescriptorSetManager::UpdateDescriptorSetInfo(const std::string& DescriptorSetName, const std::string& DescriptorName, uint32_t Index, VkAccelerationStructureKHR& ACInfo)
+{
+    auto& Layout = DescriptorSetLayouts[DescriptorSetName];
+    auto& DescriptorBinding = Layout.first.Descriptors[DescriptorName];
+
+    VkWriteDescriptorSetAccelerationStructureKHR WriteDescriptorSetAccelerationStructureKHR{};
+    WriteDescriptorSetAccelerationStructureKHR.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+    WriteDescriptorSetAccelerationStructureKHR.pAccelerationStructures = &ACInfo;
+    WriteDescriptorSetAccelerationStructureKHR.accelerationStructureCount = 1;
+
+    VkWriteDescriptorSet DescriptorWrites{};
+    DescriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    DescriptorWrites.pNext = &WriteDescriptorSetAccelerationStructureKHR;
+    DescriptorWrites.dstSet = GetSet(DescriptorSetName, Index);
+    DescriptorWrites.dstBinding = DescriptorBinding.BindingIndex;
+    DescriptorWrites.dstArrayElement = 0;
+    DescriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+    DescriptorWrites.descriptorCount = 1;
+
+    vkUpdateDescriptorSets(LogicalDevice, 1, &DescriptorWrites, 0, nullptr);
+}
+
+
 VkDescriptorSet& FDescriptorSetManager::GetSet(const std::string& Name, uint32_t Index)
 {
     if (DescriptorSets.find(Name) == DescriptorSets.end())

@@ -15,6 +15,8 @@ public:
 
     FBuffer CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties);
     FBuffer CreateBufferWidthData(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, void* Data);
+    void* Map(FBuffer& Buffer);
+    void Unmap(FBuffer& Buffer);
     void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size);
     void DestroyBuffer(FBuffer& Buffer);
     uint32_t FindMemoryType(uint32_t TypeFilter, VkMemoryPropertyFlags Properties);
