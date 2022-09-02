@@ -54,7 +54,10 @@ void FExtensionVector::BuildPNextChain(BaseVulkanStructure* CreateInfo)
             if (bFirstExtension)
             {
                 /// Make the CreateInfo pNext point to this structure
-                CreateInfo->pNext = &ExtensionsData[Extension.ExtensionStructureOffset];
+                if (CreateInfo != nullptr)
+                {
+                    CreateInfo->pNext = &ExtensionsData[Extension.ExtensionStructureOffset];
+                }
                 /// No longer first extension
                 bFirstExtension = false;
             }
@@ -65,7 +68,7 @@ void FExtensionVector::BuildPNextChain(BaseVulkanStructure* CreateInfo)
                 /// Fetch data structure of the previous extension
                 BaseVulkanStructure* PreviousExtensionStructure = reinterpret_cast<BaseVulkanStructure*>(&ExtensionsData[PreviousExtension.ExtensionStructureOffset]);
                 /// Make it point to the current one
-                PreviousExtensionStructure->pNext = &Extension;
+                PreviousExtensionStructure->pNext = &ExtensionsData[Extension.ExtensionStructureOffset];
             }
         }
     }
@@ -166,6 +169,11 @@ std::vector<const char*> FVulkanContextOptions::GetDeviceExtensionsList()
 void FVulkanContextOptions::BuildDevicePNextChain(BaseVulkanStructure* CreateInfo)
 {
     DeviceOptions.ExtensionVector.BuildPNextChain(CreateInfo);
+}
+
+void* FVulkanContextOptions::GetDeviceExtensionsPtr()
+{
+    return DeviceOptions.ExtensionVector.ExtensionsData.data();
 }
 
 std::vector<char> ReadFile(const std::string& FileName)

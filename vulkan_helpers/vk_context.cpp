@@ -199,7 +199,7 @@ void FVulkanContext::LoadFunctionPointers()
 void FVulkanContext::SetupDebugMessenger()
 {
 #ifndef NDEBUG
-    auto* DebugCreateInfo = VulkanContextOptions.GetExtensionStructurePtr<VkDebugUtilsMessengerCreateInfoEXT>(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
+    auto* DebugCreateInfo = VulkanContextOptions.GetInstanceExtensionStructurePtr<VkDebugUtilsMessengerCreateInfoEXT>(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
 
     V::vkCreateDebugUtilsMessengerEXT(Instance, DebugCreateInfo, nullptr, &DebugMessenger);
 #endif
