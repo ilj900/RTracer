@@ -236,7 +236,7 @@ VkPipeline FPipeline::CreateRayTracingPipeline(VkDevice LogicalDevice)
 {
     LogicalDevice = LogicalDevice;
 
-    std::vector<VkPipelineShaderStageCreateInfo> Stages(ShaderModules.size());
+    std::vector<VkPipelineShaderStageCreateInfo> Stages;
 
     for (auto& ShaderModule : ShaderModules)
     {

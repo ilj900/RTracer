@@ -63,7 +63,8 @@ public:
     void CreateDescriptorPool();
     void CreateImguiDescriptorPool();
     void CreateDescriptorSet();
-    void CreateCommandBuffers();
+    void CreateRenderCommandBuffers();
+    void CreatePassthroughCommandBuffers();
     void CreateSyncObjects();
     void CreateImguiContext();
     void RecreateSwapChain();

@@ -114,10 +114,10 @@ void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
 
         CreateTextureSampler();
 
+        LoadModelDataToGPU();
+
         CreateBLAS();
         CreateTLAS();
-
-        LoadModelDataToGPU();
 
         CreateUniformBuffers();
 
@@ -132,6 +132,7 @@ void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
 
         //CreateCommandBuffers();
         CreateRTCommandBuffers();
+        CreatePassthroughCommandBuffers();
 
         CreateSyncObjects();
 
@@ -393,14 +394,14 @@ FAccelerationStructure FVulkanContext::CreateAccelerationStructure(VkDeviceSize 
     AccelerationStructureCreateInfoKHR.size = Size;
     AccelerationStructureCreateInfoKHR.buffer = AccelerationStructure.Buffer.Buffer;
 
-    VkResult Result = vkCreateAccelerationStructureKHR(LogicalDevice, &AccelerationStructureCreateInfoKHR, nullptr, &AccelerationStructure.AccelerationStructure);
+    VkResult Result = V::vkCreateAccelerationStructureKHR(LogicalDevice, &AccelerationStructureCreateInfoKHR, nullptr, &AccelerationStructure.AccelerationStructure);
     assert((Result == VK_SUCCESS) && "Failed to create acceleration structure");
     return AccelerationStructure;
 }
 
 void FVulkanContext::DestroyAccelerationStructure(FAccelerationStructure &AccelerationStructure)
 {
-    vkDestroyAccelerationStructureKHR(LogicalDevice, AccelerationStructure.AccelerationStructure, nullptr);
+    V::vkDestroyAccelerationStructureKHR(LogicalDevice, AccelerationStructure.AccelerationStructure, nullptr);
     ResourceAllocator->DestroyBuffer(AccelerationStructure.Buffer);
 }
 
@@ -420,7 +421,7 @@ VkDeviceAddress FVulkanContext::GetASDeviceAddressInfo(FAccelerationStructure& A
     VkAccelerationStructureDeviceAddressInfoKHR AccelerationStructureDeviceAddressInfo{};
     AccelerationStructureDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
     AccelerationStructureDeviceAddressInfo.accelerationStructure = AS.AccelerationStructure;
-    return vkGetAccelerationStructureDeviceAddressKHR(LogicalDevice, &AccelerationStructureDeviceAddressInfo);
+    return V::vkGetAccelerationStructureDeviceAddressKHR(LogicalDevice, &AccelerationStructureDeviceAddressInfo);
 }
 
 VkAccelerationStructureGeometryTrianglesDataKHR FVulkanContext::GetAccelerationStructureGeometryTrianglesData(FBuffer& VertexBuffer, FBuffer& IndexBuffer, uint32_t MaxVertices)
@@ -489,7 +490,7 @@ FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuff
     VkAccelerationStructureBuildSizesInfoKHR AccelerationStructureBuildSizesInfo{};
     AccelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
 
-    vkGetAccelerationStructureBuildSizesKHR(LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &AccelerationStructureBuildGeometryInfo, &MaxPrimitiveCount, &AccelerationStructureBuildSizesInfo);
+    V::vkGetAccelerationStructureBuildSizesKHR(LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &AccelerationStructureBuildGeometryInfo, &MaxPrimitiveCount, &AccelerationStructureBuildSizesInfo);
 
     FAccelerationStructure NotCompactedBLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
 
@@ -510,7 +511,7 @@ FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuff
 
     CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
                                                {
-                                                   vkCmdBuildAccelerationStructuresKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometryInfo, &VkAccelerationStructureBuildRangeInfoKHRPtr);
+                                                   V::vkCmdBuildAccelerationStructuresKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometryInfo, &VkAccelerationStructureBuildRangeInfoKHRPtr);
 
                                                    VkMemoryBarrier Barrier{};
                                                    Barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
@@ -519,7 +520,7 @@ FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuff
                                                    vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
                                                                         0, 1, &Barrier, 0, nullptr, 0, nullptr);
 
-                                                   vkCmdWriteAccelerationStructuresPropertiesKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometryInfo.dstAccelerationStructure, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR, QueryPool, 0);
+                                                   V::vkCmdWriteAccelerationStructuresPropertiesKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometryInfo.dstAccelerationStructure, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR, QueryPool, 0);
                                                });
 
     FAccelerationStructure CompactedBLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
@@ -535,7 +536,7 @@ FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuff
                                                    CopyAccelerationStructureInfo.dst = CompactedBLAS.AccelerationStructure;
                                                    CopyAccelerationStructureInfo.mode = VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR;
 
-                                                   vkCmdCopyAccelerationStructureKHR(CommandBuffer, &CopyAccelerationStructureInfo);
+                                                   V::vkCmdCopyAccelerationStructureKHR(CommandBuffer, &CopyAccelerationStructureInfo);
                                                });
 
     DestroyAccelerationStructure(NotCompactedBLAS);
@@ -601,7 +602,7 @@ FAccelerationStructure FVulkanContext::GenerateTlas(std::vector<FAccelerationStr
         uint32_t CountInstances = BLASCount;
         VkAccelerationStructureBuildSizesInfoKHR AccelerationStructureBuildSizesInfo{};
         AccelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
-        vkGetAccelerationStructureBuildSizesKHR(LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &AccelerationStructureBuildGeometry, &CountInstances, &AccelerationStructureBuildSizesInfo);
+        V::vkGetAccelerationStructureBuildSizesKHR(LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &AccelerationStructureBuildGeometry, &CountInstances, &AccelerationStructureBuildSizesInfo);
         TLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
         ScratchBuffer = ResourceAllocator->CreateBuffer(AccelerationStructureBuildSizesInfo.buildScratchSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         AccelerationStructureBuildGeometry.srcAccelerationStructure = TLAS.AccelerationStructure;
@@ -610,7 +611,7 @@ FAccelerationStructure FVulkanContext::GenerateTlas(std::vector<FAccelerationStr
         VkAccelerationStructureBuildRangeInfoKHR AccelerationStructureBuildRangeInfo{};
         AccelerationStructureBuildRangeInfo.primitiveCount = CountInstances;
         const VkAccelerationStructureBuildRangeInfoKHR* AccelerationStructureBuildRangeInfoPtr = &AccelerationStructureBuildRangeInfo;
-        vkCmdBuildAccelerationStructuresKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometry, &AccelerationStructureBuildRangeInfoPtr);
+        V::vkCmdBuildAccelerationStructuresKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometry, &AccelerationStructureBuildRangeInfoPtr);
     });
 
     ResourceAllocator->DestroyBuffer(BlasInstanceBuffer);
@@ -826,10 +827,11 @@ void FVulkanContext::CreateDepthAndAAImages()
 //    UtilityImgR32.Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
     ImageManager->CreateImage(ResolvedColorImage, Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
-                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                               VK_IMAGE_ASPECT_COLOR_BIT);
     V::SetName(LogicalDevice, (*ImageManager)(ResolvedColorImage).Image, "V_ResolvedColorImage");
     V::SetName(LogicalDevice, (*ImageManager)(ResolvedColorImage).View, "V_ResolvedColorImageView");
+    (*ImageManager)(ResolvedColorImage).Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
 //    ImageManager->CreateImage(UtilityImageR8G8B8A8_SRGB, Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
 //                                                         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -903,20 +905,20 @@ VkFormat FVulkanContext::FindSupportedFormat(const std::vector<VkFormat>& Candid
 
 void FVulkanContext::CreateDescriptorSetLayouts()
 {
-    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, 0, LAYOUTS::CAMERA_LAYOUT_NAME,
-                                              {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, 0, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME,
-                                              {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
-
-    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, 1, LAYOUTS::TRANSFORM_LAYOUT_NAME,
-                                              {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, 1, LAYOUTS::RENDERABLE_LAYOUT_NAME,
-                                              {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-
-    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, 0, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME,
-                                              {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
-
-    DescriptorSetManager->CreateDescriptorSetLayouts();
+//    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, 0, LAYOUTS::CAMERA_LAYOUT_NAME,
+//                                              {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
+//    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, 0, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME,
+//                                              {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
+//
+//    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, 1, LAYOUTS::TRANSFORM_LAYOUT_NAME,
+//                                              {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
+//    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, 1, LAYOUTS::RENDERABLE_LAYOUT_NAME,
+//                                              {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
+//
+//    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, 0, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME,
+//                                              {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
+//
+//    DescriptorSetManager->CreateDescriptorSetLayouts();
 }
 
 void FVulkanContext::CreateRTDescriptorSetLayouts()
@@ -925,6 +927,8 @@ void FVulkanContext::CreateRTDescriptorSetLayouts()
                                               {0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
     DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, 0, LAYOUTS::RT_OUT_IMAGE_LAYOUT_NAME,
                                               {1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, 0, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME,
+                                              {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
 
     DescriptorSetManager->CreateDescriptorSetLayouts();
 }
@@ -967,8 +971,8 @@ void FVulkanContext::CreateGraphicsPipeline()
 void FVulkanContext::CreateRTPipeline()
 {
     RTPipeline.AddShader("../shaders/ray_gen.spv", eShaderType::RAYGEN);
-    RTPipeline.AddShader("../shaders/ray_closest_hit.spv", eShaderType::RAYCLOSEHIT);
     RTPipeline.AddShader("../shaders/ray_miss.spv", eShaderType::RAYMISS);
+    RTPipeline.AddShader("../shaders/ray_closest_hit.spv", eShaderType::RAYCLOSEHIT);
 
     RTPipeline.SetExtent2D(Swapchain->GetExtent2D());
     RTPipeline.SetWidth(Swapchain->GetWidth());
@@ -1077,6 +1081,7 @@ void FVulkanContext::CreateRTDescriptorPool()
     auto NumberOfSwapChainImages = Swapchain->Size();
 
     DescriptorSetManager->AddDescriptorSet(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, NumberOfSwapChainImages);
+    DescriptorSetManager->AddDescriptorSet(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, NumberOfSwapChainImages);
 
     DescriptorSetManager->ReserveDescriptorPool();
 }
@@ -1147,7 +1152,7 @@ void FVulkanContext::CreateDescriptorPool()
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
     DescriptorSetManager->AddDescriptorSet(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, NumberOfSwapChainImages);
-    DescriptorSetManager->AddDescriptorSet(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, NumberOfSwapChainImages * ModelsCount);
+    //DescriptorSetManager->AddDescriptorSet(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME, NumberOfSwapChainImages * ModelsCount);
     DescriptorSetManager->AddDescriptorSet(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, NumberOfSwapChainImages);
 
     DescriptorSetManager->ReserveDescriptorPool();
@@ -1250,15 +1255,20 @@ void FVulkanContext::CreateRTDescriptorSet()
 
         DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, LAYOUTS::TLAS_LAYOUT_NAME, i, TLAS.AccelerationStructure);
 
+        VkDescriptorImageInfo RTImageBufferInfo{};
+        RTImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        RTImageBufferInfo.imageView = (*ImageManager)(ResolvedColorImage).View;
+        DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, LAYOUTS::RT_OUT_IMAGE_LAYOUT_NAME, i, RTImageBufferInfo);
+
         VkDescriptorImageInfo ImageBufferInfo{};
         ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
         ImageBufferInfo.imageView = (*ImageManager)(ResolvedColorImage).View;
-        DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, LAYOUTS::RT_OUT_IMAGE_LAYOUT_NAME, i, ImageBufferInfo);
+        ImageBufferInfo.sampler = TextureSampler;
+        DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME, i, ImageBufferInfo);
     }
 }
 
-void FVulkanContext::CreateCommandBuffers()
-{
+void FVulkanContext::CreateRenderCommandBuffers() {
 //    GraphicsCommandBuffers.resize(SwapChainFramebuffers.size());
 //
 //    for (std::size_t i = 0; i < GraphicsCommandBuffers.size(); ++i)
@@ -1305,29 +1315,32 @@ void FVulkanContext::CreateCommandBuffers()
 //
 //        V::SetName(LogicalDevice, GraphicsCommandBuffers[i], "V_GraphicsCommandBuffers" + std::to_string(i));
 //    }
+}
 
+void FVulkanContext::CreatePassthroughCommandBuffers()
+{
     PassthroughCommandBuffers.resize(PassthroughFramebuffers.size());
 
     for (std::size_t i = 0; i < PassthroughCommandBuffers.size(); ++i)
     {
         PassthroughCommandBuffers[i] = CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
-            VkImageMemoryBarrier Barrier{};
-            Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            Barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            Barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            Barrier.image = (*ImageManager)(ResolvedColorImage).Image;
-            Barrier.subresourceRange.baseMipLevel = 0;
-            Barrier.subresourceRange.levelCount = 1;
-            Barrier.subresourceRange.baseArrayLayer = 0;
-            Barrier.subresourceRange.layerCount = 1;
-            Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            Barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-            Barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-            vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
+//            VkImageMemoryBarrier Barrier{};
+//            Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+//            Barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+//            Barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+//            Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+//            Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+//            Barrier.image = (*ImageManager)(ResolvedColorImage).Image;
+//            Barrier.subresourceRange.baseMipLevel = 0;
+//            Barrier.subresourceRange.levelCount = 1;
+//            Barrier.subresourceRange.baseArrayLayer = 0;
+//            Barrier.subresourceRange.layerCount = 1;
+//            Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+//            Barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+//            Barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+//
+//            vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
 
             VkRenderPassBeginInfo RenderPassInfo{};
             RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1365,7 +1378,7 @@ void FVulkanContext::CreateRTCommandBuffers()
         {
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, RTPipeline.GetPipeline());
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, RTPipeline.GetPipelineLayout(), 0, 1, &DescriptorSetManager->GetSet(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, i), 0, nullptr);
-            vkCmdTraceRaysKHR(CommandBuffer, &RGenRegion, &RMissRegion, &RHitRegion, &RCallRegion, 1920, 1080, 1);
+            V::vkCmdTraceRaysKHR(CommandBuffer, &RGenRegion, &RMissRegion, &RHitRegion, &RCallRegion, 1920, 1080, 1);
         });
     }
 }
@@ -1641,7 +1654,7 @@ void FVulkanContext::RecreateSwapChain()
 
     CreateDescriptorSet();
 
-    CreateCommandBuffers();
+    CreateRenderCommandBuffers();
 
     CurrentFrame = 0;
 }
@@ -1848,7 +1861,7 @@ void FVulkanContext::CreateSBT()
     uint32_t DataSize = HandleCount * HandleSize;
     std::vector<uint8_t> Handles(DataSize);
 
-    auto Result = vkGetRayTracingShaderGroupHandlesKHR(LogicalDevice, RTPipeline.GetPipeline(), 0, HandleCount, DataSize, Handles.data());
+    auto Result = V::vkGetRayTracingShaderGroupHandlesKHR(LogicalDevice, RTPipeline.GetPipeline(), 0, HandleCount, DataSize, Handles.data());
     assert(Result == VK_SUCCESS && "Failed to get handles for SBT");
 
     VkDeviceSize SBTSize = RGenRegion.size + RMissRegion.size + RHitRegion.size;

@@ -103,6 +103,13 @@ void FImage::Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout)
             SourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             DestinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
         } else if (OldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
+                   NewLayout == VK_IMAGE_LAYOUT_GENERAL) {
+            Barrier.srcAccessMask = 0;
+            Barrier.dstAccessMask = 0;
+
+            SourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            DestinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        } else if (OldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
                    NewLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
         {
             Barrier.srcAccessMask = 0;
