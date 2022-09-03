@@ -927,6 +927,8 @@ void FVulkanContext::CreateRTDescriptorSetLayouts()
                                               {0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
     DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, 0, LAYOUTS::RT_OUT_IMAGE_LAYOUT_NAME,
                                               {1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, 0, LAYOUTS::CAMERA_LAYOUT_NAME,
+                                              {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
     DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, 0, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME,
                                               {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
 
@@ -1265,6 +1267,12 @@ void FVulkanContext::CreateRTDescriptorSet()
         ImageBufferInfo.imageView = (*ImageManager)(ResolvedColorImage).View;
         ImageBufferInfo.sampler = TextureSampler;
         DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME, i, ImageBufferInfo);
+
+        VkDescriptorBufferInfo CameraBufferInfo{};
+        CameraBufferInfo.buffer = DeviceCameraBuffers[i].Buffer;
+        CameraBufferInfo.offset = 0;
+        CameraBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
+        DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, LAYOUTS::CAMERA_LAYOUT_NAME, i, CameraBufferInfo);
     }
 }
 
@@ -1767,13 +1775,15 @@ void FVulkanContext::CleanUp()
 
     CleanUpSwapChain();
 
+    DestroyAccelerationStructure(TLAS);
+
     vkDestroyDescriptorPool(LogicalDevice, ImGuiDescriptorPool, nullptr);
 
     vkDestroySampler(LogicalDevice, TextureSampler, nullptr);
 //    ImageManager->RemoveImage(TextureImage);
 
     DescriptorSetManager->DestroyDescriptorSetLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME);
-    DescriptorSetManager->DestroyDescriptorSetLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME);
+    //DescriptorSetManager->DestroyDescriptorSetLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME);
     DescriptorSetManager->DestroyDescriptorSetLayout(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME);
 
     ImGui_ImplVulkan_Shutdown();
@@ -1795,7 +1805,6 @@ void FVulkanContext::CleanUp()
 
     CommandBufferManager = nullptr;
     vkDestroyDevice(LogicalDevice, nullptr);
-
 
     DestroyDebugUtilsMessengerEXT();
 
