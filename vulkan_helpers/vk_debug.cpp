@@ -32,4 +32,5 @@ namespace V
     void SetName(VkDevice Device, VkSemaphore Semaphore, const std::string& Name) { SetName(Device, uint64_t(Semaphore), VK_OBJECT_TYPE_SEMAPHORE, Name); }
     void SetName(VkDevice Device, VkShaderModule ShaderModule, const std::string& Name) { SetName(Device, uint64_t(ShaderModule), VK_OBJECT_TYPE_SHADER_MODULE, Name); }
     void SetName(VkDevice Device, VkSwapchainKHR SwapchainKHR, const std::string& Name) { SetName(Device, uint64_t(SwapchainKHR), VK_OBJECT_TYPE_SWAPCHAIN_KHR, Name); }
+    void SetName(VkDevice Device, VkAccelerationStructureKHR AccelerationStructureKHR, const std::string& Name) { SetName(Device, uint64_t(AccelerationStructureKHR), VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR, Name); }
 }

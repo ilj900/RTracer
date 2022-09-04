@@ -267,16 +267,16 @@ VkPipeline FPipeline::CreateRayTracingPipeline(VkDevice LogicalDevice)
                 RayTracingShaderGroupCreateInfo.generalShader = i;
                 break;
             }
-            case VK_SHADER_STAGE_MISS_BIT_KHR:
-            {
-                RayTracingShaderGroupCreateInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
-                RayTracingShaderGroupCreateInfo.generalShader = i;
-                break;
-            }
             case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
             {
                 RayTracingShaderGroupCreateInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
                 RayTracingShaderGroupCreateInfo.closestHitShader = i;
+                break;
+            }
+            case VK_SHADER_STAGE_MISS_BIT_KHR:
+            {
+                RayTracingShaderGroupCreateInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+                RayTracingShaderGroupCreateInfo.generalShader = i;
                 break;
             }
             default:

@@ -46,4 +46,6 @@ namespace V {
     void SetName(VkDevice Device, VkShaderModule ShaderModule, const std::string &Name);
 
     void SetName(VkDevice Device, VkSwapchainKHR SwapchainKHR, const std::string &Name);
+
+    void SetName(VkDevice Device, VkAccelerationStructureKHR AccelerationStructureKHR, const std::string& Name);
 }

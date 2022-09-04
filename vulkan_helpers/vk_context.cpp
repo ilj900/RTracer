@@ -493,8 +493,12 @@ FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuff
     V::vkGetAccelerationStructureBuildSizesKHR(LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &AccelerationStructureBuildGeometryInfo, &MaxPrimitiveCount, &AccelerationStructureBuildSizesInfo);
 
     FAccelerationStructure NotCompactedBLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
+    V::SetName(LogicalDevice, NotCompactedBLAS.AccelerationStructure, "NotCompactedBLAS");
+    V::SetName(LogicalDevice, NotCompactedBLAS.Buffer.Buffer, "NotCompactedBLAS_Buffer");
+    V::SetName(LogicalDevice, NotCompactedBLAS.Buffer.Memory, "NotCompactedBLAS_Buffer_Memory");
 
     FBuffer ScratchBuffer = ResourceAllocator->CreateBuffer(AccelerationStructureBuildSizesInfo.buildScratchSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    V::SetName(LogicalDevice, ScratchBuffer.Buffer, "ScratchBuffer");
     auto ScratchAddress = GetBufferDeviceAddressInfo(ScratchBuffer);
 
     AccelerationStructureBuildGeometryInfo.dstAccelerationStructure = NotCompactedBLAS.AccelerationStructure;
@@ -524,6 +528,9 @@ FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuff
                                                });
 
     FAccelerationStructure CompactedBLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
+    V::SetName(LogicalDevice, CompactedBLAS.AccelerationStructure, "CompactedBLAS");
+    V::SetName(LogicalDevice, CompactedBLAS.Buffer.Buffer, "CompactedBLAS_Buffer");
+    V::SetName(LogicalDevice, CompactedBLAS.Buffer.Memory, "CompactedBLAS_Buffer_Memory");
 
     VkDeviceSize CompactedSize = 0;
     vkGetQueryPoolResults(LogicalDevice, QueryPool, 0, 1, sizeof(VkDeviceSize), &CompactedSize, sizeof(VkDeviceSize), VK_QUERY_RESULT_WAIT_BIT);
@@ -973,8 +980,8 @@ void FVulkanContext::CreateGraphicsPipeline()
 void FVulkanContext::CreateRTPipeline()
 {
     RTPipeline.AddShader("../shaders/ray_gen.spv", eShaderType::RAYGEN);
-    RTPipeline.AddShader("../shaders/ray_miss.spv", eShaderType::RAYMISS);
     RTPipeline.AddShader("../shaders/ray_closest_hit.spv", eShaderType::RAYCLOSEHIT);
+    RTPipeline.AddShader("../shaders/ray_miss.spv", eShaderType::RAYMISS);
 
     RTPipeline.SetExtent2D(Swapchain->GetExtent2D());
     RTPipeline.SetWidth(Swapchain->GetWidth());
