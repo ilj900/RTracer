@@ -504,14 +504,14 @@ FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuff
     AccelerationStructureBuildGeometryInfo.dstAccelerationStructure = NotCompactedBLAS.AccelerationStructure;
     AccelerationStructureBuildGeometryInfo.scratchData.deviceAddress = ScratchAddress;
 
-//    VkQueryPool QueryPool{};
-//    VkQueryPoolCreateInfo QueryPoolCreateInfo{};
-//    QueryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
-//    QueryPoolCreateInfo.queryCount = 1;
-//    QueryPoolCreateInfo.queryType = VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR;
-//    vkCreateQueryPool(LogicalDevice, &QueryPoolCreateInfo, nullptr, &QueryPool);
-//
-//    vkResetQueryPool(LogicalDevice, QueryPool, 0, 1);
+    VkQueryPool QueryPool{};
+    VkQueryPoolCreateInfo QueryPoolCreateInfo{};
+    QueryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+    QueryPoolCreateInfo.queryCount = 1;
+    QueryPoolCreateInfo.queryType = VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR;
+    vkCreateQueryPool(LogicalDevice, &QueryPoolCreateInfo, nullptr, &QueryPool);
+
+    vkResetQueryPool(LogicalDevice, QueryPool, 0, 1);
 
     CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
                                                {
@@ -524,36 +524,36 @@ FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuff
                                                    vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
                                                                         0, 1, &Barrier, 0, nullptr, 0, nullptr);
 
-//                                                   V::vkCmdWriteAccelerationStructuresPropertiesKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometryInfo.dstAccelerationStructure, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR, QueryPool, 0);
+                                                   V::vkCmdWriteAccelerationStructuresPropertiesKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometryInfo.dstAccelerationStructure, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR, QueryPool, 0);
                                                });
 
-//    FAccelerationStructure CompactedBLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
-//    V::SetName(LogicalDevice, CompactedBLAS.AccelerationStructure, "CompactedBLAS");
-//    V::SetName(LogicalDevice, CompactedBLAS.Buffer.Buffer, "CompactedBLAS_Buffer");
-//    V::SetName(LogicalDevice, CompactedBLAS.Buffer.Memory, "CompactedBLAS_Buffer_Memory");
-//
-//    VkDeviceSize CompactedSize = 0;
-//    vkGetQueryPoolResults(LogicalDevice, QueryPool, 0, 1, sizeof(VkDeviceSize), &CompactedSize, sizeof(VkDeviceSize), VK_QUERY_RESULT_WAIT_BIT);
-//
-//    CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
-//                                               {
-//                                                   VkCopyAccelerationStructureInfoKHR CopyAccelerationStructureInfo{};
-//                                                   CopyAccelerationStructureInfo.sType = VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR;
-//                                                   CopyAccelerationStructureInfo.src = NotCompactedBLAS.AccelerationStructure;
-//                                                   CopyAccelerationStructureInfo.dst = CompactedBLAS.AccelerationStructure;
-//                                                   CopyAccelerationStructureInfo.mode = VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR;
-//
-//                                                   V::vkCmdCopyAccelerationStructureKHR(CommandBuffer, &CopyAccelerationStructureInfo);
-//                                               });
-//
-//    DestroyAccelerationStructure(NotCompactedBLAS);
-//
-//    std::cout << "Delta in size: " << AccelerationStructureBuildSizesInfo.accelerationStructureSize - CompactedSize
-//              << ", not compacted size is: "<< AccelerationStructureBuildSizesInfo.accelerationStructureSize<< ", compacted: " << CompactedSize << "." << std::endl;
-//
-//    vkDestroyQueryPool(LogicalDevice, QueryPool, nullptr);
+    FAccelerationStructure CompactedBLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
+    V::SetName(LogicalDevice, CompactedBLAS.AccelerationStructure, "CompactedBLAS");
+    V::SetName(LogicalDevice, CompactedBLAS.Buffer.Buffer, "CompactedBLAS_Buffer");
+    V::SetName(LogicalDevice, CompactedBLAS.Buffer.Memory, "CompactedBLAS_Buffer_Memory");
 
-    return NotCompactedBLAS;
+    VkDeviceSize CompactedSize = 0;
+    vkGetQueryPoolResults(LogicalDevice, QueryPool, 0, 1, sizeof(VkDeviceSize), &CompactedSize, sizeof(VkDeviceSize), VK_QUERY_RESULT_WAIT_BIT);
+
+    CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+                                               {
+                                                   VkCopyAccelerationStructureInfoKHR CopyAccelerationStructureInfo{};
+                                                   CopyAccelerationStructureInfo.sType = VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR;
+                                                   CopyAccelerationStructureInfo.src = NotCompactedBLAS.AccelerationStructure;
+                                                   CopyAccelerationStructureInfo.dst = CompactedBLAS.AccelerationStructure;
+                                                   CopyAccelerationStructureInfo.mode = VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR;
+
+                                                   V::vkCmdCopyAccelerationStructureKHR(CommandBuffer, &CopyAccelerationStructureInfo);
+                                               });
+
+    DestroyAccelerationStructure(NotCompactedBLAS);
+
+    std::cout << "Delta in size: " << AccelerationStructureBuildSizesInfo.accelerationStructureSize - CompactedSize
+              << ", not compacted size is: "<< AccelerationStructureBuildSizesInfo.accelerationStructureSize<< ", compacted: " << CompactedSize << "." << std::endl;
+
+    vkDestroyQueryPool(LogicalDevice, QueryPool, nullptr);
+
+    return CompactedBLAS;
 }
 
 FAccelerationStructure FVulkanContext::GenerateTlas(std::vector<FAccelerationStructure> BLASes, std::vector<FMatrix4> TransformMatrices, std::vector<uint32_t> BlasIndices)
@@ -566,9 +566,9 @@ FAccelerationStructure FVulkanContext::GenerateTlas(std::vector<FAccelerationStr
     {
         VkAccelerationStructureInstanceKHR BlasInstance{};
         auto& T = TransformMatrices[i].Data;
-        BlasInstance.transform = {T[0].X, T[0].Y, T[0].Z, T[0].W,
-                                  T[1].X, T[1].Y, T[1].Z, T[1].W,
-                                  T[2].X, T[2].Y, T[2].Z, T[2].W,};
+        BlasInstance.transform = {T[0].X, T[1].X, T[2].X, T[3].X,
+                                  T[0].Y, T[1].Y, T[2].Y, T[3].Y,
+                                  T[0].Z, T[1].Z, T[2].Z, T[3].Z,};
         BlasInstance.instanceCustomIndex = BlasIndices[i];
         BlasInstance.accelerationStructureReference = GetASDeviceAddressInfo(BLASes[i]);
         BlasInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
