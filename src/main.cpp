@@ -117,7 +117,7 @@ void LoadModels()
 
 int main()
 {
-    system("powershell.exe F:\\Work\\Projects\\_C++_Home_Projects\\RTracer\\shaders\\compile.ps1");
+    system("powershell.exe ..\\shaders\\compile.ps1");
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);

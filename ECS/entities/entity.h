@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bitset>
+#include <limits>
 
 namespace ECS
 {

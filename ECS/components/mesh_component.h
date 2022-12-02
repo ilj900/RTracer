@@ -15,8 +15,8 @@ struct FVertex {
     bool operator==(const FVertex& Other) const;
     FVertex& operator=(const FVertex& Other);
 
-    static VkVertexInputBindingDescription FVertex::GetBindingDescription();
-    static std::vector<VkVertexInputAttributeDescription> FVertex::GetAttributeDescriptions();
+    static VkVertexInputBindingDescription GetBindingDescription();
+    static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions();
 
     FVector3 Position = {0.f, 0.f, 0.f};
     FVector3 Normal = {0.f, 0.f, 0.f};

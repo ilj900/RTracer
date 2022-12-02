@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-auto CheckNotNullptr = [](void* FunctionPointer, const std::string& FunctionName)
+void CheckNotNullptr(void* FunctionPointer, const std::string& FunctionName)
 {
     if (FunctionPointer == nullptr)
     {
@@ -15,7 +15,7 @@ template <class T>
 T LoadInstanceFunction(const std::string& FunctionName, VkInstance Instance)
 {
     T Function = (T) vkGetInstanceProcAddr(Instance, FunctionName.c_str());
-    CheckNotNullptr(Function, FunctionName);
+    CheckNotNullptr(&Function, FunctionName);
     return Function;
 }
 
