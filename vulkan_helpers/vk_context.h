@@ -33,6 +33,7 @@ public:
 
     void Init(GLFWwindow* Window, FController* Controller);
 
+    void FillInContextOptions();
     void CreateInstance();
     void LoadFunctionPointers();
     void SetupDebugMessenger();
@@ -77,37 +78,18 @@ public:
     void FreeData(FBuffer Buffer);
 
     bool CheckInstanceLayersSupport(const std::vector<const char*>& Layers);
-    bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device);
+    bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device, std::set<std::string>& RequiredExtension);
     bool CheckDeviceQueueSupport(VkPhysicalDevice Device);
 
     VkInstance CreateVkInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FVulkanContextOptions& Options);
 
-    static PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT;
-    static PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT;
-    static PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT;
-    static PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR ;
-    static PFN_vkDestroyAccelerationStructureKHR vkDestroyAccelerationStructureKHR;
-    static PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR;
-    static PFN_vkCmdBuildAccelerationStructuresKHR vkCmdBuildAccelerationStructuresKHR;
-    static PFN_vkCmdWriteAccelerationStructuresPropertiesKHR vkCmdWriteAccelerationStructuresPropertiesKHR;
-    static PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR;
-    static PFN_vkCmdCopyAccelerationStructureKHR vkCmdCopyAccelerationStructureKHR;
-    static PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR;
-    static PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR;
-    static PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR;
-
 public:
     FVulkanContextOptions VulkanContextOptions;
     GLFWwindow* Window = nullptr;
-    FController* Controller = nullptr;
 
     std::shared_ptr<FResourceAllocator> ResourceAllocator = nullptr;
     std::shared_ptr<FCommandBufferManager> CommandBufferManager = nullptr;
     std::shared_ptr<FImageManager> ImageManager = nullptr;
-
-    std::vector<std::string> InstanceExtensions;
-    std::vector<std::string> DeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-    std::vector<std::string> ValidationLayers = {"VK_LAYER_KHRONOS_validation"};
 
     VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 

@@ -21,20 +21,6 @@
 
 static FVulkanContext Context{};
 
-PFN_vkCreateDebugUtilsMessengerEXT FVulkanContext::vkCreateDebugUtilsMessengerEXT = nullptr;
-PFN_vkDestroyDebugUtilsMessengerEXT FVulkanContext::vkDestroyDebugUtilsMessengerEXT = nullptr;
-PFN_vkSetDebugUtilsObjectNameEXT FVulkanContext::vkSetDebugUtilsObjectNameEXT = nullptr;
-PFN_vkCreateAccelerationStructureKHR FVulkanContext::vkCreateAccelerationStructureKHR  = nullptr;
-PFN_vkDestroyAccelerationStructureKHR FVulkanContext::vkDestroyAccelerationStructureKHR = nullptr;
-PFN_vkGetAccelerationStructureBuildSizesKHR FVulkanContext::vkGetAccelerationStructureBuildSizesKHR = nullptr;
-PFN_vkCmdBuildAccelerationStructuresKHR FVulkanContext::vkCmdBuildAccelerationStructuresKHR = nullptr;
-PFN_vkCmdWriteAccelerationStructuresPropertiesKHR FVulkanContext::vkCmdWriteAccelerationStructuresPropertiesKHR = nullptr;
-PFN_vkGetAccelerationStructureDeviceAddressKHR FVulkanContext::vkGetAccelerationStructureDeviceAddressKHR = nullptr;
-PFN_vkCmdCopyAccelerationStructureKHR FVulkanContext::vkCmdCopyAccelerationStructureKHR = nullptr;
-PFN_vkGetRayTracingShaderGroupHandlesKHR FVulkanContext::vkGetRayTracingShaderGroupHandlesKHR = nullptr;
-PFN_vkCreateRayTracingPipelinesKHR FVulkanContext::vkCreateRayTracingPipelinesKHR = nullptr;
-PFN_vkCmdTraceRaysKHR FVulkanContext::vkCmdTraceRaysKHR = nullptr;
-
 namespace LAYOUT_SETS
 {
     const std::string PER_FRAME_LAYOUT_NAME = "Per-frame layout";
@@ -69,11 +55,11 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
 {
     this->Window = Window;
-    this->Controller = Controller;
     ImageManager = std::make_shared<FImageManager>();
     ImageManager->Init(*this);
 
     try {
+        FillInContextOptions();
         CreateInstance();
         LoadFunctionPointers();
         SetupDebugMessenger();
@@ -109,7 +95,7 @@ void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
     }
 }
 
-void FVulkanContext::CreateInstance()
+void FVulkanContext::FillInContextOptions()
 {
     VulkanContextOptions.AddInstanceLayer("VK_LAYER_KHRONOS_validation");
 
@@ -130,6 +116,11 @@ void FVulkanContext::CreateInstance()
         VulkanContextOptions.AddInstanceExtension(ExtensionsRequiredByGLFW[i]);
     }
 
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+}
+
+void FVulkanContext::CreateInstance()
+{
     Instance = CreateVkInstance("Hello Triangle", {1, 0, 0}, "No Engine", {1, 0, 0}, VK_API_VERSION_1_0, VulkanContextOptions);
 }
 
@@ -166,9 +157,13 @@ void FVulkanContext::PickPhysicalDevice()
     std::vector<VkPhysicalDevice> Devices(DeviceCount);
     vkEnumeratePhysicalDevices(Instance, &DeviceCount, Devices.data());
 
+    auto DeviceExtensionList = VulkanContextOptions.GetDeviceExtensionsList();
+
+    std::set<std::string> RequiredExtensions (DeviceExtensionList.begin(), DeviceExtensionList.end());
+
     for (const auto& Device : Devices)
     {
-        if (CheckDeviceExtensionsSupport(Device) && CheckDeviceQueueSupport(Device))
+        if (CheckDeviceExtensionsSupport(Device, RequiredExtensions) && CheckDeviceQueueSupport(Device))
         {
             PhysicalDevice = Device;
             QueuePhysicalDeviceProperties();
@@ -246,15 +241,13 @@ bool FVulkanContext::CheckInstanceLayersSupport(const std::vector<const char*>& 
     return true;
 }
 
-bool FVulkanContext::CheckDeviceExtensionsSupport(VkPhysicalDevice Device)
+bool FVulkanContext::CheckDeviceExtensionsSupport(VkPhysicalDevice Device, std::set<std::string>& RequiredExtensions)
 {
     uint32_t ExtensionCount = 0;
     vkEnumerateDeviceExtensionProperties(Device, nullptr, &ExtensionCount, nullptr);
 
     std::vector<VkExtensionProperties>AvailableExtensions(ExtensionCount);
     vkEnumerateDeviceExtensionProperties(Device, nullptr, &ExtensionCount, AvailableExtensions.data());
-
-    std::set<std::string> RequiredExtensions(DeviceExtensions.begin(), DeviceExtensions.end());
 
     for (const auto& Extension : AvailableExtensions)
     {
@@ -420,29 +413,13 @@ void FVulkanContext::CreateLogicalDevice()
     CreateInfo.pQueueCreateInfos = QueueCreateInfos.data();
     CreateInfo.queueCreateInfoCount = static_cast<uint32_t>(QueueCreateInfos.size());
     CreateInfo.pEnabledFeatures = &DeviceFeatures;
+    VulkanContextOptions.BuildDevicePNextChain(reinterpret_cast<BaseVulkanStructure*>(&CreateInfo));
+    auto DeviceExtensions = VulkanContextOptions.GetDeviceExtensionsList();
     CreateInfo.enabledExtensionCount = static_cast<uint32_t>(DeviceExtensions.size());
-    std::vector<const char*> CharExtensions;
-    for (const auto& Extension : DeviceExtensions)
-    {
-        CharExtensions.push_back(Extension.c_str());
-    }
-    CreateInfo.ppEnabledExtensionNames = CharExtensions.data();
-
-    std::vector<const char*> CharLayers;
-    for (const auto& Layer : ValidationLayers)
-    {
-        CharLayers.push_back(Layer.c_str());
-    }
-
-    if (!ValidationLayers.empty())
-    {
-        CreateInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
-        CreateInfo.ppEnabledLayerNames = CharLayers.data();
-    }
-    else
-    {
-        CreateInfo.enabledLayerCount = 0;
-    }
+    CreateInfo.ppEnabledExtensionNames = DeviceExtensions.data();
+    auto DeviceLayers = VulkanContextOptions.GetDeviceLayers();
+    CreateInfo.enabledLayerCount = static_cast<uint32_t>(DeviceLayers.size());
+    CreateInfo.ppEnabledLayerNames = DeviceLayers.data();
 
     if (vkCreateDevice(PhysicalDevice, &CreateInfo, nullptr, &LogicalDevice) != VK_SUCCESS)
     {
@@ -1354,7 +1331,10 @@ void FVulkanContext::FreeData(FBuffer Buffer)
 void FVulkanContext::DestroyDebugUtilsMessengerEXT()
 {
 #ifndef NDEBUG
-    V::vkDestroyDebugUtilsMessengerEXT(Instance, DebugMessenger, nullptr);
+    if (nullptr != VulkanContextOptions.GetExtensionStructurePtr<VkDebugUtilsMessengerCreateInfoEXT>(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT))
+    {
+        V::vkDestroyDebugUtilsMessengerEXT(Instance, DebugMessenger, nullptr);
+    }
 #endif
 }
 
@@ -1399,10 +1379,8 @@ void FVulkanContext::CleanUp()
     CommandBufferManager = nullptr;
     vkDestroyDevice(LogicalDevice, nullptr);
 
-    if (!ValidationLayers.empty())
-    {
-        DestroyDebugUtilsMessengerEXT();
-    }
+    DestroyDebugUtilsMessengerEXT();
+
 
     vkDestroySurfaceKHR(Instance, Surface, nullptr);
     vkDestroyInstance(Instance, nullptr);
