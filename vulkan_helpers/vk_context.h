@@ -82,6 +82,10 @@ public:
     bool CheckDeviceQueueSupport(VkPhysicalDevice Device);
 
     VkInstance CreateVkInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FVulkanContextOptions& Options);
+    std::vector<VkPhysicalDevice> EnumerateAllPhysicalDevices(VkInstance Instance);
+    std::vector<VkQueueFamilyProperties> EnumeratePhysicalDeviceQueueFamilyProperties(VkPhysicalDevice Device);
+    bool CheckDeviceQueueSupport(VkPhysicalDevice Device, VkQueueFlagBits QueueFlagBits, int& QueueFamilyIndex);
+    bool CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDevice, int& QueueFamilyIndex);
 
 public:
     FVulkanContextOptions VulkanContextOptions;
@@ -162,15 +166,15 @@ public:
     bool bFramebufferResized = false;
 
     bool bGraphicsCapabilityRequired = true;
-    uint32_t GraphicsQueueIndex = UINT32_MAX;
+    int GraphicsQueueIndex = INT32_MAX;
     bool bComputeCapabilityRequired = false;
-    uint32_t ComputeQueueIndex = UINT32_MAX;
+    int ComputeQueueIndex = INT32_MAX;
     bool bTransferCapabilityRequired = false;
-    uint32_t TransferQueueIndex = UINT32_MAX;
+    int TransferQueueIndex = INT32_MAX;
     bool bSparseBindingCapabilityRequired = false;
-    uint32_t SparseBindingQueueIndex = UINT32_MAX;
+    int SparseBindingQueueIndex = INT32_MAX;
     bool bPresentCapabilityRequired = true;
-    uint32_t PresentQueueIndex = UINT32_MAX;
+    int PresentQueueIndex = INT32_MAX;
 
     std::string ModelPath = "../models/viking_room/viking_room.obj";
     std::string TexturePath = "../models/viking_room/viking_room.png";

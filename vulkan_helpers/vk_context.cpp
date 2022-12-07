@@ -144,7 +144,7 @@ void FVulkanContext::CreateSurface()
     assert((Result == VK_SUCCESS) && "Failed to create window surface!");
 }
 
-void FVulkanContext::PickPhysicalDevice()
+std::vector<VkPhysicalDevice> FVulkanContext::EnumerateAllPhysicalDevices(VkInstance Instance)
 {
     uint32_t DeviceCount = 0;
     vkEnumeratePhysicalDevices(Instance, &DeviceCount, nullptr);
@@ -156,6 +156,13 @@ void FVulkanContext::PickPhysicalDevice()
 
     std::vector<VkPhysicalDevice> Devices(DeviceCount);
     vkEnumeratePhysicalDevices(Instance, &DeviceCount, Devices.data());
+
+    return Devices;
+}
+
+void FVulkanContext::PickPhysicalDevice()
+{
+    auto Devices = EnumerateAllPhysicalDevices(Instance);
 
     auto DeviceExtensionList = VulkanContextOptions.GetDeviceExtensionsList();
 
@@ -295,7 +302,7 @@ VkInstance FVulkanContext::CreateVkInstance(const std::string& AppName, const FV
     return ResultingInstance;
 }
 
-bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice Device)
+std::vector<VkQueueFamilyProperties> FVulkanContext::EnumeratePhysicalDeviceQueueFamilyProperties(VkPhysicalDevice Device)
 {
     uint32_t QueueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(Device, &QueueFamilyCount, nullptr);
@@ -303,59 +310,73 @@ bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice Device)
     std::vector<VkQueueFamilyProperties> QueueFamilyProperties(QueueFamilyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(Device, &QueueFamilyCount, QueueFamilyProperties.data());
 
-    for (uint32_t i = 0; i < QueueFamilyCount; ++i) {
+    return QueueFamilyProperties;
+}
 
-        if (GraphicsQueueIndex == UINT32_MAX) {
-            if (bGraphicsCapabilityRequired) {
-                if ((QueueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == VK_QUEUE_GRAPHICS_BIT) {
-                    GraphicsQueueIndex = i;
-                }
-            }
-        }
+bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice, VkQueueFlagBits QueueFlagBits, int& QueueFamilyIndex)
+{
+    auto Properties = EnumeratePhysicalDeviceQueueFamilyProperties(PhysicalDevice);
 
-        if (ComputeQueueIndex == UINT32_MAX) {
-            if (bComputeCapabilityRequired) {
-                if ((QueueFamilyProperties[i].queueFlags & VK_QUEUE_COMPUTE_BIT) == VK_QUEUE_COMPUTE_BIT) {
-                    GraphicsQueueIndex = i;
-                }
-            }
-        }
-
-        if (TransferQueueIndex == UINT32_MAX) {
-            if (bTransferCapabilityRequired) {
-                if ((QueueFamilyProperties[i].queueFlags & VK_QUEUE_TRANSFER_BIT) == VK_QUEUE_TRANSFER_BIT) {
-                    TransferQueueIndex = i;
-                }
-            }
-        }
-
-        if (SparseBindingQueueIndex == UINT32_MAX) {
-            if (bSparseBindingCapabilityRequired) {
-                if ((QueueFamilyProperties[i].queueFlags & VK_QUEUE_SPARSE_BINDING_BIT) ==
-                    VK_QUEUE_SPARSE_BINDING_BIT) {
-                    SparseBindingQueueIndex = i;
-                }
-            }
-        }
-
-        if (PresentQueueIndex == UINT32_MAX) {
-            if (bPresentCapabilityRequired) {
-                VkBool32 PresentSupport = false;
-
-                vkGetPhysicalDeviceSurfaceSupportKHR(Device, i, Surface, &PresentSupport);
-
-                if (PresentSupport) {
-                    PresentQueueIndex = i;
-                }
-            }
+    for (int i = 0; i < Properties.size(); ++i)
+    {
+        if ((Properties[i].queueFlags & QueueFlagBits) == QueueFlagBits)
+        {
+            QueueFamilyIndex = i;
+            return true;
         }
     }
 
-    if ((bGraphicsCapabilityRequired && (GraphicsQueueIndex == UINT32_MAX)) ||
-        (bComputeCapabilityRequired && (ComputeQueueIndex == UINT32_MAX)) ||
-        (bTransferCapabilityRequired && (TransferQueueIndex == UINT32_MAX)) ||
-        (bSparseBindingCapabilityRequired && (SparseBindingQueueIndex == UINT32_MAX)) ||
-        (bPresentCapabilityRequired && (PresentQueueIndex == UINT32_MAX)))
+    return false;
+}
+
+bool FVulkanContext::CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDevice, int& QueueFamilyIndex)
+{
+    auto Properties = EnumeratePhysicalDeviceQueueFamilyProperties(PhysicalDevice);
+
+    VkBool32 PresentSupported = false;
+
+    for (int i = 0; i < Properties.size(); ++i)
+    {
+        vkGetPhysicalDeviceSurfaceSupportKHR(PhysicalDevice, i, Surface, &PresentSupported);
+        if (PresentSupported)
+        {
+            QueueFamilyIndex = i;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice)
+{
+    if (bGraphicsCapabilityRequired)
+    {
+        CheckDeviceQueueSupport(PhysicalDevice, VK_QUEUE_GRAPHICS_BIT, GraphicsQueueIndex);
+    }
+    if (bComputeCapabilityRequired)
+    {
+        CheckDeviceQueueSupport(PhysicalDevice, VK_QUEUE_COMPUTE_BIT, ComputeQueueIndex);
+    }
+    if (bTransferCapabilityRequired)
+    {
+        CheckDeviceQueueSupport(PhysicalDevice, VK_QUEUE_TRANSFER_BIT, TransferQueueIndex);
+    }
+    if (bSparseBindingCapabilityRequired)
+    {
+        CheckDeviceQueueSupport(PhysicalDevice, VK_QUEUE_SPARSE_BINDING_BIT, SparseBindingQueueIndex);
+    }
+
+    if (bPresentCapabilityRequired)
+    {
+        CheckDeviceQueuePresentSupport(PhysicalDevice, PresentQueueIndex);
+    }
+
+    if ((bGraphicsCapabilityRequired && (GraphicsQueueIndex == INT32_MAX)) ||
+        (bComputeCapabilityRequired && (ComputeQueueIndex == INT32_MAX)) ||
+        (bTransferCapabilityRequired && (TransferQueueIndex == INT32_MAX)) ||
+        (bSparseBindingCapabilityRequired && (SparseBindingQueueIndex == INT32_MAX)) ||
+        (bPresentCapabilityRequired && (PresentQueueIndex == INT32_MAX)))
     {
         return false;
     }
@@ -368,27 +389,27 @@ void FVulkanContext::CreateLogicalDevice()
     std::vector<VkDeviceQueueCreateInfo> QueueCreateInfos;
     std::set<uint32_t> UniqueQueueFamilies{};
 
-    if (GraphicsQueueIndex != UINT32_MAX)
+    if (GraphicsQueueIndex != INT32_MAX)
     {
         UniqueQueueFamilies.insert(GraphicsQueueIndex);
     }
 
-    if (ComputeQueueIndex != UINT32_MAX)
+    if (ComputeQueueIndex != INT32_MAX)
     {
         UniqueQueueFamilies.insert(ComputeQueueIndex);
     }
 
-    if (TransferQueueIndex != UINT32_MAX)
+    if (TransferQueueIndex != INT32_MAX)
     {
         UniqueQueueFamilies.insert(TransferQueueIndex);
     }
 
-    if (SparseBindingQueueIndex != UINT32_MAX)
+    if (SparseBindingQueueIndex != INT32_MAX)
     {
         UniqueQueueFamilies.insert(SparseBindingQueueIndex);
     }
 
-    if (PresentQueueIndex != UINT32_MAX)
+    if (PresentQueueIndex != INT32_MAX)
     {
         UniqueQueueFamilies.insert(PresentQueueIndex);
     }
