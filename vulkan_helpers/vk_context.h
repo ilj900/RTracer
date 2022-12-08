@@ -41,6 +41,7 @@ public:
     void PickPhysicalDevice();
     void QueuePhysicalDeviceProperties();
     void CreateLogicalDevice();
+    void GetDeviceQueues();
     void CreateDepthAndAAImages();
     void CreateRenderPass();
     void CreatePassthroughRenderPass();
@@ -79,13 +80,16 @@ public:
 
     bool CheckInstanceLayersSupport(const std::vector<const char*>& Layers);
     bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device, std::set<std::string>& RequiredExtension);
-    bool CheckDeviceQueueSupport(VkPhysicalDevice Device);
+    std::set<uint32_t> CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice);
+    bool CheckDeviceQueueSupport(VkPhysicalDevice Device, VkQueueFlagBits QueueFlagBits, uint32_t& QueueFamilyIndex);
 
     VkInstance CreateVkInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FVulkanContextOptions& Options);
     std::vector<VkPhysicalDevice> EnumerateAllPhysicalDevices(VkInstance Instance);
     std::vector<VkQueueFamilyProperties> EnumeratePhysicalDeviceQueueFamilyProperties(VkPhysicalDevice Device);
-    bool CheckDeviceQueueSupport(VkPhysicalDevice Device, VkQueueFlagBits QueueFlagBits, int& QueueFamilyIndex);
-    bool CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDevice, int& QueueFamilyIndex);
+    bool CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDevice, uint32_t& QueueFamilyIndex);
+    VkDevice CreateLogicalDevice(VkPhysicalDevice PhysicalDevice);
+    std::vector<VkDeviceQueueCreateInfo> GetDeviceQueueCreateInfo(VkPhysicalDevice PhysicalDevice, std::set<uint32_t> QueueIndices);
+
 
 public:
     FVulkanContextOptions VulkanContextOptions;

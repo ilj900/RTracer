@@ -65,7 +65,8 @@ void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
         SetupDebugMessenger();
         CreateSurface();
         PickPhysicalDevice();
-        CreateLogicalDevice();
+        CreateLogicalDevice(PhysicalDevice);
+        GetDeviceQueues();
         CommandBufferManager = std::make_shared<FCommandBufferManager>(LogicalDevice, this, GraphicsQueue, GraphicsQueueIndex);
         Swapchain = std::make_shared<FSwapchain>(*this, PhysicalDevice, LogicalDevice, Surface, Window, GraphicsQueueIndex, PresentQueueIndex, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
         CreateDepthAndAAImages();
@@ -170,7 +171,7 @@ void FVulkanContext::PickPhysicalDevice()
 
     for (const auto& Device : Devices)
     {
-        if (CheckDeviceExtensionsSupport(Device, RequiredExtensions) && CheckDeviceQueueSupport(Device))
+        if (CheckDeviceExtensionsSupport(Device, RequiredExtensions) && (!CheckDeviceQueueSupport(Device).empty()))
         {
             PhysicalDevice = Device;
             QueuePhysicalDeviceProperties();
@@ -313,11 +314,11 @@ std::vector<VkQueueFamilyProperties> FVulkanContext::EnumeratePhysicalDeviceQueu
     return QueueFamilyProperties;
 }
 
-bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice, VkQueueFlagBits QueueFlagBits, int& QueueFamilyIndex)
+bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice, VkQueueFlagBits QueueFlagBits, uint32_t& QueueFamilyIndex)
 {
     auto Properties = EnumeratePhysicalDeviceQueueFamilyProperties(PhysicalDevice);
 
-    for (int i = 0; i < Properties.size(); ++i)
+    for (uint32_t i = 0; i < Properties.size(); ++i)
     {
         if ((Properties[i].queueFlags & QueueFlagBits) == QueueFlagBits)
         {
@@ -329,13 +330,13 @@ bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice, Vk
     return false;
 }
 
-bool FVulkanContext::CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDevice, int& QueueFamilyIndex)
+bool FVulkanContext::CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDevice, uint32_t& QueueFamilyIndex)
 {
     auto Properties = EnumeratePhysicalDeviceQueueFamilyProperties(PhysicalDevice);
 
     VkBool32 PresentSupported = false;
 
-    for (int i = 0; i < Properties.size(); ++i)
+    for (uint32_t i = 0; i < Properties.size(); ++i)
     {
         vkGetPhysicalDeviceSurfaceSupportKHR(PhysicalDevice, i, Surface, &PresentSupported);
         if (PresentSupported)
@@ -348,90 +349,95 @@ bool FVulkanContext::CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDev
     return false;
 }
 
-bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice)
+std::set<uint32_t> FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice)
 {
+    std::set <uint32_t> Queues;
+    bool EverythingIsOK = true;
+    uint32_t QueueIndex;
+
     if (bGraphicsCapabilityRequired)
     {
-        CheckDeviceQueueSupport(PhysicalDevice, VK_QUEUE_GRAPHICS_BIT, GraphicsQueueIndex);
+        if (CheckDeviceQueueSupport(PhysicalDevice, VK_QUEUE_GRAPHICS_BIT, QueueIndex))
+        {
+            Queues.insert(QueueIndex);
+            GraphicsQueueIndex = QueueIndex;
+        }
+        else
+        {
+            EverythingIsOK = false;
+        }
     }
-    if (bComputeCapabilityRequired)
+    if (bComputeCapabilityRequired && EverythingIsOK)
     {
-        CheckDeviceQueueSupport(PhysicalDevice, VK_QUEUE_COMPUTE_BIT, ComputeQueueIndex);
+        if (CheckDeviceQueueSupport(PhysicalDevice, VK_QUEUE_COMPUTE_BIT, QueueIndex))
+        {
+            Queues.insert(QueueIndex);
+            ComputeQueueIndex = QueueIndex;
+        }
+        else
+        {
+            EverythingIsOK = false;
+        }
     }
-    if (bTransferCapabilityRequired)
+    if (bTransferCapabilityRequired && EverythingIsOK)
     {
-        CheckDeviceQueueSupport(PhysicalDevice, VK_QUEUE_TRANSFER_BIT, TransferQueueIndex);
+        if (CheckDeviceQueueSupport(PhysicalDevice, VK_QUEUE_TRANSFER_BIT, QueueIndex))
+        {
+            Queues.insert(QueueIndex);
+            TransferQueueIndex = QueueIndex;
+        }
+        else
+        {
+            EverythingIsOK = false;
+        }
     }
-    if (bSparseBindingCapabilityRequired)
+    if (bSparseBindingCapabilityRequired && EverythingIsOK)
     {
-        CheckDeviceQueueSupport(PhysicalDevice, VK_QUEUE_SPARSE_BINDING_BIT, SparseBindingQueueIndex);
+        if (CheckDeviceQueueSupport(PhysicalDevice, VK_QUEUE_SPARSE_BINDING_BIT, QueueIndex))
+        {
+            Queues.insert(QueueIndex);
+            SparseBindingQueueIndex = QueueIndex;
+        }
+        else
+        {
+            EverythingIsOK = false;
+        }
     }
 
-    if (bPresentCapabilityRequired)
+    if (bPresentCapabilityRequired && EverythingIsOK)
     {
-        CheckDeviceQueuePresentSupport(PhysicalDevice, PresentQueueIndex);
+        if (CheckDeviceQueuePresentSupport(PhysicalDevice, QueueIndex))
+        {
+            Queues.insert(QueueIndex);
+            PresentQueueIndex = QueueIndex;
+        }
+        else
+        {
+            EverythingIsOK = false;
+        }
+
     }
 
-    if ((bGraphicsCapabilityRequired && (GraphicsQueueIndex == INT32_MAX)) ||
-        (bComputeCapabilityRequired && (ComputeQueueIndex == INT32_MAX)) ||
-        (bTransferCapabilityRequired && (TransferQueueIndex == INT32_MAX)) ||
-        (bSparseBindingCapabilityRequired && (SparseBindingQueueIndex == INT32_MAX)) ||
-        (bPresentCapabilityRequired && (PresentQueueIndex == INT32_MAX)))
+    if (!EverythingIsOK)
     {
-        return false;
+        Queues.clear();
     }
 
-    return true;
+    return Queues;
 }
 
-void FVulkanContext::CreateLogicalDevice()
+VkDevice FVulkanContext::CreateLogicalDevice(VkPhysicalDevice PhysicalDevice)
 {
-    std::vector<VkDeviceQueueCreateInfo> QueueCreateInfos;
-    std::set<uint32_t> UniqueQueueFamilies{};
-
-    if (GraphicsQueueIndex != INT32_MAX)
-    {
-        UniqueQueueFamilies.insert(GraphicsQueueIndex);
-    }
-
-    if (ComputeQueueIndex != INT32_MAX)
-    {
-        UniqueQueueFamilies.insert(ComputeQueueIndex);
-    }
-
-    if (TransferQueueIndex != INT32_MAX)
-    {
-        UniqueQueueFamilies.insert(TransferQueueIndex);
-    }
-
-    if (SparseBindingQueueIndex != INT32_MAX)
-    {
-        UniqueQueueFamilies.insert(SparseBindingQueueIndex);
-    }
-
-    if (PresentQueueIndex != INT32_MAX)
-    {
-        UniqueQueueFamilies.insert(PresentQueueIndex);
-    }
-
-    float QueuePriority = 1.f;
-    for (auto QueueFamilyIndex : UniqueQueueFamilies)
-    {
-        VkDeviceQueueCreateInfo QueueCreateInfo{};
-        QueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        QueueCreateInfo.queueFamilyIndex = QueueFamilyIndex;
-        QueueCreateInfo.queueCount = 1;
-        QueueCreateInfo.pQueuePriorities = &QueuePriority;
-        QueueCreateInfos.push_back(QueueCreateInfo);
-    }
+    auto QueueCreateInfos = CheckDeviceQueueSupport(PhysicalDevice);
+    auto DeviceQueueCreateInfo = GetDeviceQueueCreateInfo(PhysicalDevice, QueueCreateInfos);
+    VkDeviceCreateInfo CreateInfo{};
 
     VkPhysicalDeviceFeatures DeviceFeatures{};
     DeviceFeatures.samplerAnisotropy = VK_TRUE;
     DeviceFeatures.sampleRateShading = VK_TRUE;
 
-    VkDeviceCreateInfo CreateInfo{};
     CreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    CreateInfo.pQueueCreateInfos = QueueCreateInfos.data();
+    CreateInfo.pQueueCreateInfos = DeviceQueueCreateInfo.data();
     CreateInfo.queueCreateInfoCount = static_cast<uint32_t>(QueueCreateInfos.size());
     CreateInfo.pEnabledFeatures = &DeviceFeatures;
     VulkanContextOptions.BuildDevicePNextChain(reinterpret_cast<BaseVulkanStructure*>(&CreateInfo));
@@ -447,6 +453,11 @@ void FVulkanContext::CreateLogicalDevice()
         throw std::runtime_error("Failed to create logical device!");
     }
 
+    return LogicalDevice;
+}
+
+void FVulkanContext::GetDeviceQueues()
+{
     if (bGraphicsCapabilityRequired)
     {
         vkGetDeviceQueue(LogicalDevice, GraphicsQueueIndex, 0, &GraphicsQueue);
@@ -474,6 +485,24 @@ void FVulkanContext::CreateLogicalDevice()
 
     ResourceAllocator = std::make_shared<FResourceAllocator>(PhysicalDevice, LogicalDevice, this);
     DescriptorSetManager = std::make_shared<FDescriptorSetManager>(LogicalDevice);
+}
+
+std::vector<VkDeviceQueueCreateInfo> FVulkanContext::GetDeviceQueueCreateInfo(VkPhysicalDevice PhysicalDevice, std::set<uint32_t> UniqueQueueFamilies)
+{
+    std::vector<VkDeviceQueueCreateInfo> QueueCreateInfos;
+
+    static float QueuePriority = 1.f;
+    for (auto QueueFamilyIndex : UniqueQueueFamilies)
+    {
+        VkDeviceQueueCreateInfo QueueCreateInfo{};
+        QueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        QueueCreateInfo.queueFamilyIndex = QueueFamilyIndex;
+        QueueCreateInfo.queueCount = 1;
+        QueueCreateInfo.pQueuePriorities = &QueuePriority;
+        QueueCreateInfos.push_back(QueueCreateInfo);
+    }
+
+    return QueueCreateInfos;
 }
 
 void FVulkanContext::CreateDepthAndAAImages()
