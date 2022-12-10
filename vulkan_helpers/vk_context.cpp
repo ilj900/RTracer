@@ -67,8 +67,9 @@ void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
         PickPhysicalDevice();
         CreateLogicalDevice(PhysicalDevice);
         GetDeviceQueues();
-        CommandBufferManager = std::make_shared<FCommandBufferManager>(LogicalDevice, this, GraphicsQueue, GraphicsQueueIndex);
-        Swapchain = std::make_shared<FSwapchain>(*this, PhysicalDevice, LogicalDevice, Surface, Window, GraphicsQueueIndex, PresentQueueIndex, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
+        CommandBufferManager = std::make_shared<FCommandBufferManager>(LogicalDevice, this, GetQueue(VK_QUEUE_GRAPHICS_BIT),
+                                                                       GetQueueIndex(VK_QUEUE_GRAPHICS_BIT));
+        Swapchain = std::make_shared<FSwapchain>(*this, PhysicalDevice, LogicalDevice, Surface, Window, GetGraphicsQueueIndex(), GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
         CreateDepthAndAAImages();
         CreateRenderPass();
         CreatePassthroughRenderPass();
@@ -171,7 +172,7 @@ void FVulkanContext::PickPhysicalDevice()
 
     for (const auto& Device : Devices)
     {
-        if (CheckDeviceExtensionsSupport(Device, RequiredExtensions) && (!CheckDeviceQueueSupport(Device).empty()))
+        if (CheckDeviceExtensionsSupport(Device, RequiredExtensions) && (CheckDeviceQueueSupport(Device)))
         {
             PhysicalDevice = Device;
             QueuePhysicalDeviceProperties();
@@ -349,87 +350,105 @@ bool FVulkanContext::CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDev
     return false;
 }
 
-std::set<uint32_t> FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice)
+bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice)
 {
-    std::set <uint32_t> Queues;
     bool EverythingIsOK = true;
-    uint32_t QueueIndex;
 
-    if (bGraphicsCapabilityRequired)
+    for (auto& Entry : Queues)
     {
-        if (CheckDeviceQueueSupport(PhysicalDevice, VK_QUEUE_GRAPHICS_BIT, QueueIndex))
+        EverythingIsOK = CheckDeviceQueueSupport(PhysicalDevice, Entry.first, Entry.second.QueueIndex);
+        if (!EverythingIsOK)
         {
-            Queues.insert(QueueIndex);
-            GraphicsQueueIndex = QueueIndex;
-        }
-        else
-        {
-            EverythingIsOK = false;
-        }
-    }
-    if (bComputeCapabilityRequired && EverythingIsOK)
-    {
-        if (CheckDeviceQueueSupport(PhysicalDevice, VK_QUEUE_COMPUTE_BIT, QueueIndex))
-        {
-            Queues.insert(QueueIndex);
-            ComputeQueueIndex = QueueIndex;
-        }
-        else
-        {
-            EverythingIsOK = false;
-        }
-    }
-    if (bTransferCapabilityRequired && EverythingIsOK)
-    {
-        if (CheckDeviceQueueSupport(PhysicalDevice, VK_QUEUE_TRANSFER_BIT, QueueIndex))
-        {
-            Queues.insert(QueueIndex);
-            TransferQueueIndex = QueueIndex;
-        }
-        else
-        {
-            EverythingIsOK = false;
-        }
-    }
-    if (bSparseBindingCapabilityRequired && EverythingIsOK)
-    {
-        if (CheckDeviceQueueSupport(PhysicalDevice, VK_QUEUE_SPARSE_BINDING_BIT, QueueIndex))
-        {
-            Queues.insert(QueueIndex);
-            SparseBindingQueueIndex = QueueIndex;
-        }
-        else
-        {
-            EverythingIsOK = false;
+            return false;
         }
     }
 
-    if (bPresentCapabilityRequired && EverythingIsOK)
+    if (EverythingIsOK)
     {
-        if (CheckDeviceQueuePresentSupport(PhysicalDevice, QueueIndex))
-        {
-            Queues.insert(QueueIndex);
-            PresentQueueIndex = QueueIndex;
+        if (!CheckDeviceQueuePresentSupport(PhysicalDevice, PresentQueue.QueueIndex)) {
+            return false;
         }
-        else
-        {
-            EverythingIsOK = false;
-        }
-
     }
 
-    if (!EverythingIsOK)
-    {
-        Queues.clear();
-    }
+    return true;
+}
 
-    return Queues;
+VkQueue FVulkanContext::GetQueue(VkQueueFlagBits QueueFlagBits)
+{
+    if (Queues.find(QueueFlagBits) == Queues.end())
+    {
+        throw std::runtime_error("Failed to find a requested queue!");
+    }
+    return Queues[QueueFlagBits].Queue;
+}
+
+uint32_t FVulkanContext::GetQueueIndex(VkQueueFlagBits QueueFlagBits)
+{
+    if (Queues.find(QueueFlagBits) == Queues.end())
+    {
+        throw std::runtime_error("Failed to find a requested queue!");
+    }
+    return Queues[QueueFlagBits].QueueIndex;
+}
+
+VkQueue FVulkanContext::GetGraphicsQueue()
+{
+    return GetQueue(VK_QUEUE_GRAPHICS_BIT);
+}
+
+uint32_t FVulkanContext::GetGraphicsQueueIndex()
+{
+    return GetQueueIndex(VK_QUEUE_GRAPHICS_BIT);
+}
+
+VkQueue FVulkanContext::GetComputeQueue()
+{
+    return GetQueue(VK_QUEUE_COMPUTE_BIT);
+}
+
+uint32_t FVulkanContext::GetComputeQueueIndex()
+{
+    return GetQueueIndex(VK_QUEUE_COMPUTE_BIT);
+}
+
+VkQueue FVulkanContext::GetTransferQueue()
+{
+    return GetQueue(VK_QUEUE_TRANSFER_BIT);
+}
+
+uint32_t FVulkanContext::GetTransferQueueIndex()
+{
+    return GetQueueIndex(VK_QUEUE_TRANSFER_BIT);
+}
+
+VkQueue FVulkanContext::GetSparseBindingQueue()
+{
+    return GetQueue(VK_QUEUE_SPARSE_BINDING_BIT);
+}
+
+uint32_t FVulkanContext::GetSparseBindingQueueIndex()
+{
+    return GetQueueIndex(VK_QUEUE_SPARSE_BINDING_BIT);
+}
+
+VkQueue FVulkanContext::GetPresentQueue()
+{
+    return PresentQueue.Queue;
+}
+uint32_t FVulkanContext::GetPresentIndex()
+{
+    return PresentQueue.QueueIndex;
 }
 
 VkDevice FVulkanContext::CreateLogicalDevice(VkPhysicalDevice PhysicalDevice)
 {
-    auto QueueCreateInfos = CheckDeviceQueueSupport(PhysicalDevice);
-    auto DeviceQueueCreateInfo = GetDeviceQueueCreateInfo(PhysicalDevice, QueueCreateInfos);
+    std::set<uint32_t> QueueIndices;
+    QueueIndices.insert(PresentQueue.QueueIndex);
+    for (auto& Entry : Queues)
+    {
+        QueueIndices.insert(Entry.second.QueueIndex);
+    }
+    auto DeviceQueueCreateInfo = GetDeviceQueueCreateInfo(PhysicalDevice, QueueIndices);
     VkDeviceCreateInfo CreateInfo{};
 
     VkPhysicalDeviceFeatures DeviceFeatures{};
@@ -438,7 +457,7 @@ VkDevice FVulkanContext::CreateLogicalDevice(VkPhysicalDevice PhysicalDevice)
 
     CreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     CreateInfo.pQueueCreateInfos = DeviceQueueCreateInfo.data();
-    CreateInfo.queueCreateInfoCount = static_cast<uint32_t>(QueueCreateInfos.size());
+    CreateInfo.queueCreateInfoCount = static_cast<uint32_t>(QueueIndices.size());
     CreateInfo.pEnabledFeatures = &DeviceFeatures;
     VulkanContextOptions.BuildDevicePNextChain(reinterpret_cast<BaseVulkanStructure*>(&CreateInfo));
     auto DeviceExtensions = VulkanContextOptions.GetDeviceExtensionsList();
@@ -458,30 +477,13 @@ VkDevice FVulkanContext::CreateLogicalDevice(VkPhysicalDevice PhysicalDevice)
 
 void FVulkanContext::GetDeviceQueues()
 {
-    if (bGraphicsCapabilityRequired)
+    for (auto& Entry : Queues)
     {
-        vkGetDeviceQueue(LogicalDevice, GraphicsQueueIndex, 0, &GraphicsQueue);
+        CheckDeviceQueueSupport(PhysicalDevice, Entry.first, Entry.second.QueueIndex);
+        vkGetDeviceQueue(LogicalDevice, Entry.second.QueueIndex, 0, &Entry.second.Queue);
     }
-
-    if (bComputeCapabilityRequired)
-    {
-        vkGetDeviceQueue(LogicalDevice, ComputeQueueIndex, 0, &ComputeQueue);
-    }
-
-    if (bTransferCapabilityRequired)
-    {
-        vkGetDeviceQueue(LogicalDevice, TransferQueueIndex, 0, &TransferQueue);
-    }
-
-    if (bSparseBindingCapabilityRequired)
-    {
-        vkGetDeviceQueue(LogicalDevice, SparseBindingQueueIndex, 0, &SparseBindingQueue);
-    }
-
-    if (bPresentCapabilityRequired)
-    {
-        vkGetDeviceQueue(LogicalDevice, PresentQueueIndex, 0, &PresentQueue);
-    }
+    CheckDeviceQueuePresentSupport(PhysicalDevice, PresentQueue.QueueIndex);
+    vkGetDeviceQueue(LogicalDevice, PresentQueue.QueueIndex, 0, &PresentQueue.Queue);
 
     ResourceAllocator = std::make_shared<FResourceAllocator>(PhysicalDevice, LogicalDevice, this);
     DescriptorSetManager = std::make_shared<FDescriptorSetManager>(LogicalDevice);
@@ -1066,8 +1068,8 @@ void FVulkanContext::CreateImguiContext()
     InitInfo.Instance = Instance;
     InitInfo.PhysicalDevice = PhysicalDevice;
     InitInfo.Device = LogicalDevice;
-    InitInfo.QueueFamily = GraphicsQueueIndex;
-    InitInfo.Queue = GraphicsQueue;
+    InitInfo.QueueFamily = GetGraphicsQueueIndex();
+    InitInfo.Queue = GetGraphicsQueue();
     InitInfo.DescriptorPool = ImGuiDescriptorPool;
     InitInfo.MinImageCount = MAX_FRAMES_IN_FLIGHT;
     InitInfo.ImageCount = MAX_FRAMES_IN_FLIGHT;
@@ -1129,7 +1131,7 @@ void FVulkanContext::Render()
     vkResetFences(LogicalDevice, 1, &RenderingFinishedFences[CurrentFrame]);
 
     /// Submit rendering. When rendering finished, appropriate fence will be signalled
-    if (vkQueueSubmit(GraphicsQueue, 1, &SubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+    if (vkQueueSubmit(GetGraphicsQueue(), 1, &SubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to submit draw command buffer!");
     }
@@ -1151,7 +1153,7 @@ void FVulkanContext::Render()
     PassThroughSubmitInfo.pSignalSemaphores = PassthroughSignalSemaphores;
 
     /// Submit rendering. When rendering finished, appropriate fence will be signalled
-    if (vkQueueSubmit(GraphicsQueue, 1, &PassThroughSubmitInfo, RenderingFinishedFences[CurrentFrame]) != VK_SUCCESS)
+    if (vkQueueSubmit(GetGraphicsQueue(), 1, &PassThroughSubmitInfo, RenderingFinishedFences[CurrentFrame]) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to submit draw command buffer!");
     }
@@ -1209,7 +1211,7 @@ void FVulkanContext::RenderImGui()
 
         vkResetFences(LogicalDevice, 1, &ImGuiFinishedFences[CurrentFrame]);
 
-        if (vkQueueSubmit(GraphicsQueue, 1, &SubmitInfo, ImGuiFinishedFences[CurrentFrame]) != VK_SUCCESS)
+        if (vkQueueSubmit(GetGraphicsQueue(), 1, &SubmitInfo, ImGuiFinishedFences[CurrentFrame]) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to submit ImGui draw command buffer!");
         }
@@ -1230,7 +1232,7 @@ void FVulkanContext::Present()
     PresentInfo.pImageIndices = &ImageIndex;
     PresentInfo.pResults = nullptr;
 
-    VkResult Result = vkQueuePresentKHR(PresentQueue, &PresentInfo);
+    VkResult Result = vkQueuePresentKHR(PresentQueue.Queue, &PresentInfo);
 
     if (Result == VK_ERROR_OUT_OF_DATE_KHR || Result == VK_SUBOPTIMAL_KHR || bFramebufferResized)
     {
@@ -1266,7 +1268,7 @@ void FVulkanContext::RecreateSwapChain()
 
     CleanUpSwapChain();
 
-    Swapchain = std::make_shared<FSwapchain>(*this, PhysicalDevice, LogicalDevice, Surface, Window, GraphicsQueueIndex, PresentQueueIndex, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
+    Swapchain = std::make_shared<FSwapchain>(*this, PhysicalDevice, LogicalDevice, Surface, Window, GetGraphicsQueueIndex(), GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
     CreateDepthAndAAImages();
 
     CreateRenderPass();

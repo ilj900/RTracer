@@ -80,7 +80,7 @@ public:
 
     bool CheckInstanceLayersSupport(const std::vector<const char*>& Layers);
     bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device, std::set<std::string>& RequiredExtension);
-    std::set<uint32_t> CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice);
+    bool CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice);
     bool CheckDeviceQueueSupport(VkPhysicalDevice Device, VkQueueFlagBits QueueFlagBits, uint32_t& QueueFamilyIndex);
 
     VkInstance CreateVkInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FVulkanContextOptions& Options);
@@ -90,8 +90,21 @@ public:
     VkDevice CreateLogicalDevice(VkPhysicalDevice PhysicalDevice);
     std::vector<VkDeviceQueueCreateInfo> GetDeviceQueueCreateInfo(VkPhysicalDevice PhysicalDevice, std::set<uint32_t> QueueIndices);
 
+    VkQueue GetGraphicsQueue();
+    uint32_t GetGraphicsQueueIndex();
+    VkQueue GetComputeQueue();
+    uint32_t GetComputeQueueIndex();
+    VkQueue GetTransferQueue();
+    uint32_t GetTransferQueueIndex();
+    VkQueue GetSparseBindingQueue();
+    uint32_t GetSparseBindingQueueIndex();
+    VkQueue GetPresentQueue();
+    uint32_t GetPresentIndex();
 
 public:
+    VkQueue GetQueue(VkQueueFlagBits QueueFlagBits);
+    uint32_t GetQueueIndex(VkQueueFlagBits QueueFlagBits);
+
     FVulkanContextOptions VulkanContextOptions;
     GLFWwindow* Window = nullptr;
 
@@ -110,12 +123,16 @@ public:
     std::shared_ptr<FRenderPass> PassthroughRenderPass = nullptr;
     std::shared_ptr<FRenderPass> ImGuiRenderPass = nullptr;
 
-    // Queues
-    VkQueue GraphicsQueue;
-    VkQueue ComputeQueue;
-    VkQueue TransferQueue;
-    VkQueue SparseBindingQueue;
-    VkQueue PresentQueue;
+
+    /// Queues
+    struct IndexQueue
+    {
+        uint32_t QueueIndex = UINT32_MAX;
+        VkQueue Queue = VK_NULL_HANDLE;
+    };
+    std::map <VkQueueFlagBits, IndexQueue> Queues = {{VK_QUEUE_GRAPHICS_BIT, {UINT32_MAX, VK_NULL_HANDLE}},
+                                                  {VK_QUEUE_COMPUTE_BIT,  {UINT32_MAX, VK_NULL_HANDLE}},};
+    IndexQueue PresentQueue;
 
     // SwapChain
     std::shared_ptr<FSwapchain> Swapchain = nullptr;
@@ -168,17 +185,6 @@ public:
 
     const int MAX_FRAMES_IN_FLIGHT = 2;
     bool bFramebufferResized = false;
-
-    bool bGraphicsCapabilityRequired = true;
-    int GraphicsQueueIndex = INT32_MAX;
-    bool bComputeCapabilityRequired = false;
-    int ComputeQueueIndex = INT32_MAX;
-    bool bTransferCapabilityRequired = false;
-    int TransferQueueIndex = INT32_MAX;
-    bool bSparseBindingCapabilityRequired = false;
-    int SparseBindingQueueIndex = INT32_MAX;
-    bool bPresentCapabilityRequired = true;
-    int PresentQueueIndex = INT32_MAX;
 
     std::string ModelPath = "../models/viking_room/viking_room.obj";
     std::string TexturePath = "../models/viking_room/viking_room.png";
