@@ -56,10 +56,10 @@ namespace ECS
             auto& DeviceMeshComponent = GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Entity);
 
             auto& Context = GetContext();
-            DeviceMeshComponent.VertexBuffer = Context.ResourceAllocator->CreateBufferWidthData(MeshComponent.Vertices.size() * sizeof(FVertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, MeshComponent.Vertices.data());
+            DeviceMeshComponent.VertexBuffer = Context.CreateBufferWidthData(MeshComponent.Vertices.size() * sizeof(FVertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, MeshComponent.Vertices.data());
             if (MeshComponent.Indexed)
             {
-                DeviceMeshComponent.IndexBuffer = Context.ResourceAllocator->CreateBufferWidthData(MeshComponent.Indices.size() * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, MeshComponent.Indices.data() );
+                DeviceMeshComponent.IndexBuffer = Context.CreateBufferWidthData(MeshComponent.Indices.size() * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, MeshComponent.Indices.data() );
             }
         }
 

@@ -440,6 +440,28 @@ uint32_t FVulkanContext::GetPresentIndex()
     return PresentQueue.QueueIndex;
 }
 
+FBuffer FVulkanContext::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties)
+
+{
+    return ResourceAllocator->CreateBuffer(Size, Usage, Properties);
+}
+
+FBuffer FVulkanContext::CreateBufferWidthData(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, void* Data)
+{
+    return ResourceAllocator->CreateBufferWidthData(Size, Usage, Properties, Data);
+}
+
+void FVulkanContext::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size)
+{
+    return ResourceAllocator->CopyBuffer(SrcBuffer, DstBuffer, Size);
+}
+
+void FVulkanContext::DestroyBuffer(FBuffer& Buffer)
+{
+    ResourceAllocator->DestroyBuffer(Buffer);
+}
+
+
 VkDevice FVulkanContext::CreateLogicalDevice(VkPhysicalDevice PhysicalDevice)
 {
     std::set<uint32_t> QueueIndices;
@@ -814,9 +836,9 @@ void FVulkanContext::CreateUniformBuffers()
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
-        DeviceTransformBuffers[i] = ResourceAllocator->CreateBuffer(TransformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        DeviceCameraBuffers[i] = ResourceAllocator->CreateBuffer(CameraBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        DeviceRenderableBuffers[i] = ResourceAllocator->CreateBuffer(RenderableBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        DeviceTransformBuffers[i] = CreateBuffer(TransformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        DeviceCameraBuffers[i] = CreateBuffer(CameraBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        DeviceRenderableBuffers[i] = CreateBuffer(RenderableBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     }
 }
 
@@ -1377,7 +1399,7 @@ void FVulkanContext::LoadDataIntoBuffer(FBuffer &Buffer, void* DataToLoad, size_
 
 void FVulkanContext::FreeData(FBuffer Buffer)
 {
-    ResourceAllocator->DestroyBuffer(Buffer);
+    DestroyBuffer(Buffer);
 }
 
 void FVulkanContext::DestroyDebugUtilsMessengerEXT()
@@ -1395,9 +1417,9 @@ void FVulkanContext::CleanUp()
     /// Free all device buffers
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
-        ResourceAllocator->DestroyBuffer(DeviceTransformBuffers[i]);
-        ResourceAllocator->DestroyBuffer(DeviceCameraBuffers[i]);
-        ResourceAllocator->DestroyBuffer(DeviceRenderableBuffers[i]);
+        DestroyBuffer(DeviceTransformBuffers[i]);
+        DestroyBuffer(DeviceCameraBuffers[i]);
+        DestroyBuffer(DeviceRenderableBuffers[i]);
     }
 
     CleanUpSwapChain();

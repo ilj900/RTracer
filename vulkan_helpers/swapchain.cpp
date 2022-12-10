@@ -31,7 +31,7 @@ FSwapchain::FSwapchain(FVulkanContext &Context, VkPhysicalDevice PhysicalDevice,
         }
     }
 
-    /// Find out supported present modes and select the one wee need
+    /// Find out supported present modes and select the one we need
     {
         uint32_t PresentModeCount;
         vkGetPhysicalDeviceSurfacePresentModesKHR(PhysicalDevice, Surface, &PresentModeCount, nullptr);

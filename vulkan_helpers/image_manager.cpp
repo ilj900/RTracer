@@ -31,7 +31,7 @@ void FImageManager::LoadImageFromFile(const std::string& ImageName, const std::s
     }
 
     /// Load data into staging buffer
-    FBuffer TempStagingBuffer = Context->ResourceAllocator->CreateBuffer(ImageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    FBuffer TempStagingBuffer = Context->CreateBuffer(ImageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     void *Data;
     vkMapMemory(Context->LogicalDevice, TempStagingBuffer.Memory, 0, ImageSize, 0, &Data);
@@ -51,7 +51,7 @@ void FImageManager::LoadImageFromFile(const std::string& ImageName, const std::s
     /// Generate MipMaps only after we loaded image data
     Images.back().Image.GenerateMipMaps();
 
-    Context->ResourceAllocator->DestroyBuffer(TempStagingBuffer);
+    Context->DestroyBuffer(TempStagingBuffer);
 }
 
 void FImageManager::CreateImage(const std::string& ImageName, uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties, VkImageAspectFlags AspectFlags)
@@ -176,7 +176,7 @@ void FImageManager::FetchImageData(const std::string& ImageName, std::vector<T>&
 
     auto& Context = GetContext();
     uint32_t Size = Image.Height * Image.Width * NumberOfComponents * sizeof(T);
-    FBuffer Buffer = Context.ResourceAllocator->CreateBuffer(Size, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    FBuffer Buffer = Context.CreateBuffer(Size, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     CopyImageToBuffer(ImageName, Buffer);
 
     Data.resize(Size);
@@ -186,7 +186,7 @@ void FImageManager::FetchImageData(const std::string& ImageName, std::vector<T>&
     memcpy(Data.data(), BufferData, (std::size_t)Buffer.Size);
     vkUnmapMemory(Context.LogicalDevice, Buffer.Memory);
 
-    Context.ResourceAllocator->DestroyBuffer(Buffer);
+    Context.DestroyBuffer(Buffer);
 }
 
 template void FImageManager::FetchImageData<uint32_t>(const std::string& ImageName, std::vector<uint32_t>& Data);
