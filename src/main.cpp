@@ -97,7 +97,7 @@ void LoadModels()
             MeshSystem->CreateHexahedron(Models.back());
                 break;
         case Icosahedron:
-            MeshSystem->CreateIcosahedron(Models.back(), 6);
+            MeshSystem->CreateIcosahedron(Models.back(), 10);
             break;
         case Model:
             MeshSystem->LoadMesh(Models.back(), Path);

@@ -451,9 +451,9 @@ FBuffer FVulkanContext::CreateBufferWidthData(VkDeviceSize Size, VkBufferUsageFl
     return ResourceAllocator->CreateBufferWidthData(Size, Usage, Properties, Data);
 }
 
-void FVulkanContext::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size)
+void FVulkanContext::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset)
 {
-    return ResourceAllocator->CopyBuffer(SrcBuffer, DstBuffer, Size);
+    return ResourceAllocator->CopyBuffer(SrcBuffer, DstBuffer, Size, SourceOffset, DestinationOffset);
 }
 
 void FVulkanContext::DestroyBuffer(FBuffer& Buffer)
@@ -1451,6 +1451,7 @@ void FVulkanContext::CleanUp()
     }
 
     CommandBufferManager = nullptr;
+    ResourceAllocator = nullptr;
     vkDestroyDevice(LogicalDevice, nullptr);
 
     DestroyDebugUtilsMessengerEXT();

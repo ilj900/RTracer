@@ -9,23 +9,39 @@ FResourceAllocator::FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice
      Context(Context)
 {
     vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &MemProperties);
+
+    /// Create staging buffer
+    StagingBuffer = CreateBuffer(StagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+}
+
+FResourceAllocator::~FResourceAllocator()
+{
+    DestroyBuffer(StagingBuffer);
 }
 
 FBuffer FResourceAllocator::CreateBufferWidthData(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, void* Data)
 {
     VkDeviceSize BufferSize = Size;
-
-    /// Create staging buffer
-    FBuffer StagingBuffer = CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    void* StagingData;
-    vkMapMemory(Device, StagingBuffer.Memory, 0, BufferSize, 0, &StagingData);
-    memcpy(StagingData, Data, (std::size_t)BufferSize);
-    vkUnmapMemory(Device, StagingBuffer.Memory);
-
     FBuffer Buffer = CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | Usage, Properties);
-    CopyBuffer(StagingBuffer, Buffer, BufferSize);
-    DestroyBuffer(StagingBuffer);
+
+    LoadDataToBuffer(Buffer, Size, 0, Data);
+
+    return Buffer;
+}
+
+FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, VkDeviceSize Offset, void* Data)
+{
+    for (int i = 0; Size > 0; ++i)
+    {
+        VkDeviceSize ChunkSize = (Size > StagingBufferSize) ? StagingBufferSize : Size;
+        void *StagingData;
+        vkMapMemory(Device, StagingBuffer.Memory, 0, ChunkSize, 0, &StagingData);
+        memcpy(StagingData, ((char*)Data + (StagingBufferSize * i)), (std::size_t) ChunkSize);
+        vkUnmapMemory(Device, StagingBuffer.Memory);
+
+        CopyBuffer(StagingBuffer, Buffer, ChunkSize, 0, Offset + (StagingBufferSize * i));
+        Size -= ChunkSize;
+    }
 
     return Buffer;
 }
@@ -89,12 +105,14 @@ uint32_t FResourceAllocator::FindMemoryType(uint32_t TypeFilter, VkMemoryPropert
     throw std::runtime_error("Failed to find suitable memory type!");
 }
 
-void FResourceAllocator::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size)
+void FResourceAllocator::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset)
 {
     Context->CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
     {
         VkBufferCopy CopyRegion{};
         CopyRegion.size = Size;
+        CopyRegion.srcOffset = SourceOffset;
+        CopyRegion.dstOffset = DestinationOffset;
         vkCmdCopyBuffer(CommandBuffer, SrcBuffer.Buffer, DstBuffer.Buffer, 1, &CopyRegion);
     });
 }
