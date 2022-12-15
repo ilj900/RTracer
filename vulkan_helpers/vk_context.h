@@ -76,7 +76,6 @@ public:
     VkFormat FindDepthFormat();
     bool HasStensilComponent(VkFormat Format);
     void LoadDataIntoBuffer(FBuffer &Buffer, void* Data, size_t Size);
-    void FreeData(FBuffer Buffer);
 
     bool CheckInstanceLayersSupport(const std::vector<const char*>& Layers);
     bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device, std::set<std::string>& RequiredExtension);
@@ -103,6 +102,7 @@ public:
 
     FBuffer CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties);
     FBuffer CreateBufferWidthData(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, void* Data);
+    FMemoryRegion PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data);
     void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset);
     void DestroyBuffer(FBuffer& Buffer);
 

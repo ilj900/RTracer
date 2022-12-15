@@ -182,8 +182,8 @@ void FImageManager::FetchImageData(const std::string& ImageName, std::vector<T>&
     Data.resize(Size);
 
     void* BufferData;
-    vkMapMemory(Context.LogicalDevice, Buffer.Memory, 0, Buffer.Size, 0, &BufferData);
-    memcpy(Data.data(), BufferData, (std::size_t)Buffer.Size);
+    vkMapMemory(Context.LogicalDevice, Buffer.Memory, 0, Buffer.BufferSize, 0, &BufferData);
+    memcpy(Data.data(), BufferData, (std::size_t)Buffer.BufferSize);
     vkUnmapMemory(Context.LogicalDevice, Buffer.Memory);
 
     Context.DestroyBuffer(Buffer);

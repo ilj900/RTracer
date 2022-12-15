@@ -41,12 +41,12 @@ namespace ECS
             auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
             auto& DeviceMeshComponent = GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Entity);
 
-            VkBuffer Buffers[] = {DeviceMeshComponent.VertexBuffer.Buffer};
-            VkDeviceSize Offsets[] = {0};
+            VkBuffer Buffers[] = {DeviceMeshComponent.VertexRegion.Buffer->Buffer};
+            VkDeviceSize Offsets[] = {DeviceMeshComponent.VertexRegion.Offset};
             vkCmdBindVertexBuffers(CommandBuffer, 0, 1, Buffers, Offsets);
             if (MeshComponent.Indexed)
             {
-                vkCmdBindIndexBuffer(CommandBuffer, DeviceMeshComponent.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+                vkCmdBindIndexBuffer(CommandBuffer, DeviceMeshComponent.IndexRegion.Buffer->Buffer, DeviceMeshComponent.IndexRegion.Offset, VK_INDEX_TYPE_UINT32);
             }
         }
 
@@ -56,10 +56,10 @@ namespace ECS
             auto& DeviceMeshComponent = GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Entity);
 
             auto& Context = GetContext();
-            DeviceMeshComponent.VertexBuffer = Context.CreateBufferWidthData(MeshComponent.Vertices.size() * sizeof(FVertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, MeshComponent.Vertices.data());
+            DeviceMeshComponent.VertexRegion = Context.PushDataToBuffer(Context.ResourceAllocator->MeshBuffer, MeshComponent.Vertices.size() * sizeof(FVertex), MeshComponent.Vertices.data());
             if (MeshComponent.Indexed)
             {
-                DeviceMeshComponent.IndexBuffer = Context.CreateBufferWidthData(MeshComponent.Indices.size() * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, MeshComponent.Indices.data() );
+                DeviceMeshComponent.IndexRegion = Context.PushDataToBuffer(Context.ResourceAllocator->MeshBuffer, MeshComponent.Indices.size() * sizeof(uint32_t), MeshComponent.Indices.data());
             }
         }
 
@@ -76,21 +76,6 @@ namespace ECS
         uint32_t FMeshSystem::Size()
         {
             return Entities.size();
-        }
-
-        void FMeshSystem::FreeAllDeviceData()
-        {
-            auto& Context = GetContext();
-            for (auto Entity : Entities)
-            {
-                auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
-                auto& DeviceMeshComponent = GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Entity);
-                Context.FreeData(DeviceMeshComponent.VertexBuffer);
-                if (MeshComponent.Indexed)
-                {
-                    Context.FreeData(DeviceMeshComponent.IndexBuffer);
-                }
-            }
         }
 
         void FMeshSystem::LoadMesh(FEntity Entity, const std::string &Path)

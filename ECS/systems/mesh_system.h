@@ -26,7 +26,6 @@ namespace ECS
             void Draw(FEntity Entity, VkCommandBuffer CommandBuffer);
             void Bind(FEntity Entity, VkCommandBuffer CommandBuffer);
             void LoadToGPU(FEntity Entity);
-            void FreeAllDeviceData();
         };
     }
 }

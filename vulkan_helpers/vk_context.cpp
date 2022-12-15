@@ -451,6 +451,11 @@ FBuffer FVulkanContext::CreateBufferWidthData(VkDeviceSize Size, VkBufferUsageFl
     return ResourceAllocator->CreateBufferWidthData(Size, Usage, Properties, Data);
 }
 
+FMemoryRegion FVulkanContext::PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data)
+{
+    return ResourceAllocator->PushDataToBuffer(Buffer, Size, Data);
+}
+
 void FVulkanContext::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset)
 {
     return ResourceAllocator->CopyBuffer(SrcBuffer, DstBuffer, Size, SourceOffset, DestinationOffset);
@@ -1386,7 +1391,7 @@ void FVulkanContext::UpdateUniformBuffer(uint32_t CurrentImage)
 
 void FVulkanContext::LoadDataIntoBuffer(FBuffer &Buffer, void* DataToLoad, size_t Size)
 {
-    if (Size > Buffer.Size)
+    if (Size > Buffer.BufferSize)
     {
         throw std::runtime_error("Loading data into buffer with data size greater that buffer size!");
     }
@@ -1395,11 +1400,6 @@ void FVulkanContext::LoadDataIntoBuffer(FBuffer &Buffer, void* DataToLoad, size_
     memcpy(Data, DataToLoad, Size);
     vkUnmapMemory(LogicalDevice, Buffer.Memory);
 
-}
-
-void FVulkanContext::FreeData(FBuffer Buffer)
-{
-    DestroyBuffer(Buffer);
 }
 
 void FVulkanContext::DestroyDebugUtilsMessengerEXT()
@@ -1438,7 +1438,6 @@ void FVulkanContext::CleanUp()
     ImGui::DestroyContext();
 
     auto& Coordinator = ECS::GetCoordinator();
-    Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>()->FreeAllDeviceData();
 
     for(std::size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {

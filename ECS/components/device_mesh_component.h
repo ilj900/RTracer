@@ -10,8 +10,8 @@ namespace ECS
         {
             FDeviceMeshComponent() = default;
 
-            FBuffer VertexBuffer;
-            FBuffer IndexBuffer;
+            FMemoryRegion VertexRegion;
+            FMemoryRegion IndexRegion;
         };
     }
 }
