@@ -12,7 +12,7 @@ namespace ECS
             FCameraComponent() = default;
             FCameraComponent(FVector3& Position, FVector3& Direction, FVector3& Up, float ZNear, float ZFar, float FOV, float Ration) :
                 Position(Position), Direction(Direction), Up(Up), ZNear(ZNear), ZFar(ZFar), FOV(FOV), Ratio(Ration) {};
-            FVector3 Position = {0.f, 0.f, 5.f};
+            FVector3 Position = {0.f, 0.f, 7.5f};
             FVector3 Direction = {0.f, 0.f, -1.f};
             FVector3 Up = {0.f, 1.f, 0.f};
             float ZNear = 0.1f;

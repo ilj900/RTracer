@@ -27,6 +27,8 @@ const std::string WINDOW_NAME = "RTracer";
 
 std::vector<ECS::FEntity> Models;
 
+const uint32_t RENDERABLE_HAS_TEXTURE = 1 << 6;
+
 void InitECS()
 {
     auto& Coordinator = ECS::GetCoordinator();
@@ -97,7 +99,7 @@ void LoadModels()
             MeshSystem->CreateHexahedron(Models.back());
                 break;
         case Icosahedron:
-            MeshSystem->CreateIcosahedron(Models.back(), 4);
+            MeshSystem->CreateIcosahedron(Models.back(), 10);
             break;
         case Model:
             MeshSystem->LoadMesh(Models.back(), Path);
@@ -108,11 +110,11 @@ void LoadModels()
         TransformSystem->UpdateDeviceComponentData(Models.back());
     };
 
-    AddMesh({0.6f, 0.0f, 0.9f}, {2.f, 0.f, -2.f}, Icosahedron, std::string(), 0);
-    AddMesh({0.9f, 0.6f, 0.0f}, {-2.f, 0.f, -2.f}, Tetrahedron, std::string(), 0);
-    AddMesh({0.0f, 0.9f, 0.6f}, {0.f, 0.f, -2.f}, Hexahedron, std::string(), 0);
+    AddMesh({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, Icosahedron, std::string(), 0);
+    AddMesh({0.9f, 0.6f, 0.0f}, {-3.f, 0.f, -2.f}, Tetrahedron, std::string(), 0);
+    AddMesh({0.0f, 0.9f, 0.6f}, {1.f, 0.f, -2.f}, Hexahedron, std::string(), 0);
 
-//    AddMesh({0.3f, 0.9f, 0.6f}, {2.f, 0.f, -2.f}, Model, "../models/viking_room/viking_room.obj", 0);
+    AddMesh({0.3f, 0.9f, 0.6f}, {-1.f, 0.f, -2.f}, Model, "../models/viking_room/viking_room.obj", RENDERABLE_HAS_TEXTURE);
 }
 
 int main()

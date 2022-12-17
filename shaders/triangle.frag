@@ -17,10 +17,11 @@ layout(set = 0, binding = 1) uniform sampler2D TexSampler;
 vec3 LightPosition = vec3(20.f, 20.f, 0.f);
 
 const uint RENDERABLE_SELECTED_BIT = 1 << 5;
+const uint RENDERABLE_HAS_TEXTURE = 1 << 6;
 
-bool GetSelected(uint Mask)
+bool CheckFlag(uint Mask, uint Field)
 {
-    if ((Mask & RENDERABLE_SELECTED_BIT) == RENDERABLE_SELECTED_BIT)
+    if ((Mask & Field) == Field)
     {
         return true;
     }
@@ -30,32 +31,47 @@ bool GetSelected(uint Mask)
     }
 }
 
+bool GetSelected(uint Mask)
+{
+    return CheckFlag(Mask, RENDERABLE_SELECTED_BIT);
+}
+
+bool HasTextures(uint Mask)
+{
+    return CheckFlag(Mask, RENDERABLE_HAS_TEXTURE);
+}
+
 void main()
 {
-    vec3 LightDirection = normalize(LightPosition - FragPosition);
-    vec3 Normal = normalize(FragNormal);
-    float LightAngle = dot(LightDirection, Normal);
-    vec3 Color = FragColor;
-
-    vec3 AmbientColor = Color * 0.1f;
-    if (LightAngle < 0.f)
+    if (!HasTextures(RenderablePropertyMask))
     {
-        LightAngle = 0.f;
-    }
-    vec3 DiffuseColor = Color * 0.9 * LightAngle;
+        vec3 LightDirection = normalize(LightPosition - FragPosition);
+        vec3 Normal = normalize(FragNormal);
+        float LightAngle = dot(LightDirection, Normal);
+        vec3 Color = FragColor;
 
-    if (!GetSelected(RenderablePropertyMask))
+        vec3 AmbientColor = Color * 0.1f;
+        if (LightAngle < 0.f)
+        {
+            LightAngle = 0.f;
+        }
+        vec3 DiffuseColor = Color * 0.9 * LightAngle;
+
+        if (!GetSelected(RenderablePropertyMask))
+        {
+            MainColorOutput = vec4(DiffuseColor + AmbientColor, 1.f);
+        }
+
+        if (GetSelected(RenderablePropertyMask))
+        {
+            MainColorOutput = vec4(1.f, 1.f, 1.f, 1.f);
+        }
+
+        SecondaryOutput = vec4(Normal, 1.f);
+        RenderableIndexOutput = RenderableIndex;
+    }
+    else
     {
-        MainColorOutput = vec4(DiffuseColor + AmbientColor, 1.f);
+        MainColorOutput = texture(TexSampler, FragTexCoord);
     }
-
-    if (GetSelected(RenderablePropertyMask))
-    {
-        MainColorOutput = vec4(1.f, 1.f, 1.f, 1.f);
-    }
-
-    SecondaryOutput = vec4(Normal, 1.f);
-    RenderableIndexOutput = RenderableIndex;
-
-//    MainColorOutput = texture(TexSampler, FragTexCoord);
 }
