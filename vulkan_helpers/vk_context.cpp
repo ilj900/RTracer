@@ -841,9 +841,9 @@ void FVulkanContext::CreateUniformBuffers()
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
-        DeviceTransformBuffers[i] = CreateBuffer(TransformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        DeviceCameraBuffers[i] = CreateBuffer(CameraBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        DeviceRenderableBuffers[i] = CreateBuffer(RenderableBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        DeviceTransformBuffers[i] = CreateBuffer(TransformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        DeviceCameraBuffers[i] = CreateBuffer(CameraBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        DeviceRenderableBuffers[i] = CreateBuffer(RenderableBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     }
 }
 
@@ -1384,22 +1384,9 @@ void FVulkanContext::UpdateUniformBuffer(uint32_t CurrentImage)
     auto RenderableComponentData = Coordinator.Data<ECS::COMPONENTS::FDeviceRenderableComponent>();
     auto RenderableComponentSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>();
 
-    LoadDataIntoBuffer(DeviceTransformBuffers[CurrentImage], DeviceTransformComponentsData, DeviceTransformComponentsSize);
-    LoadDataIntoBuffer(DeviceCameraBuffers[CurrentImage], DeviceCameraComponentsData, DeviceCameraComponentsSize);
-    LoadDataIntoBuffer(DeviceRenderableBuffers[CurrentImage], RenderableComponentData, RenderableComponentSize);
-}
-
-void FVulkanContext::LoadDataIntoBuffer(FBuffer &Buffer, void* DataToLoad, size_t Size)
-{
-    if (Size > Buffer.BufferSize)
-    {
-        throw std::runtime_error("Loading data into buffer with data size greater that buffer size!");
-    }
-    void* Data;
-    vkMapMemory(LogicalDevice, Buffer.Memory, 0, Size, 0, &Data);
-    memcpy(Data, DataToLoad, Size);
-    vkUnmapMemory(LogicalDevice, Buffer.Memory);
-
+    ResourceAllocator->LoadDataToBuffer(DeviceTransformBuffers[CurrentImage], DeviceTransformComponentsSize, 0, DeviceTransformComponentsData);
+    ResourceAllocator->LoadDataToBuffer(DeviceCameraBuffers[CurrentImage], DeviceCameraComponentsSize, 0, DeviceCameraComponentsData);
+    ResourceAllocator->LoadDataToBuffer(DeviceRenderableBuffers[CurrentImage], RenderableComponentSize, 0, RenderableComponentData);
 }
 
 void FVulkanContext::DestroyDebugUtilsMessengerEXT()

@@ -34,7 +34,7 @@ FBuffer FResourceAllocator::CreateBufferWidthData(VkDeviceSize Size, VkBufferUsa
 FMemoryRegion FResourceAllocator::PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data)
 {
     auto RemainingSize = Buffer.BufferSize - Buffer.CurrentOffset;
-    if (Size < RemainingSize)
+    if (Size <= RemainingSize)
     {
         FMemoryRegion MemoryRegion;
         MemoryRegion.Size = Size;

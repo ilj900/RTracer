@@ -75,7 +75,6 @@ public:
     VkFormat FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features);
     VkFormat FindDepthFormat();
     bool HasStensilComponent(VkFormat Format);
-    void LoadDataIntoBuffer(FBuffer &Buffer, void* Data, size_t Size);
 
     bool CheckInstanceLayersSupport(const std::vector<const char*>& Layers);
     bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device, std::set<std::string>& RequiredExtension);
