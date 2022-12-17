@@ -22,7 +22,7 @@ public:
     uint32_t FindMemoryType(uint32_t TypeFilter, VkMemoryPropertyFlags Properties);
 
     VkDeviceSize StagingBufferSize = uint64_t(256) * 1024 * 1024;
-    VkDeviceSize MeshBufferSize = uint64_t(4) * 1024 * 1024 * 1024;
+    VkDeviceSize MeshBufferSize = uint64_t(2) * 1024 * 1024 * 1024;
 
     FBuffer StagingBuffer;
     FBuffer MeshBuffer;
