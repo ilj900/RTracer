@@ -21,31 +21,21 @@ FResourceAllocator::~FResourceAllocator()
     DestroyBuffer(MeshBuffer);
 }
 
-FBuffer FResourceAllocator::CreateBufferWidthData(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, void* Data)
-{
-    VkDeviceSize BufferSize = Size;
-    FBuffer Buffer = CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | Usage, Properties);
-
-    LoadDataToBuffer(Buffer, Size, 0, Data);
-
-    return Buffer;
-}
-
-FMemoryRegion FResourceAllocator::PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data)
+FMemoryPtr FResourceAllocator::PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data)
 {
     auto RemainingSize = Buffer.BufferSize - Buffer.CurrentOffset;
     if (Size <= RemainingSize)
     {
-        FMemoryRegion MemoryRegion;
-        MemoryRegion.Size = Size;
-        MemoryRegion.Offset = Buffer.CurrentOffset;
-        MemoryRegion.Buffer = &Buffer;
+        FMemoryPtr FMemoryPtr;
+        FMemoryPtr.Size = Size;
+        FMemoryPtr.Offset = Buffer.CurrentOffset;
         LoadDataToBuffer(Buffer, Size, Buffer.CurrentOffset, Data);
-        return MemoryRegion;
+        Buffer.MemoryRegion.MemoryPtrs.push_back(FMemoryPtr);
+        return FMemoryPtr;
     }
     /// TODO: Try to compact the data in buffer
     assert(false && "Not enough space in Buffer");
-    return FMemoryRegion();
+    return FMemoryPtr();
 }
 
 FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, VkDeviceSize Offset, void* Data)
@@ -56,9 +46,9 @@ FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, VkDeviceSize Size,
     {
         VkDeviceSize ChunkSize = (Size > StagingBufferSize) ? StagingBufferSize : Size;
         void *StagingData;
-        vkMapMemory(Device, StagingBuffer.Memory, 0, ChunkSize, 0, &StagingData);
+        vkMapMemory(Device, StagingBuffer.MemoryRegion.Memory, 0, ChunkSize, 0, &StagingData);
         memcpy(StagingData, ((char*)Data + (StagingBufferSize * i)), (std::size_t) ChunkSize);
-        vkUnmapMemory(Device, StagingBuffer.Memory);
+        vkUnmapMemory(Device, StagingBuffer.MemoryRegion.Memory);
 
         CopyBuffer(StagingBuffer, Buffer, ChunkSize, 0, Offset + (StagingBufferSize * i));
         Size -= ChunkSize;
@@ -77,9 +67,9 @@ void FResourceAllocator::LoadDataFromBuffer(FBuffer& Buffer, VkDeviceSize Size, 
         CopyBuffer(Buffer, StagingBuffer, ChunkSize, Offset + (StagingBufferSize * i), 0);
 
         void *StagingData;
-        vkMapMemory(Device, StagingBuffer.Memory, 0, ChunkSize, 0, &StagingData);
+        vkMapMemory(Device, StagingBuffer.MemoryRegion.Memory, 0, ChunkSize, 0, &StagingData);
         memcpy(((char*)Data + (StagingBufferSize * i)), StagingData, (std::size_t) ChunkSize);
-        vkUnmapMemory(Device, StagingBuffer.Memory);
+        vkUnmapMemory(Device, StagingBuffer.MemoryRegion.Memory);
 
         Size -= ChunkSize;
     }
@@ -103,32 +93,42 @@ FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags U
         throw std::runtime_error("Failed to create buffer!");
     }
 
-    /// Allocate Device Memory
     VkMemoryRequirements MemRequirements;
     vkGetBufferMemoryRequirements(Device, Buffer.Buffer, &MemRequirements);
+
+    Buffer.MemoryRegion = AllocateMemory(Size, MemRequirements, Properties);
+
+    /// Bind Buffer Memory
+    vkBindBufferMemory(Device, Buffer.Buffer, Buffer.MemoryRegion.Memory, 0);
+
+    return Buffer;
+}
+
+FMemoryRegion FResourceAllocator::AllocateMemory(VkDeviceSize Size, VkMemoryRequirements MemRequirements, VkMemoryPropertyFlags Properties)
+{
+    /// Allocate Device Memory
+
+    FMemoryRegion MemoryRegion;
 
     VkMemoryAllocateInfo  AllocInfo{};
     AllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     AllocInfo.allocationSize = MemRequirements.size;
     AllocInfo.memoryTypeIndex = FindMemoryType(MemRequirements.memoryTypeBits, Properties);
 
-    if (vkAllocateMemory(Device, &AllocInfo, nullptr, &Buffer.Memory) != VK_SUCCESS)
+    if (vkAllocateMemory(Device, &AllocInfo, nullptr, &MemoryRegion.Memory) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to allocate buffer memory!");
     }
 
-    /// Bind Buffer Memory
-    vkBindBufferMemory(Device, Buffer.Buffer, Buffer.Memory, 0);
-
-    return Buffer;
+    return MemoryRegion;
 }
 
 void FResourceAllocator::DestroyBuffer(FBuffer& Buffer)
 {
     vkDestroyBuffer(Device, Buffer.Buffer, nullptr);
-    vkFreeMemory(Device, Buffer.Memory, nullptr);
+    vkFreeMemory(Device, Buffer.MemoryRegion.Memory, nullptr);
     Buffer.Buffer = VK_NULL_HANDLE;
-    Buffer.Memory = VK_NULL_HANDLE;
+    Buffer.MemoryRegion.Memory = VK_NULL_HANDLE;
 }
 
 uint32_t FResourceAllocator::FindMemoryType(uint32_t TypeFilter, VkMemoryPropertyFlags Properties)

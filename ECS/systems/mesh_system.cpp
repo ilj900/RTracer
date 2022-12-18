@@ -41,12 +41,12 @@ namespace ECS
             auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
             auto& DeviceMeshComponent = GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Entity);
 
-            VkBuffer Buffers[] = {DeviceMeshComponent.VertexRegion.Buffer->Buffer};
-            VkDeviceSize Offsets[] = {DeviceMeshComponent.VertexRegion.Offset};
+            VkBuffer Buffers[] = {GetContext().ResourceAllocator->MeshBuffer.Buffer};
+            VkDeviceSize Offsets[] = {DeviceMeshComponent.VertexPtr.Offset};
             vkCmdBindVertexBuffers(CommandBuffer, 0, 1, Buffers, Offsets);
             if (MeshComponent.Indexed)
             {
-                vkCmdBindIndexBuffer(CommandBuffer, DeviceMeshComponent.IndexRegion.Buffer->Buffer, DeviceMeshComponent.IndexRegion.Offset, VK_INDEX_TYPE_UINT32);
+                vkCmdBindIndexBuffer(CommandBuffer, GetContext().ResourceAllocator->MeshBuffer.Buffer, DeviceMeshComponent.IndexPtr.Offset, VK_INDEX_TYPE_UINT32);
             }
         }
 
@@ -56,10 +56,10 @@ namespace ECS
             auto& DeviceMeshComponent = GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Entity);
 
             auto& Context = GetContext();
-            DeviceMeshComponent.VertexRegion = Context.PushDataToBuffer(Context.ResourceAllocator->MeshBuffer, MeshComponent.Vertices.size() * sizeof(FVertex), MeshComponent.Vertices.data());
+            DeviceMeshComponent.VertexPtr = Context.PushDataToBuffer(Context.ResourceAllocator->MeshBuffer, MeshComponent.Vertices.size() * sizeof(FVertex), MeshComponent.Vertices.data());
             if (MeshComponent.Indexed)
             {
-                DeviceMeshComponent.IndexRegion = Context.PushDataToBuffer(Context.ResourceAllocator->MeshBuffer, MeshComponent.Indices.size() * sizeof(uint32_t), MeshComponent.Indices.data());
+                DeviceMeshComponent.IndexPtr = Context.PushDataToBuffer(Context.ResourceAllocator->MeshBuffer, MeshComponent.Indices.size() * sizeof(uint32_t), MeshComponent.Indices.data());
             }
         }
 

@@ -34,9 +34,9 @@ void FImageManager::LoadImageFromFile(const std::string& ImageName, const std::s
     FBuffer TempStagingBuffer = Context->CreateBuffer(ImageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     void *Data;
-    vkMapMemory(Context->LogicalDevice, TempStagingBuffer.Memory, 0, ImageSize, 0, &Data);
+    vkMapMemory(Context->LogicalDevice, TempStagingBuffer.MemoryRegion.Memory, 0, ImageSize, 0, &Data);
     memcpy(Data, Pixels, static_cast<size_t>(ImageSize));
-    vkUnmapMemory(Context->LogicalDevice, TempStagingBuffer.Memory);
+    vkUnmapMemory(Context->LogicalDevice, TempStagingBuffer.MemoryRegion.Memory);
     stbi_image_free(Pixels);
 
     CreateImage(ImageName, TexWidth, TexHeight, true, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
@@ -182,9 +182,9 @@ void FImageManager::FetchImageData(const std::string& ImageName, std::vector<T>&
     Data.resize(Size);
 
     void* BufferData;
-    vkMapMemory(Context.LogicalDevice, Buffer.Memory, 0, Buffer.BufferSize, 0, &BufferData);
+    vkMapMemory(Context.LogicalDevice, Buffer.MemoryRegion.Memory, 0, Buffer.BufferSize, 0, &BufferData);
     memcpy(Data.data(), BufferData, (std::size_t)Buffer.BufferSize);
-    vkUnmapMemory(Context.LogicalDevice, Buffer.Memory);
+    vkUnmapMemory(Context.LogicalDevice, Buffer.MemoryRegion.Memory);
 
     Context.DestroyBuffer(Buffer);
 }

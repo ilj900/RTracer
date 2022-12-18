@@ -446,12 +446,7 @@ FBuffer FVulkanContext::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage
     return ResourceAllocator->CreateBuffer(Size, Usage, Properties);
 }
 
-FBuffer FVulkanContext::CreateBufferWidthData(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, void* Data)
-{
-    return ResourceAllocator->CreateBufferWidthData(Size, Usage, Properties, Data);
-}
-
-FMemoryRegion FVulkanContext::PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data)
+FMemoryPtr FVulkanContext::PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data)
 {
     return ResourceAllocator->PushDataToBuffer(Buffer, Size, Data);
 }
