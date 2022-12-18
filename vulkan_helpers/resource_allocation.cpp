@@ -21,6 +21,54 @@ FResourceAllocator::~FResourceAllocator()
     DestroyBuffer(MeshBuffer);
 }
 
+FMemoryRegion FResourceAllocator::AllocateMemory(VkDeviceSize Size, VkMemoryRequirements MemRequirements, VkMemoryPropertyFlags Properties)
+{
+    /// Allocate Device Memory
+
+    FMemoryRegion MemoryRegion;
+
+    VkMemoryAllocateInfo  AllocInfo{};
+    AllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    AllocInfo.allocationSize = MemRequirements.size;
+    AllocInfo.memoryTypeIndex = FindMemoryType(MemRequirements.memoryTypeBits, Properties);
+
+    if (vkAllocateMemory(Device, &AllocInfo, nullptr, &MemoryRegion.Memory) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to allocate buffer memory!");
+    }
+
+    return MemoryRegion;
+}
+
+FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties)
+{
+    FBuffer Buffer;
+
+    Buffer.BufferSize = Size;
+
+    /// Create buffer
+    VkBufferCreateInfo BufferInfo{};
+    BufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    BufferInfo.size = Size;
+    BufferInfo.usage = Usage;
+    BufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    if (vkCreateBuffer(Device, &BufferInfo, nullptr, &Buffer.Buffer) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create buffer!");
+    }
+
+    VkMemoryRequirements MemRequirements;
+    vkGetBufferMemoryRequirements(Device, Buffer.Buffer, &MemRequirements);
+
+    Buffer.MemoryRegion = AllocateMemory(Size, MemRequirements, Properties);
+
+    /// Bind Buffer Memory
+    vkBindBufferMemory(Device, Buffer.Buffer, Buffer.MemoryRegion.Memory, 0);
+
+    return Buffer;
+}
+
 FMemoryPtr FResourceAllocator::PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data)
 {
     auto RemainingSize = Buffer.BufferSize - Buffer.CurrentOffset;
@@ -75,52 +123,16 @@ void FResourceAllocator::LoadDataFromBuffer(FBuffer& Buffer, VkDeviceSize Size, 
     }
 }
 
-FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties)
+void FResourceAllocator::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset)
 {
-    FBuffer Buffer;
-
-    Buffer.BufferSize = Size;
-
-    /// Create buffer
-    VkBufferCreateInfo BufferInfo{};
-    BufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    BufferInfo.size = Size;
-    BufferInfo.usage = Usage;
-    BufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    if (vkCreateBuffer(Device, &BufferInfo, nullptr, &Buffer.Buffer) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create buffer!");
-    }
-
-    VkMemoryRequirements MemRequirements;
-    vkGetBufferMemoryRequirements(Device, Buffer.Buffer, &MemRequirements);
-
-    Buffer.MemoryRegion = AllocateMemory(Size, MemRequirements, Properties);
-
-    /// Bind Buffer Memory
-    vkBindBufferMemory(Device, Buffer.Buffer, Buffer.MemoryRegion.Memory, 0);
-
-    return Buffer;
-}
-
-FMemoryRegion FResourceAllocator::AllocateMemory(VkDeviceSize Size, VkMemoryRequirements MemRequirements, VkMemoryPropertyFlags Properties)
-{
-    /// Allocate Device Memory
-
-    FMemoryRegion MemoryRegion;
-
-    VkMemoryAllocateInfo  AllocInfo{};
-    AllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    AllocInfo.allocationSize = MemRequirements.size;
-    AllocInfo.memoryTypeIndex = FindMemoryType(MemRequirements.memoryTypeBits, Properties);
-
-    if (vkAllocateMemory(Device, &AllocInfo, nullptr, &MemoryRegion.Memory) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to allocate buffer memory!");
-    }
-
-    return MemoryRegion;
+    Context->CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+                                                        {
+                                                            VkBufferCopy CopyRegion{};
+                                                            CopyRegion.size = Size;
+                                                            CopyRegion.srcOffset = SourceOffset;
+                                                            CopyRegion.dstOffset = DestinationOffset;
+                                                            vkCmdCopyBuffer(CommandBuffer, SrcBuffer.Buffer, DstBuffer.Buffer, 1, &CopyRegion);
+                                                        });
 }
 
 void FResourceAllocator::DestroyBuffer(FBuffer& Buffer)
@@ -142,16 +154,4 @@ uint32_t FResourceAllocator::FindMemoryType(uint32_t TypeFilter, VkMemoryPropert
     }
 
     throw std::runtime_error("Failed to find suitable memory type!");
-}
-
-void FResourceAllocator::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset)
-{
-    Context->CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
-    {
-        VkBufferCopy CopyRegion{};
-        CopyRegion.size = Size;
-        CopyRegion.srcOffset = SourceOffset;
-        CopyRegion.dstOffset = DestinationOffset;
-        vkCmdCopyBuffer(CommandBuffer, SrcBuffer.Buffer, DstBuffer.Buffer, 1, &CopyRegion);
-    });
 }
