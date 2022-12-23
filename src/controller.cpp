@@ -39,8 +39,8 @@ void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int
         {
             if (Action == GLFW_PRESS) {
                 auto& Context = GetContext();
-                (*Context.ImageManager)(Context.NormalsImage).Resolve((*Context.ImageManager)(Context.UtilityImageR8G8B8A8_SRGB));
-                Context.ImageManager->SaveImage(Context.UtilityImageR8G8B8A8_SRGB);
+                Context.NormalsImage->Resolve(*Context.UtilityImageR8G8B8A8_SRGB);
+                Context.SaveImage(*Context.UtilityImageR8G8B8A8_SRGB);
             }
             break;
         }
@@ -89,8 +89,8 @@ void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, in
                     auto& Context = GetContext();
                     std::vector<uint32_t> Data;
 
-                    (*Context.ImageManager)(Context.RenderableIndexImage).Resolve((*Context.ImageManager)(Context.UtilityImageR32));
-                    (*Context.ImageManager).FetchImageData(Context.UtilityImageR32, Data);
+                    Context.RenderableIndexImage->Resolve(*Context.UtilityImageR32);
+                    Context.FetchImageData(*Context.UtilityImageR32, Data);
                     double X, Y;
                     glfwGetCursorPos(Window, &X, &Y);
 

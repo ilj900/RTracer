@@ -93,11 +93,7 @@ FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, VkDeviceSize Size,
     for (int i = 0; Size > 0; ++i)
     {
         VkDeviceSize ChunkSize = (Size > StagingBufferSize) ? StagingBufferSize : Size;
-        void *StagingData;
-        vkMapMemory(Device, StagingBuffer.MemoryRegion.Memory, 0, ChunkSize, 0, &StagingData);
-        memcpy(StagingData, ((char*)Data + (StagingBufferSize * i)), (std::size_t) ChunkSize);
-        vkUnmapMemory(Device, StagingBuffer.MemoryRegion.Memory);
-
+        LoadDataToStagingBuffer(ChunkSize, ((char*)Data + (StagingBufferSize * i)));
         CopyBuffer(StagingBuffer, Buffer, ChunkSize, 0, Offset + (StagingBufferSize * i));
         Size -= ChunkSize;
     }
@@ -111,28 +107,102 @@ void FResourceAllocator::LoadDataFromBuffer(FBuffer& Buffer, VkDeviceSize Size, 
     for (int i = 0; Size > 0; ++i)
     {
         VkDeviceSize ChunkSize = (Size > StagingBufferSize) ? StagingBufferSize : Size;
-
         CopyBuffer(Buffer, StagingBuffer, ChunkSize, Offset + (StagingBufferSize * i), 0);
-
-        void *StagingData;
-        vkMapMemory(Device, StagingBuffer.MemoryRegion.Memory, 0, ChunkSize, 0, &StagingData);
-        memcpy(((char*)Data + (StagingBufferSize * i)), StagingData, (std::size_t) ChunkSize);
-        vkUnmapMemory(Device, StagingBuffer.MemoryRegion.Memory);
-
+        LoadDataFromStaginBuffer(Size, ((char*)Data + (StagingBufferSize * i)));
         Size -= ChunkSize;
     }
+}
+
+void FResourceAllocator::LoadDataToStagingBuffer(VkDeviceSize Size, void* Data)
+{
+    if (Size <= StagingBufferSize)
+    {
+        void *StagingData;
+        vkMapMemory(Device, StagingBuffer.MemoryRegion.Memory, 0, Size, 0, &StagingData);
+        memcpy(StagingData, Data, (std::size_t) Size);
+        vkUnmapMemory(Device, StagingBuffer.MemoryRegion.Memory);
+    }
+}
+
+void FResourceAllocator::LoadDataFromStaginBuffer(VkDeviceSize Size, void* Data)
+{
+    if (Size <= StagingBufferSize)
+    {
+        void *StagingData;
+        vkMapMemory(Device, StagingBuffer.MemoryRegion.Memory, 0, Size, 0, &StagingData);
+        memcpy(Data, StagingData, (std::size_t) Size);
+        vkUnmapMemory(Device, StagingBuffer.MemoryRegion.Memory);
+    }
+}
+
+FMemoryRegion FResourceAllocator::LoadDataToImage(FImage& Image, VkDeviceSize Size, void* Data)
+{
+    LoadDataToStagingBuffer(Size, Data);
+
+    CopyBufferToImage(StagingBuffer, Image);
+
+    return Image.MemoryRegion;
 }
 
 void FResourceAllocator::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset)
 {
     Context->CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
-                                                        {
-                                                            VkBufferCopy CopyRegion{};
-                                                            CopyRegion.size = Size;
-                                                            CopyRegion.srcOffset = SourceOffset;
-                                                            CopyRegion.dstOffset = DestinationOffset;
-                                                            vkCmdCopyBuffer(CommandBuffer, SrcBuffer.Buffer, DstBuffer.Buffer, 1, &CopyRegion);
-                                                        });
+    {
+        VkBufferCopy CopyRegion{};
+        CopyRegion.size = Size;
+        CopyRegion.srcOffset = SourceOffset;
+        CopyRegion.dstOffset = DestinationOffset;
+        vkCmdCopyBuffer(CommandBuffer, SrcBuffer.Buffer, DstBuffer.Buffer, 1, &CopyRegion);
+    });
+}
+
+void FResourceAllocator::CopyBufferToImage(FBuffer &SrcBuffer, FImage &DstImage)
+{
+    Context->CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    {
+        VkBufferImageCopy Region{};
+        Region.bufferOffset = 0;
+        Region.bufferRowLength = 0;
+        Region.bufferImageHeight = 0;
+
+        Region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        Region.imageSubresource.mipLevel = 0;
+        Region.imageSubresource.baseArrayLayer = 0;
+        Region.imageSubresource.layerCount = 1;
+
+        Region.imageOffset = {0, 0, 0};
+        Region.imageExtent = {DstImage.Width, DstImage.Height, 1};
+
+
+        vkCmdCopyBufferToImage(CommandBuffer, SrcBuffer.Buffer, DstImage.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &Region);
+    });
+}
+
+void FResourceAllocator::CopyImageToBuffer(const FImage& SrcImage, FBuffer& DstBuffer)
+{
+    Context->CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    {
+        VkBufferImageCopy Region{};
+        Region.bufferOffset = 0;
+        Region.bufferRowLength = 0;
+        Region.bufferImageHeight = 0;
+
+        Region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        Region.imageSubresource.mipLevel = 0;
+        Region.imageSubresource.baseArrayLayer = 0;
+        Region.imageSubresource.layerCount = 1;
+
+        Region.imageOffset = {0, 0, 0};
+        Region.imageExtent = {SrcImage.Width, SrcImage.Height, 1};
+
+        vkCmdCopyImageToBuffer(CommandBuffer, SrcImage.Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, DstBuffer.Buffer, 1, &Region);
+    });
+}
+
+void FResourceAllocator::GetImageData(FImage& SrcImage, void* Data)
+{
+    CopyImageToBuffer(SrcImage, StagingBuffer);
+    LoadDataFromStaginBuffer(SrcImage.Size, Data);
 }
 
 void FResourceAllocator::DestroyBuffer(FBuffer& Buffer)

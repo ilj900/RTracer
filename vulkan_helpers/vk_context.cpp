@@ -19,6 +19,12 @@
 #include <set>
 #include <unordered_map>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 static FVulkanContext Context{};
 
 namespace LAYOUT_SETS
@@ -55,8 +61,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
 {
     this->Window = Window;
-    ImageManager = std::make_shared<FImageManager>();
-    ImageManager->Init(*this);
 
     try {
         FillInContextOptions();
@@ -77,7 +81,7 @@ void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
         CreateDescriptorSetLayouts();
         CreateGraphicsPipeline();
         CreatePassthroughPipeline();
-        ImageManager->LoadImageFromFile(TextureImage, TexturePath);
+        TextureImage = LoadImageFromFile(TexturePath, "V_TextureImage");
         CreateRenderFramebuffers();
         CreatePassthroughFramebuffers();
         CreateImguiFramebuffers();
@@ -529,62 +533,144 @@ std::vector<VkDeviceQueueCreateInfo> FVulkanContext::GetDeviceQueueCreateInfo(Vk
     return QueueCreateInfos;
 }
 
+void FVulkanContext::SaveImage(const FImage& Image)
+{
+    std::vector<char> Data;
+
+    FetchImageData(Image, Data);
+
+    stbi_write_bmp((Image.DebugName + ".png").c_str(), Image.Width, Image.Height, 4, Data.data());
+}
+
+template <typename T>
+void FVulkanContext::FetchImageData(const FImage& Image, std::vector<T>& Data)
+{
+    uint32_t NumberOfComponents = 0;
+
+    switch (Image.Format) {
+        case VK_FORMAT_B8G8R8A8_SRGB:
+        {
+            NumberOfComponents = 4;
+            break;
+        }
+        case VK_FORMAT_R32G32B32A32_SFLOAT:
+        {
+            NumberOfComponents = 4;
+            break;
+        }
+        case VK_FORMAT_R32_UINT:
+        {
+            NumberOfComponents = 1;
+            break;
+        }
+    }
+
+    auto& Context = GetContext();
+    uint32_t Size = Image.Height * Image.Width * NumberOfComponents * sizeof(T);
+    FBuffer Buffer = Context.CreateBuffer(Size, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    Context.ResourceAllocator->CopyImageToBuffer(Image, Buffer);
+
+    Data.resize(Size);
+
+    void* BufferData;
+    vkMapMemory(Context.LogicalDevice, Buffer.MemoryRegion.Memory, 0, Buffer.BufferSize, 0, &BufferData);
+    memcpy(Data.data(), BufferData, (std::size_t)Buffer.BufferSize);
+    vkUnmapMemory(Context.LogicalDevice, Buffer.MemoryRegion.Memory);
+
+    Context.DestroyBuffer(Buffer);
+}
+
+template void FVulkanContext::FetchImageData<uint32_t>(const FImage& Image, std::vector<uint32_t>& Data);
+
+std::shared_ptr<FImage> FVulkanContext::CreateImage2D(uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format,
+                           VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties,
+                           VkImageAspectFlags AspectFlags, VkDevice Device, const std::string& DebugImageName)
+{
+
+    std::shared_ptr<FImage> Image = std::make_shared<FImage>(Width, Height, bMipMapsRequired, NumSamples, Format, Tiling, Usage,
+                                                 Properties, AspectFlags, Device, DebugImageName);
+    return Image;
+}
+
+std::shared_ptr<FImage> FVulkanContext::LoadImageFromFile(const std::string& Path, const std::string& DebugImageName)
+{
+    /// Load data from image file
+    int TexWidth, TexHeight, TexChannels;
+    stbi_uc* Pixels = stbi_load(Path.c_str(), &TexWidth, &TexHeight, &TexChannels, STBI_rgb_alpha);
+    VkDeviceSize ImageSize = TexWidth * TexHeight * 4;
+
+    if (!Pixels)
+    {
+        throw std::runtime_error("Failed to load texture image!");
+    }
+
+    /// Load data into staging buffer
+
+
+    std::shared_ptr<FImage> Image = std::make_shared<FImage>(TexWidth, TexHeight, true, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+                 VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                 VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, DebugImageName);
+
+    V::SetName(LogicalDevice, Image->Image, DebugImageName);
+    V::SetName(LogicalDevice, Image->View, (std::string(DebugImageName) + "_ImageView").c_str());
+
+    Image->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    ResourceAllocator->LoadDataToImage(*Image, ImageSize, Pixels);
+    /// Generate MipMaps only after we loaded image data
+    Image->GenerateMipMaps();
+
+    return Image;
+}
+
+std::shared_ptr<FImage> FVulkanContext::Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, const std::string& DebugImageName)
+{
+    std::shared_ptr<FImage> Image = std::make_shared<FImage>(ImageToWrap, Format, AspectFlags, LogicalDevice, DebugImageName);
+
+    return Image;
+}
+
 void FVulkanContext::CreateDepthAndAAImages()
 {
     /// Create Image and ImageView for AA
     auto Width = Swapchain->GetWidth();
     auto Height = Swapchain->GetHeight();
 
-    ImageManager->CreateImage(ColorImage, Width, Height, false, MSAASamples, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
-                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                              VK_IMAGE_ASPECT_COLOR_BIT);
-    V::SetName(LogicalDevice, (*ImageManager)(ColorImage).Image, "V_ColorImage");
-    V::SetName(LogicalDevice, (*ImageManager)(ColorImage).View, "V_ColorImagView");
+    ColorImage = CreateImage2D(Width, Height, false, MSAASamples, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                        VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_ColorImage");
 
-    ImageManager->CreateImage(NormalsImage, Width, Height, false, MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+
+    NormalsImage = CreateImage2D(Width, Height, false, MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                                             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                            VK_IMAGE_ASPECT_COLOR_BIT);
-    V::SetName(LogicalDevice, (*ImageManager)(NormalsImage).Image, "V_NormalsImage");
-    V::SetName(LogicalDevice, (*ImageManager)(NormalsImage).View, "V_NormalsImageView");
+                                            VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_NormalsImage");
 
-    ImageManager->CreateImage(RenderableIndexImage, Width, Height, false, MSAASamples, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
+
+    RenderableIndexImage = CreateImage2D(Width, Height, false, MSAASamples, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
                                                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                    VK_IMAGE_ASPECT_COLOR_BIT);
-    V::SetName(LogicalDevice, (*ImageManager)(RenderableIndexImage).Image, "V_RenderableIndexImage");
-    V::SetName(LogicalDevice, (*ImageManager)(RenderableIndexImage).View, "V_RenderableIndexImageView");
+                                                    VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_RenderableIndexImage");
 
-    ImageManager->CreateImage(UtilityImageR32, Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
+    UtilityImageR32 = CreateImage2D(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
                                                VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                               VK_IMAGE_ASPECT_COLOR_BIT);
-    V::SetName(LogicalDevice, (*ImageManager)(UtilityImageR32).Image, "V_UtilityImageR32");
-    V::SetName(LogicalDevice, (*ImageManager)(UtilityImageR32).View, "V_UtilityImageR32View");
+                                               VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_UtilityImageR32");
 
-    auto& UtilityImgR32 = (*ImageManager)(UtilityImageR32);
-    UtilityImgR32.Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    UtilityImageR32->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-    ImageManager->CreateImage(ResolvedColorImage, Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+    ResolvedColorImage = CreateImage2D(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
                               VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                              VK_IMAGE_ASPECT_COLOR_BIT);
-    V::SetName(LogicalDevice, (*ImageManager)(ResolvedColorImage).Image, "V_ResolvedColorImage");
-    V::SetName(LogicalDevice, (*ImageManager)(ResolvedColorImage).View, "V_ResolvedColorImageView");
+                              VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_ResolvedColorImage");
 
-    ImageManager->CreateImage(UtilityImageR8G8B8A8_SRGB, Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+    UtilityImageR8G8B8A8_SRGB = CreateImage2D(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                                                          VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                         VK_IMAGE_ASPECT_COLOR_BIT);
-    V::SetName(LogicalDevice, (*ImageManager)(UtilityImageR8G8B8A8_SRGB).Image, "V_UtilityImageR8G8B8A8_SRGB");
-    V::SetName(LogicalDevice, (*ImageManager)(UtilityImageR8G8B8A8_SRGB).View, "V_UtilityImageR8G8B8A8_SRGBView");
+                                                         VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_UtilityImageR8G8B8A8_SRGB");
 
     /// Create Image and ImageView for Depth
     VkFormat DepthFormat = FindDepthFormat();
-    ImageManager->CreateImage(DepthImage, Width, Height, false, MSAASamples, DepthFormat, VK_IMAGE_TILING_OPTIMAL,
+    DepthImage = CreateImage2D(Width, Height, false, MSAASamples, DepthFormat, VK_IMAGE_TILING_OPTIMAL,
                                           VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                          VK_IMAGE_ASPECT_DEPTH_BIT);
+                                          VK_IMAGE_ASPECT_DEPTH_BIT, LogicalDevice, "V_DepthImage");
 
 
-    V::SetName(LogicalDevice, (*ImageManager)(DepthImage).Image, "V_DepthImage");
-    V::SetName(LogicalDevice, (*ImageManager)(DepthImage).View, "V_DepthImageView");
-    auto& DepthImg = (*ImageManager)(DepthImage);
-    DepthImg.Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+    DepthImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
 void FVulkanContext::CreatePassthroughRenderPass()
@@ -599,11 +685,11 @@ void FVulkanContext::CreatePassthroughRenderPass()
 void FVulkanContext::CreateRenderPass()
 {
     RenderPass = std::make_shared<FRenderPass>();
-    RenderPass->AddImageAsAttachment((*ImageManager)(ColorImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    RenderPass->AddImageAsAttachment((*ImageManager)(NormalsImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    RenderPass->AddImageAsAttachment((*ImageManager)(RenderableIndexImage), AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    RenderPass->AddImageAsAttachment((*ImageManager)(DepthImage), AttachmentType::DepthStencil, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    RenderPass->AddImageAsAttachment((*ImageManager)(ResolvedColorImage), AttachmentType::Resolve, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    RenderPass->AddImageAsAttachment(ColorImage, AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    RenderPass->AddImageAsAttachment(NormalsImage, AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    RenderPass->AddImageAsAttachment(RenderableIndexImage, AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    RenderPass->AddImageAsAttachment(DepthImage, AttachmentType::DepthStencil, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    RenderPass->AddImageAsAttachment(ResolvedColorImage, AttachmentType::Resolve, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
 
     RenderPass->Construct(LogicalDevice);
     V::SetName(LogicalDevice, RenderPass->RenderPass, "V_RenderRenderpass");
@@ -709,8 +795,8 @@ void FVulkanContext::CreateRenderFramebuffers()
 {
     SwapChainFramebuffers.resize(Swapchain->Size());
     for (std::size_t i = 0; i < Swapchain->Size(); ++i) {
-        std::vector<VkImageView> Attachments = {(*ImageManager)(ColorImage).View, (*ImageManager)(NormalsImage).View, (*ImageManager)(RenderableIndexImage).View,
-                                                (*ImageManager)(DepthImage).View, (*ImageManager)(ResolvedColorImage).View};
+        std::vector<VkImageView> Attachments = {ColorImage->View, NormalsImage->View, RenderableIndexImage->View,
+                                                DepthImage->View, ResolvedColorImage->View};
 
         VkFramebufferCreateInfo FramebufferCreateInfo{};
         FramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -735,7 +821,7 @@ void FVulkanContext::CreatePassthroughFramebuffers()
     PassthroughFramebuffers.resize(Swapchain->Size());
     for (std::size_t i = 0; i < PassthroughFramebuffers.size(); ++i)
     {
-        std::vector<VkImageView> Attachments = {Swapchain->Images[i].View};
+        std::vector<VkImageView> Attachments = {Swapchain->Images[i]->View};
 
         VkFramebufferCreateInfo FramebufferCreateInfo{};
         FramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -762,7 +848,7 @@ void FVulkanContext::CreateImguiFramebuffers()
     for(uint32_t i = 0; i < Swapchain->Size(); ++i)
     {
         VkImageView Attachment[1];
-        Attachment[0] = Swapchain->Images[i].View;
+        Attachment[0] = Swapchain->Images[i]->View;
 
         VkFramebufferCreateInfo FramebufferCreateInfo{};
         FramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -924,7 +1010,7 @@ void FVulkanContext::CreateDescriptorSet()
 
         VkDescriptorImageInfo ImageBufferInfo{};
         ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        ImageBufferInfo.imageView = (*ImageManager)(TextureImage).View;
+        ImageBufferInfo.imageView = TextureImage->View;
         ImageBufferInfo.sampler = TextureSampler;
         DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME, i, ImageBufferInfo);
     }
@@ -933,7 +1019,7 @@ void FVulkanContext::CreateDescriptorSet()
     {
         VkDescriptorImageInfo ImageBufferInfo{};
         ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        ImageBufferInfo.imageView = (*ImageManager)(ResolvedColorImage).View;
+        ImageBufferInfo.imageView = ResolvedColorImage->View;
         ImageBufferInfo.sampler = TextureSampler;
         DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PASSTHROUGH_LAYOUT_NAME, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_NAME, i, ImageBufferInfo);
     }
@@ -1000,7 +1086,7 @@ void FVulkanContext::CreateCommandBuffers()
             Barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            Barrier.image = (*ImageManager)(ResolvedColorImage).Image;
+            Barrier.image = ResolvedColorImage->Image;
             Barrier.subresourceRange.baseMipLevel = 0;
             Barrier.subresourceRange.levelCount = 1;
             Barrier.subresourceRange.baseArrayLayer = 0;
@@ -1316,13 +1402,13 @@ void FVulkanContext::RecreateSwapChain()
 void FVulkanContext::CleanUpSwapChain()
 {
     /// Remove all images which size's dependent on the swapchain's size
-    ImageManager->RemoveImage(ColorImage);
-    ImageManager->RemoveImage(ResolvedColorImage);
-    ImageManager->RemoveImage(UtilityImageR8G8B8A8_SRGB);
-    ImageManager->RemoveImage(NormalsImage);
-    ImageManager->RemoveImage(RenderableIndexImage);
-    ImageManager->RemoveImage(UtilityImageR32);
-    ImageManager->RemoveImage(DepthImage);
+    ColorImage = nullptr;
+    ResolvedColorImage = nullptr;
+    UtilityImageR8G8B8A8_SRGB = nullptr;
+    NormalsImage = nullptr;
+    RenderableIndexImage = nullptr;
+    UtilityImageR32 = nullptr;
+    DepthImage = nullptr;
 
     /// Remove all framebuffers
     for (auto Framebuffer : SwapChainFramebuffers)
@@ -1409,7 +1495,7 @@ void FVulkanContext::CleanUp()
     vkDestroyDescriptorPool(LogicalDevice, ImGuiDescriptorPool, nullptr);
 
     vkDestroySampler(LogicalDevice, TextureSampler, nullptr);
-    ImageManager->RemoveImage(TextureImage);
+    TextureImage = nullptr;
 
     DescriptorSetManager->DestroyDescriptorSetLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_NAME);
     DescriptorSetManager->DestroyDescriptorSetLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_NAME);

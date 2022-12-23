@@ -4,15 +4,11 @@
 
 #include "iostream"
 
-size_t FImage::GetHash()
-{
-    return std::hash<FImage>()(*this);
-}
-
-FImage::FImage(uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format, VkImageTiling Tiling,
-               VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties,  VkImageAspectFlags AspectFlags, VkDevice Device) :
+FImage::FImage(uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples,
+               VkFormat Format, VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties,
+               VkImageAspectFlags AspectFlags, VkDevice Device, const std::string& DebugImageName) :
 Device(Device), Width(Width), MipLevels(1), Height(Height), Samples(NumSamples), Format(Format),
-Tiling(Tiling), Usage(Usage), Properties(Properties), AspectFlags(AspectFlags)
+Tiling(Tiling), Usage(Usage), Properties(Properties), AspectFlags(AspectFlags), DebugName(DebugImageName)
 {
     /// Calculate number of MipLevels in advance
     if (bMipMapsRequired)
@@ -26,17 +22,20 @@ Tiling(Tiling), Usage(Usage), Properties(Properties), AspectFlags(AspectFlags)
     CreateImageView();
 }
 
-void FImage::Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, FImage& Image)
+FImage::FImage(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, const std::string& DebugImageName)
 {
-    Image.Image = ImageToWrap;
-    Image.Format = Format;
-    Image.Device = LogicalDevice;
-    Image.AspectFlags = AspectFlags;
-    Image.MipLevels = 1;
-    Image.bIsWrappedImage = true;
+    bIsWrappedImage = true;
 
-    Image.CreateImageView();
+    Image = ImageToWrap;
+    this->Format = Format;
+    Device = LogicalDevice;
+    this->AspectFlags = AspectFlags;
+    MipLevels = 1;
+    DebugName = DebugImageName;
+
+    CreateImageView();
 }
+
 
 FImage::~FImage()
 {
@@ -44,7 +43,7 @@ FImage::~FImage()
     if (!bIsWrappedImage)
     {
         vkDestroyImage(Device, Image, nullptr);
-        vkFreeMemory(Device, Memory, nullptr);
+        vkFreeMemory(Device, MemoryRegion.Memory, nullptr);
     }
 }
 
@@ -123,7 +122,7 @@ void FImage::Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout)
 void FImage::SwapData(FImage& Other)
 {
     VkImage TempImage = Image;
-    VkDeviceMemory TempMemory = Memory;
+    auto TempMemory = MemoryRegion;
     VkImageView TempView = View;
 
     VkFormat TempFormat = Format;
@@ -139,7 +138,7 @@ void FImage::SwapData(FImage& Other)
     uint32_t TempMipLevels = MipLevels;
 
     Image = Other.Image;
-    Memory = Other.Memory;
+    MemoryRegion = Other.MemoryRegion;
     View = Other.View;
 
     Format = Other.Format;
@@ -155,7 +154,7 @@ void FImage::SwapData(FImage& Other)
     MipLevels = Other.MipLevels;
 
     Other.Image = TempImage;
-    Other.Memory = TempMemory;
+    Other.MemoryRegion = TempMemory;
     Other.View = TempView;
     Other.Format = TempFormat;
     Other.Samples = TempSamples;
@@ -197,20 +196,14 @@ void FImage::AllocateMemory()
     VkMemoryRequirements MemRequirements;
     vkGetImageMemoryRequirements(Device, Image, &MemRequirements);
 
-    VkMemoryAllocateInfo AllocInfo{};
-    AllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    AllocInfo.allocationSize = MemRequirements.size;
-    AllocInfo.memoryTypeIndex = GetContext().ResourceAllocator->FindMemoryType(MemRequirements.memoryTypeBits, Properties);
+    Size = MemRequirements.size;
 
-    if (vkAllocateMemory(Device, &AllocInfo, nullptr, &Memory) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to allocate image memory!");
-    }
+    MemoryRegion = GetContext().ResourceAllocator->AllocateMemory(MemRequirements.size, MemRequirements, Properties);
 }
 
 void FImage::BindMemoryToImage()
 {
-    vkBindImageMemory(Device, Image, Memory, 0);
+    vkBindImageMemory(Device, Image, MemoryRegion.Memory, 0);
 }
 
 void FImage::CreateImageView()
@@ -344,6 +337,11 @@ void FImage::Resolve(FImage& ImageToResolveTo)
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &ImageResolve);
     }
     );
+}
+
+size_t FImage::GetHash()
+{
+    return std::hash<FImage>()(*this);
 }
 
 bool operator<(const FImage& A, const FImage& B)

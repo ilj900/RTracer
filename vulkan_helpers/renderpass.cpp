@@ -3,7 +3,7 @@
 
 #include <stdexcept>
 
-void FRenderPass::AddImageAsAttachment(FImage &Image, AttachmentType Type, VkImageLayout InitialLayout, VkImageLayout FinalLayout, VkAttachmentLoadOp AttachmentLoadOp)
+void FRenderPass::AddImageAsAttachment(std::shared_ptr<FImage>& Image, AttachmentType Type, VkImageLayout InitialLayout, VkImageLayout FinalLayout, VkAttachmentLoadOp AttachmentLoadOp)
 {
     std::vector<VkAttachmentDescription>* AttachmentDescriptions;
     std::map<size_t , uint32_t>* ImageToIndexMap;
@@ -29,14 +29,14 @@ void FRenderPass::AddImageAsAttachment(FImage &Image, AttachmentType Type, VkIma
         }
     }
 
-    if (ImageToIndexMap->find(Image.GetHash()) != ImageToIndexMap->end())
+    if (ImageToIndexMap->find(Image->GetHash()) != ImageToIndexMap->end())
     {
         throw std::runtime_error("The image you are trying to add to Renderpass is already added as attachment.");
     }
 
     VkAttachmentDescription AttachmentDescription{};
-    AttachmentDescription.format = Image.Format;
-    AttachmentDescription.samples = Image.Samples;
+    AttachmentDescription.format = Image->Format;
+    AttachmentDescription.samples = Image->Samples;
     AttachmentDescription.loadOp = AttachmentLoadOp;
     AttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     AttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -54,7 +54,7 @@ void FRenderPass::AddImageAsAttachment(FImage &Image, AttachmentType Type, VkIma
 
     AttachmentDescriptions->emplace_back(AttachmentDescription);
 
-    (*ImageToIndexMap)[Image.GetHash()] = static_cast<uint32_t>(AttachmentDescriptions->size() - 1);
+    (*ImageToIndexMap)[Image->GetHash()] = static_cast<uint32_t>(AttachmentDescriptions->size() - 1);
 }
 
 void FRenderPass::Construct(VkDevice LogicalDevice)

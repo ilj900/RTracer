@@ -12,7 +12,6 @@
 #include "buffer.h"
 #include "descriptors.h"
 #include "image.h"
-#include "image_manager.h"
 #include "renderpass.h"
 #include "vk_utils.h"
 #include "vk_pipeline.h"
@@ -104,6 +103,15 @@ public:
     void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset);
     void DestroyBuffer(FBuffer& Buffer);
 
+    std::shared_ptr<FImage> CreateImage2D(uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format,
+                               VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties,
+                               VkImageAspectFlags AspectFlags, VkDevice Device, const std::string& DebugImageName);
+    std::shared_ptr<FImage> LoadImageFromFile(const std::string& Path, const std::string& DebugImageName);
+    std::shared_ptr<FImage> Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, const std::string& DebugImageName);
+    void SaveImage(const FImage& Image);
+    template <typename T>
+    void FetchImageData(const FImage& Image, std::vector<T>& Data);
+
 public:
     VkQueue GetQueue(VkQueueFlagBits QueueFlagBits);
     uint32_t GetQueueIndex(VkQueueFlagBits QueueFlagBits);
@@ -113,7 +121,6 @@ public:
 
     std::shared_ptr<FResourceAllocator> ResourceAllocator = nullptr;
     std::shared_ptr<FCommandBufferManager> CommandBufferManager = nullptr;
-    std::shared_ptr<FImageManager> ImageManager = nullptr;
 
     VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
@@ -153,16 +160,16 @@ public:
     VkDebugUtilsMessengerEXT DebugMessenger;
 #endif
     /// Images for drawing
-    std::string ColorImage = "ColorImage";
-    std::string ResolvedColorImage = "ResolvedColorImage";
-    std::string NormalsImage = "NormalsImage";
-    std::string RenderableIndexImage = "RenderableIndexImage";
-    std::string DepthImage = "DepthImage";
-    std::string UtilityImageR32 = "UtilityImageR32";
-    std::string UtilityImageR8G8B8A8_SRGB = "UtilityImageR8G8B8A8_SRGB";
+    std::shared_ptr<FImage> ColorImage;
+    std::shared_ptr<FImage> ResolvedColorImage;
+    std::shared_ptr<FImage> NormalsImage;
+    std::shared_ptr<FImage> RenderableIndexImage;
+    std::shared_ptr<FImage> DepthImage;
+    std::shared_ptr<FImage> UtilityImageR32;
+    std::shared_ptr<FImage> UtilityImageR8G8B8A8_SRGB;
 
     /// Texture used to pain the model
-    std::string TextureImage = "TextureImage";
+    std::shared_ptr<FImage> TextureImage;
 
     VkSampler TextureSampler;
 
@@ -191,6 +198,8 @@ public:
 
     std::string ModelPath = "../models/viking_room/viking_room.obj";
     std::string TexturePath = "../models/viking_room/viking_room.png";
+
+    uint32_t UniqueCounter = 0u;
 };
 
 FVulkanContext& GetContext();

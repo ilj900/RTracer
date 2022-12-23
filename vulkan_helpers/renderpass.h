@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <map>
+#include <memory>
 
 enum class AttachmentType {Color, Resolve, DepthStencil};
 
@@ -13,7 +14,7 @@ public:
     FRenderPass() = default;
     ~FRenderPass();
 
-    void AddImageAsAttachment(FImage& Image, AttachmentType Type, VkImageLayout InitialLayout, VkImageLayout FinalLayout, VkAttachmentLoadOp AttachmentLoadOp);
+    void AddImageAsAttachment(std::shared_ptr<FImage>& Image, AttachmentType Type, VkImageLayout InitialLayout, VkImageLayout FinalLayout, VkAttachmentLoadOp AttachmentLoadOp);
     void Construct(VkDevice LogicalDevice);
 
 public:

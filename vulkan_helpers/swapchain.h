@@ -3,6 +3,7 @@
 #include "vulkan/vulkan.h"
 #include "image.h"
 
+#include <memory>
 #include <vector>
 
 class FVulkanContext;
@@ -19,7 +20,7 @@ struct FSwapchain
     uint32_t GetWidth();
     uint32_t GetHeight();
     VkExtent2D GetExtent2D();
-    std::vector<FImage>& GetImages();
+    std::vector<std::shared_ptr<FImage>> GetImages();
     VkSwapchainKHR GetSwapchain();
 
 
@@ -27,7 +28,7 @@ struct FSwapchain
     VkSurfaceFormatKHR SurfaceFormat;
     VkPresentModeKHR PresentMode;
     VkExtent2D Extent;
-    std::vector<FImage> Images;
+    std::vector<std::shared_ptr<FImage>> Images;
 
     VkDevice LogicalDevice = VK_NULL_HANDLE;
 };

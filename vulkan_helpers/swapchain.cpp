@@ -119,9 +119,7 @@ FSwapchain::FSwapchain(FVulkanContext &Context, VkPhysicalDevice PhysicalDevice,
         throw std::runtime_error("Failed to create swap chain!");
     }
 
-    static int iii = 0;
-    V::SetName(LogicalDevice, Swapchain, "V_Swapchain" + std::to_string(iii));
-    ++iii;
+    V::SetName(LogicalDevice, Swapchain, "V_Swapchain");
 
 
     /// Queue SwapChain for it's images
@@ -132,9 +130,7 @@ FSwapchain::FSwapchain(FVulkanContext &Context, VkPhysicalDevice PhysicalDevice,
 
     for (uint32_t i = 0; i < SwapchainImages.size(); ++i)
     {
-        FImage::Wrap(SwapchainImages[i], SurfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, Images[i]);
-        V::SetName(LogicalDevice, SwapchainImages[i], "V_SwapchainImage" + std::to_string(i));
-        V::SetName(LogicalDevice, Images[i].View, "V_SwapchainImageView" + std::to_string(i));
+        Images[i] = Context.Wrap(SwapchainImages[i], SurfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_SwapchainImage");
     }
 }
 
@@ -169,7 +165,7 @@ VkExtent2D FSwapchain::GetExtent2D()
     return Extent;
 }
 
-std::vector<FImage>& FSwapchain::GetImages()
+std::vector<std::shared_ptr<FImage>> FSwapchain::GetImages()
 {
     return Images;
 }
@@ -182,6 +178,6 @@ VkSwapchainKHR FSwapchain::GetSwapchain()
 VkResult FSwapchain::GetNextImage(VkImage& Image, VkSemaphore &Semaphore, uint32_t& ImageIndex)
 {
     VkResult Result = vkAcquireNextImageKHR(LogicalDevice, Swapchain, UINT64_MAX, Semaphore, VK_NULL_HANDLE, &ImageIndex);
-    Image = Images[ImageIndex].Image;
+    Image = Images[ImageIndex]->Image;
     return Result;
 }
