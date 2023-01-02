@@ -112,6 +112,8 @@ public:
     template <typename T>
     void FetchImageData(const FImage& Image, std::vector<T>& Data);
 
+    VkFramebuffer CreateFramebuffer(std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name);
+
 public:
     VkQueue GetQueue(VkQueueFlagBits QueueFlagBits);
     uint32_t GetQueueIndex(VkQueueFlagBits QueueFlagBits);

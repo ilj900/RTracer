@@ -673,6 +673,36 @@ void FVulkanContext::CreateDepthAndAAImages()
     DepthImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
+VkFramebuffer FVulkanContext::CreateFramebuffer(std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name)
+{
+    std::vector<VkImageView> Attachments;
+
+    for (auto& Image : Images)
+    {
+        Attachments.push_back(Image->View);
+    }
+
+    VkFramebufferCreateInfo FramebufferCreateInfo{};
+    FramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    FramebufferCreateInfo.renderPass = RenderPass;
+    FramebufferCreateInfo.attachmentCount = static_cast<uint32_t>(Attachments.size());
+    FramebufferCreateInfo.pAttachments = Attachments.data();
+    FramebufferCreateInfo.width = Swapchain->GetWidth();
+    FramebufferCreateInfo.height = Swapchain->GetHeight();
+    FramebufferCreateInfo.layers = 1;
+
+    VkFramebuffer Framebuffer = nullptr;
+
+    if (vkCreateFramebuffer(LogicalDevice, &FramebufferCreateInfo, nullptr, &Framebuffer) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create framebuffer: " + debug_name);
+    }
+
+    V::SetName(LogicalDevice, Framebuffer, debug_name);
+
+    return Framebuffer;
+}
+
 void FVulkanContext::CreatePassthroughRenderPass()
 {
     PassthroughRenderPass = std::make_shared<FRenderPass>();
@@ -794,25 +824,9 @@ bool FVulkanContext::HasStensilComponent(VkFormat Format)
 void FVulkanContext::CreateRenderFramebuffers()
 {
     SwapChainFramebuffers.resize(Swapchain->Size());
+
     for (std::size_t i = 0; i < Swapchain->Size(); ++i) {
-        std::vector<VkImageView> Attachments = {ColorImage->View, NormalsImage->View, RenderableIndexImage->View,
-                                                DepthImage->View, ResolvedColorImage->View};
-
-        VkFramebufferCreateInfo FramebufferCreateInfo{};
-        FramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        FramebufferCreateInfo.renderPass = RenderPass->RenderPass;
-        FramebufferCreateInfo.attachmentCount = static_cast<uint32_t>(Attachments.size());
-        FramebufferCreateInfo.pAttachments = Attachments.data();
-        FramebufferCreateInfo.width = Swapchain->GetWidth();
-        FramebufferCreateInfo.height = Swapchain->GetHeight();
-        FramebufferCreateInfo.layers = 1;
-
-        if (vkCreateFramebuffer(LogicalDevice, &FramebufferCreateInfo, nullptr, &SwapChainFramebuffers[i]) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to create framebuffer!");
-        }
-
-        V::SetName(LogicalDevice, SwapChainFramebuffers[i], "V_Render_fb_" + std::to_string(i));
+        SwapChainFramebuffers[i] = CreateFramebuffer({ColorImage, NormalsImage, RenderableIndexImage, DepthImage, ResolvedColorImage}, RenderPass->RenderPass, "V_Render_fb_" + std::to_string(i));
     }
 }
 
@@ -821,23 +835,7 @@ void FVulkanContext::CreatePassthroughFramebuffers()
     PassthroughFramebuffers.resize(Swapchain->Size());
     for (std::size_t i = 0; i < PassthroughFramebuffers.size(); ++i)
     {
-        std::vector<VkImageView> Attachments = {Swapchain->Images[i]->View};
-
-        VkFramebufferCreateInfo FramebufferCreateInfo{};
-        FramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        FramebufferCreateInfo.renderPass = PassthroughRenderPass->RenderPass;
-        FramebufferCreateInfo.attachmentCount = static_cast<uint32_t>(Attachments.size());
-        FramebufferCreateInfo.pAttachments = Attachments.data();
-        FramebufferCreateInfo.width = Swapchain->GetWidth();
-        FramebufferCreateInfo.height = Swapchain->GetHeight();
-        FramebufferCreateInfo.layers = 1;
-
-        if (vkCreateFramebuffer(LogicalDevice, &FramebufferCreateInfo, nullptr, &PassthroughFramebuffers[i]) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to create passthrough framebuffer!");
-        }
-
-        V::SetName(LogicalDevice, PassthroughFramebuffers[i], "V_Passthrough_fb_" + std::to_string(i));
+        PassthroughFramebuffers[i] = CreateFramebuffer({Swapchain->Images[i]}, PassthroughRenderPass->RenderPass, "V_Passthrough_fb_" + std::to_string(i));
     }
 }
 
@@ -847,25 +845,7 @@ void FVulkanContext::CreateImguiFramebuffers()
 
     for(uint32_t i = 0; i < Swapchain->Size(); ++i)
     {
-        VkImageView Attachment[1];
-        Attachment[0] = Swapchain->Images[i]->View;
-
-        VkFramebufferCreateInfo FramebufferCreateInfo{};
-        FramebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        FramebufferCreateInfo.renderPass = ImGuiRenderPass->RenderPass;
-        FramebufferCreateInfo.attachmentCount = 1;
-        FramebufferCreateInfo.pAttachments = Attachment;
-        FramebufferCreateInfo.width = Swapchain->GetWidth();
-        FramebufferCreateInfo.height = Swapchain->GetHeight();
-        FramebufferCreateInfo.layers = 1;
-
-        if (vkCreateFramebuffer(LogicalDevice, &FramebufferCreateInfo, nullptr, &ImGuiFramebuffers[i]) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to create framebuffers for ImGui!");
-        }
-
-        V::SetName(LogicalDevice, ImGuiFramebuffers[i], "V_Imgui_fb_" + std::to_string(i));
-
+        ImGuiFramebuffers[i] = CreateFramebuffer({Swapchain->Images[i]}, ImGuiRenderPass->RenderPass, "V_Imgui_fb_" + std::to_string(i));
     }
 }
 
