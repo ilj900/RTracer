@@ -14,7 +14,7 @@ public:
     FRenderPass() = default;
     ~FRenderPass();
 
-    void AddImageAsAttachment(std::shared_ptr<FImage>& Image, AttachmentType Type, VkImageLayout InitialLayout, VkImageLayout FinalLayout, VkAttachmentLoadOp AttachmentLoadOp);
+    void AddImageAsAttachment(ImagePtr& Image, AttachmentType Type, VkImageLayout InitialLayout, VkImageLayout FinalLayout, VkAttachmentLoadOp AttachmentLoadOp);
     void Construct(VkDevice LogicalDevice);
 
 public:

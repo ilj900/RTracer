@@ -3,6 +3,7 @@
 #include "buffer.h"
 
 #include <functional>
+#include <memory>
 #include <string>
 
 struct FImage
@@ -65,3 +66,5 @@ struct std::hash<FImage>
         return std::hash<VkImage>()(Image.Image);
     }
 };
+
+typedef std::shared_ptr<FImage> ImagePtr;

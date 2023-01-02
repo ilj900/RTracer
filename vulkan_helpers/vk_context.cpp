@@ -582,17 +582,17 @@ void FVulkanContext::FetchImageData(const FImage& Image, std::vector<T>& Data)
 
 template void FVulkanContext::FetchImageData<uint32_t>(const FImage& Image, std::vector<uint32_t>& Data);
 
-std::shared_ptr<FImage> FVulkanContext::CreateImage2D(uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format,
+ImagePtr FVulkanContext::CreateImage2D(uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format,
                            VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties,
                            VkImageAspectFlags AspectFlags, VkDevice Device, const std::string& DebugImageName)
 {
 
-    std::shared_ptr<FImage> Image = std::make_shared<FImage>(Width, Height, bMipMapsRequired, NumSamples, Format, Tiling, Usage,
+    ImagePtr Image = std::make_shared<FImage>(Width, Height, bMipMapsRequired, NumSamples, Format, Tiling, Usage,
                                                  Properties, AspectFlags, Device, DebugImageName);
     return Image;
 }
 
-std::shared_ptr<FImage> FVulkanContext::LoadImageFromFile(const std::string& Path, const std::string& DebugImageName)
+ImagePtr FVulkanContext::LoadImageFromFile(const std::string& Path, const std::string& DebugImageName)
 {
     /// Load data from image file
     int TexWidth, TexHeight, TexChannels;
@@ -607,7 +607,7 @@ std::shared_ptr<FImage> FVulkanContext::LoadImageFromFile(const std::string& Pat
     /// Load data into staging buffer
 
 
-    std::shared_ptr<FImage> Image = std::make_shared<FImage>(TexWidth, TexHeight, true, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+    ImagePtr Image = std::make_shared<FImage>(TexWidth, TexHeight, true, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                  VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                  VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, DebugImageName);
 
@@ -622,9 +622,9 @@ std::shared_ptr<FImage> FVulkanContext::LoadImageFromFile(const std::string& Pat
     return Image;
 }
 
-std::shared_ptr<FImage> FVulkanContext::Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, const std::string& DebugImageName)
+ImagePtr FVulkanContext::Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, const std::string& DebugImageName)
 {
-    std::shared_ptr<FImage> Image = std::make_shared<FImage>(ImageToWrap, Format, AspectFlags, LogicalDevice, DebugImageName);
+    ImagePtr Image = std::make_shared<FImage>(ImageToWrap, Format, AspectFlags, LogicalDevice, DebugImageName);
 
     return Image;
 }

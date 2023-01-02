@@ -165,7 +165,7 @@ VkExtent2D FSwapchain::GetExtent2D()
     return Extent;
 }
 
-std::vector<std::shared_ptr<FImage>> FSwapchain::GetImages()
+std::vector<ImagePtr> FSwapchain::GetImages()
 {
     return Images;
 }

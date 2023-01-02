@@ -20,7 +20,7 @@ struct FSwapchain
     uint32_t GetWidth();
     uint32_t GetHeight();
     VkExtent2D GetExtent2D();
-    std::vector<std::shared_ptr<FImage>> GetImages();
+    std::vector<ImagePtr> GetImages();
     VkSwapchainKHR GetSwapchain();
 
 
@@ -28,7 +28,7 @@ struct FSwapchain
     VkSurfaceFormatKHR SurfaceFormat;
     VkPresentModeKHR PresentMode;
     VkExtent2D Extent;
-    std::vector<std::shared_ptr<FImage>> Images;
+    std::vector<ImagePtr> Images;
 
     VkDevice LogicalDevice = VK_NULL_HANDLE;
 };

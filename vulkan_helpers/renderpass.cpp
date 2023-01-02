@@ -3,7 +3,7 @@
 
 #include <stdexcept>
 
-void FRenderPass::AddImageAsAttachment(std::shared_ptr<FImage>& Image, AttachmentType Type, VkImageLayout InitialLayout, VkImageLayout FinalLayout, VkAttachmentLoadOp AttachmentLoadOp)
+void FRenderPass::AddImageAsAttachment(ImagePtr& Image, AttachmentType Type, VkImageLayout InitialLayout, VkImageLayout FinalLayout, VkAttachmentLoadOp AttachmentLoadOp)
 {
     std::vector<VkAttachmentDescription>* AttachmentDescriptions;
     std::map<size_t , uint32_t>* ImageToIndexMap;

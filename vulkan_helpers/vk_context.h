@@ -103,11 +103,11 @@ public:
     void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset);
     void DestroyBuffer(FBuffer& Buffer);
 
-    std::shared_ptr<FImage> CreateImage2D(uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format,
+    ImagePtr CreateImage2D(uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format,
                                VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties,
                                VkImageAspectFlags AspectFlags, VkDevice Device, const std::string& DebugImageName);
-    std::shared_ptr<FImage> LoadImageFromFile(const std::string& Path, const std::string& DebugImageName);
-    std::shared_ptr<FImage> Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, const std::string& DebugImageName);
+    ImagePtr LoadImageFromFile(const std::string& Path, const std::string& DebugImageName);
+    ImagePtr Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, const std::string& DebugImageName);
     void SaveImage(const FImage& Image);
     template <typename T>
     void FetchImageData(const FImage& Image, std::vector<T>& Data);
@@ -160,16 +160,16 @@ public:
     VkDebugUtilsMessengerEXT DebugMessenger;
 #endif
     /// Images for drawing
-    std::shared_ptr<FImage> ColorImage;
-    std::shared_ptr<FImage> ResolvedColorImage;
-    std::shared_ptr<FImage> NormalsImage;
-    std::shared_ptr<FImage> RenderableIndexImage;
-    std::shared_ptr<FImage> DepthImage;
-    std::shared_ptr<FImage> UtilityImageR32;
-    std::shared_ptr<FImage> UtilityImageR8G8B8A8_SRGB;
+    ImagePtr ColorImage;
+    ImagePtr ResolvedColorImage;
+    ImagePtr NormalsImage;
+    ImagePtr RenderableIndexImage;
+    ImagePtr DepthImage;
+    ImagePtr UtilityImageR32;
+    ImagePtr UtilityImageR8G8B8A8_SRGB;
 
     /// Texture used to pain the model
-    std::shared_ptr<FImage> TextureImage;
+    ImagePtr TextureImage;
 
     VkSampler TextureSampler;
 
