@@ -12,7 +12,7 @@ layout(location = 3) in vec2 FragTexCoord;
 flat layout(location = 4) in uint RenderableIndex;
 flat layout(location = 5) in uint RenderablePropertyMask;
 
-layout(set = 0, binding = 1) uniform sampler2D TexSampler;
+layout(set = 0, binding = 0) uniform sampler2D TexSampler;
 
 vec3 LightPosition = vec3(20.f, 20.f, 0.f);
 

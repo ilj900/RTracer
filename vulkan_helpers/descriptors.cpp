@@ -4,11 +4,6 @@
 
 #include <stdexcept>
 
-bool operator==(const FDescriptor& A, const FDescriptor& B)
-{
-    return (A.BindingIndex == B.BindingIndex);
-}
-
 FDescriptorSetLayout::FDescriptorSetLayout()
 {
 }
@@ -18,54 +13,33 @@ FDescriptorSetManager::FDescriptorSetManager(VkDevice LogicalDevice):
 {
 };
 
-void FDescriptorSetManager::AddDescriptorLayout(const std::string& DescriptorSetLayoutName, uint32_t DescriptorSetLayoutIndex, const std::string& DescriptorLayoutName, const FDescriptor& Descriptor)
+void FDescriptorSetManager::AddDescriptorLayout(uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, const FDescriptor& Descriptor)
 {
-    auto Iterator = DescriptorSetLayouts.find(DescriptorSetLayoutName);
-
-    if (Iterator == DescriptorSetLayouts.end())
+    auto SetIterator = DescriptorSetLayouts.find(DescriptorSetLayoutIndex);
+    if (SetIterator != DescriptorSetLayouts.end())
     {
-        DescriptorSetLayouts[DescriptorSetLayoutName] = {FDescriptorSetLayout(), DescriptorSetLayoutIndex};
-        DescriptorSetLayouts[DescriptorSetLayoutName].first.Descriptors[DescriptorLayoutName] = Descriptor;
-    }
-    else
-    {
-        auto SetIndex = Iterator->second.second;
-
-        if (SetIndex != DescriptorSetLayoutIndex)
+        auto DescriptorIterator = SetIterator->second.find(DescriptorLayoutIndex);
+        if (DescriptorIterator != SetIterator->second.end())
         {
-            throw std::runtime_error("For given descriptor set layout name: \"" + DescriptorSetLayoutName + "\" provided index: \"" + std::to_string(DescriptorSetLayoutIndex) +
-                                     "\" doesn't match the one already assigned to it: \"" + std::to_string(SetIndex) + "\".\n");
-        }
-
-        auto& Descriptors = Iterator->second.first.Descriptors;
-
-        auto InnerIterator = Descriptors.find(DescriptorLayoutName);
-
-        if (InnerIterator == Descriptors.end())
-        {
-            Descriptors[DescriptorLayoutName] = Descriptor;
-        }
-        else
-        {
-            throw std::runtime_error("You are trying to rewrite already existing descriptor layout: \"" + InnerIterator->first + "\" with a new one: \""
-            + DescriptorLayoutName + "\"\n");
+            throw std::runtime_error("You are rewriting existing layout in set: " + std::to_string(DescriptorSetLayoutIndex) + " at index: " + std::to_string(DescriptorLayoutIndex));
         }
     }
+    DescriptorSetLayouts[DescriptorSetLayoutIndex][DescriptorLayoutIndex] = Descriptor;
 }
 
 void FDescriptorSetManager::CreateDescriptorSetLayouts()
 {
     for (auto Entry : DescriptorSetLayouts)
     {
-        auto Name = Entry.first;
-        auto Layouts = Entry.second.first;
+        auto SetIndex = Entry.first;
+        auto Layouts = Entry.second;
 
         std::vector<VkDescriptorSetLayoutBinding> DescriptorSetLayoutBindings;
 
-        for (auto Layout : Layouts.Descriptors)
+        for (auto Layout : Layouts)
         {
             VkDescriptorSetLayoutBinding DescriptorSetLayoutBinding;
-            DescriptorSetLayoutBinding.binding = Layout.second.BindingIndex;
+            DescriptorSetLayoutBinding.binding = Layout.first;
             DescriptorSetLayoutBinding.descriptorType = Layout.second.Type;
             DescriptorSetLayoutBinding.descriptorCount = 1;
             DescriptorSetLayoutBinding.stageFlags = Layout.second.StageFlags;
@@ -86,24 +60,24 @@ void FDescriptorSetManager::CreateDescriptorSetLayouts()
             throw std::runtime_error("Failed to create descriptor set layout!");
         }
 
-        VkDescriptorSetLayouts[Name] = DescriptorSetLayout;
+        VkDescriptorSetLayouts[SetIndex] = DescriptorSetLayout;
     }
 }
 
-VkDescriptorSetLayout FDescriptorSetManager::GetVkDescriptorSetLayout(const std::string& DescriptorSetLayoutName)
+VkDescriptorSetLayout FDescriptorSetManager::GetVkDescriptorSetLayout(uint32_t DescriptorSetLayoutIndex)
 {
-    return VkDescriptorSetLayouts[DescriptorSetLayoutName];
+    return VkDescriptorSetLayouts[DescriptorSetLayoutIndex];
 }
 
-void FDescriptorSetManager::DestroyDescriptorSetLayout(const std::string& DescriptorSetLayoutName)
+void FDescriptorSetManager::DestroyDescriptorSetLayout(uint32_t DescriptorSetLayoutIndex)
 {
-    vkDestroyDescriptorSetLayout(LogicalDevice, VkDescriptorSetLayouts[DescriptorSetLayoutName], nullptr);
+    vkDestroyDescriptorSetLayout(LogicalDevice, VkDescriptorSetLayouts[DescriptorSetLayoutIndex], nullptr);
 }
 
 
-void FDescriptorSetManager::AddDescriptorSet(const std::string& DescriptorSetLayoutName, uint32_t Count)
+void FDescriptorSetManager::AddDescriptorSet(uint32_t DescriptorSetLayoutIndex, uint32_t Count)
 {
-    Sets[DescriptorSetLayoutName] += Count;
+    Sets[DescriptorSetLayoutIndex] += Count;
 }
 
 void FDescriptorSetManager::ReserveDescriptorPool()
@@ -113,8 +87,8 @@ void FDescriptorSetManager::ReserveDescriptorPool()
     for (auto Set : Sets)
     {
         auto Count = Set.second;
-        auto SetName = Set.first;
-        auto DescriptorSetLayout = DescriptorSetLayouts[SetName].first.Descriptors;
+        auto SetIndex = Set.first;
+        auto DescriptorSetLayout = DescriptorSetLayouts[SetIndex];
         for (auto Descriptor : DescriptorSetLayout)
         {
             TypeCount[Descriptor.second.Type] += Count;
@@ -144,29 +118,6 @@ void FDescriptorSetManager::ReserveDescriptorPool()
     V::SetName(LogicalDevice, DescriptorPool, "V_MainDescriptorPool");
 }
 
-//VkDescriptorSet FDescriptorSetManager::CreateDescriptorSets(const std::string& DescriptorSetLayoutName)
-//{
-//    if (VkDescriptorSetLayouts.find(DescriptorSetLayoutName) == VkDescriptorSetLayouts.end())
-//    {
-//        throw std::runtime_error("Descriptor set layout: \"" + DescriptorSetLayoutName + "\" not registered.\n");
-//    }
-//
-//    VkDescriptorSetAllocateInfo DescriptorSetAllocateInfo{};
-//    DescriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-//    DescriptorSetAllocateInfo.descriptorPool = DescriptorPool;
-//    DescriptorSetAllocateInfo.descriptorSetCount = 1;
-//    DescriptorSetAllocateInfo.pSetLayouts = &VkDescriptorSetLayouts[DescriptorSetLayoutName];
-//
-//    VkDescriptorSet DescriptorSet;
-//
-//    if (vkAllocateDescriptorSets(LogicalDevice, &DescriptorSetAllocateInfo, &DescriptorSet) != VK_SUCCESS)
-//    {
-//        throw std::runtime_error("Failed to allocate descriptor sets!");
-//    }
-//
-//    return DescriptorSet;
-//}
-
 void FDescriptorSetManager::FreeDescriptorPool()
 {
     vkDestroyDescriptorPool(LogicalDevice, DescriptorPool, nullptr);
@@ -187,9 +138,9 @@ void FDescriptorSetManager::CreateAllDescriptorSets()
 {
     for (auto Set : Sets)
     {
-        auto Name = Set.first;
+        auto SetIndex = Set.first;
         auto Count = Set.second;
-        auto DescriptorSetLayout = VkDescriptorSetLayouts[Name];
+        auto DescriptorSetLayout = VkDescriptorSetLayouts[SetIndex];
 
         std::vector<VkDescriptorSetLayout> DescriptorSetLayoutsData(Count, DescriptorSetLayout);
 
@@ -199,24 +150,23 @@ void FDescriptorSetManager::CreateAllDescriptorSets()
         DescriptorSetAllocateInfo.descriptorSetCount = static_cast<uint32_t>(DescriptorSetLayoutsData.size());
         DescriptorSetAllocateInfo.pSetLayouts = DescriptorSetLayoutsData.data();
 
-        DescriptorSets[Name] = std::vector<VkDescriptorSet>(Count);
+        DescriptorSets[SetIndex] = std::vector<VkDescriptorSet>(Count);
 
-        if (vkAllocateDescriptorSets(LogicalDevice, &DescriptorSetAllocateInfo, DescriptorSets[Name].data()) != VK_SUCCESS)
+        if (vkAllocateDescriptorSets(LogicalDevice, &DescriptorSetAllocateInfo, DescriptorSets[SetIndex].data()) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to allocate descriptor sets!");
         }
     }
 }
 
-void FDescriptorSetManager::UpdateDescriptorSetInfo(const std::string& DescriptorSetName, const std::string& DescriptorName, uint32_t Index, VkDescriptorBufferInfo& BufferInfo)
+void FDescriptorSetManager::UpdateDescriptorSetInfo(uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorBufferInfo& BufferInfo)
 {
-    auto& Layout = DescriptorSetLayouts[DescriptorSetName];
-    auto& DescriptorBinding = Layout.first.Descriptors[DescriptorName];
+    auto& DescriptorBinding = DescriptorSetLayouts[DescriptorSetLayoutIndex][DescriptorLayoutIndex];
 
     VkWriteDescriptorSet DescriptorWrites{};
     DescriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    DescriptorWrites.dstSet = GetSet(DescriptorSetName, Index);
-    DescriptorWrites.dstBinding = DescriptorBinding.BindingIndex;
+    DescriptorWrites.dstSet = GetSet(DescriptorSetLayoutIndex, Index);
+    DescriptorWrites.dstBinding = Index;
     DescriptorWrites.dstArrayElement = 0;
     DescriptorWrites.descriptorType = DescriptorBinding.Type;
     DescriptorWrites.descriptorCount = 1;
@@ -225,15 +175,14 @@ void FDescriptorSetManager::UpdateDescriptorSetInfo(const std::string& Descripto
     vkUpdateDescriptorSets(LogicalDevice, 1, &DescriptorWrites, 0, nullptr);
 }
 
-void FDescriptorSetManager::UpdateDescriptorSetInfo(const std::string& DescriptorSetName, const std::string& DescriptorName, uint32_t Index, VkDescriptorImageInfo& ImageInfo)
+void FDescriptorSetManager::UpdateDescriptorSetInfo(uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorImageInfo& ImageInfo)
 {
-    auto& Layout = DescriptorSetLayouts[DescriptorSetName];
-    auto& DescriptorBinding = Layout.first.Descriptors[DescriptorName];
+    auto& DescriptorBinding = DescriptorSetLayouts[DescriptorSetLayoutIndex][DescriptorLayoutIndex];
 
     VkWriteDescriptorSet DescriptorWrites{};
     DescriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    DescriptorWrites.dstSet = GetSet(DescriptorSetName, Index);
-    DescriptorWrites.dstBinding = DescriptorBinding.BindingIndex;
+    DescriptorWrites.dstSet = GetSet(DescriptorSetLayoutIndex, Index);
+    DescriptorWrites.dstBinding = Index;
     DescriptorWrites.dstArrayElement = 0;
     DescriptorWrites.descriptorType = DescriptorBinding.Type;
     DescriptorWrites.descriptorCount = 1;
@@ -242,16 +191,16 @@ void FDescriptorSetManager::UpdateDescriptorSetInfo(const std::string& Descripto
     vkUpdateDescriptorSets(LogicalDevice, 1, &DescriptorWrites, 0, nullptr);
 }
 
-VkDescriptorSet& FDescriptorSetManager::GetSet(const std::string& Name, uint32_t Index)
+VkDescriptorSet& FDescriptorSetManager::GetSet(uint32_t SetIndex, uint32_t Index)
 {
-    if (DescriptorSets.find(Name) == DescriptorSets.end())
+    if (DescriptorSets.find(SetIndex) == DescriptorSets.end())
     {
-        throw std::runtime_error("Descriptor set: \"" + Name + "\" not registered.\n");
+        throw std::runtime_error("Descriptor set with index: \"" + std::to_string(SetIndex) + "\" not registered.\n");
     }
-    if (DescriptorSets[Name].size() < Index)
+    if (DescriptorSets[SetIndex].size() < Index)
     {
-        throw std::runtime_error("Descriptor set: \"" + Name + "\" has only " + std::to_string(DescriptorSets[Name].size())
+        throw std::runtime_error("Descriptor set: \"" + std::to_string(SetIndex) + "\" has only " + std::to_string(DescriptorSets[SetIndex].size())
                                  + " sets allocated. You requested for " + std::to_string(Index) + "\n");
     }
-    return DescriptorSets[Name][Index];
+    return DescriptorSets[SetIndex][Index];
 }

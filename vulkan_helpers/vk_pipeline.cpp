@@ -194,8 +194,6 @@ VkPipeline FPipeline::CreateGraphicsPipeline(VkDevice Device, VkRenderPass Rende
     DepthStencil.front = {};
     DepthStencil.back = {};
 
-    RenderPass = RenderPass;
-
     VkGraphicsPipelineCreateInfo PipelineInfo{};
     PipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     PipelineInfo.stageCount = 2;
