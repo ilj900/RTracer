@@ -27,11 +27,17 @@
 
 static FVulkanContext Context{};
 
+namespace PIPELINES
+{
+    const std::string RENDER_PIPELINE = "Render pipeline";
+    const std::string PASSTHROUGH_PIPELINE = "Passthrough pipeline";
+}
+
 namespace LAYOUT_SETS
 {
-    const uint32_t PER_FRAME_LAYOUT_INDEX = 0;
-    const uint32_t PER_RENDERABLE_LAYOUT_INDEX = 1;
-    const uint32_t PASSTHROUGH_LAYOUT_INDEX = 2;
+    const uint32_t RENDER_PER_FRAME_LAYOUT_INDEX = 0;
+    const uint32_t RENDER_PER_RENDERABLE_LAYOUT_INDEX = 1;
+    const uint32_t PASSTHROUGH_LAYOUT_INDEX = 0;
 }
 
 namespace LAYOUTS
@@ -53,7 +59,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
         const VkDebugUtilsMessengerCallbackDataEXT* pCallBackData,
         void* pUserData)
 {
-    std::cerr << "Validation layer: " << pCallBackData->pMessage << std::endl;
+    std::cerr << "Validation layer: " << pCallBackData->pMessage << '\n' << std::endl;
 
     return VK_FALSE;
 }
@@ -756,20 +762,21 @@ VkFormat FVulkanContext::FindSupportedFormat(const std::vector<VkFormat>& Candid
 
 void FVulkanContext::CreateDescriptorSetLayouts()
 {
-    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_INDEX, LAYOUTS::CAMERA_LAYOUT_INDEX,
+    DescriptorSetManager->AddDescriptorLayout(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_FRAME_LAYOUT_INDEX, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_INDEX,
+                                              {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
+    DescriptorSetManager->AddDescriptorLayout(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_FRAME_LAYOUT_INDEX, LAYOUTS::CAMERA_LAYOUT_INDEX,
                                               {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_INDEX, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_INDEX,
+
+    DescriptorSetManager->AddDescriptorLayout(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_RENDERABLE_LAYOUT_INDEX, LAYOUTS::TRANSFORM_LAYOUT_INDEX,
+                                              {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
+    DescriptorSetManager->AddDescriptorLayout(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_RENDERABLE_LAYOUT_INDEX, LAYOUTS::RENDERABLE_LAYOUT_INDEX,
+                                              {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
+
+    DescriptorSetManager->AddDescriptorLayout(PIPELINES::PASSTHROUGH_PIPELINE, LAYOUT_SETS::PASSTHROUGH_LAYOUT_INDEX, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_INDEX,
                                               {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
 
-    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_INDEX, LAYOUTS::TRANSFORM_LAYOUT_INDEX,
-                                              {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_INDEX, LAYOUTS::RENDERABLE_LAYOUT_INDEX,
-                                              {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-
-    DescriptorSetManager->AddDescriptorLayout(LAYOUT_SETS::PASSTHROUGH_LAYOUT_INDEX, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_INDEX,
-                                              {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
-
-    DescriptorSetManager->CreateDescriptorSetLayouts();
+    DescriptorSetManager->CreateDescriptorSetLayout(PIPELINES::RENDER_PIPELINE);
+    DescriptorSetManager->CreateDescriptorSetLayout(PIPELINES::PASSTHROUGH_PIPELINE);
 }
 
 void FVulkanContext::CreatePassthroughPipeline()
@@ -781,7 +788,7 @@ void FVulkanContext::CreatePassthroughPipeline()
     PassthroughPipeline.SetWidth(Swapchain->GetWidth());
     PassthroughPipeline.SetHeight(Swapchain->GetHeight());
     PassthroughPipeline.SetBlendAttachmentsCount(1);
-    PassthroughPipeline.AddDescriptorSetLayout(DescriptorSetManager->GetVkDescriptorSetLayout(LAYOUT_SETS::PASSTHROUGH_LAYOUT_INDEX));
+    PassthroughPipeline.AddDescriptorSetLayout(DescriptorSetManager->GetVkDescriptorSetLayout(PIPELINES::PASSTHROUGH_PIPELINE, LAYOUT_SETS::PASSTHROUGH_LAYOUT_INDEX));
     PassthroughPipeline.CreateGraphicsPipeline(LogicalDevice, PassthroughRenderPass->RenderPass);
 }
 
@@ -802,8 +809,8 @@ void FVulkanContext::CreateGraphicsPipeline()
     GraphicsPipeline.SetWidth(Swapchain->GetWidth());
     GraphicsPipeline.SetHeight(Swapchain->GetHeight());
     GraphicsPipeline.SetBlendAttachmentsCount(3);
-    GraphicsPipeline.AddDescriptorSetLayout(DescriptorSetManager->GetVkDescriptorSetLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_INDEX));
-    GraphicsPipeline.AddDescriptorSetLayout(DescriptorSetManager->GetVkDescriptorSetLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_INDEX));
+    GraphicsPipeline.AddDescriptorSetLayout(DescriptorSetManager->GetVkDescriptorSetLayout(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_FRAME_LAYOUT_INDEX));
+    GraphicsPipeline.AddDescriptorSetLayout(DescriptorSetManager->GetVkDescriptorSetLayout(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_RENDERABLE_LAYOUT_INDEX));
     GraphicsPipeline.CreateGraphicsPipeline(LogicalDevice, RenderPass->RenderPass);
 }
 
@@ -914,11 +921,12 @@ void FVulkanContext::CreateDescriptorPool()
     auto NumberOfSwapChainImages = Swapchain->Size();
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-    DescriptorSetManager->AddDescriptorSet(LAYOUT_SETS::PER_FRAME_LAYOUT_INDEX, NumberOfSwapChainImages);
-    DescriptorSetManager->AddDescriptorSet(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_INDEX, NumberOfSwapChainImages * ModelsCount);
-    DescriptorSetManager->AddDescriptorSet(LAYOUT_SETS::PASSTHROUGH_LAYOUT_INDEX, NumberOfSwapChainImages);
+    DescriptorSetManager->ReserveDescriptorSet(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_FRAME_LAYOUT_INDEX, NumberOfSwapChainImages);
+    DescriptorSetManager->ReserveDescriptorSet(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_RENDERABLE_LAYOUT_INDEX, NumberOfSwapChainImages * ModelsCount);
+    DescriptorSetManager->ReserveDescriptorSet(PIPELINES::PASSTHROUGH_PIPELINE, LAYOUT_SETS::PASSTHROUGH_LAYOUT_INDEX, NumberOfSwapChainImages);
 
-    DescriptorSetManager->ReserveDescriptorPool();
+    DescriptorSetManager->ReserveDescriptorPool(PIPELINES::RENDER_PIPELINE);
+    DescriptorSetManager->ReserveDescriptorPool(PIPELINES::PASSTHROUGH_PIPELINE);
 }
 
 void FVulkanContext::CreateImguiDescriptorPool()
@@ -956,7 +964,8 @@ void FVulkanContext::CreateDescriptorSet()
     auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
 
     /// Create descriptor sets
-    DescriptorSetManager->CreateAllDescriptorSets();
+    DescriptorSetManager->AllocateAllDescriptorSets(PIPELINES::RENDER_PIPELINE);
+    DescriptorSetManager->AllocateAllDescriptorSets(PIPELINES::PASSTHROUGH_PIPELINE);
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
@@ -967,13 +976,13 @@ void FVulkanContext::CreateDescriptorSet()
             TransformBufferInfo.buffer = DeviceTransformBuffers[i].Buffer;
             TransformBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceTransformComponent) * j;
             TransformBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceTransformComponent);
-            DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_INDEX, LAYOUTS::TRANSFORM_LAYOUT_INDEX, j * Swapchain->Size() + i, TransformBufferInfo);
+            DescriptorSetManager->UpdateDescriptorSetInfo(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_RENDERABLE_LAYOUT_INDEX, LAYOUTS::TRANSFORM_LAYOUT_INDEX, j * Swapchain->Size() + i, TransformBufferInfo);
 
             VkDescriptorBufferInfo RenderableBufferInfo{};
             RenderableBufferInfo.buffer = DeviceRenderableBuffers[i].Buffer;
             RenderableBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent) * j;
             RenderableBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent);
-            DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_INDEX, LAYOUTS::RENDERABLE_LAYOUT_INDEX, j * Swapchain->Size() + i, RenderableBufferInfo);
+            DescriptorSetManager->UpdateDescriptorSetInfo(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_RENDERABLE_LAYOUT_INDEX, LAYOUTS::RENDERABLE_LAYOUT_INDEX, j * Swapchain->Size() + i, RenderableBufferInfo);
 
             ++j;
         }
@@ -986,13 +995,13 @@ void FVulkanContext::CreateDescriptorSet()
         CameraBufferInfo.buffer = DeviceCameraBuffers[i].Buffer;
         CameraBufferInfo.offset = 0;
         CameraBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
-        DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_FRAME_LAYOUT_INDEX, LAYOUTS::CAMERA_LAYOUT_INDEX, i, CameraBufferInfo);
+        DescriptorSetManager->UpdateDescriptorSetInfo(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_FRAME_LAYOUT_INDEX, LAYOUTS::CAMERA_LAYOUT_INDEX, i, CameraBufferInfo);
 
         VkDescriptorImageInfo ImageBufferInfo{};
         ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         ImageBufferInfo.imageView = TextureImage->View;
         ImageBufferInfo.sampler = TextureSampler;
-        DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PER_FRAME_LAYOUT_INDEX, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_INDEX, i, ImageBufferInfo);
+        DescriptorSetManager->UpdateDescriptorSetInfo(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_FRAME_LAYOUT_INDEX, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_INDEX, i, ImageBufferInfo);
     }
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)
@@ -1001,7 +1010,7 @@ void FVulkanContext::CreateDescriptorSet()
         ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         ImageBufferInfo.imageView = ResolvedColorImage->View;
         ImageBufferInfo.sampler = TextureSampler;
-        DescriptorSetManager->UpdateDescriptorSetInfo(LAYOUT_SETS::PASSTHROUGH_LAYOUT_INDEX, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_INDEX, i, ImageBufferInfo);
+        DescriptorSetManager->UpdateDescriptorSetInfo(PIPELINES::PASSTHROUGH_PIPELINE, LAYOUT_SETS::PASSTHROUGH_LAYOUT_INDEX, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_INDEX, i, ImageBufferInfo);
     }
 }
 
@@ -1032,7 +1041,8 @@ void FVulkanContext::CreateCommandBuffers()
             vkCmdBeginRenderPass(CommandBuffer, &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline.GetPipeline());
 
-            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline.GetPipelineLayout(), 0, 1, &DescriptorSetManager->GetSet(LAYOUT_SETS::PER_FRAME_LAYOUT_INDEX, i), 0,
+            auto PerFrameDescriptorSet = DescriptorSetManager->GetSet(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_FRAME_LAYOUT_INDEX, i);
+            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline.GetPipelineLayout(), 0, 1, &PerFrameDescriptorSet, 0,
                                     nullptr);
             auto& Coordinator = ECS::GetCoordinator();
             auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
@@ -1040,9 +1050,9 @@ void FVulkanContext::CreateCommandBuffers()
             uint32_t j = 0;
             for (auto Entity : *MeshSystem)
             {
+                auto PerRenderableDescriptorSet = DescriptorSetManager->GetSet(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_RENDERABLE_LAYOUT_INDEX, j * Swapchain->Size() + i);
                 vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline.GetPipelineLayout(), 1, 1,
-                                        &DescriptorSetManager->GetSet(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_INDEX, j * Swapchain->Size() + i), 0,
-                                        nullptr);
+                                        &PerRenderableDescriptorSet, 0, nullptr);
 
                 MeshSystem->Bind(Entity, CommandBuffer);
                 MeshSystem->Draw(Entity, CommandBuffer);
@@ -1091,9 +1101,9 @@ void FVulkanContext::CreateCommandBuffers()
 
             vkCmdBeginRenderPass(CommandBuffer, &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PassthroughPipeline.GetPipeline());
+            auto PassthroughDescriptorSet = DescriptorSetManager->GetSet(PIPELINES::PASSTHROUGH_PIPELINE, LAYOUT_SETS::PASSTHROUGH_LAYOUT_INDEX, i);
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PassthroughPipeline.GetPipelineLayout(),
-                                    0, 1, &DescriptorSetManager->GetSet(LAYOUT_SETS::PASSTHROUGH_LAYOUT_INDEX, i),
-                                    0, nullptr);
+                                    0, 1, &PassthroughDescriptorSet, 0, nullptr);
 
             vkCmdDraw(CommandBuffer, 3, 1, 0, 0);
             vkCmdEndRenderPass(CommandBuffer);
@@ -1428,7 +1438,8 @@ void FVulkanContext::CleanUpSwapChain()
 
     Swapchain = nullptr;
 
-    DescriptorSetManager->Reset();
+    DescriptorSetManager->Reset(PIPELINES::RENDER_PIPELINE);
+    DescriptorSetManager->Reset(PIPELINES::PASSTHROUGH_PIPELINE);
 }
 
 void FVulkanContext::UpdateUniformBuffer(uint32_t CurrentImage)
@@ -1477,9 +1488,9 @@ void FVulkanContext::CleanUp()
     vkDestroySampler(LogicalDevice, TextureSampler, nullptr);
     TextureImage = nullptr;
 
-    DescriptorSetManager->DestroyDescriptorSetLayout(LAYOUT_SETS::PER_FRAME_LAYOUT_INDEX);
-    DescriptorSetManager->DestroyDescriptorSetLayout(LAYOUT_SETS::PER_RENDERABLE_LAYOUT_INDEX);
-    DescriptorSetManager->DestroyDescriptorSetLayout(LAYOUT_SETS::PASSTHROUGH_LAYOUT_INDEX);
+    DescriptorSetManager->DestroyDescriptorSetLayout(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_FRAME_LAYOUT_INDEX);
+    DescriptorSetManager->DestroyDescriptorSetLayout(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_RENDERABLE_LAYOUT_INDEX);
+    DescriptorSetManager->DestroyDescriptorSetLayout(PIPELINES::PASSTHROUGH_PIPELINE, LAYOUT_SETS::PASSTHROUGH_LAYOUT_INDEX);
 
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();

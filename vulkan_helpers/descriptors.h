@@ -14,8 +14,37 @@ struct FDescriptor
 
 struct FDescriptorSetLayout
 {
-    FDescriptorSetLayout();
-    std::map<uint32_t , FDescriptor> Descriptors;
+    std::map<uint32_t , FDescriptor> DescriptorSets;
+};
+
+struct FPipelineDescriptorSetLayout
+{
+    void AddDescriptorLayout(uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, const FDescriptor& Descriptor);
+    void CreateDescriptorSetLayout(VkDevice LogicalDevice);
+    VkDescriptorSetLayout GetVkDescriptorSetLayout(uint32_t DescriptorSetLayoutIndex);
+    VkPipelineLayout GetPipelineLayout();
+
+    void ReserveDescriptorSet(uint32_t DescriptorSetLayoutIndex, uint32_t Count);
+    void ReserveDescriptorPool(VkDevice LogicalDevice);
+    void AllocateAllDescriptorSets(VkDevice LogicalDevice);
+
+    void UpdateDescriptorSetInfo(VkDevice LogicalDevice, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorBufferInfo& BufferInfo);
+    void UpdateDescriptorSetInfo(VkDevice LogicalDevice, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorImageInfo& ImageInfo);
+    VkDescriptorSet GetSet(uint32_t SetIndex, uint32_t Index);
+
+    void DestroyDescriptorSetLayout(VkDevice LogicalDevice, uint32_t DescriptorSetLayoutIndex);
+    void DestroyPipelineLayout(VkDevice LogicalDevice);
+
+    void FreeDescriptorPool(VkDevice LogicalDevice);
+    void Reset(VkDevice LogicalDevice);
+
+    std::map<uint32_t, FDescriptorSetLayout> PipelineDescriptorSets;
+    std::map<uint32_t, VkDescriptorSetLayout> VkDescriptorSetLayouts;
+    std::map<uint32_t, uint32_t> Sets;
+    std::map<uint32_t, std::vector<VkDescriptorSet>> VkDescriptorSets;
+    VkPipelineLayout PipelineLayout;
+
+    VkDescriptorPool DescriptorPool;
 };
 
 class FDescriptorSetManager
@@ -23,40 +52,27 @@ class FDescriptorSetManager
 public:
     FDescriptorSetManager(VkDevice LogicalDevice);
 
-    /// Layout business
-    void AddDescriptorLayout(uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, const FDescriptor& Descriptor);
-    void CreateDescriptorSetLayouts();
-    VkDescriptorSetLayout GetVkDescriptorSetLayout(uint32_t DescriptorSetLayoutIndex);
-    void DestroyDescriptorSetLayout(uint32_t DescriptorSetLayoutIndex);
+    void AddDescriptorLayout(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, const FDescriptor& Descriptor);
+    void CreateDescriptorSetLayout(const std::string& PipelineName);
+    VkDescriptorSetLayout GetVkDescriptorSetLayout(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex);
+    VkPipelineLayout GetPipelineLayout(const std::string& PipelineName);
 
-    /// Descriptor set part
-    void AddDescriptorSet(uint32_t DescriptorSetLayoutIndex, uint32_t Count);
-    void CreateAllDescriptorSets();
-    void UpdateDescriptorSetInfo(uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorBufferInfo& BufferInfo);
-    void UpdateDescriptorSetInfo(uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorImageInfo& ImageInfo);
-    VkDescriptorSet& GetSet(uint32_t SetIndex, uint32_t Index);
+    void ReserveDescriptorSet(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex, uint32_t Count);
+    void ReserveDescriptorPool(const std::string& PipelineName);
+    void AllocateAllDescriptorSets(const std::string& PipelineName);
 
-    /// Pool
-    void ReserveDescriptorPool();
-    void FreeDescriptorPool();
-    void Reset();
+    void UpdateDescriptorSetInfo(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorBufferInfo& BufferInfo);
+    void UpdateDescriptorSetInfo(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorImageInfo& ImageInfo);
+    VkDescriptorSet GetSet(const std::string& PipelineName, uint32_t SetIndex, uint32_t Index);
 
+    void DestroyDescriptorSetLayout(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex);
+    void DestroyPipelineLayout(const std::string& PipelineName);
+
+    void FreeDescriptorPool(const std::string& PipelineName);
+    void Reset(const std::string& PipelineName);
 private:
     VkDevice LogicalDevice = VK_NULL_HANDLE;
 
-    VkDescriptorPool DescriptorPool;
-
-    /// Key (uint32_t) - index of the descriptor set layout
-    /// Value (pair) - first: index of a descriptor set layout, second: that descriptor set layout
-    std::map<uint32_t , std::map<uint32_t , FDescriptor>> DescriptorSetLayouts;
-
-    std::map<uint32_t, VkDescriptorSetLayout> VkDescriptorSetLayouts;
-
-    /// Key (uinnt32_t) - index of the descriptor set layout
-    /// Value (uint32_t) - number of descriptor sets
-    std::map<uint32_t, uint32_t> Sets;
-
-    /// Key (string) - name of the descriptor set
-    /// Value - vector of descriptor sets
-    std::map<uint32_t, std::vector<VkDescriptorSet>> DescriptorSets;
+    /// For every pipeline we have a set that has number of descriptors
+    std::map<std::string, FPipelineDescriptorSetLayout> PipelineDescriptorSetLayouts;
 };
