@@ -39,11 +39,8 @@ public:
     void CreateSurface();
     void PickPhysicalDevice();
     void QueuePhysicalDeviceProperties();
-    void CreateLogicalDevice();
     void GetDeviceQueues();
     void CreateDepthAndAAImages();
-    void CreateRenderPass();
-    void CreatePassthroughRenderPass();
     void CreateImguiRenderpasss();
     void CreateDescriptorSetLayouts();
     void CreateGraphicsPipeline();
@@ -114,6 +111,9 @@ public:
 
     VkFramebuffer CreateFramebuffer(std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name);
 
+    VkShaderModule CreateShaderFromFile(const std::string& FileName);
+    VkPipeline CreateGraphicsPipeline(VkShaderModule VertexShader, VkShaderModule FragmentShader, std::uint32_t Width, std::uint32_t Height, FGraphicsPipelineOptions& GraphicsPipelineOptions);
+
 public:
     VkQueue GetQueue(VkQueueFlagBits QueueFlagBits);
     uint32_t GetQueueIndex(VkQueueFlagBits QueueFlagBits);
@@ -131,8 +131,6 @@ public:
     VkPhysicalDevice PhysicalDevice;
     VkDevice LogicalDevice;
 
-    std::shared_ptr<FRenderPass> RenderPass = nullptr;
-    std::shared_ptr<FRenderPass> PassthroughRenderPass = nullptr;
     std::shared_ptr<FRenderPass> ImGuiRenderPass = nullptr;
 
 
@@ -155,8 +153,10 @@ public:
     VkDescriptorPool ImGuiDescriptorPool;
     std::vector<VkFramebuffer> ImGuiFramebuffers;
 
-    FPipeline GraphicsPipeline;
-    FPipeline PassthroughPipeline;
+    FGraphicsPipelineOptions GraphicsPipelineOptions;
+    FGraphicsPipelineOptions PassthroughPipelineOptions;
+    VkPipeline GraphicsPipeline;
+    VkPipeline PassthroughPipeline;
 
 #ifndef NDEBUG
     VkDebugUtilsMessengerEXT DebugMessenger;

@@ -43,7 +43,6 @@ struct FPipelineDescriptorSetLayout
     std::map<uint32_t, uint32_t> Sets;
     std::map<uint32_t, std::vector<VkDescriptorSet>> VkDescriptorSets;
     VkPipelineLayout PipelineLayout;
-
     VkDescriptorPool DescriptorPool;
 };
 

@@ -55,6 +55,25 @@ void FPipelineDescriptorSetLayout::CreateDescriptorSetLayout(VkDevice LogicalDev
 
         VkDescriptorSetLayouts[SetIndex] = DescriptorSetLayout;
     }
+
+    std::vector<VkDescriptorSetLayout> DescriptorSetLayouts;
+
+    for  (auto Entry : VkDescriptorSetLayouts)
+    {
+        DescriptorSetLayouts.push_back(Entry.second);
+    }
+
+    VkPipelineLayoutCreateInfo PipelineLayoutInfo{};
+    PipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    PipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(DescriptorSetLayouts.size());
+    PipelineLayoutInfo.pSetLayouts = DescriptorSetLayouts.data();
+    PipelineLayoutInfo.pushConstantRangeCount = 0;
+    PipelineLayoutInfo.pPushConstantRanges = nullptr;
+
+    if (vkCreatePipelineLayout(LogicalDevice, &PipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create pipeline layout!");
+    }
 }
 
 VkDescriptorSetLayout FPipelineDescriptorSetLayout::GetVkDescriptorSetLayout(uint32_t DescriptorSetLayoutIndex)

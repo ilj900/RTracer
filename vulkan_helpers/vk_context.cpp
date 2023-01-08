@@ -81,8 +81,6 @@ void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
                                                                        GetQueueIndex(VK_QUEUE_GRAPHICS_BIT));
         Swapchain = std::make_shared<FSwapchain>(*this, PhysicalDevice, LogicalDevice, Surface, Window, GetGraphicsQueueIndex(), GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
         CreateDepthAndAAImages();
-        CreateRenderPass();
-        CreatePassthroughRenderPass();
         CreateImguiRenderpasss();
         CreateDescriptorSetLayouts();
         CreateGraphicsPipeline();
@@ -709,26 +707,228 @@ VkFramebuffer FVulkanContext::CreateFramebuffer(std::vector<ImagePtr> Images, Vk
     return Framebuffer;
 }
 
-void FVulkanContext::CreatePassthroughRenderPass()
+VkShaderModule FVulkanContext::CreateShaderFromFile(const std::string& FileName)
 {
-    PassthroughRenderPass = std::make_shared<FRenderPass>();
-    PassthroughRenderPass->AddImageAsAttachment(Swapchain->Images[0], AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    auto ShaderCode = ReadFile(FileName);
 
-    PassthroughRenderPass->Construct(LogicalDevice);
-    V::SetName(LogicalDevice, PassthroughRenderPass->RenderPass, "V_PassthroughRenderpass");
+    VkShaderModuleCreateInfo CreateInfo{};
+    CreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    CreateInfo.codeSize = ShaderCode.size();
+    CreateInfo.pCode = reinterpret_cast<const uint32_t *>(ShaderCode.data());
+
+    VkShaderModule ShaderModule;
+    if (vkCreateShaderModule(GetContext().LogicalDevice, &CreateInfo, nullptr, &ShaderModule) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create shader module!");
+    }
+
+    return ShaderModule;
 }
 
-void FVulkanContext::CreateRenderPass()
+VkPipeline FVulkanContext::CreateGraphicsPipeline(VkShaderModule VertexShader, VkShaderModule FragmentShader, std::uint32_t Width, std::uint32_t Height, FGraphicsPipelineOptions& GraphicsPipelineOptions)
 {
-    RenderPass = std::make_shared<FRenderPass>();
-    RenderPass->AddImageAsAttachment(ColorImage, AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    RenderPass->AddImageAsAttachment(NormalsImage, AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    RenderPass->AddImageAsAttachment(RenderableIndexImage, AttachmentType::Color, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    RenderPass->AddImageAsAttachment(DepthImage, AttachmentType::DepthStencil, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    RenderPass->AddImageAsAttachment(ResolvedColorImage, AttachmentType::Resolve, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    std::vector<VkAttachmentDescription> AttachmentDescriptions;
+    std::vector<VkAttachmentReference> ColorAttachmentReferences;
 
-    RenderPass->Construct(LogicalDevice);
-    V::SetName(LogicalDevice, RenderPass->RenderPass, "V_RenderRenderpass");
+    for (int i = 0; i < GraphicsPipelineOptions.ColorAttachmentDescriptions.size(); ++i)
+    {
+        auto ColorEntry = GraphicsPipelineOptions.ColorAttachmentDescriptions[i];
+        if (VK_FORMAT_UNDEFINED != ColorEntry.format)
+        {
+            AttachmentDescriptions.push_back(ColorEntry);
+            VkAttachmentReference AttachmentReference{};
+            AttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            AttachmentReference.attachment = AttachmentDescriptions.size() - 1 ;
+            ColorAttachmentReferences.push_back(AttachmentReference);
+        }
+    }
+
+    std::vector<VkAttachmentReference> DepthStencilAttachmentReferences;
+
+    {
+        if (VK_FORMAT_UNDEFINED != GraphicsPipelineOptions.DepthStencilAttachmentDescriptions.format)
+        {
+            AttachmentDescriptions.push_back(GraphicsPipelineOptions.DepthStencilAttachmentDescriptions);
+            VkAttachmentReference AttachmentReference{};
+            AttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            AttachmentReference.attachment = AttachmentDescriptions.size() - 1;
+            DepthStencilAttachmentReferences.push_back(AttachmentReference);
+        }
+    }
+
+    std::vector<VkAttachmentReference> ResolveAttachmentReferences(ColorAttachmentReferences.size(), {VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_UNDEFINED});
+
+    for (int i = 0; i < GraphicsPipelineOptions.ResolveAttachmentDescriptions.size(); ++i)
+    {
+        auto ResolveEntry = GraphicsPipelineOptions.ResolveAttachmentDescriptions[i];
+
+        if (VK_FORMAT_UNDEFINED != ResolveEntry.format)
+        {
+            AttachmentDescriptions.push_back(ResolveEntry);
+            VkAttachmentReference AttachmentReference{};
+            AttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            AttachmentReference.attachment = AttachmentDescriptions.size() - 1 ;
+            ResolveAttachmentReferences[i] = (AttachmentReference);
+        }
+    }
+
+    VkSubpassDependency Dependency{};
+    Dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    Dependency.dstSubpass = 0;
+    Dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    Dependency.srcAccessMask = 0;
+    Dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    Dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+    VkSubpassDescription Subpass{};
+    Subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    Subpass.colorAttachmentCount = ColorAttachmentReferences.size();
+    Subpass.pColorAttachments = (ColorAttachmentReferences.size() > 0) ? ColorAttachmentReferences.data() : nullptr;
+    Subpass.pDepthStencilAttachment = (DepthStencilAttachmentReferences.size() > 0) ? DepthStencilAttachmentReferences.data() : nullptr;
+    Subpass.pResolveAttachments = (ResolveAttachmentReferences.size() > 0) ? ResolveAttachmentReferences.data() : nullptr;
+
+    VkRenderPassCreateInfo RenderPassInfo{};
+    RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    RenderPassInfo.attachmentCount = static_cast<uint32_t>(AttachmentDescriptions.size());
+    RenderPassInfo.pAttachments = AttachmentDescriptions.data();
+    RenderPassInfo.subpassCount = 1;
+    RenderPassInfo.pSubpasses = &Subpass;
+    RenderPassInfo.dependencyCount = 1;
+    RenderPassInfo.pDependencies  = &Dependency;
+
+    if (vkCreateRenderPass(LogicalDevice, &RenderPassInfo, nullptr, &GraphicsPipelineOptions.RenderPass) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create render pass!");
+    }
+
+    std::vector<VkPipelineShaderStageCreateInfo> PipelineShaderStageCreateInfoVector(2);
+
+    PipelineShaderStageCreateInfoVector[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    PipelineShaderStageCreateInfoVector[0].module = VertexShader;
+    PipelineShaderStageCreateInfoVector[0].pName = "main";
+    PipelineShaderStageCreateInfoVector[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+
+    PipelineShaderStageCreateInfoVector[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    PipelineShaderStageCreateInfoVector[1].module = FragmentShader;
+    PipelineShaderStageCreateInfoVector[1].pName = "main";
+    PipelineShaderStageCreateInfoVector[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkPipelineVertexInputStateCreateInfo VertexInputInfo{};
+    VertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
+    VertexInputInfo.vertexBindingDescriptionCount = GraphicsPipelineOptions.VertexInputBindingDescriptionVector.size();
+    VertexInputInfo.vertexAttributeDescriptionCount = GraphicsPipelineOptions.VertexInputAttributeDescriptionVector.size();
+    VertexInputInfo.pVertexBindingDescriptions = (VertexInputInfo.vertexBindingDescriptionCount > 0) ? GraphicsPipelineOptions.VertexInputBindingDescriptionVector.data() : nullptr;
+    VertexInputInfo.pVertexAttributeDescriptions = (VertexInputInfo.vertexAttributeDescriptionCount > 0) ? GraphicsPipelineOptions.VertexInputAttributeDescriptionVector.data() : nullptr;
+
+    VkPipelineInputAssemblyStateCreateInfo InputAssembly{};
+    InputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    InputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    InputAssembly.primitiveRestartEnable = VK_FALSE;
+
+    VkViewport Viewport{};
+    Viewport.x = 0.f;
+    Viewport.y = 0.f;
+    Viewport.width = Width;
+    Viewport.height = Height;
+    Viewport.minDepth = 0.f;
+    Viewport.maxDepth = 1.f;
+
+    VkRect2D Scissors{};
+    Scissors.offset = {0, 0};
+    Scissors.extent = {Width, Height};
+
+    VkPipelineViewportStateCreateInfo ViewportState{};
+    ViewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    ViewportState.viewportCount = 1;
+    ViewportState.pViewports = &Viewport;
+    ViewportState.scissorCount = 1;
+    ViewportState.pScissors = &Scissors;
+
+    VkPipelineRasterizationStateCreateInfo Rasterizer{};
+    Rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    Rasterizer.depthClampEnable = VK_FALSE;
+    Rasterizer.rasterizerDiscardEnable = VK_FALSE;
+    Rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+    Rasterizer.lineWidth = 1.f;
+    Rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    Rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    Rasterizer.depthBiasEnable = VK_FALSE;
+    Rasterizer.depthBiasConstantFactor = 0.f;
+    Rasterizer.depthBiasClamp = 0.f;
+    Rasterizer.depthBiasSlopeFactor = 0.f;
+
+    VkPipelineMultisampleStateCreateInfo Multisampling{};
+    Multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    Multisampling.sampleShadingEnable = VK_TRUE;
+    Multisampling.rasterizationSamples = GraphicsPipelineOptions.MSAASamples;
+    Multisampling.minSampleShading = 0.2f;
+    Multisampling.pSampleMask = nullptr;
+    Multisampling.alphaToCoverageEnable = VK_FALSE;
+    Multisampling.alphaToOneEnable = VK_FALSE;
+
+    VkPipelineColorBlendAttachmentState ColorBlendAttachment{};
+    ColorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                          +                                          VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    ColorBlendAttachment.blendEnable = VK_FALSE;
+    ColorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    ColorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    ColorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+    ColorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    ColorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    ColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+    std::vector<VkPipelineColorBlendAttachmentState> ColorBlendingAttachments(GraphicsPipelineOptions.ColorAttachmentDescriptions.size(), ColorBlendAttachment);
+
+    VkPipelineColorBlendStateCreateInfo ColorBlending{};
+    ColorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    ColorBlending.logicOpEnable = VK_FALSE;
+    ColorBlending.logicOp = VK_LOGIC_OP_COPY;
+    ColorBlending.attachmentCount = static_cast<uint32_t>(ColorBlendingAttachments.size());
+    ColorBlending.pAttachments = ColorBlendingAttachments.data();
+    ColorBlending.blendConstants[0] = 0.f;
+    ColorBlending.blendConstants[1] = 0.f;
+    ColorBlending.blendConstants[2] = 0.f;
+    ColorBlending.blendConstants[3] = 0.f;
+
+    VkPipelineDepthStencilStateCreateInfo DepthStencil{};
+    DepthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    DepthStencil.depthTestEnable = VK_TRUE;
+    DepthStencil.depthWriteEnable = VK_TRUE;
+    DepthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+    DepthStencil.depthBoundsTestEnable = VK_FALSE;
+    DepthStencil.minDepthBounds = 0.f;
+    DepthStencil.maxDepthBounds = 1.f;
+    DepthStencil.stencilTestEnable = VK_FALSE;
+    DepthStencil.front = {};
+    DepthStencil.back = {};
+
+    VkGraphicsPipelineCreateInfo PipelineInfo{};
+    PipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    PipelineInfo.stageCount = 2;
+    PipelineInfo.pStages = PipelineShaderStageCreateInfoVector.data();
+    PipelineInfo.pVertexInputState = &VertexInputInfo;
+    PipelineInfo.pInputAssemblyState = &InputAssembly;
+    PipelineInfo.pViewportState = &ViewportState;
+    PipelineInfo.pRasterizationState = &Rasterizer;
+    PipelineInfo.pMultisampleState = &Multisampling;
+    PipelineInfo.pDepthStencilState = nullptr;
+    PipelineInfo.pColorBlendState = &ColorBlending;
+    PipelineInfo.pDepthStencilState = &DepthStencil;
+    PipelineInfo.layout = GraphicsPipelineOptions.PipelineLayout;
+    PipelineInfo.renderPass = GraphicsPipelineOptions.RenderPass;
+    PipelineInfo.subpass = 0;
+    PipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+    PipelineInfo.basePipelineIndex = -1;
+
+    VkPipeline Pipeline = VK_NULL_HANDLE;
+
+    if (vkCreateGraphicsPipelines(LogicalDevice, VK_NULL_HANDLE, 1, &PipelineInfo, nullptr, &Pipeline) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create graphics pipeline!");
+    }
+
+    return Pipeline;
 }
 
 void FVulkanContext::CreateImguiRenderpasss()
@@ -781,37 +981,41 @@ void FVulkanContext::CreateDescriptorSetLayouts()
 
 void FVulkanContext::CreatePassthroughPipeline()
 {
-    PassthroughPipeline.AddShader("../shaders/passthrough_vert.spv", eShaderType::VERTEX);
-    PassthroughPipeline.AddShader("../shaders/passthrough_frag.spv", eShaderType::FRAGMENT);
+    auto VertexShader = CreateShaderFromFile("../shaders/passthrough_vert.spv");
+    auto FragmentShader = CreateShaderFromFile("../shaders/passthrough_frag.spv");
 
-    PassthroughPipeline.SetExtent2D(Swapchain->GetExtent2D());
-    PassthroughPipeline.SetWidth(Swapchain->GetWidth());
-    PassthroughPipeline.SetHeight(Swapchain->GetHeight());
-    PassthroughPipeline.SetBlendAttachmentsCount(1);
-    PassthroughPipeline.AddDescriptorSetLayout(DescriptorSetManager->GetVkDescriptorSetLayout(PIPELINES::PASSTHROUGH_PIPELINE, LAYOUT_SETS::PASSTHROUGH_LAYOUT_INDEX));
-    PassthroughPipeline.CreateGraphicsPipeline(LogicalDevice, PassthroughRenderPass->RenderPass);
+    PassthroughPipelineOptions.RegisterColorAttachment(0, Swapchain->Images[0], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    PassthroughPipelineOptions.SetPipelineLayout(DescriptorSetManager->GetPipelineLayout(PIPELINES::PASSTHROUGH_PIPELINE));
+
+    PassthroughPipeline = CreateGraphicsPipeline(VertexShader, FragmentShader, Swapchain->GetWidth(), Swapchain->GetHeight(), PassthroughPipelineOptions);
+
+    vkDestroyShaderModule(LogicalDevice, VertexShader, nullptr);
+    vkDestroyShaderModule(LogicalDevice, FragmentShader, nullptr);
 }
 
 void FVulkanContext::CreateGraphicsPipeline()
 {
-    GraphicsPipeline.AddShader("../shaders/triangle_vert.spv", eShaderType::VERTEX);
-    GraphicsPipeline.AddShader("../shaders/triangle_frag.spv", eShaderType::FRAGMENT);
+    auto VertexShader = CreateShaderFromFile("../shaders/triangle_vert.spv");
+    auto FragmentShader = CreateShaderFromFile("../shaders/triangle_frag.spv");
 
     auto AttributeDescriptions = FVertex::GetAttributeDescriptions();
     for (auto& Entry : AttributeDescriptions)
     {
-        GraphicsPipeline.AddVertexInputAttributeDescription(Entry);
+        GraphicsPipelineOptions.AddVertexInputAttributeDescription(Entry);
     }
-    GraphicsPipeline.AddVertexInputBindingDescription(FVertex::GetBindingDescription());
+    GraphicsPipelineOptions.AddVertexInputBindingDescription(FVertex::GetBindingDescription());
+    GraphicsPipelineOptions.RegisterDepthStencilAttachment(DepthImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    GraphicsPipelineOptions.RegisterColorAttachment(0, ColorImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    GraphicsPipelineOptions.RegisterColorAttachment(1, NormalsImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    GraphicsPipelineOptions.RegisterColorAttachment(2, RenderableIndexImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    GraphicsPipelineOptions.RegisterResolveAttachment(0, ResolvedColorImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    GraphicsPipelineOptions.SetPipelineLayout(DescriptorSetManager->GetPipelineLayout(PIPELINES::RENDER_PIPELINE));
+    GraphicsPipelineOptions.SetMSAA(MSAASamples);
 
-    GraphicsPipeline.SetMSAA(Context.MSAASamples);
-    GraphicsPipeline.SetExtent2D(Swapchain->GetExtent2D());
-    GraphicsPipeline.SetWidth(Swapchain->GetWidth());
-    GraphicsPipeline.SetHeight(Swapchain->GetHeight());
-    GraphicsPipeline.SetBlendAttachmentsCount(3);
-    GraphicsPipeline.AddDescriptorSetLayout(DescriptorSetManager->GetVkDescriptorSetLayout(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_FRAME_LAYOUT_INDEX));
-    GraphicsPipeline.AddDescriptorSetLayout(DescriptorSetManager->GetVkDescriptorSetLayout(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_RENDERABLE_LAYOUT_INDEX));
-    GraphicsPipeline.CreateGraphicsPipeline(LogicalDevice, RenderPass->RenderPass);
+    GraphicsPipeline = CreateGraphicsPipeline(VertexShader, FragmentShader, Swapchain->GetWidth(), Swapchain->GetHeight(), GraphicsPipelineOptions);
+
+    vkDestroyShaderModule(LogicalDevice, VertexShader, nullptr);
+    vkDestroyShaderModule(LogicalDevice, FragmentShader, nullptr);
 }
 
 VkFormat FVulkanContext::FindDepthFormat()
@@ -833,7 +1037,7 @@ void FVulkanContext::CreateRenderFramebuffers()
     SwapChainFramebuffers.resize(Swapchain->Size());
 
     for (std::size_t i = 0; i < Swapchain->Size(); ++i) {
-        SwapChainFramebuffers[i] = CreateFramebuffer({ColorImage, NormalsImage, RenderableIndexImage, DepthImage, ResolvedColorImage}, RenderPass->RenderPass, "V_Render_fb_" + std::to_string(i));
+        SwapChainFramebuffers[i] = CreateFramebuffer({ColorImage, NormalsImage, RenderableIndexImage, DepthImage, ResolvedColorImage}, GraphicsPipelineOptions.RenderPass, "V_Render_fb_" + std::to_string(i));
     }
 }
 
@@ -842,7 +1046,7 @@ void FVulkanContext::CreatePassthroughFramebuffers()
     PassthroughFramebuffers.resize(Swapchain->Size());
     for (std::size_t i = 0; i < PassthroughFramebuffers.size(); ++i)
     {
-        PassthroughFramebuffers[i] = CreateFramebuffer({Swapchain->Images[i]}, PassthroughRenderPass->RenderPass, "V_Passthrough_fb_" + std::to_string(i));
+        PassthroughFramebuffers[i] = CreateFramebuffer({Swapchain->Images[i]}, PassthroughPipelineOptions.RenderPass, "V_Passthrough_fb_" + std::to_string(i));
     }
 }
 
@@ -1024,7 +1228,7 @@ void FVulkanContext::CreateCommandBuffers()
         {
             VkRenderPassBeginInfo RenderPassInfo{};
             RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            RenderPassInfo.renderPass = RenderPass->RenderPass;
+            RenderPassInfo.renderPass = GraphicsPipelineOptions.RenderPass;
             RenderPassInfo.framebuffer = SwapChainFramebuffers[i];
             RenderPassInfo.renderArea.offset = {0, 0};
             RenderPassInfo.renderArea.extent = Swapchain->GetExtent2D();
@@ -1039,10 +1243,10 @@ void FVulkanContext::CreateCommandBuffers()
             RenderPassInfo.pClearValues = ClearValues.data();
 
             vkCmdBeginRenderPass(CommandBuffer, &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline.GetPipeline());
+            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline);
 
             auto PerFrameDescriptorSet = DescriptorSetManager->GetSet(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_FRAME_LAYOUT_INDEX, i);
-            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline.GetPipelineLayout(), 0, 1, &PerFrameDescriptorSet, 0,
+            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, DescriptorSetManager->GetPipelineLayout(PIPELINES::RENDER_PIPELINE), 0, 1, &PerFrameDescriptorSet, 0,
                                     nullptr);
             auto& Coordinator = ECS::GetCoordinator();
             auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
@@ -1051,7 +1255,7 @@ void FVulkanContext::CreateCommandBuffers()
             for (auto Entity : *MeshSystem)
             {
                 auto PerRenderableDescriptorSet = DescriptorSetManager->GetSet(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_RENDERABLE_LAYOUT_INDEX, j * Swapchain->Size() + i);
-                vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline.GetPipelineLayout(), 1, 1,
+                vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, DescriptorSetManager->GetPipelineLayout(PIPELINES::RENDER_PIPELINE), 1, 1,
                                         &PerRenderableDescriptorSet, 0, nullptr);
 
                 MeshSystem->Bind(Entity, CommandBuffer);
@@ -1089,7 +1293,7 @@ void FVulkanContext::CreateCommandBuffers()
 
             VkRenderPassBeginInfo RenderPassInfo{};
             RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            RenderPassInfo.renderPass = PassthroughRenderPass->RenderPass;
+            RenderPassInfo.renderPass = PassthroughPipelineOptions.RenderPass;
             RenderPassInfo.framebuffer = PassthroughFramebuffers[i];
             RenderPassInfo.renderArea.offset = {0, 0};
             RenderPassInfo.renderArea.extent = Swapchain->GetExtent2D();
@@ -1100,9 +1304,9 @@ void FVulkanContext::CreateCommandBuffers()
             RenderPassInfo.pClearValues = ClearValues.data();
 
             vkCmdBeginRenderPass(CommandBuffer, &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PassthroughPipeline.GetPipeline());
+            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PassthroughPipeline);
             auto PassthroughDescriptorSet = DescriptorSetManager->GetSet(PIPELINES::PASSTHROUGH_PIPELINE, LAYOUT_SETS::PASSTHROUGH_LAYOUT_INDEX, i);
-            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PassthroughPipeline.GetPipelineLayout(),
+            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, DescriptorSetManager->GetPipelineLayout(PIPELINES::PASSTHROUGH_PIPELINE),
                                     0, 1, &PassthroughDescriptorSet, 0, nullptr);
 
             vkCmdDraw(CommandBuffer, 3, 1, 0, 0);
@@ -1369,8 +1573,6 @@ void FVulkanContext::RecreateSwapChain()
     Swapchain = std::make_shared<FSwapchain>(*this, PhysicalDevice, LogicalDevice, Surface, Window, GetGraphicsQueueIndex(), GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
     CreateDepthAndAAImages();
 
-    CreateRenderPass();
-    CreatePassthroughRenderPass();
     CreateImguiRenderpasss();
 
     CreateGraphicsPipeline();
@@ -1428,12 +1630,14 @@ void FVulkanContext::CleanUpSwapChain()
     }
 
     /// Remove pipelines
-    GraphicsPipeline.Delete();
-    PassthroughPipeline.Delete();
+    DescriptorSetManager->DestroyPipelineLayout(PIPELINES::RENDER_PIPELINE);
+    vkDestroyPipeline(LogicalDevice, GraphicsPipeline, nullptr);
+    DescriptorSetManager->DestroyPipelineLayout(PIPELINES::PASSTHROUGH_PIPELINE);
+    vkDestroyPipeline(LogicalDevice, PassthroughPipeline, nullptr);
 
     /// Remove renderpasses
-    RenderPass = nullptr;
-    PassthroughRenderPass = nullptr;
+    vkDestroyRenderPass(LogicalDevice, GraphicsPipelineOptions.RenderPass, nullptr);
+    vkDestroyRenderPass(LogicalDevice, PassthroughPipelineOptions.RenderPass, nullptr);
     ImGuiRenderPass = nullptr;
 
     Swapchain = nullptr;
