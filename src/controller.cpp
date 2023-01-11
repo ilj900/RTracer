@@ -39,8 +39,8 @@ void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int
         {
             if (Action == GLFW_PRESS) {
                 auto& Context = GetContext();
-                Context.NormalsImage->Resolve(*Context.UtilityImageR8G8B8A8_SRGB);
-                Context.SaveImage(*Context.UtilityImageR8G8B8A8_SRGB);
+//                Context.NormalsImage->Resolve(*Context.UtilityImageR8G8B8A8_SRGB);
+//                Context.SaveImage(*Context.UtilityImageR8G8B8A8_SRGB);
             }
             break;
         }
@@ -89,16 +89,16 @@ void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, in
                     auto& Context = GetContext();
                     std::vector<uint32_t> Data;
 
-                    Context.RenderableIndexImage->Resolve(*Context.UtilityImageR32);
-                    Context.FetchImageData(*Context.UtilityImageR32, Data);
-                    double X, Y;
-                    glfwGetCursorPos(Window, &X, &Y);
-
-                    auto Index = (uint32_t(Y) * Context.Swapchain->GetWidth() + uint32_t(X));
-
-                    uint32_t RenderableIndex = Data[Index];
-                    auto RenderableSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FRenderableSystem>();
-                    RenderableSystem->SetSelectedByIndex(RenderableIndex);
+//                    Context.RenderableIndexImage->Resolve(*Context.UtilityImageR32);
+//                    Context.FetchImageData(*Context.UtilityImageR32, Data);
+//                    double X, Y;
+//                    glfwGetCursorPos(Window, &X, &Y);
+//
+//                    auto Index = (uint32_t(Y) * Context.Swapchain->GetWidth() + uint32_t(X));
+//
+//                    uint32_t RenderableIndex = Data[Index];
+//                    auto RenderableSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FRenderableSystem>();
+//                    RenderableSystem->SetSelectedByIndex(RenderableIndex);
                 }
             }
         }

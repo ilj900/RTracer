@@ -27,27 +27,6 @@
 
 static FVulkanContext Context{};
 
-namespace PIPELINES
-{
-    const std::string RENDER_PIPELINE = "Render pipeline";
-    const std::string PASSTHROUGH_PIPELINE = "Passthrough pipeline";
-}
-
-namespace LAYOUT_SETS
-{
-    const uint32_t RENDER_PER_FRAME_LAYOUT_INDEX = 0;
-    const uint32_t RENDER_PER_RENDERABLE_LAYOUT_INDEX = 1;
-    const uint32_t PASSTHROUGH_LAYOUT_INDEX = 0;
-}
-
-namespace LAYOUTS
-{
-    const uint32_t TEXTURE_SAMPLER_LAYOUT_INDEX = 0;
-    const uint32_t CAMERA_LAYOUT_INDEX = 1;
-    const uint32_t TRANSFORM_LAYOUT_INDEX = 0;
-    const uint32_t RENDERABLE_LAYOUT_INDEX = 1;
-}
-
 FVulkanContext& GetContext()
 {
     return Context;
@@ -81,21 +60,16 @@ void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
                                                                        GetQueueIndex(VK_QUEUE_GRAPHICS_BIT));
         Swapchain = std::make_shared<FSwapchain>(*this, PhysicalDevice, LogicalDevice, Surface, Window, GetGraphicsQueueIndex(), GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
         CreateDepthAndAAImages();
-        CreateImguiRenderpasss();
-        CreateDescriptorSetLayouts();
-        CreateGraphicsPipeline();
-        CreatePassthroughPipeline();
-        TextureImage = LoadImageFromFile(TexturePath, "V_TextureImage");
-        CreateRenderFramebuffers();
-        CreatePassthroughFramebuffers();
-        CreateImguiFramebuffers();
-        CreateTextureSampler();
+
         LoadModelDataToGPU();
         CreateUniformBuffers();
-        CreateDescriptorPool();
+        TextureImage = LoadImageFromFile(TexturePath, "V_TextureImage");
+        CreateTextureSampler();
+
+        CreatePipelines();
+        CreateImguiRenderpasss();
+        CreateImguiFramebuffers();
         CreateImguiDescriptorPool();
-        CreateDescriptorSet();
-        CreateCommandBuffers();
         CreateSyncObjects();
         CreateImguiContext();
     }
@@ -639,42 +613,16 @@ void FVulkanContext::CreateDepthAndAAImages()
     auto Width = Swapchain->GetWidth();
     auto Height = Swapchain->GetHeight();
 
-    ColorImage = CreateImage2D(Width, Height, false, MSAASamples, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
-                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                        VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_ColorImage");
-
-
-    NormalsImage = CreateImage2D(Width, Height, false, MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                            VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_NormalsImage");
-
-
-    RenderableIndexImage = CreateImage2D(Width, Height, false, MSAASamples, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
-                                                    VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                    VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_RenderableIndexImage");
-
     UtilityImageR32 = CreateImage2D(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
                                                VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                                VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_UtilityImageR32");
 
     UtilityImageR32->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-    ResolvedColorImage = CreateImage2D(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
-                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                              VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_ResolvedColorImage");
 
     UtilityImageR8G8B8A8_SRGB = CreateImage2D(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                                                          VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                                          VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_UtilityImageR8G8B8A8_SRGB");
-
-    /// Create Image and ImageView for Depth
-    VkFormat DepthFormat = FindDepthFormat();
-    DepthImage = CreateImage2D(Width, Height, false, MSAASamples, DepthFormat, VK_IMAGE_TILING_OPTIMAL,
-                                          VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                          VK_IMAGE_ASPECT_DEPTH_BIT, LogicalDevice, "V_DepthImage");
-
-
-    DepthImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
 VkFramebuffer FVulkanContext::CreateFramebuffer(std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name)
@@ -960,64 +908,6 @@ VkFormat FVulkanContext::FindSupportedFormat(const std::vector<VkFormat>& Candid
     throw std::runtime_error("Failed to find supported format!");
 }
 
-void FVulkanContext::CreateDescriptorSetLayouts()
-{
-    DescriptorSetManager->AddDescriptorLayout(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_FRAME_LAYOUT_INDEX, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_INDEX,
-                                              {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
-    DescriptorSetManager->AddDescriptorLayout(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_FRAME_LAYOUT_INDEX, LAYOUTS::CAMERA_LAYOUT_INDEX,
-                                              {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-
-    DescriptorSetManager->AddDescriptorLayout(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_RENDERABLE_LAYOUT_INDEX, LAYOUTS::TRANSFORM_LAYOUT_INDEX,
-                                              {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-    DescriptorSetManager->AddDescriptorLayout(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_RENDERABLE_LAYOUT_INDEX, LAYOUTS::RENDERABLE_LAYOUT_INDEX,
-                                              {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-
-    DescriptorSetManager->AddDescriptorLayout(PIPELINES::PASSTHROUGH_PIPELINE, LAYOUT_SETS::PASSTHROUGH_LAYOUT_INDEX, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_INDEX,
-                                              {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
-
-    DescriptorSetManager->CreateDescriptorSetLayout(PIPELINES::RENDER_PIPELINE);
-    DescriptorSetManager->CreateDescriptorSetLayout(PIPELINES::PASSTHROUGH_PIPELINE);
-}
-
-void FVulkanContext::CreatePassthroughPipeline()
-{
-    auto VertexShader = CreateShaderFromFile("../shaders/passthrough_vert.spv");
-    auto FragmentShader = CreateShaderFromFile("../shaders/passthrough_frag.spv");
-
-    PassthroughPipelineOptions.RegisterColorAttachment(0, Swapchain->Images[0], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    PassthroughPipelineOptions.SetPipelineLayout(DescriptorSetManager->GetPipelineLayout(PIPELINES::PASSTHROUGH_PIPELINE));
-
-    PassthroughPipeline = CreateGraphicsPipeline(VertexShader, FragmentShader, Swapchain->GetWidth(), Swapchain->GetHeight(), PassthroughPipelineOptions);
-
-    vkDestroyShaderModule(LogicalDevice, VertexShader, nullptr);
-    vkDestroyShaderModule(LogicalDevice, FragmentShader, nullptr);
-}
-
-void FVulkanContext::CreateGraphicsPipeline()
-{
-    auto VertexShader = CreateShaderFromFile("../shaders/triangle_vert.spv");
-    auto FragmentShader = CreateShaderFromFile("../shaders/triangle_frag.spv");
-
-    auto AttributeDescriptions = FVertex::GetAttributeDescriptions();
-    for (auto& Entry : AttributeDescriptions)
-    {
-        GraphicsPipelineOptions.AddVertexInputAttributeDescription(Entry);
-    }
-    GraphicsPipelineOptions.AddVertexInputBindingDescription(FVertex::GetBindingDescription());
-    GraphicsPipelineOptions.RegisterDepthStencilAttachment(DepthImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    GraphicsPipelineOptions.RegisterColorAttachment(0, ColorImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    GraphicsPipelineOptions.RegisterColorAttachment(1, NormalsImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    GraphicsPipelineOptions.RegisterColorAttachment(2, RenderableIndexImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    GraphicsPipelineOptions.RegisterResolveAttachment(0, ResolvedColorImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    GraphicsPipelineOptions.SetPipelineLayout(DescriptorSetManager->GetPipelineLayout(PIPELINES::RENDER_PIPELINE));
-    GraphicsPipelineOptions.SetMSAA(MSAASamples);
-
-    GraphicsPipeline = CreateGraphicsPipeline(VertexShader, FragmentShader, Swapchain->GetWidth(), Swapchain->GetHeight(), GraphicsPipelineOptions);
-
-    vkDestroyShaderModule(LogicalDevice, VertexShader, nullptr);
-    vkDestroyShaderModule(LogicalDevice, FragmentShader, nullptr);
-}
-
 VkFormat FVulkanContext::FindDepthFormat()
 {
     return FindSupportedFormat(
@@ -1030,24 +920,6 @@ VkFormat FVulkanContext::FindDepthFormat()
 bool FVulkanContext::HasStensilComponent(VkFormat Format)
 {
     return Format == VK_FORMAT_D32_SFLOAT_S8_UINT || Format == VK_FORMAT_D24_UNORM_S8_UINT;
-}
-
-void FVulkanContext::CreateRenderFramebuffers()
-{
-    SwapChainFramebuffers.resize(Swapchain->Size());
-
-    for (std::size_t i = 0; i < Swapchain->Size(); ++i) {
-        SwapChainFramebuffers[i] = CreateFramebuffer({ColorImage, NormalsImage, RenderableIndexImage, DepthImage, ResolvedColorImage}, GraphicsPipelineOptions.RenderPass, "V_Render_fb_" + std::to_string(i));
-    }
-}
-
-void FVulkanContext::CreatePassthroughFramebuffers()
-{
-    PassthroughFramebuffers.resize(Swapchain->Size());
-    for (std::size_t i = 0; i < PassthroughFramebuffers.size(); ++i)
-    {
-        PassthroughFramebuffers[i] = CreateFramebuffer({Swapchain->Images[i]}, PassthroughPipelineOptions.RenderPass, "V_Passthrough_fb_" + std::to_string(i));
-    }
 }
 
 void FVulkanContext::CreateImguiFramebuffers()
@@ -1069,6 +941,17 @@ void FVulkanContext::LoadModelDataToGPU()
         MeshSystem->LoadToGPU(Mesh);
     }
 
+}
+
+void FVulkanContext::CreatePipelines()
+{
+    RenderTask.Init();
+    RenderTask.UpdateDescriptorSets();
+    RenderTask.RecordCommands();
+
+    PassthroughTask.Init();
+    PassthroughTask.UpdateDescriptorSet();
+    PassthroughTask.RecordCommands();
 }
 
 void FVulkanContext::CreateTextureSampler()
@@ -1119,20 +1002,6 @@ void FVulkanContext::CreateUniformBuffers()
     }
 }
 
-void FVulkanContext::CreateDescriptorPool()
-{
-    auto ModelsCount = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>()->Size();
-    auto NumberOfSwapChainImages = Swapchain->Size();
-
-    /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-    DescriptorSetManager->ReserveDescriptorSet(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_FRAME_LAYOUT_INDEX, NumberOfSwapChainImages);
-    DescriptorSetManager->ReserveDescriptorSet(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_RENDERABLE_LAYOUT_INDEX, NumberOfSwapChainImages * ModelsCount);
-    DescriptorSetManager->ReserveDescriptorSet(PIPELINES::PASSTHROUGH_PIPELINE, LAYOUT_SETS::PASSTHROUGH_LAYOUT_INDEX, NumberOfSwapChainImages);
-
-    DescriptorSetManager->ReserveDescriptorPool(PIPELINES::RENDER_PIPELINE);
-    DescriptorSetManager->ReserveDescriptorPool(PIPELINES::PASSTHROUGH_PIPELINE);
-}
-
 void FVulkanContext::CreateImguiDescriptorPool()
 {
     VkDescriptorPoolSize PoolSizes[] =
@@ -1160,161 +1029,6 @@ void FVulkanContext::CreateImguiDescriptorPool()
         throw std::runtime_error("Failed to create descriptor pool for ImGui!");
     }
     V::SetName(LogicalDevice, ImGuiDescriptorPool, "V_ImGuiDescriptorPool");
-}
-
-void FVulkanContext::CreateDescriptorSet()
-{
-    auto& Coordinator = ECS::GetCoordinator();
-    auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
-
-    /// Create descriptor sets
-    DescriptorSetManager->AllocateAllDescriptorSets(PIPELINES::RENDER_PIPELINE);
-    DescriptorSetManager->AllocateAllDescriptorSets(PIPELINES::PASSTHROUGH_PIPELINE);
-
-    for (size_t i = 0; i < Swapchain->Size(); ++i)
-    {
-        uint32_t j = 0;
-        for (auto Mesh : *MeshSystem)
-        {
-            VkDescriptorBufferInfo TransformBufferInfo{};
-            TransformBufferInfo.buffer = DeviceTransformBuffers[i].Buffer;
-            TransformBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceTransformComponent) * j;
-            TransformBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceTransformComponent);
-            DescriptorSetManager->UpdateDescriptorSetInfo(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_RENDERABLE_LAYOUT_INDEX, LAYOUTS::TRANSFORM_LAYOUT_INDEX, j * Swapchain->Size() + i, TransformBufferInfo);
-
-            VkDescriptorBufferInfo RenderableBufferInfo{};
-            RenderableBufferInfo.buffer = DeviceRenderableBuffers[i].Buffer;
-            RenderableBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent) * j;
-            RenderableBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent);
-            DescriptorSetManager->UpdateDescriptorSetInfo(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_RENDERABLE_LAYOUT_INDEX, LAYOUTS::RENDERABLE_LAYOUT_INDEX, j * Swapchain->Size() + i, RenderableBufferInfo);
-
-            ++j;
-        }
-    }
-
-    for (size_t i = 0; i < Swapchain->Size(); ++i)
-    {
-
-        VkDescriptorBufferInfo CameraBufferInfo{};
-        CameraBufferInfo.buffer = DeviceCameraBuffers[i].Buffer;
-        CameraBufferInfo.offset = 0;
-        CameraBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
-        DescriptorSetManager->UpdateDescriptorSetInfo(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_FRAME_LAYOUT_INDEX, LAYOUTS::CAMERA_LAYOUT_INDEX, i, CameraBufferInfo);
-
-        VkDescriptorImageInfo ImageBufferInfo{};
-        ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        ImageBufferInfo.imageView = TextureImage->View;
-        ImageBufferInfo.sampler = TextureSampler;
-        DescriptorSetManager->UpdateDescriptorSetInfo(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_FRAME_LAYOUT_INDEX, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_INDEX, i, ImageBufferInfo);
-    }
-
-    for (size_t i = 0; i < Swapchain->Size(); ++i)
-    {
-        VkDescriptorImageInfo ImageBufferInfo{};
-        ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        ImageBufferInfo.imageView = ResolvedColorImage->View;
-        ImageBufferInfo.sampler = TextureSampler;
-        DescriptorSetManager->UpdateDescriptorSetInfo(PIPELINES::PASSTHROUGH_PIPELINE, LAYOUT_SETS::PASSTHROUGH_LAYOUT_INDEX, LAYOUTS::TEXTURE_SAMPLER_LAYOUT_INDEX, i, ImageBufferInfo);
-    }
-}
-
-void FVulkanContext::CreateCommandBuffers()
-{
-    GraphicsCommandBuffers.resize(SwapChainFramebuffers.size());
-
-    for (std::size_t i = 0; i < GraphicsCommandBuffers.size(); ++i)
-    {
-        GraphicsCommandBuffers[i] = CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
-        {
-            VkRenderPassBeginInfo RenderPassInfo{};
-            RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            RenderPassInfo.renderPass = GraphicsPipelineOptions.RenderPass;
-            RenderPassInfo.framebuffer = SwapChainFramebuffers[i];
-            RenderPassInfo.renderArea.offset = {0, 0};
-            RenderPassInfo.renderArea.extent = Swapchain->GetExtent2D();
-
-            std::vector<VkClearValue> ClearValues{7};
-            ClearValues[0].color = {0.f, 0.f, 0.f, 1.f};
-            ClearValues[1].color = {0.0f, 0.f, 0.f, 1.f};
-            ClearValues[2].color = {0, 0, 0, 0};
-            ClearValues[3].depthStencil = {1.f, 0};
-            ClearValues[4].color = {0.f, 0.f, 0.f, 0.f};
-            RenderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
-            RenderPassInfo.pClearValues = ClearValues.data();
-
-            vkCmdBeginRenderPass(CommandBuffer, &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GraphicsPipeline);
-
-            auto PerFrameDescriptorSet = DescriptorSetManager->GetSet(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_FRAME_LAYOUT_INDEX, i);
-            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, DescriptorSetManager->GetPipelineLayout(PIPELINES::RENDER_PIPELINE), 0, 1, &PerFrameDescriptorSet, 0,
-                                    nullptr);
-            auto& Coordinator = ECS::GetCoordinator();
-            auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
-
-            uint32_t j = 0;
-            for (auto Entity : *MeshSystem)
-            {
-                auto PerRenderableDescriptorSet = DescriptorSetManager->GetSet(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_RENDERABLE_LAYOUT_INDEX, j * Swapchain->Size() + i);
-                vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, DescriptorSetManager->GetPipelineLayout(PIPELINES::RENDER_PIPELINE), 1, 1,
-                                        &PerRenderableDescriptorSet, 0, nullptr);
-
-                MeshSystem->Bind(Entity, CommandBuffer);
-                MeshSystem->Draw(Entity, CommandBuffer);
-                ++j;
-            }
-            vkCmdEndRenderPass(CommandBuffer);
-        });
-
-        V::SetName(LogicalDevice, GraphicsCommandBuffers[i], "V_GraphicsCommandBuffers" + std::to_string(i));
-    }
-
-    PassthroughCommandBuffers.resize(PassthroughFramebuffers.size());
-
-    for (std::size_t i = 0; i < PassthroughCommandBuffers.size(); ++i)
-    {
-        PassthroughCommandBuffers[i] = CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
-        {
-            VkImageMemoryBarrier Barrier{};
-            Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            Barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            Barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            Barrier.image = ResolvedColorImage->Image;
-            Barrier.subresourceRange.baseMipLevel = 0;
-            Barrier.subresourceRange.levelCount = 1;
-            Barrier.subresourceRange.baseArrayLayer = 0;
-            Barrier.subresourceRange.layerCount = 1;
-            Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            Barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-            Barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-            vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
-
-            VkRenderPassBeginInfo RenderPassInfo{};
-            RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            RenderPassInfo.renderPass = PassthroughPipelineOptions.RenderPass;
-            RenderPassInfo.framebuffer = PassthroughFramebuffers[i];
-            RenderPassInfo.renderArea.offset = {0, 0};
-            RenderPassInfo.renderArea.extent = Swapchain->GetExtent2D();
-
-            std::vector<VkClearValue> ClearValues{1};
-            ClearValues[0].color = {0.f, 0.f, 1.f, 1.f};
-            RenderPassInfo.clearValueCount = static_cast<uint32_t>(ClearValues.size());
-            RenderPassInfo.pClearValues = ClearValues.data();
-
-            vkCmdBeginRenderPass(CommandBuffer, &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PassthroughPipeline);
-            auto PassthroughDescriptorSet = DescriptorSetManager->GetSet(PIPELINES::PASSTHROUGH_PIPELINE, LAYOUT_SETS::PASSTHROUGH_LAYOUT_INDEX, i);
-            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, DescriptorSetManager->GetPipelineLayout(PIPELINES::PASSTHROUGH_PIPELINE),
-                                    0, 1, &PassthroughDescriptorSet, 0, nullptr);
-
-            vkCmdDraw(CommandBuffer, 3, 1, 0, 0);
-            vkCmdEndRenderPass(CommandBuffer);
-        });
-
-        V::SetName(LogicalDevice, PassthroughCommandBuffers[i], "V_PassthroughCommandBuffers" + std::to_string(i));
-    }
 }
 
 void FVulkanContext::CreateSyncObjects()
@@ -1423,7 +1137,7 @@ void FVulkanContext::Render()
     SubmitInfo.pWaitSemaphores = WaitSemaphores;
     SubmitInfo.pWaitDstStageMask = WaitStages;
     SubmitInfo.commandBufferCount = 1;
-    SubmitInfo.pCommandBuffers = &GraphicsCommandBuffers[ImageIndex];
+    SubmitInfo.pCommandBuffers = &RenderTask.GraphicsCommandBuffers[ImageIndex];
 
     VkSemaphore SignalSemaphores[] = {RenderFinishedSemaphores[CurrentFrame]};
     SubmitInfo.signalSemaphoreCount = 1;
@@ -1448,7 +1162,7 @@ void FVulkanContext::Render()
     PassThroughSubmitInfo.pWaitSemaphores = PassthroughWaitSemaphores;
     PassThroughSubmitInfo.pWaitDstStageMask = PassthroughWaitStages;
     PassThroughSubmitInfo.commandBufferCount = 1;
-    PassThroughSubmitInfo.pCommandBuffers = &PassthroughCommandBuffers[ImageIndex];
+    PassThroughSubmitInfo.pCommandBuffers = &PassthroughTask.PassthroughCommandBuffers[ImageIndex];
 
     VkSemaphore PassthroughSignalSemaphores[] = {PassthroughFinishedSemaphore[CurrentFrame]};
     PassThroughSubmitInfo.signalSemaphoreCount = 1;
@@ -1575,18 +1289,15 @@ void FVulkanContext::RecreateSwapChain()
 
     CreateImguiRenderpasss();
 
-    CreateGraphicsPipeline();
-    CreatePassthroughPipeline();
-
-    CreateRenderFramebuffers();
-    CreatePassthroughFramebuffers();
     CreateImguiFramebuffers();
 
-    CreateDescriptorPool();
+    RenderTask.Init();
+    RenderTask.UpdateDescriptorSets();
+    RenderTask.RecordCommands();
 
-    CreateDescriptorSet();
-
-    CreateCommandBuffers();
+    PassthroughTask.Init();
+    PassthroughTask.UpdateDescriptorSet();
+    PassthroughTask.RecordCommands();
 
     CurrentFrame = 0;
 }
@@ -1594,56 +1305,22 @@ void FVulkanContext::RecreateSwapChain()
 void FVulkanContext::CleanUpSwapChain()
 {
     /// Remove all images which size's dependent on the swapchain's size
-    ColorImage = nullptr;
-    ResolvedColorImage = nullptr;
     UtilityImageR8G8B8A8_SRGB = nullptr;
-    NormalsImage = nullptr;
-    RenderableIndexImage = nullptr;
     UtilityImageR32 = nullptr;
-    DepthImage = nullptr;
 
-    /// Remove all framebuffers
-    for (auto Framebuffer : SwapChainFramebuffers)
-    {
-        vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
-    }
-
-    for (auto Framebuffer : PassthroughFramebuffers)
-    {
-        vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
-    }
-
+    /// Remove framebuffers
     for (auto Framebuffer : ImGuiFramebuffers)
     {
         vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
     }
 
-    /// Remove all command buffers
-    for (auto& CommandBuffer : GraphicsCommandBuffers)
-    {
-        CommandBufferManager->FreeCommandBuffer(CommandBuffer);
-    }
-
-    for (auto& CommandBuffer : PassthroughCommandBuffers)
-    {
-        CommandBufferManager->FreeCommandBuffer(CommandBuffer);
-    }
-
-    /// Remove pipelines
-    DescriptorSetManager->DestroyPipelineLayout(PIPELINES::RENDER_PIPELINE);
-    vkDestroyPipeline(LogicalDevice, GraphicsPipeline, nullptr);
-    DescriptorSetManager->DestroyPipelineLayout(PIPELINES::PASSTHROUGH_PIPELINE);
-    vkDestroyPipeline(LogicalDevice, PassthroughPipeline, nullptr);
-
     /// Remove renderpasses
-    vkDestroyRenderPass(LogicalDevice, GraphicsPipelineOptions.RenderPass, nullptr);
-    vkDestroyRenderPass(LogicalDevice, PassthroughPipelineOptions.RenderPass, nullptr);
     ImGuiRenderPass = nullptr;
 
     Swapchain = nullptr;
 
-    DescriptorSetManager->Reset(PIPELINES::RENDER_PIPELINE);
-    DescriptorSetManager->Reset(PIPELINES::PASSTHROUGH_PIPELINE);
+    RenderTask.Cleanup();
+    PassthroughTask.Cleanup();
 }
 
 void FVulkanContext::UpdateUniformBuffer(uint32_t CurrentImage)
@@ -1692,9 +1369,9 @@ void FVulkanContext::CleanUp()
     vkDestroySampler(LogicalDevice, TextureSampler, nullptr);
     TextureImage = nullptr;
 
-    DescriptorSetManager->DestroyDescriptorSetLayout(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_FRAME_LAYOUT_INDEX);
-    DescriptorSetManager->DestroyDescriptorSetLayout(PIPELINES::RENDER_PIPELINE, LAYOUT_SETS::RENDER_PER_RENDERABLE_LAYOUT_INDEX);
-    DescriptorSetManager->DestroyDescriptorSetLayout(PIPELINES::PASSTHROUGH_PIPELINE, LAYOUT_SETS::PASSTHROUGH_LAYOUT_INDEX);
+    DescriptorSetManager->DestroyDescriptorSetLayout(RenderTask.Name, RenderTask.RENDER_PER_FRAME_LAYOUT_INDEX);
+    DescriptorSetManager->DestroyDescriptorSetLayout(RenderTask.Name, RenderTask.RENDER_PER_RENDERABLE_LAYOUT_INDEX);
+    DescriptorSetManager->DestroyDescriptorSetLayout(PassthroughTask.Name, PassthroughTask.PASSTHROUGH_PER_FRAME_LAYOUT_INDEX);
 
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();

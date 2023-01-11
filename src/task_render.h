@@ -1,0 +1,43 @@
+#pragma once
+
+#include "image.h"
+#include "vk_pipeline.h"
+
+class FRenderTask
+{
+public:
+    FRenderTask() = default;
+
+    void Init();
+    void UpdateDescriptorSets();
+    void RecordCommands();
+    void Cleanup();
+
+    ImagePtr ColorImage;
+    ImagePtr ResolvedColorImage;
+    ImagePtr NormalsImage;
+    ImagePtr RenderableIndexImage;
+    ImagePtr DepthImage;
+
+    std::vector<VkFramebuffer> RenderFramebuffers;
+
+    FGraphicsPipelineOptions GraphicsPipelineOptions;
+
+    std::vector<VkCommandBuffer> GraphicsCommandBuffers;
+
+    std::string Name = "Render pipeline";
+
+    VkPipeline Pipeline = VK_NULL_HANDLE;
+    VkRenderPass RenderPass = VK_NULL_HANDLE;
+
+    /// Task set indices
+    const uint32_t RENDER_PER_FRAME_LAYOUT_INDEX = 0;
+    const uint32_t RENDER_PER_RENDERABLE_LAYOUT_INDEX = 1;
+
+    /// Task descriptor indices
+    const uint32_t TEXTURE_SAMPLER_LAYOUT_INDEX = 0;
+    const uint32_t CAMERA_LAYOUT_INDEX = 1;
+    const uint32_t TRANSFORM_LAYOUT_INDEX = 0;
+    const uint32_t RENDERABLE_LAYOUT_INDEX = 1;
+
+};

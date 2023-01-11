@@ -57,6 +57,10 @@ set(ECS_SOURCE
 set(SOURCE
         src/main.cpp
         src/controller.cpp
+        src/task_render.h
+        src/task_render.cpp
+        src/task_passthrough.h
+        src/task_passthrough.cpp
         vulkan_helpers/vk_context.h
         vulkan_helpers/vk_utils.cpp
         vulkan_helpers/vk_context.cpp

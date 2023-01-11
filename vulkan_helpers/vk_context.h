@@ -16,6 +16,9 @@
 #include "vk_utils.h"
 #include "vk_pipeline.h"
 
+#include "task_render.h"
+#include "task_passthrough.h"
+
 #include <vector>
 #include <string>
 #include <array>
@@ -42,19 +45,12 @@ public:
     void GetDeviceQueues();
     void CreateDepthAndAAImages();
     void CreateImguiRenderpasss();
-    void CreateDescriptorSetLayouts();
-    void CreateGraphicsPipeline();
-    void CreatePassthroughPipeline();
-    void CreateRenderFramebuffers();
     void CreateImguiFramebuffers();
-    void CreatePassthroughFramebuffers();
     void LoadModelDataToGPU();
     void CreateTextureSampler();
     void CreateUniformBuffers();
-    void CreateDescriptorPool();
     void CreateImguiDescriptorPool();
-    void CreateDescriptorSet();
-    void CreateCommandBuffers();
+    void CreatePipelines();
     void CreateSyncObjects();
     void CreateImguiContext();
     void RecreateSwapChain();
@@ -147,26 +143,17 @@ public:
     // SwapChain
     std::shared_ptr<FSwapchain> Swapchain = nullptr;
     VkImage CurrentImage = VK_NULL_HANDLE;
-    std::vector<VkFramebuffer> SwapChainFramebuffers;
-    std::vector<VkFramebuffer> PassthroughFramebuffers;
 
     VkDescriptorPool ImGuiDescriptorPool;
     std::vector<VkFramebuffer> ImGuiFramebuffers;
 
-    FGraphicsPipelineOptions GraphicsPipelineOptions;
-    FGraphicsPipelineOptions PassthroughPipelineOptions;
-    VkPipeline GraphicsPipeline;
-    VkPipeline PassthroughPipeline;
+    FRenderTask RenderTask;
+    FPassthroughTask PassthroughTask;
 
 #ifndef NDEBUG
     VkDebugUtilsMessengerEXT DebugMessenger;
 #endif
     /// Images for drawing
-    ImagePtr ColorImage;
-    ImagePtr ResolvedColorImage;
-    ImagePtr NormalsImage;
-    ImagePtr RenderableIndexImage;
-    ImagePtr DepthImage;
     ImagePtr UtilityImageR32;
     ImagePtr UtilityImageR8G8B8A8_SRGB;
 
@@ -177,9 +164,6 @@ public:
 
     uint32_t  MipLevels;
     std::shared_ptr<FDescriptorSetManager>DescriptorSetManager = nullptr;
-
-    std::vector<VkCommandBuffer> GraphicsCommandBuffers;
-    std::vector<VkCommandBuffer> PassthroughCommandBuffers;
 
     std::vector<FBuffer> DeviceTransformBuffers;
     std::vector<FBuffer> DeviceCameraBuffers;
@@ -200,8 +184,6 @@ public:
 
     std::string ModelPath = "../models/viking_room/viking_room.obj";
     std::string TexturePath = "../models/viking_room/viking_room.png";
-
-    uint32_t UniqueCounter = 0u;
 };
 
 FVulkanContext& GetContext();
