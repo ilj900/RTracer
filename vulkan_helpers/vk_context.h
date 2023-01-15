@@ -47,7 +47,6 @@ public:
     void CreateImguiRenderpasss();
     void CreateImguiFramebuffers();
     void LoadModelDataToGPU();
-    void CreateTextureSampler();
     void CreateUniformBuffers();
     void CreateImguiDescriptorPool();
     void CreatePipelines();
@@ -105,6 +104,8 @@ public:
     template <typename T>
     void FetchImageData(const FImage& Image, std::vector<T>& Data);
 
+    VkSampler CreateTextureSampler(uint32_t MipLevel);
+
     VkFramebuffer CreateFramebuffer(std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name);
 
     VkShaderModule CreateShaderFromFile(const std::string& FileName);
@@ -160,9 +161,7 @@ public:
     /// Texture used to pain the model
     ImagePtr TextureImage;
 
-    VkSampler TextureSampler;
-
-    uint32_t  MipLevels;
+    uint32_t MipLevels;
     std::shared_ptr<FDescriptorSetManager>DescriptorSetManager = nullptr;
 
     std::vector<FBuffer> DeviceTransformBuffers;

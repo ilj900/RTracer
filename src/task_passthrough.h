@@ -13,7 +13,15 @@ public:
     void RecordCommands();
     void Cleanup();
 
-    ImagePtr ResolvedColorImage;
+    void RegisterInput(int Index, ImagePtr Image);
+    void RegisterOutput(int Index, ImagePtr Image);
+    ImagePtr GetInput(int Index);
+    ImagePtr GetOutput(int Index);
+
+    std::vector<ImagePtr> Inputs;
+    std::vector<ImagePtr> Outputs;
+
+    VkSampler Sampler;
 
     FGraphicsPipelineOptions GraphicsPipelineOptions;
 

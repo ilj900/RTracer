@@ -64,7 +64,6 @@ void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
         LoadModelDataToGPU();
         CreateUniformBuffers();
         TextureImage = LoadImageFromFile(TexturePath, "V_TextureImage");
-        CreateTextureSampler();
 
         CreatePipelines();
         CreateImguiRenderpasss();
@@ -945,16 +944,44 @@ void FVulkanContext::LoadModelDataToGPU()
 
 void FVulkanContext::CreatePipelines()
 {
+    uint32_t Width = Swapchain->GetWidth();
+    uint32_t Height = Swapchain->GetHeight();
+
+    auto ColorImage = CreateImage2D(Width, Height, false, MSAASamples, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+                                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                 VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_ColorImage");
+
+
+    auto NormalsImage = CreateImage2D(Width, Height, false, MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+                                   VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                   VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_NormalsImage");
+
+
+    auto RenderableIndexImage = CreateImage2D(Width, Height, false, MSAASamples, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
+                                           VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                           VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_RenderableIndexImage");
+
+    auto ResolvedColorImage = CreateImage2D(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+                                         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                         VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_ResolvedColorImage");
+
+    RenderTask.RegisterOutput(0, ColorImage);
+    RenderTask.RegisterOutput(1, NormalsImage);
+    RenderTask.RegisterOutput(2, RenderableIndexImage);
+    RenderTask.RegisterOutput(3, ResolvedColorImage);
+
     RenderTask.Init();
     RenderTask.UpdateDescriptorSets();
     RenderTask.RecordCommands();
 
+
+    PassthroughTask.RegisterInput(0, RenderTask.GetOutput(3));
     PassthroughTask.Init();
     PassthroughTask.UpdateDescriptorSet();
     PassthroughTask.RecordCommands();
 }
 
-void FVulkanContext::CreateTextureSampler()
+VkSampler FVulkanContext::CreateTextureSampler(uint32_t MipLevel)
 {
     VkSamplerCreateInfo SamplerInfo{};
     SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -975,12 +1002,16 @@ void FVulkanContext::CreateTextureSampler()
     SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     SamplerInfo.mipLodBias = 0.f;
     SamplerInfo.minLod = 0.f;
-    SamplerInfo.maxLod = static_cast<float>(MipLevels);
+    SamplerInfo.maxLod = static_cast<float>(MipLevel);
 
-    if (vkCreateSampler(LogicalDevice, &SamplerInfo, nullptr, &TextureSampler) != VK_SUCCESS)
+    VkSampler Sampler = VK_NULL_HANDLE;
+
+    if (vkCreateSampler(LogicalDevice, &SamplerInfo, nullptr, &Sampler) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create texture sampler!");
     }
+
+    return Sampler;
 }
 
 void FVulkanContext::CreateUniformBuffers()
@@ -1366,7 +1397,6 @@ void FVulkanContext::CleanUp()
 
     vkDestroyDescriptorPool(LogicalDevice, ImGuiDescriptorPool, nullptr);
 
-    vkDestroySampler(LogicalDevice, TextureSampler, nullptr);
     TextureImage = nullptr;
 
     DescriptorSetManager->DestroyDescriptorSetLayout(RenderTask.Name, RenderTask.RENDER_PER_FRAME_LAYOUT_INDEX);

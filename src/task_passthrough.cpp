@@ -15,6 +15,7 @@ void FPassthroughTask::Init()
 
     C.DescriptorSetManager->CreateDescriptorSetLayout(Name);
 
+    Sampler = C.CreateTextureSampler(C.MipLevels);
 
     auto VertexShader = C.CreateShaderFromFile("../shaders/passthrough_vert.spv");
     auto FragmentShader = C.CreateShaderFromFile("../shaders/passthrough_frag.spv");
@@ -52,8 +53,8 @@ void FPassthroughTask::UpdateDescriptorSet()
     {
         VkDescriptorImageInfo ImageBufferInfo{};
         ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        ImageBufferInfo.imageView = C.RenderTask.ResolvedColorImage->View;
-        ImageBufferInfo.sampler = C.TextureSampler;
+        ImageBufferInfo.imageView = Inputs[0]->View;
+        ImageBufferInfo.sampler = Sampler;
         C.DescriptorSetManager->UpdateDescriptorSetInfo(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX, i, ImageBufferInfo);
     }
 }
@@ -74,7 +75,7 @@ void FPassthroughTask::RecordCommands()
             Barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            Barrier.image = C.RenderTask.ResolvedColorImage->Image;
+            Barrier.image = Inputs[0]->Image;
             Barrier.subresourceRange.baseMipLevel = 0;
             Barrier.subresourceRange.levelCount = 1;
             Barrier.subresourceRange.baseArrayLayer = 0;
@@ -115,6 +116,11 @@ void FPassthroughTask::Cleanup()
 {
     auto& C = GetContext();
 
+    Inputs.clear();
+    Outputs.clear();
+
+    vkDestroySampler(C.LogicalDevice, Sampler, nullptr);
+
     for (auto Framebuffer : PassthroughFramebuffers)
     {
         vkDestroyFramebuffer(C.LogicalDevice, Framebuffer, nullptr);
@@ -125,10 +131,47 @@ void FPassthroughTask::Cleanup()
         C.CommandBufferManager->FreeCommandBuffer(CommandBuffer);
     }
 
+    vkDestroyRenderPass(C.LogicalDevice, RenderPass, nullptr);
+
     C.DescriptorSetManager->DestroyPipelineLayout(Name);
     vkDestroyPipeline(C.LogicalDevice, Pipeline, nullptr);
 
-    vkDestroyRenderPass(C.LogicalDevice, RenderPass, nullptr);
-
     C.DescriptorSetManager->Reset(Name);
+}
+
+void FPassthroughTask::RegisterInput(int Index, ImagePtr Image)
+{
+    if (Inputs.size() <= Index)
+    {
+        Inputs.resize(Index + 1);
+    }
+    Inputs[Index] = Image;
+
+}
+
+void FPassthroughTask::RegisterOutput(int Index, ImagePtr Image)
+{
+    if (Outputs.size() <= Index)
+    {
+        Outputs.resize(Index + 1);
+    }
+    Outputs[Index] = Image;
+}
+
+ImagePtr FPassthroughTask::GetInput(int Index)
+{
+    if (Inputs.size() < Index)
+    {
+        return Inputs[Index];
+    }
+    throw std::runtime_error("Wrong input index.");
+}
+
+ImagePtr FPassthroughTask::GetOutput(int Index)
+{
+    if (Inputs.size() < Index)
+    {
+        return Inputs[Index];
+    }
+    throw std::runtime_error("Wrong output index.");
 }

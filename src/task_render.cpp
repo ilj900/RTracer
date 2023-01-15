@@ -29,33 +29,16 @@ void FRenderTask::Init()
     uint32_t Width = C.Swapchain->GetWidth();
     uint32_t Height = C.Swapchain->GetHeight();
 
-
-    ColorImage = C.CreateImage2D(Width, Height, false, C.MSAASamples, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
-                               VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                               VK_IMAGE_ASPECT_COLOR_BIT, C.LogicalDevice, "V_ColorImage");
-
-
-    NormalsImage = C.CreateImage2D(Width, Height, false, C.MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                                 VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                 VK_IMAGE_ASPECT_COLOR_BIT, C.LogicalDevice, "V_NormalsImage");
-
-
-    RenderableIndexImage = C.CreateImage2D(Width, Height, false, C.MSAASamples, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
-                                         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                         VK_IMAGE_ASPECT_COLOR_BIT, C.LogicalDevice, "V_RenderableIndexImage");
-
-    ResolvedColorImage = C.CreateImage2D(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
-                                       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                       VK_IMAGE_ASPECT_COLOR_BIT, C.LogicalDevice, "V_ResolvedColorImage");
-
     /// Create Image and ImageView for Depth
     VkFormat DepthFormat = C.FindDepthFormat();
     DepthImage = C.CreateImage2D(Width, Height, false, C.MSAASamples, DepthFormat, VK_IMAGE_TILING_OPTIMAL,
-                               VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                               VK_IMAGE_ASPECT_DEPTH_BIT, C.LogicalDevice, "V_DepthImage");
+                                    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                    VK_IMAGE_ASPECT_DEPTH_BIT, C.LogicalDevice, "V_DepthImage");
 
 
     DepthImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+    Sampler = C.CreateTextureSampler(C.MipLevels);
 
     auto VertexShader = C.CreateShaderFromFile("../shaders/triangle_vert.spv");
     auto FragmentShader = C.CreateShaderFromFile("../shaders/triangle_frag.spv");
@@ -67,14 +50,15 @@ void FRenderTask::Init()
     }
     GraphicsPipelineOptions.AddVertexInputBindingDescription(FVertex::GetBindingDescription());
     GraphicsPipelineOptions.RegisterDepthStencilAttachment(DepthImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    GraphicsPipelineOptions.RegisterColorAttachment(0, ColorImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    GraphicsPipelineOptions.RegisterColorAttachment(1, NormalsImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    GraphicsPipelineOptions.RegisterColorAttachment(2, RenderableIndexImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    GraphicsPipelineOptions.RegisterResolveAttachment(0, ResolvedColorImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    GraphicsPipelineOptions.RegisterColorAttachment(0, Outputs[0], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    GraphicsPipelineOptions.RegisterColorAttachment(1, Outputs[1], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    GraphicsPipelineOptions.RegisterColorAttachment(2, Outputs[2], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    GraphicsPipelineOptions.RegisterResolveAttachment(0, Outputs[3], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
     GraphicsPipelineOptions.SetPipelineLayout(C.DescriptorSetManager->GetPipelineLayout(Name));
     GraphicsPipelineOptions.SetMSAA(C.MSAASamples);
 
     Pipeline = C.CreateGraphicsPipeline(VertexShader, FragmentShader, C.Swapchain->GetWidth(), C.Swapchain->GetHeight(), GraphicsPipelineOptions);
+    RenderPass = GraphicsPipelineOptions.RenderPass;
 
     vkDestroyShaderModule(C.LogicalDevice, VertexShader, nullptr);
     vkDestroyShaderModule(C.LogicalDevice, FragmentShader, nullptr);
@@ -82,7 +66,7 @@ void FRenderTask::Init()
     RenderFramebuffers.resize(C.Swapchain->Size());
 
     for (std::size_t i = 0; i < C.Swapchain->Size(); ++i) {
-        RenderFramebuffers[i] = C.CreateFramebuffer({ColorImage, NormalsImage, RenderableIndexImage, DepthImage, ResolvedColorImage}, GraphicsPipelineOptions.RenderPass, "V_Render_fb_" + std::to_string(i));
+        RenderFramebuffers[i] = C.CreateFramebuffer({Outputs[0], Outputs[1], Outputs[2], DepthImage, Outputs[3]}, GraphicsPipelineOptions.RenderPass, "V_Render_fb_" + std::to_string(i));
     }
 
     auto ModelsCount = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>()->Size();
@@ -136,7 +120,7 @@ void FRenderTask::UpdateDescriptorSets()
         VkDescriptorImageInfo ImageBufferInfo{};
         ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         ImageBufferInfo.imageView = C.TextureImage->View;
-        ImageBufferInfo.sampler = C.TextureSampler;
+        ImageBufferInfo.sampler = Sampler;
         C.DescriptorSetManager->UpdateDescriptorSetInfo(Name, RENDER_PER_FRAME_LAYOUT_INDEX, TEXTURE_SAMPLER_LAYOUT_INDEX, i, ImageBufferInfo);
     }
 }
@@ -198,11 +182,12 @@ void FRenderTask::Cleanup()
 {
     auto& C = GetContext();
 
-    ColorImage = nullptr;
-    ResolvedColorImage = nullptr;
-    NormalsImage = nullptr;
-    RenderableIndexImage = nullptr;
     DepthImage = nullptr;
+
+    Inputs.clear();
+    Outputs.clear();
+
+    vkDestroySampler(C.LogicalDevice, Sampler, nullptr);
 
     for (auto Framebuffer : RenderFramebuffers)
     {
@@ -214,10 +199,47 @@ void FRenderTask::Cleanup()
         C.CommandBufferManager->FreeCommandBuffer(CommandBuffer);
     }
 
+    vkDestroyRenderPass(C.LogicalDevice, RenderPass, nullptr);
+
     C.DescriptorSetManager->DestroyPipelineLayout(Name);
     vkDestroyPipeline(C.LogicalDevice, Pipeline, nullptr);
 
-    vkDestroyRenderPass(C.LogicalDevice, RenderPass, nullptr);
-
     C.DescriptorSetManager->Reset(Name);
+}
+
+void FRenderTask::RegisterInput(int Index, ImagePtr Image)
+{
+    if (Inputs.size() <= Index)
+    {
+        Inputs.resize(Index + 1);
+    }
+    Inputs[Index] = Image;
+
+}
+
+void FRenderTask::RegisterOutput(int Index, ImagePtr Image)
+{
+    if (Outputs.size() <= Index)
+    {
+        Outputs.resize(Index + 1);
+    }
+    Outputs[Index] = Image;
+}
+
+ImagePtr FRenderTask::GetInput(int Index)
+{
+    if (Inputs.size() > Index)
+    {
+        return Inputs[Index];
+    }
+    throw std::runtime_error("Wrong input index.");
+}
+
+ImagePtr FRenderTask::GetOutput(int Index)
+{
+    if (Outputs.size() > Index)
+    {
+        return Outputs[Index];
+    }
+    throw std::runtime_error("Wrong output index.");
 }

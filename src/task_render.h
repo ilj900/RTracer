@@ -13,10 +13,16 @@ public:
     void RecordCommands();
     void Cleanup();
 
-    ImagePtr ColorImage;
-    ImagePtr ResolvedColorImage;
-    ImagePtr NormalsImage;
-    ImagePtr RenderableIndexImage;
+    void RegisterInput(int Index, ImagePtr Image);
+    void RegisterOutput(int Index, ImagePtr Image);
+    ImagePtr GetInput(int Index);
+    ImagePtr GetOutput(int Index);
+
+    std::vector<ImagePtr> Inputs;
+    std::vector<ImagePtr> Outputs;
+
+    VkSampler Sampler;
+
     ImagePtr DepthImage;
 
     std::vector<VkFramebuffer> RenderFramebuffers;
