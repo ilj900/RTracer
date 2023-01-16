@@ -111,6 +111,8 @@ public:
     VkShaderModule CreateShaderFromFile(const std::string& FileName);
     VkPipeline CreateGraphicsPipeline(VkShaderModule VertexShader, VkShaderModule FragmentShader, std::uint32_t Width, std::uint32_t Height, FGraphicsPipelineOptions& GraphicsPipelineOptions);
 
+    VkSemaphore CreateSemaphore();
+
 public:
     VkQueue GetQueue(VkQueueFlagBits QueueFlagBits);
     uint32_t GetQueueIndex(VkQueueFlagBits QueueFlagBits);
@@ -169,7 +171,6 @@ public:
     std::vector<FBuffer> DeviceRenderableBuffers;
 
     std::vector<VkSemaphore> ImageAvailableSemaphores;
-    std::vector<VkSemaphore> RenderFinishedSemaphores;
     std::vector<VkSemaphore> PassthroughFinishedSemaphore;
     std::vector<VkSemaphore> ImGuiFinishedSemaphores;
     std::vector<VkFence> RenderingFinishedFences;

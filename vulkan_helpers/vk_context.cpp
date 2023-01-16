@@ -878,6 +878,21 @@ VkPipeline FVulkanContext::CreateGraphicsPipeline(VkShaderModule VertexShader, V
     return Pipeline;
 }
 
+VkSemaphore FVulkanContext::CreateSemaphore()
+{
+    VkSemaphoreCreateInfo SemaphoreInfo{};
+    SemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    VkSemaphore Semaphore;
+
+    if (vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &Semaphore) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create synchronization objects for a frame!");
+    }
+
+    return Semaphore;
+}
+
 void FVulkanContext::CreateImguiRenderpasss()
 {
     ImGuiRenderPass = std::make_shared<FRenderPass>();
@@ -1065,7 +1080,6 @@ void FVulkanContext::CreateImguiDescriptorPool()
 void FVulkanContext::CreateSyncObjects()
 {
     ImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    RenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     PassthroughFinishedSemaphore.resize(MAX_FRAMES_IN_FLIGHT);
     RenderingFinishedFences.resize(MAX_FRAMES_IN_FLIGHT);
     ImagesInFlight.resize(MAX_FRAMES_IN_FLIGHT, VK_NULL_HANDLE);
@@ -1082,8 +1096,6 @@ void FVulkanContext::CreateSyncObjects()
     for (std::size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
         if (vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &ImageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &RenderFinishedSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &PassthroughFinishedSemaphore[i]) != VK_SUCCESS ||
             vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &ImGuiFinishedSemaphores[i]) != VK_SUCCESS ||
             vkCreateFence(LogicalDevice, &FenceInfo, nullptr, &ImGuiFinishedFences[i]) != VK_SUCCESS ||
             vkCreateFence(LogicalDevice, &FenceInfo, nullptr, &RenderingFinishedFences[i]) != VK_SUCCESS)
@@ -1159,51 +1171,14 @@ void FVulkanContext::Render()
 
     UpdateUniformBuffer(ImageIndex);
 
-    VkSubmitInfo SubmitInfo{};
-    SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    VkSemaphore WaitSemaphores[] = {ImageAvailableSemaphores[CurrentFrame]};
-    VkPipelineStageFlags WaitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    SubmitInfo.waitSemaphoreCount = 1;
-    SubmitInfo.pWaitSemaphores = WaitSemaphores;
-    SubmitInfo.pWaitDstStageMask = WaitStages;
-    SubmitInfo.commandBufferCount = 1;
-    SubmitInfo.pCommandBuffers = &RenderTask.GraphicsCommandBuffers[ImageIndex];
-
-    VkSemaphore SignalSemaphores[] = {RenderFinishedSemaphores[CurrentFrame]};
-    SubmitInfo.signalSemaphoreCount = 1;
-    SubmitInfo.pSignalSemaphores = SignalSemaphores;
-
     /// Reset frame state to unsignaled, just before rendering
     vkResetFences(LogicalDevice, 1, &RenderingFinishedFences[CurrentFrame]);
 
-    /// Submit rendering. When rendering finished, appropriate fence will be signalled
-    if (vkQueueSubmit(GetGraphicsQueue(), 1, &SubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to submit draw command buffer!");
-    }
+    auto RenderSignalSemaphore = RenderTask.Submit(GetGraphicsQueue(), ImageAvailableSemaphores[CurrentFrame], CurrentFrame);
 
+    auto PassthroughSignalSemaphore = PassthroughTask.Submit(GetGraphicsQueue(), RenderSignalSemaphore, CurrentFrame);
 
-    VkSubmitInfo PassThroughSubmitInfo{};
-    PassThroughSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    VkSemaphore PassthroughWaitSemaphores[] = {RenderFinishedSemaphores[CurrentFrame]};
-    VkPipelineStageFlags PassthroughWaitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    PassThroughSubmitInfo.waitSemaphoreCount = 1;
-    PassThroughSubmitInfo.pWaitSemaphores = PassthroughWaitSemaphores;
-    PassThroughSubmitInfo.pWaitDstStageMask = PassthroughWaitStages;
-    PassThroughSubmitInfo.commandBufferCount = 1;
-    PassThroughSubmitInfo.pCommandBuffers = &PassthroughTask.PassthroughCommandBuffers[ImageIndex];
-
-    VkSemaphore PassthroughSignalSemaphores[] = {PassthroughFinishedSemaphore[CurrentFrame]};
-    PassThroughSubmitInfo.signalSemaphoreCount = 1;
-    PassThroughSubmitInfo.pSignalSemaphores = PassthroughSignalSemaphores;
-
-    /// Submit rendering. When rendering finished, appropriate fence will be signalled
-    if (vkQueueSubmit(GetGraphicsQueue(), 1, &PassThroughSubmitInfo, RenderingFinishedFences[CurrentFrame]) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to submit draw command buffer!");
-    }
+    PassthroughFinishedSemaphore[CurrentFrame] = PassthroughSignalSemaphore;
 }
 
 void FVulkanContext::RenderImGui()
@@ -1411,9 +1386,7 @@ void FVulkanContext::CleanUp()
 
     for(std::size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
-        vkDestroySemaphore(LogicalDevice, RenderFinishedSemaphores[i], nullptr);
         vkDestroySemaphore(LogicalDevice, ImageAvailableSemaphores[i], nullptr);
-        vkDestroySemaphore(LogicalDevice, PassthroughFinishedSemaphore[i], nullptr);
         vkDestroySemaphore(LogicalDevice, ImGuiFinishedSemaphores[i], nullptr);
         vkDestroyFence(LogicalDevice, RenderingFinishedFences[i], nullptr);
         vkDestroyFence(LogicalDevice, ImGuiFinishedFences[i], nullptr);

@@ -12,6 +12,7 @@ public:
     void UpdateDescriptorSets();
     void RecordCommands();
     void Cleanup();
+    VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, int IterationIndex);
 
     void RegisterInput(int Index, ImagePtr Image);
     void RegisterOutput(int Index, ImagePtr Image);
@@ -30,6 +31,8 @@ public:
     FGraphicsPipelineOptions GraphicsPipelineOptions;
 
     std::vector<VkCommandBuffer> GraphicsCommandBuffers;
+
+    std::vector<VkSemaphore> SignalSemaphores;
 
     std::string Name = "Render pipeline";
 

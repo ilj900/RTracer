@@ -79,6 +79,11 @@ void FRenderTask::Init()
     C.DescriptorSetManager->ReserveDescriptorPool(Name);
 
     C.DescriptorSetManager->AllocateAllDescriptorSets(Name);
+
+    for (int i = 0; i < C.Swapchain->Size(); ++i)
+    {
+        SignalSemaphores.push_back(C.CreateSemaphore());
+    }
 }
 
 void FRenderTask::UpdateDescriptorSets()
@@ -205,6 +210,37 @@ void FRenderTask::Cleanup()
     vkDestroyPipeline(C.LogicalDevice, Pipeline, nullptr);
 
     C.DescriptorSetManager->Reset(Name);
+
+    for (auto Semaphore : SignalSemaphores)
+    {
+        vkDestroySemaphore(C.LogicalDevice, Semaphore, nullptr);
+    }
+}
+
+VkSemaphore FRenderTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, int IterationIndex)
+{
+    VkSubmitInfo SubmitInfo{};
+    SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    VkSemaphore WaitSemaphores[] = {WaitSemaphore};
+    VkPipelineStageFlags WaitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    SubmitInfo.waitSemaphoreCount = 1;
+    SubmitInfo.pWaitSemaphores = WaitSemaphores;
+    SubmitInfo.pWaitDstStageMask = WaitStages;
+    SubmitInfo.commandBufferCount = 1;
+    SubmitInfo.pCommandBuffers = &GraphicsCommandBuffers[IterationIndex];
+
+    VkSemaphore Semaphores[] = {SignalSemaphores[IterationIndex]};
+    SubmitInfo.signalSemaphoreCount = 1;
+    SubmitInfo.pSignalSemaphores = Semaphores;
+
+    /// Submit rendering. When rendering finished, appropriate fence will be signalled
+    if (vkQueueSubmit(Queue, 1, &SubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to submit draw command buffer!");
+    }
+
+    return SignalSemaphores[IterationIndex];
 }
 
 void FRenderTask::RegisterInput(int Index, ImagePtr Image)

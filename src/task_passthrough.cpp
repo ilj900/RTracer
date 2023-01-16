@@ -43,6 +43,11 @@ void FPassthroughTask::Init()
     C.DescriptorSetManager->ReserveDescriptorPool(Name);
 
     C.DescriptorSetManager->AllocateAllDescriptorSets(Name);
+
+    for (int i = 0; i < C.Swapchain->Size(); ++i)
+    {
+        SignalSemaphores.push_back(C.CreateSemaphore());
+    }
 }
 
 void FPassthroughTask::UpdateDescriptorSet()
@@ -137,6 +142,39 @@ void FPassthroughTask::Cleanup()
     vkDestroyPipeline(C.LogicalDevice, Pipeline, nullptr);
 
     C.DescriptorSetManager->Reset(Name);
+
+    for (auto Semaphore : SignalSemaphores)
+    {
+        vkDestroySemaphore(C.LogicalDevice, Semaphore, nullptr);
+    }
+}
+
+VkSemaphore FPassthroughTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, int IterationIndex)
+{
+    auto& C = GetContext();
+
+    VkSubmitInfo PassThroughSubmitInfo{};
+    PassThroughSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    VkSemaphore PassthroughWaitSemaphores[] = {WaitSemaphore};
+    VkPipelineStageFlags PassthroughWaitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    PassThroughSubmitInfo.waitSemaphoreCount = 1;
+    PassThroughSubmitInfo.pWaitSemaphores = PassthroughWaitSemaphores;
+    PassThroughSubmitInfo.pWaitDstStageMask = PassthroughWaitStages;
+    PassThroughSubmitInfo.commandBufferCount = 1;
+    PassThroughSubmitInfo.pCommandBuffers = &PassthroughCommandBuffers[IterationIndex];
+
+    VkSemaphore PassthroughSignalSemaphores[] = {SignalSemaphores[IterationIndex]};
+    PassThroughSubmitInfo.signalSemaphoreCount = 1;
+    PassThroughSubmitInfo.pSignalSemaphores = PassthroughSignalSemaphores;
+
+    /// Submit rendering. When rendering finished, appropriate fence will be signalled
+    if (vkQueueSubmit(Queue, 1, &PassThroughSubmitInfo, C.RenderingFinishedFences[IterationIndex]) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to submit draw command buffer!");
+    }
+    
+    return SignalSemaphores[IterationIndex];
 }
 
 void FPassthroughTask::RegisterInput(int Index, ImagePtr Image)

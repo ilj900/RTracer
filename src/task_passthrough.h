@@ -12,6 +12,7 @@ public:
     void UpdateDescriptorSet();
     void RecordCommands();
     void Cleanup();
+    VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, int IterationIndex);
 
     void RegisterInput(int Index, ImagePtr Image);
     void RegisterOutput(int Index, ImagePtr Image);
@@ -20,6 +21,8 @@ public:
 
     std::vector<ImagePtr> Inputs;
     std::vector<ImagePtr> Outputs;
+
+    std::vector<VkSemaphore> SignalSemaphores;
 
     VkSampler Sampler;
 
