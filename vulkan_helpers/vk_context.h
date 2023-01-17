@@ -173,8 +173,6 @@ public:
     std::vector<VkSemaphore> ImageAvailableSemaphores;
     std::vector<VkSemaphore> PassthroughFinishedSemaphore;
     std::vector<VkSemaphore> ImGuiFinishedSemaphores;
-    std::vector<VkFence> RenderingFinishedFences;
-    std::vector<VkFence> ImGuiFinishedFences;
     std::vector<VkFence> ImagesInFlight;
     size_t CurrentFrame = 0;
     uint32_t ImageIndex = 0;

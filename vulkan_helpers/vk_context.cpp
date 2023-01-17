@@ -1081,9 +1081,7 @@ void FVulkanContext::CreateSyncObjects()
 {
     ImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     PassthroughFinishedSemaphore.resize(MAX_FRAMES_IN_FLIGHT);
-    RenderingFinishedFences.resize(MAX_FRAMES_IN_FLIGHT);
     ImagesInFlight.resize(MAX_FRAMES_IN_FLIGHT, VK_NULL_HANDLE);
-    ImGuiFinishedFences.resize(MAX_FRAMES_IN_FLIGHT);
     ImGuiFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 
     VkSemaphoreCreateInfo SemaphoreInfo{};
@@ -1097,8 +1095,7 @@ void FVulkanContext::CreateSyncObjects()
     {
         if (vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &ImageAvailableSemaphores[i]) != VK_SUCCESS ||
             vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &ImGuiFinishedSemaphores[i]) != VK_SUCCESS ||
-            vkCreateFence(LogicalDevice, &FenceInfo, nullptr, &ImGuiFinishedFences[i]) != VK_SUCCESS ||
-            vkCreateFence(LogicalDevice, &FenceInfo, nullptr, &RenderingFinishedFences[i]) != VK_SUCCESS)
+            vkCreateFence(LogicalDevice, &FenceInfo, nullptr, &ImagesInFlight[i]) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create synchronization objects for a frame!");
         }
@@ -1144,7 +1141,7 @@ void FVulkanContext::CreateImguiContext()
 void FVulkanContext::Render()
 {
     /// Previous rendering iteration of the frame might still be in use, so we wait for it
-    vkWaitForFences(LogicalDevice, 1, &ImGuiFinishedFences[CurrentFrame], VK_TRUE, UINT64_MAX);
+    vkWaitForFences(LogicalDevice, 1, &ImagesInFlight[CurrentFrame], VK_TRUE, UINT64_MAX);
 
     /// Acquire next image from swapchain, also it's index and provide semaphore to signal when image is ready to be used
     VkResult Result = Swapchain->GetNextImage(CurrentImage, ImageAvailableSemaphores[CurrentFrame], ImageIndex);
@@ -1166,13 +1163,10 @@ void FVulkanContext::Render()
         vkWaitForFences(LogicalDevice, 1, &ImagesInFlight[ImageIndex], VK_TRUE, UINT64_MAX);
     }
 
-    /// Mark this image as is being in use
-    ImagesInFlight[ImageIndex] = ImGuiFinishedFences[CurrentFrame];
-
     UpdateUniformBuffer(ImageIndex);
 
     /// Reset frame state to unsignaled, just before rendering
-    vkResetFences(LogicalDevice, 1, &RenderingFinishedFences[CurrentFrame]);
+    vkResetFences(LogicalDevice, 1, &ImagesInFlight[CurrentFrame]);
 
     auto RenderSignalSemaphore = RenderTask.Submit(GetGraphicsQueue(), ImageAvailableSemaphores[CurrentFrame], CurrentFrame);
 
@@ -1183,8 +1177,6 @@ void FVulkanContext::Render()
 
 void FVulkanContext::RenderImGui()
 {
-    vkWaitForFences(LogicalDevice, 1, &RenderingFinishedFences[CurrentFrame], VK_TRUE, UINT64_MAX);
-
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -1231,9 +1223,7 @@ void FVulkanContext::RenderImGui()
         SubmitInfo.signalSemaphoreCount = 1;
         SubmitInfo.pSignalSemaphores = SignalSemaphores;
 
-        vkResetFences(LogicalDevice, 1, &ImGuiFinishedFences[CurrentFrame]);
-
-        if (vkQueueSubmit(GetGraphicsQueue(), 1, &SubmitInfo, ImGuiFinishedFences[CurrentFrame]) != VK_SUCCESS)
+        if (vkQueueSubmit(GetGraphicsQueue(), 1, &SubmitInfo, ImagesInFlight[CurrentFrame]) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to submit ImGui draw command buffer!");
         }
@@ -1388,8 +1378,7 @@ void FVulkanContext::CleanUp()
     {
         vkDestroySemaphore(LogicalDevice, ImageAvailableSemaphores[i], nullptr);
         vkDestroySemaphore(LogicalDevice, ImGuiFinishedSemaphores[i], nullptr);
-        vkDestroyFence(LogicalDevice, RenderingFinishedFences[i], nullptr);
-        vkDestroyFence(LogicalDevice, ImGuiFinishedFences[i], nullptr);
+        vkDestroyFence(LogicalDevice, ImagesInFlight[i], nullptr);
     }
 
     CommandBufferManager = nullptr;

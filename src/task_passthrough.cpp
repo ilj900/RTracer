@@ -169,7 +169,7 @@ VkSemaphore FPassthroughTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, i
     PassThroughSubmitInfo.pSignalSemaphores = PassthroughSignalSemaphores;
 
     /// Submit rendering. When rendering finished, appropriate fence will be signalled
-    if (vkQueueSubmit(Queue, 1, &PassThroughSubmitInfo, C.RenderingFinishedFences[IterationIndex]) != VK_SUCCESS)
+    if (vkQueueSubmit(Queue, 1, &PassThroughSubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to submit draw command buffer!");
     }
