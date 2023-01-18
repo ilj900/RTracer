@@ -151,7 +151,7 @@ public:
     std::vector<VkFramebuffer> ImGuiFramebuffers;
 
     FRenderTask RenderTask;
-    FPassthroughTask PassthroughTask;
+    std::shared_ptr<FPassthroughTask> PassthroughTask = nullptr;
 
 #ifndef NDEBUG
     VkDebugUtilsMessengerEXT DebugMessenger;

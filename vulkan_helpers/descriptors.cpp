@@ -96,6 +96,16 @@ void FPipelineDescriptorSetLayout::DestroyPipelineLayout(VkDevice LogicalDevice)
     vkDestroyPipelineLayout(LogicalDevice, PipelineLayout, nullptr);
 }
 
+void FPipelineDescriptorSetLayout::CleanAll(VkDevice LogicalDevice)
+{
+    for (auto Entry : VkDescriptorSetLayouts)
+    {
+        vkDestroyDescriptorSetLayout(LogicalDevice, Entry.second, nullptr);
+    }
+
+    VkDescriptorSetLayouts.clear();
+}
+
 void FPipelineDescriptorSetLayout::ReserveDescriptorSet(uint32_t DescriptorSetLayoutIndex, uint32_t Count)
 {
     Sets[DescriptorSetLayoutIndex] += Count;
@@ -230,6 +240,14 @@ FDescriptorSetManager::FDescriptorSetManager(VkDevice LogicalDevice):
         LogicalDevice(LogicalDevice)
 {
 };
+
+FDescriptorSetManager::~FDescriptorSetManager()
+{
+    for (auto Entry : PipelineDescriptorSetLayouts)
+    {
+        Entry.second.CleanAll(LogicalDevice);
+    }
+}
 
 void FDescriptorSetManager::AddDescriptorLayout(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, const FDescriptor& Descriptor)
 {

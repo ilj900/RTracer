@@ -990,10 +990,11 @@ void FVulkanContext::CreatePipelines()
     RenderTask.RecordCommands();
 
 
-    PassthroughTask.RegisterInput(0, RenderTask.GetOutput(3));
-    PassthroughTask.Init();
-    PassthroughTask.UpdateDescriptorSet();
-    PassthroughTask.RecordCommands();
+    PassthroughTask = std::make_shared<FPassthroughTask>(this, int(Swapchain->Size()), LogicalDevice);
+    PassthroughTask->RegisterInput(0, RenderTask.GetOutput(3));
+    PassthroughTask->Init();
+    PassthroughTask->UpdateDescriptorSet();
+    PassthroughTask->RecordCommands();
 }
 
 VkSampler FVulkanContext::CreateTextureSampler(uint32_t MipLevel)
@@ -1170,7 +1171,7 @@ void FVulkanContext::Render()
 
     auto RenderSignalSemaphore = RenderTask.Submit(GetGraphicsQueue(), ImageAvailableSemaphores[CurrentFrame], CurrentFrame);
 
-    auto PassthroughSignalSemaphore = PassthroughTask.Submit(GetGraphicsQueue(), RenderSignalSemaphore, CurrentFrame);
+    auto PassthroughSignalSemaphore = PassthroughTask->Submit(GetGraphicsQueue(), RenderSignalSemaphore, CurrentFrame);
 
     PassthroughFinishedSemaphore[CurrentFrame] = PassthroughSignalSemaphore;
 }
@@ -1291,9 +1292,10 @@ void FVulkanContext::RecreateSwapChain()
     RenderTask.UpdateDescriptorSets();
     RenderTask.RecordCommands();
 
-    PassthroughTask.Init();
-    PassthroughTask.UpdateDescriptorSet();
-    PassthroughTask.RecordCommands();
+    PassthroughTask = std::make_shared<FPassthroughTask>(this, int(Swapchain->Size()), LogicalDevice);
+    PassthroughTask->Init();
+    PassthroughTask->UpdateDescriptorSet();
+    PassthroughTask->RecordCommands();
 
     CurrentFrame = 0;
 }
@@ -1316,7 +1318,8 @@ void FVulkanContext::CleanUpSwapChain()
     Swapchain = nullptr;
 
     RenderTask.Cleanup();
-    PassthroughTask.Cleanup();
+    PassthroughTask->Cleanup();
+    PassthroughTask = nullptr;
 }
 
 void FVulkanContext::UpdateUniformBuffer(uint32_t CurrentImage)
@@ -1364,9 +1367,7 @@ void FVulkanContext::CleanUp()
 
     TextureImage = nullptr;
 
-    DescriptorSetManager->DestroyDescriptorSetLayout(RenderTask.Name, RenderTask.RENDER_PER_FRAME_LAYOUT_INDEX);
-    DescriptorSetManager->DestroyDescriptorSetLayout(RenderTask.Name, RenderTask.RENDER_PER_RENDERABLE_LAYOUT_INDEX);
-    DescriptorSetManager->DestroyDescriptorSetLayout(PassthroughTask.Name, PassthroughTask.PASSTHROUGH_PER_FRAME_LAYOUT_INDEX);
+    DescriptorSetManager = nullptr;
 
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
@@ -1386,7 +1387,6 @@ void FVulkanContext::CleanUp()
     vkDestroyDevice(LogicalDevice, nullptr);
 
     DestroyDebugUtilsMessengerEXT();
-
 
     vkDestroySurfaceKHR(Instance, Surface, nullptr);
     vkDestroyInstance(Instance, nullptr);

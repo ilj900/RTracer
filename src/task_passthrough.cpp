@@ -6,47 +6,50 @@
 
 #include "vk_debug.h"
 
+FPassthroughTask::FPassthroughTask(FVulkanContext* Context, int NumberOfFrames, VkDevice LogicalDevice) :
+Context(Context), FramesCount(NumberOfFrames), LogicalDevice(LogicalDevice)
+{
+}
+
 void FPassthroughTask::Init()
 {
-    auto& C = GetContext();
-
-    C.DescriptorSetManager->AddDescriptorLayout(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX,
+    Context->DescriptorSetManager->AddDescriptorLayout(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX,
                                               {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
 
-    C.DescriptorSetManager->CreateDescriptorSetLayout(Name);
+    Context->DescriptorSetManager->CreateDescriptorSetLayout(Name);
 
-    Sampler = C.CreateTextureSampler(C.MipLevels);
+    Sampler = Context->CreateTextureSampler(Context->MipLevels);
 
-    auto VertexShader = C.CreateShaderFromFile("../shaders/passthrough_vert.spv");
-    auto FragmentShader = C.CreateShaderFromFile("../shaders/passthrough_frag.spv");
+    auto VertexShader = Context->CreateShaderFromFile("../shaders/passthrough_vert.spv");
+    auto FragmentShader = Context->CreateShaderFromFile("../shaders/passthrough_frag.spv");
 
-    GraphicsPipelineOptions.RegisterColorAttachment(0, C.Swapchain->Images[0], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    GraphicsPipelineOptions.SetPipelineLayout(C.DescriptorSetManager->GetPipelineLayout(Name));
+    GraphicsPipelineOptions.RegisterColorAttachment(0, Context->Swapchain->Images[0], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    GraphicsPipelineOptions.SetPipelineLayout(Context->DescriptorSetManager->GetPipelineLayout(Name));
 
-    Pipeline = C.CreateGraphicsPipeline(VertexShader, FragmentShader, C.Swapchain->GetWidth(), C.Swapchain->GetHeight(), GraphicsPipelineOptions);
+    Pipeline = Context->CreateGraphicsPipeline(VertexShader, FragmentShader, Context->Swapchain->GetWidth(), Context->Swapchain->GetHeight(), GraphicsPipelineOptions);
     RenderPass = GraphicsPipelineOptions.RenderPass;
 
-    vkDestroyShaderModule(C.LogicalDevice, VertexShader, nullptr);
-    vkDestroyShaderModule(C.LogicalDevice, FragmentShader, nullptr);
+    vkDestroyShaderModule(Context->LogicalDevice, VertexShader, nullptr);
+    vkDestroyShaderModule(Context->LogicalDevice, FragmentShader, nullptr);
 
-    PassthroughFramebuffers.resize(C.Swapchain->Size());
+    PassthroughFramebuffers.resize(Context->Swapchain->Size());
     for (std::size_t i = 0; i < PassthroughFramebuffers.size(); ++i)
     {
-        PassthroughFramebuffers[i] = C.CreateFramebuffer({C.Swapchain->Images[i]}, RenderPass, "V_Passthrough_fb_" + std::to_string(i));
+        PassthroughFramebuffers[i] = Context->CreateFramebuffer({Context->Swapchain->Images[i]}, RenderPass, "V_Passthrough_fb_" + std::to_string(i));
     }
 
-    auto NumberOfSwapChainImages = C.Swapchain->Size();
+    auto NumberOfSwapChainImages = Context->Swapchain->Size();
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-    C.DescriptorSetManager->ReserveDescriptorSet(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, NumberOfSwapChainImages);
+    Context->DescriptorSetManager->ReserveDescriptorSet(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, NumberOfSwapChainImages);
 
-    C.DescriptorSetManager->ReserveDescriptorPool(Name);
+    Context->DescriptorSetManager->ReserveDescriptorPool(Name);
 
-    C.DescriptorSetManager->AllocateAllDescriptorSets(Name);
+    Context->DescriptorSetManager->AllocateAllDescriptorSets(Name);
 
-    for (int i = 0; i < C.Swapchain->Size(); ++i)
+    for (int i = 0; i < FramesCount; ++i)
     {
-        SignalSemaphores.push_back(C.CreateSemaphore());
+        SignalSemaphores.push_back(Context->CreateSemaphore());
     }
 }
 
@@ -66,13 +69,11 @@ void FPassthroughTask::UpdateDescriptorSet()
 
 void FPassthroughTask::RecordCommands()
 {
-    auto& C = GetContext();
-
-    PassthroughCommandBuffers.resize(PassthroughFramebuffers.size());
+    PassthroughCommandBuffers.resize(FramesCount);
 
     for (std::size_t i = 0; i < PassthroughCommandBuffers.size(); ++i)
     {
-        PassthroughCommandBuffers[i] = C.CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
+        PassthroughCommandBuffers[i] = Context->CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
             VkImageMemoryBarrier Barrier{};
             Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -96,7 +97,7 @@ void FPassthroughTask::RecordCommands()
             RenderPassInfo.renderPass = RenderPass;
             RenderPassInfo.framebuffer = PassthroughFramebuffers[i];
             RenderPassInfo.renderArea.offset = {0, 0};
-            RenderPassInfo.renderArea.extent = C.Swapchain->GetExtent2D();
+            RenderPassInfo.renderArea.extent = Context->Swapchain->GetExtent2D();
 
             std::vector<VkClearValue> ClearValues{1};
             ClearValues[0].color = {0.f, 0.f, 1.f, 1.f};
@@ -105,54 +106,50 @@ void FPassthroughTask::RecordCommands()
 
             vkCmdBeginRenderPass(CommandBuffer, &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
-            auto PassthroughDescriptorSet = C.DescriptorSetManager->GetSet(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, i);
-            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, C.DescriptorSetManager->GetPipelineLayout(Name),
+            auto PassthroughDescriptorSet = Context->DescriptorSetManager->GetSet(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, i);
+            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &PassthroughDescriptorSet, 0, nullptr);
 
             vkCmdDraw(CommandBuffer, 3, 1, 0, 0);
             vkCmdEndRenderPass(CommandBuffer);
         });
 
-        V::SetName(C.LogicalDevice, PassthroughCommandBuffers[i], "V_PassthroughCommandBuffers" + std::to_string(i));
+        V::SetName(LogicalDevice, PassthroughCommandBuffers[i], "V_PassthroughCommandBuffers" + std::to_string(i));
     }
 }
 
 void FPassthroughTask::Cleanup()
 {
-    auto& C = GetContext();
-
     Inputs.clear();
     Outputs.clear();
 
-    vkDestroySampler(C.LogicalDevice, Sampler, nullptr);
+    vkDestroySampler(LogicalDevice, Sampler, nullptr);
 
     for (auto Framebuffer : PassthroughFramebuffers)
     {
-        vkDestroyFramebuffer(C.LogicalDevice, Framebuffer, nullptr);
+        vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
     }
 
     for (auto& CommandBuffer : PassthroughCommandBuffers)
     {
-        C.CommandBufferManager->FreeCommandBuffer(CommandBuffer);
+        Context->CommandBufferManager->FreeCommandBuffer(CommandBuffer);
     }
 
-    vkDestroyRenderPass(C.LogicalDevice, RenderPass, nullptr);
+    vkDestroyRenderPass(LogicalDevice, RenderPass, nullptr);
 
-    C.DescriptorSetManager->DestroyPipelineLayout(Name);
-    vkDestroyPipeline(C.LogicalDevice, Pipeline, nullptr);
+    Context->DescriptorSetManager->DestroyPipelineLayout(Name);
+    vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
 
-    C.DescriptorSetManager->Reset(Name);
+    Context->DescriptorSetManager->Reset(Name);
 
     for (auto Semaphore : SignalSemaphores)
     {
-        vkDestroySemaphore(C.LogicalDevice, Semaphore, nullptr);
+        vkDestroySemaphore(LogicalDevice, Semaphore, nullptr);
     }
 }
 
 VkSemaphore FPassthroughTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, int IterationIndex)
 {
-    auto& C = GetContext();
-
     VkSubmitInfo PassThroughSubmitInfo{};
     PassThroughSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 

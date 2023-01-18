@@ -3,10 +3,12 @@
 #include "image.h"
 #include "vk_pipeline.h"
 
+class FVulkanContext;
+
 class FPassthroughTask
 {
 public:
-    FPassthroughTask() = default;
+    FPassthroughTask(FVulkanContext* Context, int NumberOfFrames, VkDevice LogicalDevice);
 
     void Init();
     void UpdateDescriptorSet();
@@ -35,6 +37,10 @@ public:
 
     std::vector<VkFramebuffer> PassthroughFramebuffers;
     std::vector<VkCommandBuffer> PassthroughCommandBuffers;
+
+    FVulkanContext* Context = nullptr;
+    int FramesCount = 2;
+    VkDevice LogicalDevice = VK_NULL_HANDLE;
 
     /// Task set indices
     const uint32_t PASSTHROUGH_PER_FRAME_LAYOUT_INDEX = 0;

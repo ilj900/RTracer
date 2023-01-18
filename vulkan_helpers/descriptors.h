@@ -35,6 +35,8 @@ struct FPipelineDescriptorSetLayout
     void DestroyDescriptorSetLayout(VkDevice LogicalDevice, uint32_t DescriptorSetLayoutIndex);
     void DestroyPipelineLayout(VkDevice LogicalDevice);
 
+    void CleanAll(VkDevice LogicalDevice);
+
     void FreeDescriptorPool(VkDevice LogicalDevice);
     void Reset(VkDevice LogicalDevice);
 
@@ -50,6 +52,7 @@ class FDescriptorSetManager
 {
 public:
     FDescriptorSetManager(VkDevice LogicalDevice);
+    ~FDescriptorSetManager();
 
     void AddDescriptorLayout(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, const FDescriptor& Descriptor);
     void CreateDescriptorSetLayout(const std::string& PipelineName);
