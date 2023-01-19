@@ -3,10 +3,12 @@
 #include "image.h"
 #include "vk_pipeline.h"
 
+class FVulkanContext;
+
 class FRenderTask
 {
 public:
-    FRenderTask() = default;
+    FRenderTask(FVulkanContext* Context, int NumberOfFrames, VkDevice LogicalDevice);
 
     void Init();
     void UpdateDescriptorSets();
@@ -38,6 +40,10 @@ public:
 
     VkPipeline Pipeline = VK_NULL_HANDLE;
     VkRenderPass RenderPass = VK_NULL_HANDLE;
+
+    FVulkanContext* Context = nullptr;
+    int FramesCount = 2;
+    VkDevice LogicalDevice = VK_NULL_HANDLE;
 
     /// Task set indices
     const uint32_t RENDER_PER_FRAME_LAYOUT_INDEX = 0;

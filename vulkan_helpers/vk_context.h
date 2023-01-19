@@ -132,7 +132,6 @@ public:
 
     std::shared_ptr<FRenderPass> ImGuiRenderPass = nullptr;
 
-
     /// Queues
     struct IndexQueue
     {
@@ -150,7 +149,7 @@ public:
     VkDescriptorPool ImGuiDescriptorPool;
     std::vector<VkFramebuffer> ImGuiFramebuffers;
 
-    FRenderTask RenderTask;
+    std::shared_ptr<FRenderTask> RenderTask = nullptr;
     std::shared_ptr<FPassthroughTask> PassthroughTask = nullptr;
 
 #ifndef NDEBUG

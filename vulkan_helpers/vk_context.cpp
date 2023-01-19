@@ -980,18 +980,19 @@ void FVulkanContext::CreatePipelines()
                                          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                          VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_ResolvedColorImage");
 
-    RenderTask.RegisterOutput(0, ColorImage);
-    RenderTask.RegisterOutput(1, NormalsImage);
-    RenderTask.RegisterOutput(2, RenderableIndexImage);
-    RenderTask.RegisterOutput(3, ResolvedColorImage);
+    RenderTask = std::make_shared<FRenderTask>(this, int(Swapchain->Size()), LogicalDevice);
+    RenderTask->RegisterOutput(0, ColorImage);
+    RenderTask->RegisterOutput(1, NormalsImage);
+    RenderTask->RegisterOutput(2, RenderableIndexImage);
+    RenderTask->RegisterOutput(3, ResolvedColorImage);
 
-    RenderTask.Init();
-    RenderTask.UpdateDescriptorSets();
-    RenderTask.RecordCommands();
+    RenderTask->Init();
+    RenderTask->UpdateDescriptorSets();
+    RenderTask->RecordCommands();
 
 
     PassthroughTask = std::make_shared<FPassthroughTask>(this, int(Swapchain->Size()), LogicalDevice);
-    PassthroughTask->RegisterInput(0, RenderTask.GetOutput(3));
+    PassthroughTask->RegisterInput(0, RenderTask->GetOutput(3));
     PassthroughTask->Init();
     PassthroughTask->UpdateDescriptorSet();
     PassthroughTask->RecordCommands();
@@ -1169,7 +1170,7 @@ void FVulkanContext::Render()
     /// Reset frame state to unsignaled, just before rendering
     vkResetFences(LogicalDevice, 1, &ImagesInFlight[CurrentFrame]);
 
-    auto RenderSignalSemaphore = RenderTask.Submit(GetGraphicsQueue(), ImageAvailableSemaphores[CurrentFrame], CurrentFrame);
+    auto RenderSignalSemaphore = RenderTask-> Submit(GetGraphicsQueue(), ImageAvailableSemaphores[CurrentFrame], CurrentFrame);
 
     auto PassthroughSignalSemaphore = PassthroughTask->Submit(GetGraphicsQueue(), RenderSignalSemaphore, CurrentFrame);
 
@@ -1288,9 +1289,10 @@ void FVulkanContext::RecreateSwapChain()
 
     CreateImguiFramebuffers();
 
-    RenderTask.Init();
-    RenderTask.UpdateDescriptorSets();
-    RenderTask.RecordCommands();
+    RenderTask = std::make_shared<FRenderTask>(this, int(Swapchain->Size()), LogicalDevice);
+    RenderTask->Init();
+    RenderTask->UpdateDescriptorSets();
+    RenderTask->RecordCommands();
 
     PassthroughTask = std::make_shared<FPassthroughTask>(this, int(Swapchain->Size()), LogicalDevice);
     PassthroughTask->Init();
@@ -1317,7 +1319,8 @@ void FVulkanContext::CleanUpSwapChain()
 
     Swapchain = nullptr;
 
-    RenderTask.Cleanup();
+    RenderTask->Cleanup();
+    RenderTask = nullptr;
     PassthroughTask->Cleanup();
     PassthroughTask = nullptr;
 }

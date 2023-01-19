@@ -7,7 +7,7 @@
 #include "vk_debug.h"
 
 FPassthroughTask::FPassthroughTask(FVulkanContext* Context, int NumberOfFrames, VkDevice LogicalDevice) :
-Context(Context), FramesCount(NumberOfFrames), LogicalDevice(LogicalDevice)
+    Context(Context), FramesCount(NumberOfFrames), LogicalDevice(LogicalDevice)
 {
 }
 
@@ -32,16 +32,14 @@ void FPassthroughTask::Init()
     vkDestroyShaderModule(Context->LogicalDevice, VertexShader, nullptr);
     vkDestroyShaderModule(Context->LogicalDevice, FragmentShader, nullptr);
 
-    PassthroughFramebuffers.resize(Context->Swapchain->Size());
+    PassthroughFramebuffers.resize(FramesCount);
     for (std::size_t i = 0; i < PassthroughFramebuffers.size(); ++i)
     {
         PassthroughFramebuffers[i] = Context->CreateFramebuffer({Context->Swapchain->Images[i]}, RenderPass, "V_Passthrough_fb_" + std::to_string(i));
     }
 
-    auto NumberOfSwapChainImages = Context->Swapchain->Size();
-
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-    Context->DescriptorSetManager->ReserveDescriptorSet(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, NumberOfSwapChainImages);
+    Context->DescriptorSetManager->ReserveDescriptorSet(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, FramesCount);
 
     Context->DescriptorSetManager->ReserveDescriptorPool(Name);
 
@@ -55,15 +53,13 @@ void FPassthroughTask::Init()
 
 void FPassthroughTask::UpdateDescriptorSet()
 {
-    auto& C = GetContext();
-
-    for (size_t i = 0; i < C.Swapchain->Size(); ++i)
+    for (size_t i = 0; i < FramesCount; ++i)
     {
         VkDescriptorImageInfo ImageBufferInfo{};
         ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         ImageBufferInfo.imageView = Inputs[0]->View;
         ImageBufferInfo.sampler = Sampler;
-        C.DescriptorSetManager->UpdateDescriptorSetInfo(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX, i, ImageBufferInfo);
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX, i, ImageBufferInfo);
     }
 }
 
