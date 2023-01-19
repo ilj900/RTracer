@@ -13,10 +13,12 @@ FPassthroughTask::FPassthroughTask(FVulkanContext* Context, int NumberOfFrames, 
 
 void FPassthroughTask::Init()
 {
-    Context->DescriptorSetManager->AddDescriptorLayout(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX,
+    auto& DescriptorSetManager = Context->DescriptorSetManager;
+
+    DescriptorSetManager->AddDescriptorLayout(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX,
                                               {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
 
-    Context->DescriptorSetManager->CreateDescriptorSetLayout(Name);
+    DescriptorSetManager->CreateDescriptorSetLayout(Name);
 
     Sampler = Context->CreateTextureSampler(Context->MipLevels);
 
@@ -24,13 +26,13 @@ void FPassthroughTask::Init()
     auto FragmentShader = Context->CreateShaderFromFile("../shaders/passthrough_frag.spv");
 
     GraphicsPipelineOptions.RegisterColorAttachment(0, Context->Swapchain->Images[0], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    GraphicsPipelineOptions.SetPipelineLayout(Context->DescriptorSetManager->GetPipelineLayout(Name));
+    GraphicsPipelineOptions.SetPipelineLayout(DescriptorSetManager->GetPipelineLayout(Name));
 
     Pipeline = Context->CreateGraphicsPipeline(VertexShader, FragmentShader, Context->Swapchain->GetWidth(), Context->Swapchain->GetHeight(), GraphicsPipelineOptions);
     RenderPass = GraphicsPipelineOptions.RenderPass;
 
-    vkDestroyShaderModule(Context->LogicalDevice, VertexShader, nullptr);
-    vkDestroyShaderModule(Context->LogicalDevice, FragmentShader, nullptr);
+    vkDestroyShaderModule(LogicalDevice, VertexShader, nullptr);
+    vkDestroyShaderModule(LogicalDevice, FragmentShader, nullptr);
 
     PassthroughFramebuffers.resize(FramesCount);
     for (std::size_t i = 0; i < PassthroughFramebuffers.size(); ++i)
@@ -39,11 +41,11 @@ void FPassthroughTask::Init()
     }
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-    Context->DescriptorSetManager->ReserveDescriptorSet(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, FramesCount);
+    DescriptorSetManager->ReserveDescriptorSet(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, FramesCount);
 
-    Context->DescriptorSetManager->ReserveDescriptorPool(Name);
+    DescriptorSetManager->ReserveDescriptorPool(Name);
 
-    Context->DescriptorSetManager->AllocateAllDescriptorSets(Name);
+    DescriptorSetManager->AllocateAllDescriptorSets(Name);
 
     for (int i = 0; i < FramesCount; ++i)
     {

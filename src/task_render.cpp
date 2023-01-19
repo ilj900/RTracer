@@ -17,17 +17,19 @@ FRenderTask::FRenderTask(FVulkanContext* Context, int NumberOfFrames, VkDevice L
 
 void FRenderTask::Init()
 {
-    Context->DescriptorSetManager->AddDescriptorLayout(Name, RENDER_PER_FRAME_LAYOUT_INDEX, TEXTURE_SAMPLER_LAYOUT_INDEX,
+    auto& DescriptorSetManager = Context->DescriptorSetManager;
+
+    DescriptorSetManager->AddDescriptorLayout(Name, RENDER_PER_FRAME_LAYOUT_INDEX, TEXTURE_SAMPLER_LAYOUT_INDEX,
                                               {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
-    Context->DescriptorSetManager->AddDescriptorLayout(Name, RENDER_PER_FRAME_LAYOUT_INDEX, CAMERA_LAYOUT_INDEX,
+    DescriptorSetManager->AddDescriptorLayout(Name, RENDER_PER_FRAME_LAYOUT_INDEX, CAMERA_LAYOUT_INDEX,
                                               {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
 
-    Context->DescriptorSetManager->AddDescriptorLayout(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, TRANSFORM_LAYOUT_INDEX,
+    DescriptorSetManager->AddDescriptorLayout(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, TRANSFORM_LAYOUT_INDEX,
                                               {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
-    Context->DescriptorSetManager->AddDescriptorLayout(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, RENDERABLE_LAYOUT_INDEX,
+    DescriptorSetManager->AddDescriptorLayout(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, RENDERABLE_LAYOUT_INDEX,
                                               {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
 
-    Context->DescriptorSetManager->CreateDescriptorSetLayout(Name);
+    DescriptorSetManager->CreateDescriptorSetLayout(Name);
 
     uint32_t Width = Context->Swapchain->GetWidth();
     uint32_t Height = Context->Swapchain->GetHeight();
@@ -57,7 +59,7 @@ void FRenderTask::Init()
     GraphicsPipelineOptions.RegisterColorAttachment(1, Outputs[1], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
     GraphicsPipelineOptions.RegisterColorAttachment(2, Outputs[2], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
     GraphicsPipelineOptions.RegisterResolveAttachment(0, Outputs[3], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
-    GraphicsPipelineOptions.SetPipelineLayout(Context->DescriptorSetManager->GetPipelineLayout(Name));
+    GraphicsPipelineOptions.SetPipelineLayout(DescriptorSetManager->GetPipelineLayout(Name));
     GraphicsPipelineOptions.SetMSAA(Context->MSAASamples);
 
     Pipeline = Context->CreateGraphicsPipeline(VertexShader, FragmentShader, Width, Height, GraphicsPipelineOptions);
@@ -75,12 +77,12 @@ void FRenderTask::Init()
     auto ModelsCount = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>()->Size();
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-    Context->DescriptorSetManager->ReserveDescriptorSet(Name, RENDER_PER_FRAME_LAYOUT_INDEX, FramesCount);
-    Context->DescriptorSetManager->ReserveDescriptorSet(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, FramesCount * ModelsCount);
+    DescriptorSetManager->ReserveDescriptorSet(Name, RENDER_PER_FRAME_LAYOUT_INDEX, FramesCount);
+    DescriptorSetManager->ReserveDescriptorSet(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, FramesCount * ModelsCount);
 
-    Context->DescriptorSetManager->ReserveDescriptorPool(Name);
+    DescriptorSetManager->ReserveDescriptorPool(Name);
 
-    Context->DescriptorSetManager->AllocateAllDescriptorSets(Name);
+    DescriptorSetManager->AllocateAllDescriptorSets(Name);
 
     for (int i = 0; i < FramesCount; ++i)
     {
