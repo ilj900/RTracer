@@ -31,7 +31,7 @@ public:
     std::string Name;
 
     FVulkanContext* Context = nullptr;
-    int NumberOfSimultaneousSubmits = 2;
+    int NumberOfSimultaneousSubmits;
     VkDevice LogicalDevice = VK_NULL_HANDLE;
 
 };

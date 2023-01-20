@@ -55,6 +55,8 @@ set(ECS_SOURCE
         ECS/systems/mesh_system.cpp)
 
 set(SOURCE
+        src/application.h
+        src/application.cpp
         src/main.cpp
         src/controller.cpp
         src/executable_task.h
