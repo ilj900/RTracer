@@ -10,9 +10,10 @@
 #include "vk_context.h"
 #include "vk_debug.h"
 
-FRenderTask::FRenderTask(FVulkanContext* Context, int NumberOfFrames, VkDevice LogicalDevice) :
-    Context(Context), FramesCount(NumberOfFrames), LogicalDevice(LogicalDevice)
+FRenderTask::FRenderTask(FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+        FExecutableTask(Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
+    Name = "Render pipeline";
 }
 
 void FRenderTask::Init()
@@ -68,23 +69,23 @@ void FRenderTask::Init()
     vkDestroyShaderModule(LogicalDevice, VertexShader, nullptr);
     vkDestroyShaderModule(LogicalDevice, FragmentShader, nullptr);
 
-    RenderFramebuffers.resize(FramesCount);
+    RenderFramebuffers.resize(NumberOfSimultaneousSubmits);
 
-    for (std::size_t i = 0; i < FramesCount; ++i) {
+    for (std::size_t i = 0; i < NumberOfSimultaneousSubmits; ++i) {
         RenderFramebuffers[i] = Context->CreateFramebuffer({Outputs[0], Outputs[1], Outputs[2], DepthImage, Outputs[3]}, GraphicsPipelineOptions.RenderPass, "V_Render_fb_" + std::to_string(i));
     }
 
     auto ModelsCount = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>()->Size();
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-    DescriptorSetManager->ReserveDescriptorSet(Name, RENDER_PER_FRAME_LAYOUT_INDEX, FramesCount);
-    DescriptorSetManager->ReserveDescriptorSet(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, FramesCount * ModelsCount);
+    DescriptorSetManager->ReserveDescriptorSet(Name, RENDER_PER_FRAME_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
+    DescriptorSetManager->ReserveDescriptorSet(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, NumberOfSimultaneousSubmits * ModelsCount);
 
     DescriptorSetManager->ReserveDescriptorPool(Name);
 
     DescriptorSetManager->AllocateAllDescriptorSets(Name);
 
-    for (int i = 0; i < FramesCount; ++i)
+    for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
         SignalSemaphores.push_back(Context->CreateSemaphore());
     }
@@ -94,7 +95,7 @@ void FRenderTask::UpdateDescriptorSets()
 {
     auto MeshSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>();
 
-    for (size_t i = 0; i < FramesCount; ++i)
+    for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
         uint32_t j = 0;
         for (auto Mesh : *MeshSystem)
@@ -103,19 +104,19 @@ void FRenderTask::UpdateDescriptorSets()
             TransformBufferInfo.buffer = Context->DeviceTransformBuffers[i].Buffer;
             TransformBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceTransformComponent) * j;
             TransformBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceTransformComponent);
-            Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, TRANSFORM_LAYOUT_INDEX, j * FramesCount + i, TransformBufferInfo);
+            Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, TRANSFORM_LAYOUT_INDEX, j * NumberOfSimultaneousSubmits + i, TransformBufferInfo);
 
             VkDescriptorBufferInfo RenderableBufferInfo{};
             RenderableBufferInfo.buffer = Context->DeviceRenderableBuffers[i].Buffer;
             RenderableBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent) * j;
             RenderableBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent);
-            Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, RENDERABLE_LAYOUT_INDEX, j * FramesCount + i, RenderableBufferInfo);
+            Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, RENDERABLE_LAYOUT_INDEX, j * NumberOfSimultaneousSubmits + i, RenderableBufferInfo);
 
             ++j;
         }
     }
 
-    for (size_t i = 0; i < FramesCount; ++i)
+    for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
 
         VkDescriptorBufferInfo CameraBufferInfo{};
@@ -134,11 +135,11 @@ void FRenderTask::UpdateDescriptorSets()
 
 void FRenderTask::RecordCommands()
 {
-    GraphicsCommandBuffers.resize(RenderFramebuffers.size());
+    CommandBuffers.resize(RenderFramebuffers.size());
 
-    for (std::size_t i = 0; i < GraphicsCommandBuffers.size(); ++i)
+    for (std::size_t i = 0; i < CommandBuffers.size(); ++i)
     {
-        GraphicsCommandBuffers[i] = Context->CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
+        CommandBuffers[i] = Context->CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
             VkRenderPassBeginInfo RenderPassInfo{};
             RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -168,7 +169,7 @@ void FRenderTask::RecordCommands()
             uint32_t j = 0;
             for (auto Entity : *MeshSystem)
             {
-                auto PerRenderableDescriptorSet = Context->DescriptorSetManager->GetSet(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, j * FramesCount + i);
+                auto PerRenderableDescriptorSet = Context->DescriptorSetManager->GetSet(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, j * NumberOfSimultaneousSubmits + i);
                 vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->DescriptorSetManager->GetPipelineLayout(Name), 1, 1,
                                         &PerRenderableDescriptorSet, 0, nullptr);
 
@@ -179,7 +180,7 @@ void FRenderTask::RecordCommands()
             vkCmdEndRenderPass(CommandBuffer);
         });
 
-        V::SetName(LogicalDevice, GraphicsCommandBuffers[i], "V_GraphicsCommandBuffers" + std::to_string(i));
+        V::SetName(LogicalDevice, CommandBuffers[i], "V_GraphicsCommandBuffers" + std::to_string(i));
     }
 }
 
@@ -197,7 +198,7 @@ void FRenderTask::Cleanup()
         vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
     }
 
-    for (auto& CommandBuffer : GraphicsCommandBuffers)
+    for (auto& CommandBuffer : CommandBuffers)
     {
         Context->CommandBufferManager->FreeCommandBuffer(CommandBuffer);
     }
@@ -226,7 +227,7 @@ VkSemaphore FRenderTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, int It
     SubmitInfo.pWaitSemaphores = WaitSemaphores;
     SubmitInfo.pWaitDstStageMask = WaitStages;
     SubmitInfo.commandBufferCount = 1;
-    SubmitInfo.pCommandBuffers = &GraphicsCommandBuffers[IterationIndex];
+    SubmitInfo.pCommandBuffers = &CommandBuffers[IterationIndex];
 
     VkSemaphore Semaphores[] = {SignalSemaphores[IterationIndex]};
     SubmitInfo.signalSemaphoreCount = 1;
@@ -239,41 +240,4 @@ VkSemaphore FRenderTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, int It
     }
 
     return SignalSemaphores[IterationIndex];
-}
-
-void FRenderTask::RegisterInput(int Index, ImagePtr Image)
-{
-    if (Inputs.size() <= Index)
-    {
-        Inputs.resize(Index + 1);
-    }
-    Inputs[Index] = Image;
-
-}
-
-void FRenderTask::RegisterOutput(int Index, ImagePtr Image)
-{
-    if (Outputs.size() <= Index)
-    {
-        Outputs.resize(Index + 1);
-    }
-    Outputs[Index] = Image;
-}
-
-ImagePtr FRenderTask::GetInput(int Index)
-{
-    if (Inputs.size() > Index)
-    {
-        return Inputs[Index];
-    }
-    throw std::runtime_error("Wrong input index.");
-}
-
-ImagePtr FRenderTask::GetOutput(int Index)
-{
-    if (Outputs.size() > Index)
-    {
-        return Outputs[Index];
-    }
-    throw std::runtime_error("Wrong output index.");
 }

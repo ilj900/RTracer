@@ -1,46 +1,30 @@
 #pragma once
 
+#include "executable_task.h"
 #include "image.h"
 #include "vk_pipeline.h"
 
 class FVulkanContext;
 
-class FPassthroughTask
+class FPassthroughTask : public FExecutableTask
 {
 public:
-    FPassthroughTask(FVulkanContext* Context, int NumberOfFrames, VkDevice LogicalDevice);
+    FPassthroughTask(FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
 
-    void Init();
-    void UpdateDescriptorSet();
-    void RecordCommands();
-    void Cleanup();
-    VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, int IterationIndex);
-
-    void RegisterInput(int Index, ImagePtr Image);
-    void RegisterOutput(int Index, ImagePtr Image);
-    ImagePtr GetInput(int Index);
-    ImagePtr GetOutput(int Index);
-
-    std::vector<ImagePtr> Inputs;
-    std::vector<ImagePtr> Outputs;
-
-    std::vector<VkSemaphore> SignalSemaphores;
+    void Init() override;
+    void UpdateDescriptorSets() override;
+    void RecordCommands() override;
+    void Cleanup() override;
+    VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, int IterationIndex) override;
 
     VkSampler Sampler;
 
     FGraphicsPipelineOptions GraphicsPipelineOptions;
 
-    std::string Name = "Passthrough pipeline";
-
     VkPipeline Pipeline = VK_NULL_HANDLE;
     VkRenderPass RenderPass = VK_NULL_HANDLE;
 
     std::vector<VkFramebuffer> PassthroughFramebuffers;
-    std::vector<VkCommandBuffer> PassthroughCommandBuffers;
-
-    FVulkanContext* Context = nullptr;
-    int FramesCount = 2;
-    VkDevice LogicalDevice = VK_NULL_HANDLE;
 
     /// Task set indices
     const uint32_t PASSTHROUGH_PER_FRAME_LAYOUT_INDEX = 0;

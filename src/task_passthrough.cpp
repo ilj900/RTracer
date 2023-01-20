@@ -6,9 +6,10 @@
 
 #include "vk_debug.h"
 
-FPassthroughTask::FPassthroughTask(FVulkanContext* Context, int NumberOfFrames, VkDevice LogicalDevice) :
-    Context(Context), FramesCount(NumberOfFrames), LogicalDevice(LogicalDevice)
+FPassthroughTask::FPassthroughTask(FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+        FExecutableTask(Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
+    Name = "Passthrough pipeline";
 }
 
 void FPassthroughTask::Init()
@@ -34,28 +35,28 @@ void FPassthroughTask::Init()
     vkDestroyShaderModule(LogicalDevice, VertexShader, nullptr);
     vkDestroyShaderModule(LogicalDevice, FragmentShader, nullptr);
 
-    PassthroughFramebuffers.resize(FramesCount);
+    PassthroughFramebuffers.resize(NumberOfSimultaneousSubmits);
     for (std::size_t i = 0; i < PassthroughFramebuffers.size(); ++i)
     {
         PassthroughFramebuffers[i] = Context->CreateFramebuffer({Context->Swapchain->Images[i]}, RenderPass, "V_Passthrough_fb_" + std::to_string(i));
     }
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-    DescriptorSetManager->ReserveDescriptorSet(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, FramesCount);
+    DescriptorSetManager->ReserveDescriptorSet(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
 
     DescriptorSetManager->ReserveDescriptorPool(Name);
 
     DescriptorSetManager->AllocateAllDescriptorSets(Name);
 
-    for (int i = 0; i < FramesCount; ++i)
+    for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
         SignalSemaphores.push_back(Context->CreateSemaphore());
     }
 }
 
-void FPassthroughTask::UpdateDescriptorSet()
+void FPassthroughTask::UpdateDescriptorSets()
 {
-    for (size_t i = 0; i < FramesCount; ++i)
+    for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
         VkDescriptorImageInfo ImageBufferInfo{};
         ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -67,11 +68,11 @@ void FPassthroughTask::UpdateDescriptorSet()
 
 void FPassthroughTask::RecordCommands()
 {
-    PassthroughCommandBuffers.resize(FramesCount);
+    CommandBuffers.resize(NumberOfSimultaneousSubmits);
 
-    for (std::size_t i = 0; i < PassthroughCommandBuffers.size(); ++i)
+    for (std::size_t i = 0; i < CommandBuffers.size(); ++i)
     {
-        PassthroughCommandBuffers[i] = Context->CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
+        CommandBuffers[i] = Context->CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
             VkImageMemoryBarrier Barrier{};
             Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -112,7 +113,7 @@ void FPassthroughTask::RecordCommands()
             vkCmdEndRenderPass(CommandBuffer);
         });
 
-        V::SetName(LogicalDevice, PassthroughCommandBuffers[i], "V_PassthroughCommandBuffers" + std::to_string(i));
+        V::SetName(LogicalDevice, CommandBuffers[i], "V_PassthroughCommandBuffers" + std::to_string(i));
     }
 }
 
@@ -128,7 +129,7 @@ void FPassthroughTask::Cleanup()
         vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
     }
 
-    for (auto& CommandBuffer : PassthroughCommandBuffers)
+    for (auto& CommandBuffer : CommandBuffers)
     {
         Context->CommandBufferManager->FreeCommandBuffer(CommandBuffer);
     }
@@ -157,7 +158,7 @@ VkSemaphore FPassthroughTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, i
     PassThroughSubmitInfo.pWaitSemaphores = PassthroughWaitSemaphores;
     PassThroughSubmitInfo.pWaitDstStageMask = PassthroughWaitStages;
     PassThroughSubmitInfo.commandBufferCount = 1;
-    PassThroughSubmitInfo.pCommandBuffers = &PassthroughCommandBuffers[IterationIndex];
+    PassThroughSubmitInfo.pCommandBuffers = &CommandBuffers[IterationIndex];
 
     VkSemaphore PassthroughSignalSemaphores[] = {SignalSemaphores[IterationIndex]};
     PassThroughSubmitInfo.signalSemaphoreCount = 1;
@@ -170,41 +171,4 @@ VkSemaphore FPassthroughTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, i
     }
     
     return SignalSemaphores[IterationIndex];
-}
-
-void FPassthroughTask::RegisterInput(int Index, ImagePtr Image)
-{
-    if (Inputs.size() <= Index)
-    {
-        Inputs.resize(Index + 1);
-    }
-    Inputs[Index] = Image;
-
-}
-
-void FPassthroughTask::RegisterOutput(int Index, ImagePtr Image)
-{
-    if (Outputs.size() <= Index)
-    {
-        Outputs.resize(Index + 1);
-    }
-    Outputs[Index] = Image;
-}
-
-ImagePtr FPassthroughTask::GetInput(int Index)
-{
-    if (Inputs.size() < Index)
-    {
-        return Inputs[Index];
-    }
-    throw std::runtime_error("Wrong input index.");
-}
-
-ImagePtr FPassthroughTask::GetOutput(int Index)
-{
-    if (Inputs.size() < Index)
-    {
-        return Inputs[Index];
-    }
-    throw std::runtime_error("Wrong output index.");
 }

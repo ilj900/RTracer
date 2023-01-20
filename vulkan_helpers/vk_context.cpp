@@ -994,7 +994,7 @@ void FVulkanContext::CreatePipelines()
     PassthroughTask = std::make_shared<FPassthroughTask>(this, int(Swapchain->Size()), LogicalDevice);
     PassthroughTask->RegisterInput(0, RenderTask->GetOutput(3));
     PassthroughTask->Init();
-    PassthroughTask->UpdateDescriptorSet();
+    PassthroughTask->UpdateDescriptorSets();
     PassthroughTask->RecordCommands();
 }
 
@@ -1296,7 +1296,7 @@ void FVulkanContext::RecreateSwapChain()
 
     PassthroughTask = std::make_shared<FPassthroughTask>(this, int(Swapchain->Size()), LogicalDevice);
     PassthroughTask->Init();
-    PassthroughTask->UpdateDescriptorSet();
+    PassthroughTask->UpdateDescriptorSets();
     PassthroughTask->RecordCommands();
 
     CurrentFrame = 0;

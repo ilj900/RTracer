@@ -2,27 +2,20 @@
 
 #include "image.h"
 #include "vk_pipeline.h"
+#include "executable_task.h"
 
 class FVulkanContext;
 
-class FRenderTask
+class FRenderTask : public FExecutableTask
 {
 public:
-    FRenderTask(FVulkanContext* Context, int NumberOfFrames, VkDevice LogicalDevice);
+    FRenderTask(FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
 
-    void Init();
-    void UpdateDescriptorSets();
-    void RecordCommands();
-    void Cleanup();
-    VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, int IterationIndex);
-
-    void RegisterInput(int Index, ImagePtr Image);
-    void RegisterOutput(int Index, ImagePtr Image);
-    ImagePtr GetInput(int Index);
-    ImagePtr GetOutput(int Index);
-
-    std::vector<ImagePtr> Inputs;
-    std::vector<ImagePtr> Outputs;
+    void Init() override;
+    void UpdateDescriptorSets() override;
+    void RecordCommands() override;
+    void Cleanup() override;
+    VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, int IterationIndex) override;
 
     VkSampler Sampler;
 
@@ -32,18 +25,8 @@ public:
 
     FGraphicsPipelineOptions GraphicsPipelineOptions;
 
-    std::vector<VkCommandBuffer> GraphicsCommandBuffers;
-
-    std::vector<VkSemaphore> SignalSemaphores;
-
-    std::string Name = "Render pipeline";
-
     VkPipeline Pipeline = VK_NULL_HANDLE;
     VkRenderPass RenderPass = VK_NULL_HANDLE;
-
-    FVulkanContext* Context = nullptr;
-    int FramesCount = 2;
-    VkDevice LogicalDevice = VK_NULL_HANDLE;
 
     /// Task set indices
     const uint32_t RENDER_PER_FRAME_LAYOUT_INDEX = 0;
