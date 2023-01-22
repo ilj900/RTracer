@@ -57,6 +57,8 @@ set(ECS_SOURCE
 set(SOURCE
         src/application.h
         src/application.cpp
+        src/render.h
+        src/render.cpp
         src/main.cpp
         src/controller.cpp
         src/executable_task.h

@@ -10,8 +10,8 @@ class FVulkanContext;
 
 struct FSwapchain
 {
-    FSwapchain(FVulkanContext &Context, VkPhysicalDevice PhysicalDevice, VkDevice LogicalDevice, VkSurfaceKHR Surface,
-               GLFWwindow* Window, uint32_t GraphicsQueueFamilyIndex, uint32_t PresentQueueFamilyIndex,
+    FSwapchain(FVulkanContext &Context, int Width, int Height, VkPhysicalDevice PhysicalDevice, VkDevice LogicalDevice,
+               VkSurfaceKHR Surface, uint32_t GraphicsQueueFamilyIndex, uint32_t PresentQueueFamilyIndex,
                VkFormat Format, VkColorSpaceKHR ColorSpace, VkPresentModeKHR PresentMode);
     ~FSwapchain();
     size_t Size();

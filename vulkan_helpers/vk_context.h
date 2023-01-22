@@ -33,13 +33,12 @@ public:
     FVulkanContext(const FVulkanContext& Other) = delete;
     ~FVulkanContext();
 
-    void Init(GLFWwindow* Window, FController* Controller);
+    void Init(GLFWwindow* Window, int Width, int Height);
 
     void FillInContextOptions();
     void CreateInstance();
     void LoadFunctionPointers();
     void SetupDebugMessenger();
-    void CreateSurface();
     void PickPhysicalDevice();
     void QueuePhysicalDeviceProperties();
     void GetDeviceQueues();
@@ -51,8 +50,8 @@ public:
     void CreateImguiDescriptorPool();
     void CreatePipelines();
     void CreateSyncObjects();
-    void CreateImguiContext();
-    void RecreateSwapChain();
+    void CreateImguiContext(GLFWwindow* Window);
+    void RecreateSwapChain(int Width, int Height);
     void CleanUpSwapChain();
     void CleanUp();
     void DestroyDebugUtilsMessengerEXT();
@@ -90,6 +89,8 @@ public:
     VkQueue GetPresentQueue();
     uint32_t GetPresentIndex();
 
+    VkSurfaceKHR CreateSurface(GLFWwindow* Window);
+
     FBuffer CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties);
     FMemoryPtr PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data);
     void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset);
@@ -113,12 +114,17 @@ public:
 
     VkSemaphore CreateSemaphore();
 
+    static VKAPI_ATTR VkBool32 VKAPI_CALL FVulkanContext::DebugCallback(
+            VkDebugUtilsMessageSeverityFlagBitsEXT MessageSeverity,
+            VkDebugUtilsMessageTypeFlagsEXT MessageType,
+            const VkDebugUtilsMessengerCallbackDataEXT* pCallBackData,
+            void* pUserData);
+
 public:
     VkQueue GetQueue(VkQueueFlagBits QueueFlagBits);
     uint32_t GetQueueIndex(VkQueueFlagBits QueueFlagBits);
 
     FVulkanContextOptions VulkanContextOptions;
-    GLFWwindow* Window = nullptr;
 
     std::shared_ptr<FResourceAllocator> ResourceAllocator = nullptr;
     std::shared_ptr<FCommandBufferManager> CommandBufferManager = nullptr;

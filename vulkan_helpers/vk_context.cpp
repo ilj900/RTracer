@@ -32,7 +32,7 @@ FVulkanContext& GetContext()
     return Context;
 }
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
+VKAPI_ATTR VkBool32 VKAPI_CALL FVulkanContext::DebugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT MessageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT MessageType,
         const VkDebugUtilsMessengerCallbackDataEXT* pCallBackData,
@@ -43,22 +43,20 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     return VK_FALSE;
 }
 
-void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
+void FVulkanContext::Init(GLFWwindow* Window, int Width, int Height)
 {
-    this->Window = Window;
-
     try {
         FillInContextOptions();
         CreateInstance();
         LoadFunctionPointers();
         SetupDebugMessenger();
-        CreateSurface();
+        Surface = CreateSurface(Window);
         PickPhysicalDevice();
         CreateLogicalDevice(PhysicalDevice);
         GetDeviceQueues();
         CommandBufferManager = std::make_shared<FCommandBufferManager>(LogicalDevice, this, GetQueue(VK_QUEUE_GRAPHICS_BIT),
                                                                        GetQueueIndex(VK_QUEUE_GRAPHICS_BIT));
-        Swapchain = std::make_shared<FSwapchain>(*this, PhysicalDevice, LogicalDevice, Surface, Window, GetGraphicsQueueIndex(), GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
+        Swapchain = std::make_shared<FSwapchain>(*this, Width, Height, PhysicalDevice, LogicalDevice, Surface, GetGraphicsQueueIndex(), GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
         CreateDepthAndAAImages();
 
         LoadModelDataToGPU();
@@ -70,7 +68,6 @@ void FVulkanContext::Init(GLFWwindow *Window, FController *Controller)
         CreateImguiFramebuffers();
         CreateImguiDescriptorPool();
         CreateSyncObjects();
-        CreateImguiContext();
     }
     catch (std::runtime_error &Error) {
         std::cout << Error.what() << std::endl;
@@ -102,6 +99,7 @@ void FVulkanContext::FillInContextOptions()
     VulkanContextOptions.AddDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 }
 
+
 void FVulkanContext::CreateInstance()
 {
     Instance = CreateVkInstance("Hello Triangle", {1, 0, 0}, "No Engine", {1, 0, 0}, VK_API_VERSION_1_0, VulkanContextOptions);
@@ -121,10 +119,12 @@ void FVulkanContext::SetupDebugMessenger()
 #endif
 }
 
-void FVulkanContext::CreateSurface()
+VkSurfaceKHR FVulkanContext::CreateSurface(GLFWwindow* Window)
 {
+    VkSurfaceKHR Surface;
     VkResult Result = glfwCreateWindowSurface(Instance, Window, nullptr, &Surface);
     assert((Result == VK_SUCCESS) && "Failed to create window surface!");
+    return Surface;
 }
 
 std::vector<VkPhysicalDevice> FVulkanContext::EnumerateAllPhysicalDevices(VkInstance Instance)
@@ -1104,7 +1104,7 @@ void FVulkanContext::CreateSyncObjects()
     }
 }
 
-void FVulkanContext::CreateImguiContext()
+void FVulkanContext::CreateImguiContext(GLFWwindow* Window)
 {
     auto CheckResultFunction = [](VkResult Err)
             {
@@ -1151,7 +1151,7 @@ void FVulkanContext::Render()
     /// Run some checks
     if (Result == VK_ERROR_OUT_OF_DATE_KHR)
     {
-        RecreateSwapChain();
+        RecreateSwapChain(Swapchain->GetWidth(), Swapchain->GetHeight());
         return;
     }
     if (Result != VK_SUCCESS && Result != VK_SUBOPTIMAL_KHR)
@@ -1251,7 +1251,7 @@ void FVulkanContext::Present()
     if (Result == VK_ERROR_OUT_OF_DATE_KHR || Result == VK_SUBOPTIMAL_KHR || bFramebufferResized)
     {
         bFramebufferResized = false;
-        RecreateSwapChain();
+        RecreateSwapChain(Swapchain->GetWidth(), Swapchain->GetHeight());
         return;
     }
     else if (Result != VK_SUCCESS)
@@ -1267,22 +1267,13 @@ void FVulkanContext::WaitIdle()
     vkDeviceWaitIdle(LogicalDevice);
 }
 
-void FVulkanContext::RecreateSwapChain()
+void FVulkanContext::RecreateSwapChain(int Width, int Height)
 {
-    int Width = 0;
-    int Height = 0;
-    glfwGetFramebufferSize(Window, &Width, &Height);
-    while (Width == 0 || Height == 0)
-    {
-        glfwGetFramebufferSize(Window, &Width, &Height);
-        glfwPollEvents();
-    }
-
     vkDeviceWaitIdle(LogicalDevice);
 
     CleanUpSwapChain();
 
-    Swapchain = std::make_shared<FSwapchain>(*this, PhysicalDevice, LogicalDevice, Surface, Window, GetGraphicsQueueIndex(), GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
+    Swapchain = std::make_shared<FSwapchain>(*this, Width, Height, PhysicalDevice, LogicalDevice, Surface, GetGraphicsQueueIndex(), GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
     CreateDepthAndAAImages();
 
     CreateImguiRenderpasss();

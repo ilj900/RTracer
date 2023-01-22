@@ -8,14 +8,8 @@
 #include <iostream>
 #include <map>
 
-FController::FController(GLFWwindow* Window):
-Window(Window)
+FController::FController()
 {
-    glfwSetWindowUserPointer(Window, this);
-    glfwSetKeyCallback(Window, KeyboardKeyPressedOrReleased);
-    glfwSetCursorPosCallback(Window, MouseMoved);
-    glfwSetMouseButtonCallback(Window, MouseButtonPressedOrReleased);
-
     auto& Coordinator = ECS::GetCoordinator();
     auto CameraSystem = Coordinator.GetSystem<ECS::SYSTEMS::FCameraSystem>();
 
@@ -23,6 +17,19 @@ Window(Window)
     Coordinator.AddComponent<ECS::COMPONENTS::FCameraComponent>(Camera, ECS::COMPONENTS::FCameraComponent());
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera, {});
     CameraSystem->UpdateDeviceComponentData(Camera);
+}
+
+void FController::SetWindow(GLFWwindow* Window)
+{
+    this->Window = Window;
+}
+
+void FController::UpdateCallbacks()
+{
+    glfwSetWindowUserPointer(Window, this);
+    glfwSetKeyCallback(Window, KeyboardKeyPressedOrReleased);
+    glfwSetCursorPosCallback(Window, MouseMoved);
+    glfwSetMouseButtonCallback(Window, MouseButtonPressedOrReleased);
 }
 
 void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int Action, int Mods) {

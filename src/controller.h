@@ -7,7 +7,9 @@
 class FController
 {
 public:
-    FController(GLFWwindow* Window);
+    FController();
+    void SetWindow(GLFWwindow* Window);
+    void UpdateCallbacks();
     void Update(float Time);
 
 public:

@@ -24,6 +24,7 @@
 #include "systems/mesh_system.h"
 
 #include "application.h"
+#include "render.h"
 
 FApplication::FApplication()
 {
@@ -76,70 +77,15 @@ FApplication::~FApplication()
 
 int FApplication::Run()
 {
-    std::vector<ECS::FEntity> Models;
-
-    const uint32_t WINDOW_WIDTH = 1920;
-    const uint32_t WINDOW_HEIGHT = 1080;
-    const std::string WINDOW_NAME = "RTracer";
-
-    const uint32_t RENDERABLE_HAS_TEXTURE = 1 << 6;
-
     system("powershell.exe ..\\shaders\\compile.ps1");
-    glfwInit();
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
-    GLFWwindow* Window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_NAME.c_str(), nullptr, nullptr);
-    glfwSetWindowPos(Window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
-    glfwSetCursorPos(Window, 0.f, 0.f);
 
-    FController Controller(Window);
+    FController Controller;
+    FRender Render;
+    Controller.SetWindow(Render.Window);
+    Controller.UpdateCallbacks();
 
-    auto& Coordinator = ECS::GetCoordinator();
-    auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
-    auto TransformSystem = Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>();
-
-    enum MeshType {Tetrahedron, Hexahedron, Icosahedron, Model};
-
-    auto AddMesh = [&Coordinator, &MeshSystem, &TransformSystem, &Models](const FVector3& Color, const FVector3& Position, MeshType Type, const std::string& Path, uint32_t RenderableMask){
-        Models.push_back(Coordinator.CreateEntity());
-        Coordinator.AddComponent<ECS::COMPONENTS::FMeshComponent>(Models.back(), {});
-        Coordinator.AddComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Models.back(), {});
-        static uint32_t Index = 0;
-        Coordinator.AddComponent<ECS::COMPONENTS::FDeviceRenderableComponent>
-                (Models.back(), {FVector3{1.f, 1.f, 1.f}, Index++, RenderableMask});
-        Coordinator.AddComponent<ECS::COMPONENTS::FTransformComponent>(Models.back(), {});
-        Coordinator.AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Models.back(), {});
-        switch(Type)
-        {
-            case Tetrahedron:
-                MeshSystem->CreateTetrahedron(Models.back());
-                break;
-            case Hexahedron:
-                MeshSystem->CreateHexahedron(Models.back());
-                break;
-            case Icosahedron:
-                MeshSystem->CreateIcosahedron(Models.back(), 10);
-                break;
-            case Model:
-                MeshSystem->LoadMesh(Models.back(), Path);
-                break;
-        }
-        Coordinator.GetSystem<ECS::SYSTEMS::FTransformSystem>()->SetTransform(Models.back(), Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-        Coordinator.GetSystem<ECS::SYSTEMS::FRenderableSystem>()->SetRenderableColor(Models.back(), Color.X, Color.Y, Color.Z);
-        TransformSystem->UpdateDeviceComponentData(Models.back());
-    };
-
-    AddMesh({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, Icosahedron, std::string(), 0);
-    AddMesh({0.9f, 0.6f, 0.0f}, {-3.f, 0.f, -2.f}, Tetrahedron, std::string(), 0);
-    AddMesh({0.0f, 0.9f, 0.6f}, {1.f, 0.f, -2.f}, Hexahedron, std::string(), 0);
-
-    AddMesh({0.3f, 0.9f, 0.6f}, {-1.f, 0.f, -2.f}, Model, "../models/viking_room/viking_room.obj", RENDERABLE_HAS_TEXTURE);
-
-    auto& Context = GetContext();
-    Context.Init(Window, &Controller);
-
-    while (!glfwWindowShouldClose(Window))
-    {
+    int i = 0;
+    while (0 == i) {
         static auto StartTime = std::chrono::high_resolution_clock::now();
 
         auto CurrentTime = std::chrono::high_resolution_clock::now();
@@ -147,15 +93,8 @@ int FApplication::Run()
         StartTime = CurrentTime;
 
         Controller.Update(Time);
-        Context.Render();
-        Context.RenderImGui();
-        Context.Present();
-        glfwPollEvents();
+        i = Render.Render();
     }
-    Context.WaitIdle();
-    Context.CleanUp();
 
-    glfwDestroyWindow(Window);
-    glfwTerminate();
     return 0;
 }

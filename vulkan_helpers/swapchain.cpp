@@ -6,9 +6,9 @@
 
 #include <stdexcept>
 
-FSwapchain::FSwapchain(FVulkanContext &Context, VkPhysicalDevice PhysicalDevice, VkDevice LogicalDevice, VkSurfaceKHR Surface,
-                       GLFWwindow* Window, uint32_t GraphicsQueueFamilyIndex, uint32_t PresentQueueFamilyIndex,
-                       VkFormat Format, VkColorSpaceKHR ColorSpace, VkPresentModeKHR PresentMode):
+FSwapchain::FSwapchain(FVulkanContext &Context, int Width, int Height, VkPhysicalDevice PhysicalDevice, VkDevice LogicalDevice,
+                       VkSurfaceKHR Surface, uint32_t GraphicsQueueFamilyIndex, uint32_t PresentQueueFamilyIndex,
+                       VkFormat Format, VkColorSpaceKHR ColorSpace, VkPresentModeKHR PresentMode) :
                        LogicalDevice(LogicalDevice)
 {
     /// Find out supported formats and choose the one we need
@@ -63,10 +63,6 @@ FSwapchain::FSwapchain(FVulkanContext &Context, VkPhysicalDevice PhysicalDevice,
     }
     else
     {
-        int Width, Height;
-
-        glfwGetFramebufferSize(Window, &Width, &Height);
-
         VkExtent2D ActualExtent = {static_cast<uint32_t>(Width), static_cast<uint32_t>(Height)};
         ActualExtent.width = std::max(SurfaceCapabilities.minImageExtent.width, std::min(SurfaceCapabilities.minImageExtent.width, ActualExtent.width));
         ActualExtent.height = std::max(SurfaceCapabilities.minImageExtent.height, std::min(SurfaceCapabilities.minImageExtent.height, ActualExtent.height));
@@ -177,7 +173,7 @@ VkSwapchainKHR FSwapchain::GetSwapchain()
 
 VkResult FSwapchain::GetNextImage(VkImage& Image, VkSemaphore &Semaphore, uint32_t& ImageIndex)
 {
-    VkResult Result = vkAcquireNextImageKHR(LogicalDevice, Swapchain, UINT64_MAX, Semaphore, VK_NULL_HANDLE, &ImageIndex);
+    VkResult Result = vkAcquireNextImageKHR(GetContext().LogicalDevice, Swapchain, UINT64_MAX, Semaphore, VK_NULL_HANDLE, &ImageIndex);
     Image = Images[ImageIndex]->Image;
     return Result;
 }
