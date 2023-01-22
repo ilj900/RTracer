@@ -31,7 +31,7 @@ FApplication::FApplication()
     auto& Coordinator = ECS::GetCoordinator();
     Coordinator.Init();
 
-    /// Register Camera сomponents and system
+    /// Register Camera components and system
     Coordinator.RegisterComponent<ECS::COMPONENTS::FCameraComponent>();
     Coordinator.RegisterComponent<ECS::COMPONENTS::FDeviceCameraComponent>();
     auto CameraSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FCameraSystem>();
@@ -68,22 +68,24 @@ FApplication::FApplication()
     MeshSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FMeshComponent>());
     MeshSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FDeviceMeshComponent>());
     Coordinator.SetSystemSignature<ECS::SYSTEMS::FMeshSystem>(MeshSignature);
+
+    system("powershell.exe ..\\shaders\\compile.ps1");
+
+    Controller = std::make_shared<FController>();
+    Render = std::make_shared<FRender>();
+
+    Controller->SetWindow(Render->Window);
+    Controller->UpdateCallbacks();
 }
 
 FApplication::~FApplication()
 {
-
+    Controller = nullptr;
+    Render = nullptr;
 }
 
 int FApplication::Run()
 {
-    system("powershell.exe ..\\shaders\\compile.ps1");
-
-    FController Controller;
-    FRender Render;
-    Controller.SetWindow(Render.Window);
-    Controller.UpdateCallbacks();
-
     int i = 0;
     while (0 == i) {
         static auto StartTime = std::chrono::high_resolution_clock::now();
@@ -92,8 +94,8 @@ int FApplication::Run()
         float Time = std::chrono::duration<float, std::chrono::seconds::period>(CurrentTime - StartTime).count();
         StartTime = CurrentTime;
 
-        Controller.Update(Time);
-        i = Render.Render();
+        Controller->Update(Time);
+        i = Render->Render();
     }
 
     return 0;
