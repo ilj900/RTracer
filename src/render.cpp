@@ -9,6 +9,7 @@
 #include "components/device_transform_component.h"
 
 #include "vk_context.h"
+#include "vk_functions.h"
 
 #include "render.h"
 
@@ -22,13 +23,60 @@ FRender::FRender()
     glfwSetWindowPos(Window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
     glfwSetCursorPos(Window, 0.f, 0.f);
 
-    auto& Context = GetContext();
 
     LoadModels("");
 
+    auto& Context = GetContext();
+
+    /// Fill in vulkan context creation options
+    FVulkanContextOptions VulkanContextOptions;
+    VulkanContextOptions.AddInstanceLayer("VK_LAYER_KHRONOS_validation");
+
+#ifndef NDEBUG
+    VkDebugUtilsMessengerCreateInfoEXT DebugCreateInfo = {};
+    DebugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    DebugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    DebugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    DebugCreateInfo.pfnUserCallback = Context.DebugCallback;
+    VulkanContextOptions.AddInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, &DebugCreateInfo, sizeof(VkDebugUtilsMessengerCreateInfoEXT));
+#endif
+
+    // Resolve and add extensions and layers
+    uint32_t Counter = 0;
+    auto ExtensionsRequiredByGLFW = glfwGetRequiredInstanceExtensions(&Counter);
+    for (uint32_t i = 0; i < Counter; ++i)
+    {
+        VulkanContextOptions.AddInstanceExtension(ExtensionsRequiredByGLFW[i]);
+    }
+
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+    /// Create Vulkan instance
+    VkInstance Instance = Context.CreateVkInstance("Hello Triangle", {1, 0, 0}, "No Engine", {1, 0, 0}, VK_API_VERSION_1_0, VulkanContextOptions);
+    Context.SetInstance(Instance);
+
+    /// Load Vulkan options
+    V::LoadVkFunctions(Instance);
+
+#ifndef NDEBUG
+    VkDebugUtilsMessengerEXT DebugUtilsMessengerEXT = Context.CreateDebugMessenger(VulkanContextOptions);
+    Context.SetDebugUtilsMessengerEXT(DebugUtilsMessengerEXT);
+#endif
+
+    VkSurfaceKHR Surface = Context.CreateSurface(Window);
+
+    VkPhysicalDevice PhysicalDevice = Context.PickPhysicalDevice(VulkanContextOptions, Surface);
+    Context.SetPhysicalDevice(PhysicalDevice);
+
+    VkDevice LogicalDevice = Context.CreateLogicalDevice(PhysicalDevice, VulkanContextOptions);
+    Context.SetLogicalDevice(LogicalDevice);
+
+    Context.GetDeviceQueues(Surface);
+
+    Context.InitManagerResources(WINDOW_WIDTH, WINDOW_HEIGHT, Surface);
+
     Context.Init(Window, WINDOW_WIDTH, WINDOW_HEIGHT);
     Context.CreateImguiContext(Window);
-
 }
 
 FRender::~FRender()

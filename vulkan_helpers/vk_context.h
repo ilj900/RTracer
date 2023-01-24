@@ -35,13 +35,17 @@ public:
 
     void Init(GLFWwindow* Window, int Width, int Height);
 
-    void FillInContextOptions();
-    void CreateInstance();
-    void LoadFunctionPointers();
-    void SetupDebugMessenger();
-    void PickPhysicalDevice();
+    void SetInstance(VkInstance Instance);
+    VkInstance GetInstance();
+
+#ifndef NDEBUG
+    VkDebugUtilsMessengerEXT CreateDebugMessenger(FVulkanContextOptions& VulkanContextOptions);
+    void SetDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT DebugUtilsMessengerEXT);
+    void DestroyDebugUtilsMessengerEXT(FVulkanContextOptions& VulkanContextOptions);
+#endif
+    void InitManagerResources(int Width, int Height, VkSurfaceKHR Surface);
     void QueuePhysicalDeviceProperties();
-    void GetDeviceQueues();
+    void GetDeviceQueues(VkSurfaceKHR Surface);
     void CreateDepthAndAAImages();
     void CreateImguiRenderpasss();
     void CreateImguiFramebuffers();
@@ -54,7 +58,6 @@ public:
     void RecreateSwapChain(int Width, int Height);
     void CleanUpSwapChain();
     void CleanUp();
-    void DestroyDebugUtilsMessengerEXT();
     void UpdateUniformBuffer(uint32_t CurrentImage);
 
     void RenderImGui();
@@ -68,14 +71,17 @@ public:
 
     bool CheckInstanceLayersSupport(const std::vector<const char*>& Layers);
     bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device, std::set<std::string>& RequiredExtension);
-    bool CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice);
+    bool CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface);
     bool CheckDeviceQueueSupport(VkPhysicalDevice Device, VkQueueFlagBits QueueFlagBits, uint32_t& QueueFamilyIndex);
+    VkPhysicalDevice PickPhysicalDevice(FVulkanContextOptions& VulkanContextOptions, VkSurfaceKHR Surface);
+    void SetPhysicalDevice(VkPhysicalDevice PhysicalDevice);
 
-    VkInstance CreateVkInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FVulkanContextOptions& Options);
+    VkInstance CreateVkInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FVulkanContextOptions& VulkanContextOptions);
     std::vector<VkPhysicalDevice> EnumerateAllPhysicalDevices(VkInstance Instance);
     std::vector<VkQueueFamilyProperties> EnumeratePhysicalDeviceQueueFamilyProperties(VkPhysicalDevice Device);
-    bool CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDevice, uint32_t& QueueFamilyIndex);
-    VkDevice CreateLogicalDevice(VkPhysicalDevice PhysicalDevice);
+    bool CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDevice, uint32_t& QueueFamilyIndex, VkSurfaceKHR Surface);
+    VkDevice CreateLogicalDevice(VkPhysicalDevice PhysicalDevice, FVulkanContextOptions& VulkanContextOptions);
+    void SetLogicalDevice(VkDevice LogicalDevice);
     std::vector<VkDeviceQueueCreateInfo> GetDeviceQueueCreateInfo(VkPhysicalDevice PhysicalDevice, std::set<uint32_t> QueueIndices);
 
     VkQueue GetGraphicsQueue();
@@ -113,6 +119,8 @@ public:
     VkPipeline CreateGraphicsPipeline(VkShaderModule VertexShader, VkShaderModule FragmentShader, std::uint32_t Width, std::uint32_t Height, FGraphicsPipelineOptions& GraphicsPipelineOptions);
 
     VkSemaphore CreateSemaphore();
+    VkFence CreateSignalledFence();
+    VkFence CreateUnsignalledFence();
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL FVulkanContext::DebugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT MessageSeverity,
@@ -123,8 +131,6 @@ public:
 public:
     VkQueue GetQueue(VkQueueFlagBits QueueFlagBits);
     uint32_t GetQueueIndex(VkQueueFlagBits QueueFlagBits);
-
-    FVulkanContextOptions VulkanContextOptions;
 
     std::shared_ptr<FResourceAllocator> ResourceAllocator = nullptr;
     std::shared_ptr<FCommandBufferManager> CommandBufferManager = nullptr;

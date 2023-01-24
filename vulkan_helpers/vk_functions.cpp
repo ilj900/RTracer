@@ -15,7 +15,7 @@ template <class T>
 T LoadInstanceFunction(const std::string& FunctionName, VkInstance Instance)
 {
     T Function = (T) vkGetInstanceProcAddr(Instance, FunctionName.c_str());
-    CheckNotNullptr(&Function, FunctionName);
+    CheckNotNullptr(Function, FunctionName);
     return Function;
 }
 

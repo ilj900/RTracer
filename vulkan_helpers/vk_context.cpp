@@ -46,17 +46,6 @@ VKAPI_ATTR VkBool32 VKAPI_CALL FVulkanContext::DebugCallback(
 void FVulkanContext::Init(GLFWwindow* Window, int Width, int Height)
 {
     try {
-        FillInContextOptions();
-        CreateInstance();
-        LoadFunctionPointers();
-        SetupDebugMessenger();
-        Surface = CreateSurface(Window);
-        PickPhysicalDevice();
-        CreateLogicalDevice(PhysicalDevice);
-        GetDeviceQueues();
-        CommandBufferManager = std::make_shared<FCommandBufferManager>(LogicalDevice, this, GetQueue(VK_QUEUE_GRAPHICS_BIT),
-                                                                       GetQueueIndex(VK_QUEUE_GRAPHICS_BIT));
-        Swapchain = std::make_shared<FSwapchain>(*this, Width, Height, PhysicalDevice, LogicalDevice, Surface, GetGraphicsQueueIndex(), GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
         CreateDepthAndAAImages();
 
         LoadModelDataToGPU();
@@ -75,49 +64,22 @@ void FVulkanContext::Init(GLFWwindow* Window, int Width, int Height)
     }
 }
 
-void FVulkanContext::FillInContextOptions()
-{
-    VulkanContextOptions.AddInstanceLayer("VK_LAYER_KHRONOS_validation");
-
 #ifndef NDEBUG
-    VkDebugUtilsMessengerCreateInfoEXT DebugCreateInfo = {};
-    DebugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    DebugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    DebugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    DebugCreateInfo.pfnUserCallback = DebugCallback;
-    VulkanContextOptions.AddInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, &DebugCreateInfo, sizeof(VkDebugUtilsMessengerCreateInfoEXT));
-#endif
-
-    // Resolve and add extensions and layers
-    uint32_t Counter = 0;
-    auto ExtensionsRequiredByGLFW = glfwGetRequiredInstanceExtensions(&Counter);
-    for (uint32_t i = 0; i < Counter; ++i)
-    {
-        VulkanContextOptions.AddInstanceExtension(ExtensionsRequiredByGLFW[i]);
-    }
-
-    VulkanContextOptions.AddDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-}
-
-
-void FVulkanContext::CreateInstance()
+VkDebugUtilsMessengerEXT FVulkanContext::CreateDebugMessenger(FVulkanContextOptions& VulkanContextOptions)
 {
-    Instance = CreateVkInstance("Hello Triangle", {1, 0, 0}, "No Engine", {1, 0, 0}, VK_API_VERSION_1_0, VulkanContextOptions);
-}
-
-void FVulkanContext::LoadFunctionPointers()
-{
-    V::LoadVkFunctions(Instance);
-}
-
-void FVulkanContext::SetupDebugMessenger()
-{
-#ifndef NDEBUG
+    VkDebugUtilsMessengerEXT DebugUtilsMessengerEXT;
     auto* DebugCreateInfo = VulkanContextOptions.GetExtensionStructurePtr<VkDebugUtilsMessengerCreateInfoEXT>(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
 
-    V::vkCreateDebugUtilsMessengerEXT(Instance, DebugCreateInfo, nullptr, &DebugMessenger);
-#endif
+    V::vkCreateDebugUtilsMessengerEXT(Instance, DebugCreateInfo, nullptr, &DebugUtilsMessengerEXT);
+
+    return DebugUtilsMessengerEXT;
 }
+
+void FVulkanContext::SetDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT DebugUtilsMessengerEXT)
+{
+    this->DebugMessenger = DebugUtilsMessengerEXT;
+}
+#endif
 
 VkSurfaceKHR FVulkanContext::CreateSurface(GLFWwindow* Window)
 {
@@ -143,7 +105,7 @@ std::vector<VkPhysicalDevice> FVulkanContext::EnumerateAllPhysicalDevices(VkInst
     return Devices;
 }
 
-void FVulkanContext::PickPhysicalDevice()
+VkPhysicalDevice FVulkanContext::PickPhysicalDevice(FVulkanContextOptions& VulkanContextOptions, VkSurfaceKHR Surface)
 {
     auto Devices = EnumerateAllPhysicalDevices(Instance);
 
@@ -153,7 +115,7 @@ void FVulkanContext::PickPhysicalDevice()
 
     for (const auto& Device : Devices)
     {
-        if (CheckDeviceExtensionsSupport(Device, RequiredExtensions) && (CheckDeviceQueueSupport(Device)))
+        if (CheckDeviceExtensionsSupport(Device, RequiredExtensions) && (CheckDeviceQueueSupport(Device, Surface)))
         {
             PhysicalDevice = Device;
             QueuePhysicalDeviceProperties();
@@ -165,6 +127,24 @@ void FVulkanContext::PickPhysicalDevice()
     {
         throw std::runtime_error("Failed to find a suitable GPU!");
     }
+
+    return PhysicalDevice;
+}
+
+void FVulkanContext::SetPhysicalDevice(VkPhysicalDevice PhysicalDevice)
+{
+    this->PhysicalDevice = PhysicalDevice;
+}
+
+void FVulkanContext::InitManagerResources(int Width, int Height, VkSurfaceKHR Surface)
+{
+    ResourceAllocator = std::make_shared<FResourceAllocator>(PhysicalDevice, LogicalDevice, this);
+
+    DescriptorSetManager = std::make_shared<FDescriptorSetManager>(LogicalDevice);
+
+    CommandBufferManager = std::make_shared<FCommandBufferManager>(LogicalDevice, this, GetQueue(VK_QUEUE_GRAPHICS_BIT),
+                                                                   GetQueueIndex(VK_QUEUE_GRAPHICS_BIT));
+    Swapchain = std::make_shared<FSwapchain>(*this, Width, Height, PhysicalDevice, LogicalDevice, Surface, GetGraphicsQueueIndex(), GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
 }
 
 void FVulkanContext::QueuePhysicalDeviceProperties()
@@ -247,7 +227,7 @@ bool FVulkanContext::CheckDeviceExtensionsSupport(VkPhysicalDevice Device, std::
     return RequiredExtensions.empty();
 }
 
-VkInstance FVulkanContext::CreateVkInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FVulkanContextOptions& Options)
+VkInstance FVulkanContext::CreateVkInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FVulkanContextOptions& VulkanContextOptions)
 {
     /// Check whether instance supports requested layers
     auto CharLayers = VulkanContextOptions.GetInstanceLayers();
@@ -285,6 +265,16 @@ VkInstance FVulkanContext::CreateVkInstance(const std::string& AppName, const FV
     return ResultingInstance;
 }
 
+void FVulkanContext::SetInstance(VkInstance Instance)
+{
+    this->Instance = Instance;
+}
+
+VkInstance FVulkanContext::GetInstance()
+{
+    return this->Instance;
+}
+
 std::vector<VkQueueFamilyProperties> FVulkanContext::EnumeratePhysicalDeviceQueueFamilyProperties(VkPhysicalDevice Device)
 {
     uint32_t QueueFamilyCount = 0;
@@ -312,7 +302,7 @@ bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice, Vk
     return false;
 }
 
-bool FVulkanContext::CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDevice, uint32_t& QueueFamilyIndex)
+bool FVulkanContext::CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDevice, uint32_t& QueueFamilyIndex, VkSurfaceKHR Surface)
 {
     auto Properties = EnumeratePhysicalDeviceQueueFamilyProperties(PhysicalDevice);
 
@@ -331,7 +321,7 @@ bool FVulkanContext::CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDev
     return false;
 }
 
-bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice)
+bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
 {
     bool EverythingIsOK = true;
 
@@ -346,7 +336,7 @@ bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice)
 
     if (EverythingIsOK)
     {
-        if (!CheckDeviceQueuePresentSupport(PhysicalDevice, PresentQueue.QueueIndex)) {
+        if (!CheckDeviceQueuePresentSupport(PhysicalDevice, PresentQueue.QueueIndex, Surface)) {
             return false;
         }
     }
@@ -442,8 +432,7 @@ void FVulkanContext::DestroyBuffer(FBuffer& Buffer)
     ResourceAllocator->DestroyBuffer(Buffer);
 }
 
-
-VkDevice FVulkanContext::CreateLogicalDevice(VkPhysicalDevice PhysicalDevice)
+VkDevice FVulkanContext::CreateLogicalDevice(VkPhysicalDevice PhysicalDevice, FVulkanContextOptions& VulkanContextOptions)
 {
     std::set<uint32_t> QueueIndices;
     QueueIndices.insert(PresentQueue.QueueIndex);
@@ -470,6 +459,8 @@ VkDevice FVulkanContext::CreateLogicalDevice(VkPhysicalDevice PhysicalDevice)
     CreateInfo.enabledLayerCount = static_cast<uint32_t>(DeviceLayers.size());
     CreateInfo.ppEnabledLayerNames = DeviceLayers.data();
 
+    VkDevice LogicalDevice;
+
     if (vkCreateDevice(PhysicalDevice, &CreateInfo, nullptr, &LogicalDevice) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create logical device!");
@@ -478,18 +469,20 @@ VkDevice FVulkanContext::CreateLogicalDevice(VkPhysicalDevice PhysicalDevice)
     return LogicalDevice;
 }
 
-void FVulkanContext::GetDeviceQueues()
+void FVulkanContext::SetLogicalDevice(VkDevice LogicalDevice)
+{
+    this->LogicalDevice = LogicalDevice;
+}
+
+void FVulkanContext::GetDeviceQueues(VkSurfaceKHR Surface)
 {
     for (auto& Entry : Queues)
     {
         CheckDeviceQueueSupport(PhysicalDevice, Entry.first, Entry.second.QueueIndex);
         vkGetDeviceQueue(LogicalDevice, Entry.second.QueueIndex, 0, &Entry.second.Queue);
     }
-    CheckDeviceQueuePresentSupport(PhysicalDevice, PresentQueue.QueueIndex);
+    CheckDeviceQueuePresentSupport(PhysicalDevice, PresentQueue.QueueIndex, Surface);
     vkGetDeviceQueue(LogicalDevice, PresentQueue.QueueIndex, 0, &PresentQueue.Queue);
-
-    ResourceAllocator = std::make_shared<FResourceAllocator>(PhysicalDevice, LogicalDevice, this);
-    DescriptorSetManager = std::make_shared<FDescriptorSetManager>(LogicalDevice);
 }
 
 std::vector<VkDeviceQueueCreateInfo> FVulkanContext::GetDeviceQueueCreateInfo(VkPhysicalDevice PhysicalDevice, std::set<uint32_t> UniqueQueueFamilies)
@@ -891,6 +884,37 @@ VkSemaphore FVulkanContext::CreateSemaphore()
     }
 
     return Semaphore;
+}
+
+VkFence FVulkanContext::CreateSignalledFence()
+{
+    VkFenceCreateInfo FenceInfo{};
+    FenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    FenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    VkFence Fence;
+
+    if (vkCreateFence(LogicalDevice, &FenceInfo, nullptr, &Fence) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create VkFence!");
+    }
+
+    return Fence;
+}
+
+VkFence FVulkanContext::CreateUnsignalledFence()
+{
+    VkFenceCreateInfo FenceInfo{};
+    FenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+    VkFence Fence;
+
+    if (vkCreateFence(LogicalDevice, &FenceInfo, nullptr, &Fence) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create VkFence!");
+    }
+
+    return Fence;
 }
 
 void FVulkanContext::CreateImguiRenderpasss()
@@ -1335,15 +1359,15 @@ void FVulkanContext::UpdateUniformBuffer(uint32_t CurrentImage)
     ResourceAllocator->LoadDataToBuffer(DeviceRenderableBuffers[CurrentImage], RenderableComponentSize, 0, RenderableComponentData);
 }
 
-void FVulkanContext::DestroyDebugUtilsMessengerEXT()
-{
 #ifndef NDEBUG
+void FVulkanContext::DestroyDebugUtilsMessengerEXT(FVulkanContextOptions& VulkanContextOptions)
+{
     if (nullptr != VulkanContextOptions.GetExtensionStructurePtr<VkDebugUtilsMessengerCreateInfoEXT>(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT))
     {
         V::vkDestroyDebugUtilsMessengerEXT(Instance, DebugMessenger, nullptr);
     }
-#endif
 }
+#endif
 
 void FVulkanContext::CleanUp()
 {
@@ -1380,7 +1404,8 @@ void FVulkanContext::CleanUp()
     ResourceAllocator = nullptr;
     vkDestroyDevice(LogicalDevice, nullptr);
 
-    DestroyDebugUtilsMessengerEXT();
+    /// TODO
+    //DestroyDebugUtilsMessengerEXT();
 
     vkDestroySurfaceKHR(Instance, Surface, nullptr);
     vkDestroyInstance(Instance, nullptr);
