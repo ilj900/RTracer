@@ -140,7 +140,7 @@ public:
     VkPhysicalDevice PhysicalDevice;
     VkDevice LogicalDevice;
 
-    std::shared_ptr<FRenderPass> ImGuiRenderPass = nullptr;
+    VkRenderPass ImguiRenderPass = VK_NULL_HANDLE;
 
     /// Queues
     struct IndexQueue

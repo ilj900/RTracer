@@ -1088,18 +1088,18 @@ void FVulkanContext::CreateSyncObjects()
 
 void FVulkanContext::CreateImguiContext(GLFWwindow* Window)
 {
-    
-    ImGuiRenderPass = std::make_shared<FRenderPass>();
-    ImGuiRenderPass->AddImageAsAttachment(Swapchain->Images[0], AttachmentType::Color, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
+    FGraphicsPipelineOptions ImguiPipelineOptions;
 
-    ImGuiRenderPass->Construct(LogicalDevice);
-    V::SetName(LogicalDevice, ImGuiRenderPass->RenderPass, "V_ImGuiRenderPass");
+    ImguiPipelineOptions.RegisterColorAttachment(0, Swapchain->Images[0], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
+    ImguiRenderPass = CreateRenderpass(LogicalDevice, ImguiPipelineOptions);
+
+    V::SetName(LogicalDevice, ImguiRenderPass, "V_ImGuiRenderPass");
 
     ImGuiFramebuffers.resize(Swapchain->Size());
 
     for(uint32_t i = 0; i < Swapchain->Size(); ++i)
     {
-        ImGuiFramebuffers[i] = CreateFramebuffer({Swapchain->Images[i]}, ImGuiRenderPass->RenderPass, "V_Imgui_fb_" + std::to_string(i));
+        ImGuiFramebuffers[i] = CreateFramebuffer({Swapchain->Images[i]}, ImguiRenderPass, "V_Imgui_fb_" + std::to_string(i));
     }
 
     VkDescriptorPoolSize PoolSizes[] =
@@ -1155,7 +1155,7 @@ void FVulkanContext::CreateImguiContext(GLFWwindow* Window)
     InitInfo.ImageCount = MAX_FRAMES_IN_FLIGHT;
     InitInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
     InitInfo.CheckVkResultFn = CheckResultFunction;
-    ImGui_ImplVulkan_Init(&InitInfo, ImGuiRenderPass->RenderPass);
+    ImGui_ImplVulkan_Init(&InitInfo, ImguiRenderPass);
 
     {
         CommandBufferManager->RunSingletimeCommand(ImGui_ImplVulkan_CreateFontsTexture);
@@ -1219,7 +1219,7 @@ void FVulkanContext::RenderImGui()
         {
             VkRenderPassBeginInfo RenderPassBeginInfo{};
             RenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            RenderPassBeginInfo.renderPass = ImGuiRenderPass->RenderPass;
+            RenderPassBeginInfo.renderPass = ImguiRenderPass;
             RenderPassBeginInfo.framebuffer = ImGuiFramebuffers[CurrentFrame % Swapchain->Size()];
             RenderPassBeginInfo.renderArea.extent = Swapchain->GetExtent2D();
             RenderPassBeginInfo.clearValueCount = 0;
@@ -1325,7 +1325,7 @@ void FVulkanContext::CleanUpSwapChain()
     }
 
     /// Remove renderpasses
-    ImGuiRenderPass = nullptr;
+    ImguiRenderPass = nullptr;
 
     Swapchain = nullptr;
 
