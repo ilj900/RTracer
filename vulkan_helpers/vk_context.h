@@ -47,11 +47,8 @@ public:
     void QueuePhysicalDeviceProperties();
     void GetDeviceQueues(VkSurfaceKHR Surface);
     void CreateDepthAndAAImages();
-    void CreateImguiRenderpasss();
-    void CreateImguiFramebuffers();
     void LoadModelDataToGPU();
     void CreateUniformBuffers();
-    void CreateImguiDescriptorPool();
     void CreatePipelines();
     void CreateSyncObjects();
     void CreateImguiContext(GLFWwindow* Window);
@@ -116,6 +113,7 @@ public:
     VkFramebuffer CreateFramebuffer(std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name);
 
     VkShaderModule CreateShaderFromFile(const std::string& FileName);
+    VkRenderPass CreateRenderpass(VkDevice LogicalDevice, FGraphicsPipelineOptions& GraphicsPipelineOptions);
     VkPipeline CreateGraphicsPipeline(VkShaderModule VertexShader, VkShaderModule FragmentShader, std::uint32_t Width, std::uint32_t Height, FGraphicsPipelineOptions& GraphicsPipelineOptions);
 
     VkSemaphore CreateSemaphore();

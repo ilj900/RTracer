@@ -53,9 +53,6 @@ void FVulkanContext::Init(GLFWwindow* Window, int Width, int Height)
         TextureImage = LoadImageFromFile(TexturePath, "V_TextureImage");
 
         CreatePipelines();
-        CreateImguiRenderpasss();
-        CreateImguiFramebuffers();
-        CreateImguiDescriptorPool();
         CreateSyncObjects();
     }
     catch (std::runtime_error &Error) {
@@ -665,7 +662,7 @@ VkShaderModule FVulkanContext::CreateShaderFromFile(const std::string& FileName)
     return ShaderModule;
 }
 
-VkPipeline FVulkanContext::CreateGraphicsPipeline(VkShaderModule VertexShader, VkShaderModule FragmentShader, std::uint32_t Width, std::uint32_t Height, FGraphicsPipelineOptions& GraphicsPipelineOptions)
+VkRenderPass FVulkanContext::CreateRenderpass(VkDevice LogicalDevice, FGraphicsPipelineOptions& GraphicsPipelineOptions)
 {
     std::vector<VkAttachmentDescription> AttachmentDescriptions;
     std::vector<VkAttachmentReference> ColorAttachmentReferences;
@@ -736,10 +733,19 @@ VkPipeline FVulkanContext::CreateGraphicsPipeline(VkShaderModule VertexShader, V
     RenderPassInfo.dependencyCount = 1;
     RenderPassInfo.pDependencies  = &Dependency;
 
-    if (vkCreateRenderPass(LogicalDevice, &RenderPassInfo, nullptr, &GraphicsPipelineOptions.RenderPass) != VK_SUCCESS)
+    VkRenderPass RenderPass = VK_NULL_HANDLE;
+
+    if (vkCreateRenderPass(LogicalDevice, &RenderPassInfo, nullptr, &RenderPass) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create render pass!");
     }
+
+    return RenderPass;
+}
+
+VkPipeline FVulkanContext::CreateGraphicsPipeline(VkShaderModule VertexShader, VkShaderModule FragmentShader, std::uint32_t Width, std::uint32_t Height, FGraphicsPipelineOptions& GraphicsPipelineOptions)
+{
+    GraphicsPipelineOptions.RenderPass = CreateRenderpass(LogicalDevice, GraphicsPipelineOptions);
 
     std::vector<VkPipelineShaderStageCreateInfo> PipelineShaderStageCreateInfoVector(2);
 
@@ -917,15 +923,6 @@ VkFence FVulkanContext::CreateUnsignalledFence()
     return Fence;
 }
 
-void FVulkanContext::CreateImguiRenderpasss()
-{
-    ImGuiRenderPass = std::make_shared<FRenderPass>();
-    ImGuiRenderPass->AddImageAsAttachment(Swapchain->Images[0], AttachmentType::Color, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
-
-    ImGuiRenderPass->Construct(LogicalDevice);
-    V::SetName(LogicalDevice, ImGuiRenderPass->RenderPass, "V_ImGuiRenderPass");
-}
-
 VkFormat FVulkanContext::FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features)
 {
     for (VkFormat Format : Candidates)
@@ -958,16 +955,6 @@ VkFormat FVulkanContext::FindDepthFormat()
 bool FVulkanContext::HasStensilComponent(VkFormat Format)
 {
     return Format == VK_FORMAT_D32_SFLOAT_S8_UINT || Format == VK_FORMAT_D24_UNORM_S8_UINT;
-}
-
-void FVulkanContext::CreateImguiFramebuffers()
-{
-    ImGuiFramebuffers.resize(Swapchain->Size());
-
-    for(uint32_t i = 0; i < Swapchain->Size(); ++i)
-    {
-        ImGuiFramebuffers[i] = CreateFramebuffer({Swapchain->Images[i]}, ImGuiRenderPass->RenderPass, "V_Imgui_fb_" + std::to_string(i));
-    }
 }
 
 void FVulkanContext::LoadModelDataToGPU()
@@ -1074,35 +1061,6 @@ void FVulkanContext::CreateUniformBuffers()
     }
 }
 
-void FVulkanContext::CreateImguiDescriptorPool()
-{
-    VkDescriptorPoolSize PoolSizes[] =
-            {
-                    { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
-                    { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
-                    { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
-                    { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
-                    { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
-                    { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
-                    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
-                    { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
-                    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
-                    { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
-                    { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
-            };
-    VkDescriptorPoolCreateInfo PoolInfo = {};
-    PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    PoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-    PoolInfo.maxSets = 1000 * IM_ARRAYSIZE(PoolSizes);
-    PoolInfo.poolSizeCount = (uint32_t)IM_ARRAYSIZE(PoolSizes);
-    PoolInfo.pPoolSizes = PoolSizes;
-    if(vkCreateDescriptorPool(LogicalDevice, &PoolInfo, nullptr, &ImGuiDescriptorPool) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create descriptor pool for ImGui!");
-    }
-    V::SetName(LogicalDevice, ImGuiDescriptorPool, "V_ImGuiDescriptorPool");
-}
-
 void FVulkanContext::CreateSyncObjects()
 {
     ImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -1130,6 +1088,46 @@ void FVulkanContext::CreateSyncObjects()
 
 void FVulkanContext::CreateImguiContext(GLFWwindow* Window)
 {
+    
+    ImGuiRenderPass = std::make_shared<FRenderPass>();
+    ImGuiRenderPass->AddImageAsAttachment(Swapchain->Images[0], AttachmentType::Color, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
+
+    ImGuiRenderPass->Construct(LogicalDevice);
+    V::SetName(LogicalDevice, ImGuiRenderPass->RenderPass, "V_ImGuiRenderPass");
+
+    ImGuiFramebuffers.resize(Swapchain->Size());
+
+    for(uint32_t i = 0; i < Swapchain->Size(); ++i)
+    {
+        ImGuiFramebuffers[i] = CreateFramebuffer({Swapchain->Images[i]}, ImGuiRenderPass->RenderPass, "V_Imgui_fb_" + std::to_string(i));
+    }
+
+    VkDescriptorPoolSize PoolSizes[] =
+            {
+                    { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+                    { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+                    { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+                    { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+                    { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+                    { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+                    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+                    { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+                    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+                    { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+                    { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+            };
+    VkDescriptorPoolCreateInfo PoolInfo = {};
+    PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    PoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    PoolInfo.maxSets = 1000 * IM_ARRAYSIZE(PoolSizes);
+    PoolInfo.poolSizeCount = (uint32_t)IM_ARRAYSIZE(PoolSizes);
+    PoolInfo.pPoolSizes = PoolSizes;
+    if(vkCreateDescriptorPool(LogicalDevice, &PoolInfo, nullptr, &ImGuiDescriptorPool) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create descriptor pool for ImGui!");
+    }
+    V::SetName(LogicalDevice, ImGuiDescriptorPool, "V_ImGuiDescriptorPool");
+
     auto CheckResultFunction = [](VkResult Err)
             {
                 if (Err == 0)
@@ -1300,9 +1298,6 @@ void FVulkanContext::RecreateSwapChain(int Width, int Height)
     Swapchain = std::make_shared<FSwapchain>(*this, Width, Height, PhysicalDevice, LogicalDevice, Surface, GetGraphicsQueueIndex(), GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
     CreateDepthAndAAImages();
 
-    CreateImguiRenderpasss();
-
-    CreateImguiFramebuffers();
 
     RenderTask = std::make_shared<FRenderTask>(this, int(Swapchain->Size()), LogicalDevice);
     RenderTask->Init();
