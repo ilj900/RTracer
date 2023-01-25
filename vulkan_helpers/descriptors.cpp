@@ -1,4 +1,5 @@
 #include "descriptors.h"
+#include "vk_context.h"
 
 #include "vk_debug.h"
 
@@ -126,27 +127,7 @@ void FPipelineDescriptorSetLayout::ReserveDescriptorPool(VkDevice LogicalDevice)
         }
     }
 
-    /// Fill it pool sizes
-    std::vector<VkDescriptorPoolSize> PoolSizes{};
-    uint32_t MaxSets = 0;
-    for (auto Type : TypeCount)
-    {
-        PoolSizes.push_back({Type.first, Type.second});
-        MaxSets += Type.second;
-    }
-
-    VkDescriptorPoolCreateInfo PoolInfo{};
-    PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    PoolInfo.poolSizeCount = static_cast<uint32_t>(PoolSizes.size());
-    PoolInfo.pPoolSizes = PoolSizes.data();
-    PoolInfo.maxSets = static_cast<uint32_t>(MaxSets);
-
-    if (vkCreateDescriptorPool(LogicalDevice, &PoolInfo, nullptr, &DescriptorPool) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create descriptor pool!");
-    }
-
-    V::SetName(LogicalDevice, DescriptorPool, "V_MainDescriptorPool");
+    DescriptorPool = GetContext().CreateDescriptorPool(TypeCount, LogicalDevice, "TTTTTTTTTTTT");
 }
 
 void FPipelineDescriptorSetLayout::AllocateAllDescriptorSets(VkDevice LogicalDevice)
