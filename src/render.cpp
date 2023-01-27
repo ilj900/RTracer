@@ -66,6 +66,7 @@ FRender::FRender()
 #endif
 
     VkSurfaceKHR Surface = Context.CreateSurface(Window);
+    Context.SetSurface(Surface);
 
     VkPhysicalDevice PhysicalDevice = Context.PickPhysicalDevice(VulkanContextOptions, Surface);
     Context.SetPhysicalDevice(PhysicalDevice);
@@ -78,13 +79,13 @@ FRender::FRender()
     Context.InitManagerResources(WINDOW_WIDTH, WINDOW_HEIGHT, Surface);
 
     Context.Init(Window, WINDOW_WIDTH, WINDOW_HEIGHT);
-    Context.CreateImguiContext(Window);
 }
 
 FRender::~FRender()
 {
     GetContext().WaitIdle();
     GetContext().CleanUp();
+
 
     glfwDestroyWindow(Window);
     glfwTerminate();

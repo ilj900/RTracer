@@ -39,7 +39,7 @@ public:
 #ifndef NDEBUG
     VkDebugUtilsMessengerEXT CreateDebugMessenger(FVulkanContextOptions& VulkanContextOptions);
     void SetDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT DebugUtilsMessengerEXT);
-    void DestroyDebugUtilsMessengerEXT(FVulkanContextOptions& VulkanContextOptions);
+    void DestroyDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT& DebugUtilsMessenger);
 #endif
     void InitManagerResources(int Width, int Height, VkSurfaceKHR Surface);
     void QueuePhysicalDeviceProperties();
@@ -49,7 +49,6 @@ public:
     void CreateUniformBuffers();
     void CreatePipelines();
     void CreateSyncObjects();
-    void CreateImguiContext(GLFWwindow* Window);
     void RecreateSwapChain(int Width, int Height);
     void CleanUpSwapChain();
     void CleanUp();
@@ -94,13 +93,14 @@ public:
     uint32_t GetPresentIndex();
 
     VkSurfaceKHR CreateSurface(GLFWwindow* Window);
+    void DestroySurface(VkSurfaceKHR* Surface);
     void SetSurface(VkSurfaceKHR Surface);
     VkSurfaceKHR GetSurface();
 
     void SetWindow(GLFWwindow* Window);
     GLFWwindow* GetWindow();
 
-    FBuffer CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties);
+    FBuffer CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, const std::string& DebugName = "");
     FMemoryPtr PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data);
     void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset);
     void DestroyBuffer(FBuffer& Buffer);

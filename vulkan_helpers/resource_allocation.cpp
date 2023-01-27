@@ -1,6 +1,7 @@
 #include "resource_allocation.h"
 #include "buffer.h"
 #include "vk_context.h"
+#include "vk_debug.h"
 
 #include <stdexcept>
 
@@ -11,8 +12,8 @@ FResourceAllocator::FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice
     vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &MemProperties);
 
     /// Create staging buffer
-    StagingBuffer = CreateBuffer(StagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    MeshBuffer = CreateBuffer(MeshBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    StagingBuffer = CreateBuffer(StagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Staging_Buffer");
+    MeshBuffer = CreateBuffer(MeshBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "Mesh_Buffer");
 }
 
 FResourceAllocator::~FResourceAllocator()
@@ -40,7 +41,7 @@ FMemoryRegion FResourceAllocator::AllocateMemory(VkDeviceSize Size, VkMemoryRequ
     return MemoryRegion;
 }
 
-FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties)
+FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, const std::string& DebugName)
 {
     FBuffer Buffer;
 
@@ -58,10 +59,14 @@ FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags U
         throw std::runtime_error("Failed to create buffer!");
     }
 
+    V::SetName(Device, Buffer.Buffer, DebugName);
+
     VkMemoryRequirements MemRequirements;
     vkGetBufferMemoryRequirements(Device, Buffer.Buffer, &MemRequirements);
 
     Buffer.MemoryRegion = AllocateMemory(Size, MemRequirements, Properties);
+
+    V::SetName(Device, Buffer.MemoryRegion.Memory, DebugName + "_Memmory");
 
     /// Bind Buffer Memory
     vkBindBufferMemory(Device, Buffer.Buffer, Buffer.MemoryRegion.Memory, 0);

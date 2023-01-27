@@ -11,6 +11,7 @@ public:
     ~FRender();
 
     int Render();
+    int Cleanup();
 
     int LoadModels(const std::string& Path);
     int AddMesh();

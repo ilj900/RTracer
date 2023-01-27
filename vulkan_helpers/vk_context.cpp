@@ -81,6 +81,12 @@ VkSurfaceKHR FVulkanContext::CreateSurface(GLFWwindow* Window)
     return Surface;
 }
 
+void FVulkanContext::DestroySurface(VkSurfaceKHR* Surface)
+{
+    vkDestroySurfaceKHR(Instance, *Surface, nullptr);
+    *Surface = VK_NULL_HANDLE;
+}
+
 void FVulkanContext::SetSurface(VkSurfaceKHR Surface)
 {
     this->Surface = Surface;
@@ -428,10 +434,10 @@ uint32_t FVulkanContext::GetPresentIndex()
     return PresentQueue.QueueIndex;
 }
 
-FBuffer FVulkanContext::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties)
+FBuffer FVulkanContext::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, const std::string& DebugName)
 
 {
-    return ResourceAllocator->CreateBuffer(Size, Usage, Properties);
+    return ResourceAllocator->CreateBuffer(Size, Usage, Properties, DebugName);
 }
 
 FMemoryPtr FVulkanContext::PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data)
@@ -554,7 +560,7 @@ void FVulkanContext::FetchImageData(const FImage& Image, std::vector<T>& Data)
 
     auto& Context = GetContext();
     uint32_t Size = Image.Height * Image.Width * NumberOfComponents * sizeof(T);
-    FBuffer Buffer = Context.CreateBuffer(Size, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    FBuffer Buffer = Context.CreateBuffer(Size, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Tmp_Save_Image_Buffer");
     Context.ResourceAllocator->CopyImageToBuffer(Image, Buffer);
 
     Data.resize(Size);
@@ -1109,9 +1115,9 @@ void FVulkanContext::CreateUniformBuffers()
 
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
-        DeviceTransformBuffers[i] = CreateBuffer(TransformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        DeviceCameraBuffers[i] = CreateBuffer(CameraBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        DeviceRenderableBuffers[i] = CreateBuffer(RenderableBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        DeviceTransformBuffers[i] = CreateBuffer(TransformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Transform_Buffer_" + std::to_string(i));
+        DeviceCameraBuffers[i] = CreateBuffer(CameraBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Camera_Buffer_" + std::to_string(i));
+        DeviceRenderableBuffers[i] = CreateBuffer(RenderableBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Renderable_Buffer_" + std::to_string(i));
     }
 }
 
@@ -1136,11 +1142,6 @@ void FVulkanContext::CreateSyncObjects()
             throw std::runtime_error("Failed to create synchronization objects for a frame!");
         }
     }
-}
-
-void FVulkanContext::CreateImguiContext(GLFWwindow* Window)
-{
-
 }
 
 void FVulkanContext::Render()
@@ -1243,14 +1244,14 @@ void FVulkanContext::CleanUpSwapChain()
         vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
     }
 
-    /// Remove renderpasses
-
     Swapchain = nullptr;
 
     RenderTask->Cleanup();
     RenderTask = nullptr;
     PassthroughTask->Cleanup();
     PassthroughTask = nullptr;
+    ImguiTask->Cleanup();
+    ImguiTask = nullptr;
 }
 
 void FVulkanContext::UpdateUniformBuffer(uint32_t CurrentImage)
@@ -1273,11 +1274,12 @@ void FVulkanContext::UpdateUniformBuffer(uint32_t CurrentImage)
 }
 
 #ifndef NDEBUG
-void FVulkanContext::DestroyDebugUtilsMessengerEXT(FVulkanContextOptions& VulkanContextOptions)
+void FVulkanContext::DestroyDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT& DebugUtilsMessenger)
 {
-    if (nullptr != VulkanContextOptions.GetExtensionStructurePtr<VkDebugUtilsMessengerCreateInfoEXT>(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT))
+    if (DebugUtilsMessenger != VK_NULL_HANDLE)
     {
-        V::vkDestroyDebugUtilsMessengerEXT(Instance, DebugMessenger, nullptr);
+        V::vkDestroyDebugUtilsMessengerEXT(Instance, DebugUtilsMessenger, nullptr);
+        DebugUtilsMessenger = VK_NULL_HANDLE;
     }
 }
 #endif
@@ -1313,7 +1315,7 @@ void FVulkanContext::CleanUp()
     vkDestroyDevice(LogicalDevice, nullptr);
 
     /// TODO
-    //DestroyDebugUtilsMessengerEXT();
+    DestroyDebugUtilsMessengerEXT(DebugMessenger);
 
     vkDestroySurfaceKHR(Instance, Surface, nullptr);
     vkDestroyInstance(Instance, nullptr);

@@ -1,6 +1,8 @@
 #include "vk_functions.h"
 #include "vk_debug.h"
 
+#include <cassert>
+
 namespace V
 {
     void SetName(VkDevice Device, uint64_t Object, VkObjectType ObjectType, const std::string& Name) {
@@ -9,7 +11,9 @@ namespace V
         DebugUtilsObjectNameInfo.objectType = ObjectType;
         DebugUtilsObjectNameInfo.objectHandle = Object;
         DebugUtilsObjectNameInfo.pObjectName = Name.c_str();
-        vkSetDebugUtilsObjectNameEXT(Device, &DebugUtilsObjectNameInfo);
+
+        VkResult Result = vkSetDebugUtilsObjectNameEXT(Device, &DebugUtilsObjectNameInfo);
+        assert((Result == VK_SUCCESS) && "Failed to give a name to a vulkan object!");
     }
 
     void SetName(VkDevice Device, VkBuffer Buffer, const std::string& Name) { SetName(Device, uint64_t(Buffer), VK_OBJECT_TYPE_BUFFER, Name); }

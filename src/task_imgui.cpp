@@ -121,6 +121,8 @@ void FImguiTask::Cleanup()
     vkDestroyRenderPass(LogicalDevice, RenderPass, nullptr);
 
     Context->DescriptorSetManager->Reset(Name);
+
+    vkDestroyDescriptorPool(LogicalDevice, DescriptorPool, nullptr);
 }
 
 VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)

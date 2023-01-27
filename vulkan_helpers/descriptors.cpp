@@ -152,6 +152,11 @@ void FPipelineDescriptorSetLayout::AllocateAllDescriptorSets(VkDevice LogicalDev
         {
             throw std::runtime_error("Failed to allocate descriptor sets!");
         }
+
+        for (int i = 0; i < VkDescriptorSets[SetIndex].size(); ++i)
+        {
+            V::SetName(LogicalDevice, VkDescriptorSets[SetIndex][i], "Descriptor_Set_" + std::to_string(SetIndex) + "_Number_" + std::to_string(i++));
+        }
     }
 }
 

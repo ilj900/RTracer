@@ -1,6 +1,7 @@
 #include "image.h"
 
 #include "vk_context.h"
+#include "vk_debug.h"
 
 #include "iostream"
 
@@ -32,6 +33,8 @@ FImage::FImage(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFl
     this->AspectFlags = AspectFlags;
     MipLevels = 1;
     DebugName = DebugImageName;
+
+    V::SetName(Device, ImageToWrap, DebugImageName);
 
     CreateImageView();
 }
@@ -189,6 +192,8 @@ void FImage::CreateImage()
     {
         throw std::runtime_error("Failed to create image!");
     }
+
+    V::SetName(Device, Image, DebugName);
 }
 
 void FImage::AllocateMemory()
@@ -223,6 +228,8 @@ void FImage::CreateImageView()
     {
         throw std::runtime_error("Failed to create texture image view!");
     }
+
+    V::SetName(Device, View, DebugName + "View");
 }
 
 void FImage::GenerateMipMaps()
