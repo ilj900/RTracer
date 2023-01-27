@@ -44,7 +44,6 @@ public:
     void InitManagerResources(int Width, int Height, VkSurfaceKHR Surface);
     void QueuePhysicalDeviceProperties();
     void GetDeviceQueues(VkSurfaceKHR Surface);
-    void CreateDepthAndAAImages();
     void LoadModelDataToGPU();
     void CreateUniformBuffers();
     void CreatePipelines();
@@ -159,12 +158,9 @@ public:
                                                   {VK_QUEUE_COMPUTE_BIT,  {UINT32_MAX, VK_NULL_HANDLE}},};
     IndexQueue PresentQueue;
 
-    // SwapChain
+    /// SwapChain
     std::shared_ptr<FSwapchain> Swapchain = nullptr;
     VkImage CurrentImage = VK_NULL_HANDLE;
-
-    VkDescriptorPool ImGuiDescriptorPool;
-    std::vector<VkFramebuffer> ImGuiFramebuffers;
 
     std::shared_ptr<FRenderTask> RenderTask = nullptr;
     std::shared_ptr<FPassthroughTask> PassthroughTask = nullptr;
@@ -173,9 +169,6 @@ public:
 #ifndef NDEBUG
     VkDebugUtilsMessengerEXT DebugMessenger;
 #endif
-    /// Images for drawing
-    ImagePtr UtilityImageR32;
-    ImagePtr UtilityImageR8G8B8A8_SRGB;
 
     /// Texture used to pain the model
     ImagePtr TextureImage;

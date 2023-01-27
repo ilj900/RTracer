@@ -40,9 +40,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL FVulkanContext::DebugCallback(
 
 void FVulkanContext::Init(GLFWwindow* Window, int Width, int Height)
 {
-    try {
-        CreateDepthAndAAImages();
-
+    try
+    {
         LoadModelDataToGPU();
         CreateUniformBuffers();
         TextureImage = LoadImageFromFile(TexturePath, "V_TextureImage");
@@ -622,24 +621,6 @@ ImagePtr FVulkanContext::Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspec
     return Image;
 }
 
-void FVulkanContext::CreateDepthAndAAImages()
-{
-    /// Create Image and ImageView for AA
-    auto Width = Swapchain->GetWidth();
-    auto Height = Swapchain->GetHeight();
-
-    UtilityImageR32 = CreateImage2D(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
-                                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                               VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_UtilityImageR32");
-
-    UtilityImageR32->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-
-
-    UtilityImageR8G8B8A8_SRGB = CreateImage2D(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                                                         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                         VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_UtilityImageR8G8B8A8_SRGB");
-}
-
 VkFramebuffer FVulkanContext::CreateFramebuffer(std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name)
 {
     std::vector<VkImageView> Attachments;
@@ -1216,7 +1197,6 @@ void FVulkanContext::RecreateSwapChain(int Width, int Height)
     CleanUpSwapChain();
 
     Swapchain = std::make_shared<FSwapchain>(*this, Width, Height, PhysicalDevice, LogicalDevice, Surface, GetGraphicsQueueIndex(), GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
-    CreateDepthAndAAImages();
 
 
     RenderTask = std::make_shared<FRenderTask>(this, int(Swapchain->Size()), LogicalDevice);
@@ -1234,16 +1214,6 @@ void FVulkanContext::RecreateSwapChain(int Width, int Height)
 
 void FVulkanContext::CleanUpSwapChain()
 {
-    /// Remove all images which size's dependent on the swapchain's size
-    UtilityImageR8G8B8A8_SRGB = nullptr;
-    UtilityImageR32 = nullptr;
-
-    /// Remove framebuffers
-    for (auto Framebuffer : ImGuiFramebuffers)
-    {
-        vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
-    }
-
     Swapchain = nullptr;
 
     RenderTask->Cleanup();
@@ -1295,8 +1265,6 @@ void FVulkanContext::CleanUp()
     }
 
     CleanUpSwapChain();
-
-    vkDestroyDescriptorPool(LogicalDevice, ImGuiDescriptorPool, nullptr);
 
     TextureImage = nullptr;
 

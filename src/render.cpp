@@ -78,14 +78,33 @@ FRender::FRender()
 
     Context.InitManagerResources(WINDOW_WIDTH, WINDOW_HEIGHT, Surface);
 
+    UtilityImageR32 = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
+                                    VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                    VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_UtilityImageR32");
+
+    UtilityImageR32->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+
+    UtilityImageR8G8B8A8_SRGB = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+                                              VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                              VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_UtilityImageR8G8B8A8_SRGB");
+
     Context.Init(Window, WINDOW_WIDTH, WINDOW_HEIGHT);
+}
+
+int FRender::Cleanup()
+{
+    UtilityImageR8G8B8A8_SRGB = nullptr;
+    UtilityImageR32 = nullptr;
+
+    return 0;
 }
 
 FRender::~FRender()
 {
     GetContext().WaitIdle();
+    Cleanup();
     GetContext().CleanUp();
-
 
     glfwDestroyWindow(Window);
     glfwTerminate();
