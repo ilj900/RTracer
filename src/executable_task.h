@@ -35,4 +35,7 @@ public:
     int NumberOfSimultaneousSubmits;
     VkDevice LogicalDevice = VK_NULL_HANDLE;
 
+protected:
+    void CreateSyncObjects();
+    void FreeSyncObjects();
 };

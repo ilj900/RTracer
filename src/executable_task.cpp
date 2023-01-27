@@ -12,6 +12,29 @@ FExecutableTask::~FExecutableTask()
 
 }
 
+void FExecutableTask::CreateSyncObjects()
+{
+    for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
+    {
+        SignalSemaphores.push_back(Context->CreateSemaphore());
+        V::SetName(LogicalDevice, SignalSemaphores.back(), "V_" + Name + "_Semaphore_" + std::to_string(i));
+    }
+}
+
+void FExecutableTask::FreeSyncObjects()
+{
+    for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
+    {
+        if (SignalSemaphores[i] != VK_NULL_HANDLE)
+        {
+            vkDestroySemaphore(LogicalDevice, SignalSemaphores[i], nullptr);
+            SignalSemaphores[i] = VK_NULL_HANDLE;
+        }
+    }
+
+    SignalSemaphores.clear();
+}
+
 void FExecutableTask::RegisterInput(int Index, ImagePtr Image)
 {
     if (Inputs.size() <= Index)

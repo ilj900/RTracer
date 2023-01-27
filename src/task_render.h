@@ -38,5 +38,4 @@ public:
     const uint32_t CAMERA_LAYOUT_INDEX = 1;
     const uint32_t TRANSFORM_LAYOUT_INDEX = 0;
     const uint32_t RENDERABLE_LAYOUT_INDEX = 1;
-
 };

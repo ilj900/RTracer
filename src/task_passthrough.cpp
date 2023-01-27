@@ -14,6 +14,7 @@ FPassthroughTask::FPassthroughTask(FVulkanContext* Context, int NumberOfSimultan
 
 FPassthroughTask::~FPassthroughTask()
 {
+    FreeSyncObjects();
 }
 
 void FPassthroughTask::Init()
@@ -52,11 +53,7 @@ void FPassthroughTask::Init()
 
     DescriptorSetManager->AllocateAllDescriptorSets(Name);
 
-    for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
-    {
-        SignalSemaphores.push_back(Context->CreateSemaphore());
-        V::SetName(LogicalDevice, SignalSemaphores.back(), "V_PassthroughSignalSemaphore" + std::to_string(i));
-    }
+    CreateSyncObjects();
 }
 
 void FPassthroughTask::UpdateDescriptorSets()
@@ -145,11 +142,6 @@ void FPassthroughTask::Cleanup()
     vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
 
     Context->DescriptorSetManager->Reset(Name);
-
-    for (auto Semaphore : SignalSemaphores)
-    {
-        vkDestroySemaphore(LogicalDevice, Semaphore, nullptr);
-    }
 }
 
 VkSemaphore FPassthroughTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)

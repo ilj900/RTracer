@@ -1131,7 +1131,6 @@ void FVulkanContext::CreateSyncObjects()
     for (std::size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
         if (vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &ImageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &ImGuiFinishedSemaphores[i]) != VK_SUCCESS ||
             vkCreateFence(LogicalDevice, &FenceInfo, nullptr, &ImagesInFlight[i]) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create synchronization objects for a frame!");
@@ -1306,7 +1305,6 @@ void FVulkanContext::CleanUp()
     for(std::size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
         vkDestroySemaphore(LogicalDevice, ImageAvailableSemaphores[i], nullptr);
-        vkDestroySemaphore(LogicalDevice, ImGuiFinishedSemaphores[i], nullptr);
         vkDestroyFence(LogicalDevice, ImagesInFlight[i], nullptr);
     }
 

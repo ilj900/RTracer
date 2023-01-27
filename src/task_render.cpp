@@ -18,6 +18,7 @@ FRenderTask::FRenderTask(FVulkanContext* Context, int NumberOfSimultaneousSubmit
 
 FRenderTask::~FRenderTask()
 {
+    FreeSyncObjects();
 }
 
 void FRenderTask::Init()
@@ -89,11 +90,7 @@ void FRenderTask::Init()
 
     DescriptorSetManager->AllocateAllDescriptorSets(Name);
 
-    for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
-    {
-        SignalSemaphores.push_back(Context->CreateSemaphore());
-        V::SetName(LogicalDevice, SignalSemaphores.back(), "V_RenderSignalSemaphore" + std::to_string(i));
-    }
+    CreateSyncObjects();
 }
 
 void FRenderTask::UpdateDescriptorSets()
@@ -214,11 +211,6 @@ void FRenderTask::Cleanup()
     vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
 
     Context->DescriptorSetManager->Reset(Name);
-
-    for (auto Semaphore : SignalSemaphores)
-    {
-        vkDestroySemaphore(LogicalDevice, Semaphore, nullptr);
-    }
 }
 
 VkSemaphore FRenderTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)

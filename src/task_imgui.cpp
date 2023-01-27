@@ -21,6 +21,8 @@ FImguiTask::~FImguiTask()
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+
+    FreeSyncObjects();
 }
 
 void FImguiTask::Init()
@@ -90,11 +92,7 @@ void FImguiTask::Init()
         Context.CommandBufferManager->RunSingletimeCommand(ImGui_ImplVulkan_CreateFontsTexture);
     }
 
-    for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
-    {
-        SignalSemaphores.push_back(Context.CreateSemaphore());
-        V::SetName(LogicalDevice, SignalSemaphores.back(), "V_ImguiSignalSemaphore" + std::to_string(i));
-    }
+    CreateSyncObjects();
 }
 
 void FImguiTask::UpdateDescriptorSets()
@@ -123,11 +121,6 @@ void FImguiTask::Cleanup()
     vkDestroyRenderPass(LogicalDevice, RenderPass, nullptr);
 
     Context->DescriptorSetManager->Reset(Name);
-
-    for (auto Semaphore : SignalSemaphores)
-    {
-        vkDestroySemaphore(LogicalDevice, Semaphore, nullptr);
-    }
 }
 
 VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
