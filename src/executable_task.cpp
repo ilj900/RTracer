@@ -7,6 +7,11 @@ FExecutableTask::FExecutableTask(FVulkanContext* Context, int NumberOfSimultaneo
 {
 }
 
+FExecutableTask::~FExecutableTask()
+{
+
+}
+
 void FExecutableTask::RegisterInput(int Index, ImagePtr Image)
 {
     if (Inputs.size() <= Index)

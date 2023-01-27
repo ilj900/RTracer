@@ -28,6 +28,8 @@ FRender::FRender()
 
     auto& Context = GetContext();
 
+    Context.SetWindow(Window);
+
     /// Fill in vulkan context creation options
     FVulkanContextOptions VulkanContextOptions;
     VulkanContextOptions.AddInstanceLayer("VK_LAYER_KHRONOS_validation");
@@ -96,7 +98,6 @@ int FRender::Render()
     }
     auto& Context = GetContext();
     Context.Render();
-    Context.RenderImGui();
     Context.Present();
     glfwPollEvents();
 

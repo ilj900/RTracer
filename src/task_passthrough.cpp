@@ -12,6 +12,10 @@ FPassthroughTask::FPassthroughTask(FVulkanContext* Context, int NumberOfSimultan
     Name = "Passthrough pipeline";
 }
 
+FPassthroughTask::~FPassthroughTask()
+{
+}
+
 void FPassthroughTask::Init()
 {
     auto& DescriptorSetManager = Context->DescriptorSetManager;
@@ -51,6 +55,7 @@ void FPassthroughTask::Init()
     for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
         SignalSemaphores.push_back(Context->CreateSemaphore());
+        V::SetName(LogicalDevice, SignalSemaphores.back(), "V_PassthroughSignalSemaphore" + std::to_string(i));
     }
 }
 
@@ -147,7 +152,7 @@ void FPassthroughTask::Cleanup()
     }
 }
 
-VkSemaphore FPassthroughTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, int IterationIndex)
+VkSemaphore FPassthroughTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
 {
     VkSubmitInfo PassThroughSubmitInfo{};
     PassThroughSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -164,8 +169,18 @@ VkSemaphore FPassthroughTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, i
     PassThroughSubmitInfo.signalSemaphoreCount = 1;
     PassThroughSubmitInfo.pSignalSemaphores = PassthroughSignalSemaphores;
 
+    if(WaitFence != VK_NULL_HANDLE)
+    {
+        vkWaitForFences(LogicalDevice, 1, &WaitFence, VK_TRUE, UINT64_MAX);
+    }
+
+    if (SignalFence != VK_NULL_HANDLE)
+    {
+        vkResetFences(LogicalDevice, 1, &SignalFence);
+    }
+
     /// Submit rendering. When rendering finished, appropriate fence will be signalled
-    if (vkQueueSubmit(Queue, 1, &PassThroughSubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+    if (vkQueueSubmit(Queue, 1, &PassThroughSubmitInfo, SignalFence) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to submit draw command buffer!");
     }

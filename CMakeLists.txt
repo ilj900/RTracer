@@ -67,6 +67,8 @@ set(SOURCE
         src/task_render.cpp
         src/task_passthrough.h
         src/task_passthrough.cpp
+        src/task_imgui.h
+        src/task_imgui.cpp
         vulkan_helpers/vk_context.h
         vulkan_helpers/vk_utils.cpp
         vulkan_helpers/vk_context.cpp

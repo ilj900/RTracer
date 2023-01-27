@@ -10,12 +10,13 @@ class FRenderTask : public FExecutableTask
 {
 public:
     FRenderTask(FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+    ~FRenderTask();
 
     void Init() override;
     void UpdateDescriptorSets() override;
     void RecordCommands() override;
     void Cleanup() override;
-    VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, int IterationIndex) override;
+    VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex) override;
 
     VkSampler Sampler;
 

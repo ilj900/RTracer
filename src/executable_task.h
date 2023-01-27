@@ -9,12 +9,13 @@ class FExecutableTask
 {
 public:
     FExecutableTask(FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+    virtual ~FExecutableTask();
 
     virtual void Init() = 0;
     virtual void UpdateDescriptorSets() = 0;
     virtual void RecordCommands() = 0;
     virtual void Cleanup() = 0;
-    virtual VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, int IterationIndex) = 0;
+    virtual VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex) = 0;
 
     void RegisterInput(int Index, ImagePtr Image);
     void RegisterOutput(int Index, ImagePtr Image);

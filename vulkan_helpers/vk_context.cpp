@@ -7,12 +7,7 @@
 #include "components/device_camera_component.h"
 #include "components/device_transform_component.h"
 #include "components/device_renderable_component.h"
-#include "components/mesh_component.h"
 #include "coordinator.h"
-
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_vulkan.h"
 
 #include <stdexcept>
 #include <iostream>
@@ -86,6 +81,26 @@ VkSurfaceKHR FVulkanContext::CreateSurface(GLFWwindow* Window)
     return Surface;
 }
 
+void FVulkanContext::SetSurface(VkSurfaceKHR Surface)
+{
+    this->Surface = Surface;
+}
+
+VkSurfaceKHR FVulkanContext::GetSurface()
+{
+    return Surface;
+}
+
+void FVulkanContext::SetWindow(GLFWwindow* Window)
+{
+    this->Window = Window;
+}
+
+GLFWwindow* FVulkanContext::GetWindow()
+{
+    return Window;
+}
+
 std::vector<VkPhysicalDevice> FVulkanContext::EnumerateAllPhysicalDevices(VkInstance Instance)
 {
     uint32_t DeviceCount = 0;
@@ -131,6 +146,11 @@ VkPhysicalDevice FVulkanContext::PickPhysicalDevice(FVulkanContextOptions& Vulka
 void FVulkanContext::SetPhysicalDevice(VkPhysicalDevice PhysicalDevice)
 {
     this->PhysicalDevice = PhysicalDevice;
+}
+
+VkPhysicalDevice FVulkanContext::GetPhysicalDevice()
+{
+    return PhysicalDevice;
 }
 
 void FVulkanContext::InitManagerResources(int Width, int Height, VkSurfaceKHR Surface)
@@ -1033,9 +1053,14 @@ void FVulkanContext::CreatePipelines()
 
     PassthroughTask = std::make_shared<FPassthroughTask>(this, int(Swapchain->Size()), LogicalDevice);
     PassthroughTask->RegisterInput(0, RenderTask->GetOutput(3));
+    PassthroughTask->RegisterOutput(0, RenderTask->GetOutput(3));
     PassthroughTask->Init();
     PassthroughTask->UpdateDescriptorSets();
     PassthroughTask->RecordCommands();
+
+    ImguiTask = std::make_shared<FImguiTask>(this, int (Swapchain->Size()), LogicalDevice);
+    ImguiTask->RegisterInput(0, PassthroughTask->GetOutput(0));
+    ImguiTask->Init();
 }
 
 VkSampler FVulkanContext::CreateTextureSampler(uint32_t MipLevel)
@@ -1093,7 +1118,6 @@ void FVulkanContext::CreateUniformBuffers()
 void FVulkanContext::CreateSyncObjects()
 {
     ImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    PassthroughFinishedSemaphore.resize(MAX_FRAMES_IN_FLIGHT);
     ImagesInFlight.resize(MAX_FRAMES_IN_FLIGHT, VK_NULL_HANDLE);
     ImGuiFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 
@@ -1117,69 +1141,7 @@ void FVulkanContext::CreateSyncObjects()
 
 void FVulkanContext::CreateImguiContext(GLFWwindow* Window)
 {
-    FGraphicsPipelineOptions ImguiPipelineOptions;
 
-    ImguiPipelineOptions.RegisterColorAttachment(0, Swapchain->Images[0], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
-    ImguiRenderPass = CreateRenderpass(LogicalDevice, ImguiPipelineOptions);
-
-    V::SetName(LogicalDevice, ImguiRenderPass, "V_ImGuiRenderPass");
-
-    ImGuiFramebuffers.resize(Swapchain->Size());
-
-    for(uint32_t i = 0; i < Swapchain->Size(); ++i)
-    {
-        ImGuiFramebuffers[i] = CreateFramebuffer({Swapchain->Images[i]}, ImguiRenderPass, "V_Imgui_fb_" + std::to_string(i));
-    }
-
-    std::map<VkDescriptorType, uint32_t> PoolSizes =
-            {
-                    { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
-                    { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
-                    { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
-                    { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
-                    { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
-                    { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
-                    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
-                    { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
-                    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
-                    { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
-                    { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
-            };
-
-    ImGuiDescriptorPool = CreateDescriptorPool(PoolSizes, LogicalDevice, "V_ImGuiDescriptorPool");
-
-    auto CheckResultFunction = [](VkResult Err)
-            {
-                if (Err == 0)
-                    return;
-                std::cout << "[vulkan] Error: VkResult = " << Err << std::endl;
-                if (Err < 0)
-                    abort();
-            };
-
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& IO = ImGui::GetIO();
-
-    ImGui::StyleColorsDark();
-
-    ImGui_ImplGlfw_InitForVulkan(Window, true);
-    ImGui_ImplVulkan_InitInfo InitInfo{};
-    InitInfo.Instance = Instance;
-    InitInfo.PhysicalDevice = PhysicalDevice;
-    InitInfo.Device = LogicalDevice;
-    InitInfo.QueueFamily = GetGraphicsQueueIndex();
-    InitInfo.Queue = GetGraphicsQueue();
-    InitInfo.DescriptorPool = ImGuiDescriptorPool;
-    InitInfo.MinImageCount = MAX_FRAMES_IN_FLIGHT;
-    InitInfo.ImageCount = MAX_FRAMES_IN_FLIGHT;
-    InitInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-    InitInfo.CheckVkResultFn = CheckResultFunction;
-    ImGui_ImplVulkan_Init(&InitInfo, ImguiRenderPass);
-
-    {
-        CommandBufferManager->RunSingletimeCommand(ImGui_ImplVulkan_CreateFontsTexture);
-    }
 }
 
 void FVulkanContext::Render()
@@ -1201,77 +1163,15 @@ void FVulkanContext::Render()
         throw std::runtime_error("Failed to acquire swap chain image!");
     }
 
-    /// If this image is still in use, wait for it.
-    if(ImagesInFlight[ImageIndex] != VK_NULL_HANDLE)
-    {
-        vkWaitForFences(LogicalDevice, 1, &ImagesInFlight[ImageIndex], VK_TRUE, UINT64_MAX);
-    }
-
     UpdateUniformBuffer(ImageIndex);
 
-    /// Reset frame state to unsignaled, just before rendering
-    vkResetFences(LogicalDevice, 1, &ImagesInFlight[CurrentFrame]);
+    auto RenderSignalSemaphore = RenderTask-> Submit(GetGraphicsQueue(), ImageAvailableSemaphores[CurrentFrame], ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
 
-    auto RenderSignalSemaphore = RenderTask-> Submit(GetGraphicsQueue(), ImageAvailableSemaphores[CurrentFrame], CurrentFrame);
+    auto PassthroughSignalSemaphore = PassthroughTask->Submit(GetGraphicsQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto PassthroughSignalSemaphore = PassthroughTask->Submit(GetGraphicsQueue(), RenderSignalSemaphore, CurrentFrame);
+    auto ImguiFinishedSemaphore = ImguiTask->Submit(GetGraphicsQueue(), PassthroughSignalSemaphore, VK_NULL_HANDLE, ImagesInFlight[ImageIndex], CurrentFrame);
 
-    PassthroughFinishedSemaphore[CurrentFrame] = PassthroughSignalSemaphore;
-}
-
-void FVulkanContext::RenderImGui()
-{
-    ImGui_ImplVulkan_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
-    ImGui::Begin("Info", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar);
-    ImGui::SetWindowPos({0.f, 0.f});
-    ImGui::TextColored({0.f, 1.f, 0.f, 1.f}, "Test text");
-    ImGui::End();
-
-    auto CommandBuffer = CommandBufferManager->BeginSingleTimeCommand();
-
-    V::SetName(LogicalDevice, CommandBuffer, "V_ImguiCommandBuffer" + std::to_string(CurrentFrame % Swapchain->Size()));
-
-    CommandBufferManager->RecordCommand([&, this](VkCommandBuffer)
-    {
-        {
-            VkRenderPassBeginInfo RenderPassBeginInfo{};
-            RenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            RenderPassBeginInfo.renderPass = ImguiRenderPass;
-            RenderPassBeginInfo.framebuffer = ImGuiFramebuffers[CurrentFrame % Swapchain->Size()];
-            RenderPassBeginInfo.renderArea.extent = Swapchain->GetExtent2D();
-            RenderPassBeginInfo.clearValueCount = 0;
-            vkCmdBeginRenderPass(CommandBuffer, &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-        }
-
-        ImGui::Render();
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), CommandBuffer);
-
-        vkCmdEndRenderPass(CommandBuffer);
-        vkEndCommandBuffer(CommandBuffer);
-
-        VkSubmitInfo SubmitInfo{};
-        SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-        VkSemaphore WaitSemaphores[] = {PassthroughFinishedSemaphore[CurrentFrame]};
-        VkPipelineStageFlags WaitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        SubmitInfo.waitSemaphoreCount = 1;
-        SubmitInfo.pWaitSemaphores = WaitSemaphores;
-        SubmitInfo.pWaitDstStageMask = WaitStages;
-        SubmitInfo.commandBufferCount = 1;
-        SubmitInfo.pCommandBuffers = &CommandBuffer;
-
-        VkSemaphore SignalSemaphores[] = {ImGuiFinishedSemaphores[CurrentFrame]};
-        SubmitInfo.signalSemaphoreCount = 1;
-        SubmitInfo.pSignalSemaphores = SignalSemaphores;
-
-        if (vkQueueSubmit(GetGraphicsQueue(), 1, &SubmitInfo, ImagesInFlight[CurrentFrame]) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to submit ImGui draw command buffer!");
-        }
-    });
+    ImGuiFinishedSemaphores[CurrentFrame] = ImguiFinishedSemaphore;
 }
 
 void FVulkanContext::Present()
@@ -1345,7 +1245,6 @@ void FVulkanContext::CleanUpSwapChain()
     }
 
     /// Remove renderpasses
-    ImguiRenderPass = nullptr;
 
     Swapchain = nullptr;
 
@@ -1401,10 +1300,6 @@ void FVulkanContext::CleanUp()
     TextureImage = nullptr;
 
     DescriptorSetManager = nullptr;
-
-    ImGui_ImplVulkan_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
 
     auto& Coordinator = ECS::GetCoordinator();
 

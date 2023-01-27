@@ -18,6 +18,7 @@
 
 #include "task_render.h"
 #include "task_passthrough.h"
+#include "task_imgui.h"
 
 #include <vector>
 #include <string>
@@ -34,9 +35,6 @@ public:
     ~FVulkanContext();
 
     void Init(GLFWwindow* Window, int Width, int Height);
-
-    void SetInstance(VkInstance Instance);
-    VkInstance GetInstance();
 
 #ifndef NDEBUG
     VkDebugUtilsMessengerEXT CreateDebugMessenger(FVulkanContextOptions& VulkanContextOptions);
@@ -57,7 +55,6 @@ public:
     void CleanUp();
     void UpdateUniformBuffer(uint32_t CurrentImage);
 
-    void RenderImGui();
     void Render();
     void Present();
     void WaitIdle();
@@ -67,11 +64,15 @@ public:
     bool HasStensilComponent(VkFormat Format);
 
     bool CheckInstanceLayersSupport(const std::vector<const char*>& Layers);
+    void SetInstance(VkInstance Instance);
+    VkInstance GetInstance();
+
     bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device, std::set<std::string>& RequiredExtension);
     bool CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface);
     bool CheckDeviceQueueSupport(VkPhysicalDevice Device, VkQueueFlagBits QueueFlagBits, uint32_t& QueueFamilyIndex);
     VkPhysicalDevice PickPhysicalDevice(FVulkanContextOptions& VulkanContextOptions, VkSurfaceKHR Surface);
     void SetPhysicalDevice(VkPhysicalDevice PhysicalDevice);
+    VkPhysicalDevice GetPhysicalDevice();
 
     VkInstance CreateVkInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FVulkanContextOptions& VulkanContextOptions);
     std::vector<VkPhysicalDevice> EnumerateAllPhysicalDevices(VkInstance Instance);
@@ -93,6 +94,11 @@ public:
     uint32_t GetPresentIndex();
 
     VkSurfaceKHR CreateSurface(GLFWwindow* Window);
+    void SetSurface(VkSurfaceKHR Surface);
+    VkSurfaceKHR GetSurface();
+
+    void SetWindow(GLFWwindow* Window);
+    GLFWwindow* GetWindow();
 
     FBuffer CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties);
     FMemoryPtr PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data);
@@ -137,12 +143,11 @@ public:
 
     VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
-    VkInstance Instance;
-    VkSurfaceKHR Surface;
-    VkPhysicalDevice PhysicalDevice;
-    VkDevice LogicalDevice;
-
-    VkRenderPass ImguiRenderPass = VK_NULL_HANDLE;
+    VkInstance Instance = VK_NULL_HANDLE;
+    VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
+    VkDevice LogicalDevice = VK_NULL_HANDLE;
+    VkSurfaceKHR Surface = VK_NULL_HANDLE;
+    GLFWwindow* Window;
 
     /// Queues
     struct IndexQueue
@@ -163,6 +168,7 @@ public:
 
     std::shared_ptr<FRenderTask> RenderTask = nullptr;
     std::shared_ptr<FPassthroughTask> PassthroughTask = nullptr;
+    std::shared_ptr<FImguiTask> ImguiTask = nullptr;
 
 #ifndef NDEBUG
     VkDebugUtilsMessengerEXT DebugMessenger;
@@ -182,7 +188,6 @@ public:
     std::vector<FBuffer> DeviceRenderableBuffers;
 
     std::vector<VkSemaphore> ImageAvailableSemaphores;
-    std::vector<VkSemaphore> PassthroughFinishedSemaphore;
     std::vector<VkSemaphore> ImGuiFinishedSemaphores;
     std::vector<VkFence> ImagesInFlight;
     size_t CurrentFrame = 0;

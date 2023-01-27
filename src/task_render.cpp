@@ -16,6 +16,10 @@ FRenderTask::FRenderTask(FVulkanContext* Context, int NumberOfSimultaneousSubmit
     Name = "Render pipeline";
 }
 
+FRenderTask::~FRenderTask()
+{
+}
+
 void FRenderTask::Init()
 {
     auto& DescriptorSetManager = Context->DescriptorSetManager;
@@ -88,6 +92,7 @@ void FRenderTask::Init()
     for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
         SignalSemaphores.push_back(Context->CreateSemaphore());
+        V::SetName(LogicalDevice, SignalSemaphores.back(), "V_RenderSignalSemaphore" + std::to_string(i));
     }
 }
 
@@ -216,7 +221,7 @@ void FRenderTask::Cleanup()
     }
 }
 
-VkSemaphore FRenderTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, int IterationIndex)
+VkSemaphore FRenderTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
 {
     VkSubmitInfo SubmitInfo{};
     SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -233,8 +238,18 @@ VkSemaphore FRenderTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, int It
     SubmitInfo.signalSemaphoreCount = 1;
     SubmitInfo.pSignalSemaphores = Semaphores;
 
+    if(WaitFence != VK_NULL_HANDLE)
+    {
+        vkWaitForFences(LogicalDevice, 1, &WaitFence, VK_TRUE, UINT64_MAX);
+    }
+
+    if (SignalFence != VK_NULL_HANDLE)
+    {
+        vkResetFences(LogicalDevice, 1, &SignalFence);
+    }
+
     /// Submit rendering. When rendering finished, appropriate fence will be signalled
-    if (vkQueueSubmit(Queue, 1, &SubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+    if (vkQueueSubmit(Queue, 1, &SubmitInfo, SignalFence) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to submit draw command buffer!");
     }
