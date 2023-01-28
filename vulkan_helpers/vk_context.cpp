@@ -1189,7 +1189,6 @@ void FVulkanContext::RecreateSwapChain(int Width, int Height)
 
     Swapchain = std::make_shared<FSwapchain>(*this, Width, Height, PhysicalDevice, LogicalDevice, Surface, GetGraphicsQueueIndex(), GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
 
-
     RenderTask = std::make_shared<FRenderTask>(this, int(Swapchain->Size()), LogicalDevice);
     RenderTask->Init();
     RenderTask->UpdateDescriptorSets();

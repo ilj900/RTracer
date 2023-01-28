@@ -23,7 +23,6 @@ FRender::FRender()
     glfwSetWindowPos(Window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
     glfwSetCursorPos(Window, 0.f, 0.f);
 
-
     LoadModels("");
 
     auto& Context = GetContext();
@@ -61,16 +60,20 @@ FRender::FRender()
     V::LoadVkFunctions(Instance);
 
 #ifndef NDEBUG
+    /// Create debug messenger
     VkDebugUtilsMessengerEXT DebugUtilsMessengerEXT = Context.CreateDebugMessenger(VulkanContextOptions);
     Context.SetDebugUtilsMessengerEXT(DebugUtilsMessengerEXT);
 #endif
 
+    /// Create Surface
     VkSurfaceKHR Surface = Context.CreateSurface(Window);
     Context.SetSurface(Surface);
 
+    /// Pick Physical device
     VkPhysicalDevice PhysicalDevice = Context.PickPhysicalDevice(VulkanContextOptions, Surface);
     Context.SetPhysicalDevice(PhysicalDevice);
 
+    /// Create Logical device
     VkDevice LogicalDevice = Context.CreateLogicalDevice(PhysicalDevice, VulkanContextOptions);
     Context.SetLogicalDevice(LogicalDevice);
 
