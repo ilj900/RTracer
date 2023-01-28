@@ -95,6 +95,53 @@ FRender::FRender()
     LoadDataToGPU();
 
     Context.Init(Window, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+    auto ColorImage = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, Context.MSAASamples, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                    VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_ColorImage");
+
+
+    auto NormalsImage = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, Context.MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+                                      VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                      VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_NormalsImage");
+
+
+    auto RenderableIndexImage = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, Context.MSAASamples, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
+                                              VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                              VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_RenderableIndexImage");
+
+    auto ResolvedColorImage = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+                                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                            VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_ResolvedColorImage");
+
+    RenderTask = std::make_shared<FRenderTask>(&Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    RenderTask->RegisterOutput(0, ColorImage);
+    RenderTask->RegisterOutput(1, NormalsImage);
+    RenderTask->RegisterOutput(2, RenderableIndexImage);
+    RenderTask->RegisterOutput(3, ResolvedColorImage);
+
+    RenderTask->Init();
+    RenderTask->UpdateDescriptorSets();
+    RenderTask->RecordCommands();
+
+    PassthroughTask = std::make_shared<FPassthroughTask>(&Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    PassthroughTask->RegisterInput(0, RenderTask->GetOutput(3));
+    PassthroughTask->RegisterOutput(0, RenderTask->GetOutput(3));
+    PassthroughTask->Init();
+    PassthroughTask->UpdateDescriptorSets();
+    PassthroughTask->RecordCommands();
+
+    ImguiTask = std::make_shared<FImguiTask>(&Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    ImguiTask->RegisterInput(0, PassthroughTask->GetOutput(0));
+    ImguiTask->Init();
+
+    ImGuiFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    {
+        ImageAvailableSemaphores.push_back(Context.CreateSemaphore());
+        ImagesInFlight.push_back(Context.CreateSignalledFence());
+    }
 }
 
 int FRender::Cleanup()
@@ -126,11 +173,11 @@ int FRender::Render()
     uint32_t CurrentFrame = RenderFrameIndex % MAX_FRAMES_IN_FLIGHT;
 
     /// Previous rendering iteration of the frame might still be in use, so we wait for it
-    vkWaitForFences(Context.LogicalDevice, 1, &Context.ImagesInFlight[CurrentFrame], VK_TRUE, UINT64_MAX);
+    vkWaitForFences(Context.LogicalDevice, 1, &ImagesInFlight[CurrentFrame], VK_TRUE, UINT64_MAX);
 
     /// Acquire next image from swapchain, also it's index and provide semaphore to signal when image is ready to be used
     uint32_t ImageIndex = 0;
-    VkResult Result = Context.Swapchain->GetNextImage(nullptr, Context.ImageAvailableSemaphores[CurrentFrame], ImageIndex);
+    VkResult Result = Context.Swapchain->GetNextImage(nullptr, ImageAvailableSemaphores[CurrentFrame], ImageIndex);
 
     /// Run some checks
     if (Result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -145,15 +192,15 @@ int FRender::Render()
 
     Context.UpdateUniformBuffer(ImageIndex);
 
-    auto RenderSignalSemaphore = Context.RenderTask-> Submit(Context.GetGraphicsQueue(), Context.ImageAvailableSemaphores[CurrentFrame], Context.ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
+    auto RenderSignalSemaphore = RenderTask-> Submit(Context.GetGraphicsQueue(), ImageAvailableSemaphores[CurrentFrame], ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
 
-    auto PassthroughSignalSemaphore = Context.PassthroughTask->Submit(Context.GetGraphicsQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto PassthroughSignalSemaphore = PassthroughTask->Submit(Context.GetGraphicsQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ImguiFinishedSemaphore = Context.ImguiTask->Submit(Context.GetGraphicsQueue(), PassthroughSignalSemaphore, VK_NULL_HANDLE, Context.ImagesInFlight[ImageIndex], CurrentFrame);
+    auto ImguiFinishedSemaphore = ImguiTask->Submit(Context.GetGraphicsQueue(), PassthroughSignalSemaphore, VK_NULL_HANDLE, ImagesInFlight[ImageIndex], CurrentFrame);
 
-    Context.ImGuiFinishedSemaphores[CurrentFrame] = ImguiFinishedSemaphore;
+    ImGuiFinishedSemaphores[CurrentFrame] = ImguiFinishedSemaphore;
 
-    Context.Present(Context.ImGuiFinishedSemaphores[CurrentFrame], CurrentFrame);
+    Context.Present(ImGuiFinishedSemaphores[CurrentFrame], CurrentFrame);
 
     RenderFrameIndex++;
 

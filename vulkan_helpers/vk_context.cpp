@@ -43,9 +43,6 @@ void FVulkanContext::Init(GLFWwindow* Window, int Width, int Height)
     {
         CreateUniformBuffers();
         TextureImage = LoadImageFromFile(TexturePath, "V_TextureImage");
-
-        CreatePipelines();
-        CreateSyncObjects();
     }
     catch (std::runtime_error &Error) {
         std::cout << Error.what() << std::endl;
@@ -990,52 +987,6 @@ bool FVulkanContext::HasStensilComponent(VkFormat Format)
     return Format == VK_FORMAT_D32_SFLOAT_S8_UINT || Format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-void FVulkanContext::CreatePipelines()
-{
-    uint32_t Width = Swapchain->GetWidth();
-    uint32_t Height = Swapchain->GetHeight();
-
-    auto ColorImage = CreateImage2D(Width, Height, false, MSAASamples, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
-                                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                 VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_ColorImage");
-
-
-    auto NormalsImage = CreateImage2D(Width, Height, false, MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                                   VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                   VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_NormalsImage");
-
-
-    auto RenderableIndexImage = CreateImage2D(Width, Height, false, MSAASamples, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
-                                           VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                           VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_RenderableIndexImage");
-
-    auto ResolvedColorImage = CreateImage2D(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
-                                         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                         VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_ResolvedColorImage");
-
-    RenderTask = std::make_shared<FRenderTask>(this, int(Swapchain->Size()), LogicalDevice);
-    RenderTask->RegisterOutput(0, ColorImage);
-    RenderTask->RegisterOutput(1, NormalsImage);
-    RenderTask->RegisterOutput(2, RenderableIndexImage);
-    RenderTask->RegisterOutput(3, ResolvedColorImage);
-
-    RenderTask->Init();
-    RenderTask->UpdateDescriptorSets();
-    RenderTask->RecordCommands();
-
-
-    PassthroughTask = std::make_shared<FPassthroughTask>(this, int(Swapchain->Size()), LogicalDevice);
-    PassthroughTask->RegisterInput(0, RenderTask->GetOutput(3));
-    PassthroughTask->RegisterOutput(0, RenderTask->GetOutput(3));
-    PassthroughTask->Init();
-    PassthroughTask->UpdateDescriptorSets();
-    PassthroughTask->RecordCommands();
-
-    ImguiTask = std::make_shared<FImguiTask>(this, int (Swapchain->Size()), LogicalDevice);
-    ImguiTask->RegisterInput(0, PassthroughTask->GetOutput(0));
-    ImguiTask->Init();
-}
-
 VkSampler FVulkanContext::CreateTextureSampler(uint32_t MipLevel)
 {
     VkSamplerCreateInfo SamplerInfo{};
@@ -1088,29 +1039,6 @@ void FVulkanContext::CreateUniformBuffers()
     }
 }
 
-void FVulkanContext::CreateSyncObjects()
-{
-    ImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    ImagesInFlight.resize(MAX_FRAMES_IN_FLIGHT, VK_NULL_HANDLE);
-    ImGuiFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-
-    VkSemaphoreCreateInfo SemaphoreInfo{};
-    SemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-    VkFenceCreateInfo FenceInfo{};
-    FenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    FenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-    for (std::size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
-    {
-        if (vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &ImageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateFence(LogicalDevice, &FenceInfo, nullptr, &ImagesInFlight[i]) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to create synchronization objects for a frame!");
-        }
-    }
-}
-
 void FVulkanContext::Present(VkSemaphore WaitSemaphore, uint32_t ImageIndex)
 {
     VkSemaphore WaitSemaphores[] = {WaitSemaphore};
@@ -1152,29 +1080,29 @@ void FVulkanContext::RecreateSwapChain(int Width, int Height)
 
     Swapchain = std::make_shared<FSwapchain>(*this, Width, Height, PhysicalDevice, LogicalDevice, Surface, GetGraphicsQueueIndex(), GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
 
-    RenderTask = std::make_shared<FRenderTask>(this, int(Swapchain->Size()), LogicalDevice);
-    RenderTask->Init();
-    RenderTask->UpdateDescriptorSets();
-    RenderTask->RecordCommands();
-
-    PassthroughTask = std::make_shared<FPassthroughTask>(this, int(Swapchain->Size()), LogicalDevice);
-    PassthroughTask->Init();
-    PassthroughTask->UpdateDescriptorSets();
-    PassthroughTask->RecordCommands();
-
-    CurrentFrame = 0;
+//    RenderTask = std::make_shared<FRenderTask>(this, int(Swapchain->Size()), LogicalDevice);
+//    RenderTask->Init();
+//    RenderTask->UpdateDescriptorSets();
+//    RenderTask->RecordCommands();
+//
+//    PassthroughTask = std::make_shared<FPassthroughTask>(this, int(Swapchain->Size()), LogicalDevice);
+//    PassthroughTask->Init();
+//    PassthroughTask->UpdateDescriptorSets();
+//    PassthroughTask->RecordCommands();
+//
+//    CurrentFrame = 0;
 }
 
 void FVulkanContext::CleanUpSwapChain()
 {
     Swapchain = nullptr;
 
-    RenderTask->Cleanup();
-    RenderTask = nullptr;
-    PassthroughTask->Cleanup();
-    PassthroughTask = nullptr;
-    ImguiTask->Cleanup();
-    ImguiTask = nullptr;
+//    RenderTask->Cleanup();
+//    RenderTask = nullptr;
+//    PassthroughTask->Cleanup();
+//    PassthroughTask = nullptr;
+//    ImguiTask->Cleanup();
+//    ImguiTask = nullptr;
 }
 
 void FVulkanContext::UpdateUniformBuffer(uint32_t CurrentImage)
@@ -1224,12 +1152,6 @@ void FVulkanContext::CleanUp()
     DescriptorSetManager = nullptr;
 
     auto& Coordinator = ECS::GetCoordinator();
-
-    for(std::size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
-    {
-        vkDestroySemaphore(LogicalDevice, ImageAvailableSemaphores[i], nullptr);
-        vkDestroyFence(LogicalDevice, ImagesInFlight[i], nullptr);
-    }
 
     CommandBufferManager = nullptr;
     ResourceAllocator = nullptr;

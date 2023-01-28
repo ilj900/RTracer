@@ -16,10 +16,6 @@
 #include "vk_utils.h"
 #include "vk_pipeline.h"
 
-#include "task_render.h"
-#include "task_passthrough.h"
-#include "task_imgui.h"
-
 #include <vector>
 #include <string>
 #include <array>
@@ -45,8 +41,6 @@ public:
     void QueuePhysicalDeviceProperties();
     void GetDeviceQueues(VkSurfaceKHR Surface);
     void CreateUniformBuffers();
-    void CreatePipelines();
-    void CreateSyncObjects();
     void RecreateSwapChain(int Width, int Height);
     void CleanUpSwapChain();
     void CleanUp();
@@ -160,10 +154,6 @@ public:
     /// SwapChain
     std::shared_ptr<FSwapchain> Swapchain = nullptr;
 
-    std::shared_ptr<FRenderTask> RenderTask = nullptr;
-    std::shared_ptr<FPassthroughTask> PassthroughTask = nullptr;
-    std::shared_ptr<FImguiTask> ImguiTask = nullptr;
-
 #ifndef NDEBUG
     VkDebugUtilsMessengerEXT DebugMessenger;
 #endif
@@ -177,12 +167,6 @@ public:
     std::vector<FBuffer> DeviceTransformBuffers;
     std::vector<FBuffer> DeviceCameraBuffers;
     std::vector<FBuffer> DeviceRenderableBuffers;
-
-    std::vector<VkSemaphore> ImageAvailableSemaphores;
-    std::vector<VkSemaphore> ImGuiFinishedSemaphores;
-    std::vector<VkFence> ImagesInFlight;
-    size_t CurrentFrame = 0;
-    uint32_t ImageIndex = 0;
 
     const int MAX_FRAMES_IN_FLIGHT = 2;
     bool bFramebufferResized = false;
