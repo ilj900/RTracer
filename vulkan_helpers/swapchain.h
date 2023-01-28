@@ -15,7 +15,7 @@ struct FSwapchain
                VkFormat Format, VkColorSpaceKHR ColorSpace, VkPresentModeKHR PresentMode);
     ~FSwapchain();
     size_t Size();
-    VkResult GetNextImage(VkImage& Image, VkSemaphore &Semaphore, uint32_t& ImageIndex);
+    VkResult GetNextImage(ImagePtr Image, VkSemaphore &Semaphore, uint32_t& ImageIndex);
     VkFormat GetImageFormat();
     uint32_t GetWidth();
     uint32_t GetHeight();

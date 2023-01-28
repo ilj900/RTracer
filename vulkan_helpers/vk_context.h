@@ -161,7 +161,6 @@ public:
 
     /// SwapChain
     std::shared_ptr<FSwapchain> Swapchain = nullptr;
-    VkImage CurrentImage = VK_NULL_HANDLE;
 
     std::shared_ptr<FRenderTask> RenderTask = nullptr;
     std::shared_ptr<FPassthroughTask> PassthroughTask = nullptr;

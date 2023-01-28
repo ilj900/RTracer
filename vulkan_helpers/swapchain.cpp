@@ -171,9 +171,12 @@ VkSwapchainKHR FSwapchain::GetSwapchain()
     return Swapchain;
 }
 
-VkResult FSwapchain::GetNextImage(VkImage& Image, VkSemaphore &Semaphore, uint32_t& ImageIndex)
+VkResult FSwapchain::GetNextImage(ImagePtr Image, VkSemaphore &Semaphore, uint32_t& ImageIndex)
 {
     VkResult Result = vkAcquireNextImageKHR(GetContext().LogicalDevice, Swapchain, UINT64_MAX, Semaphore, VK_NULL_HANDLE, &ImageIndex);
-    Image = Images[ImageIndex]->Image;
+    if (Image != nullptr)
+    {
+        Image = Images[ImageIndex];
+    }
     return Result;
 }

@@ -1117,7 +1117,7 @@ void FVulkanContext::Render()
     vkWaitForFences(LogicalDevice, 1, &ImagesInFlight[CurrentFrame], VK_TRUE, UINT64_MAX);
 
     /// Acquire next image from swapchain, also it's index and provide semaphore to signal when image is ready to be used
-    VkResult Result = Swapchain->GetNextImage(CurrentImage, ImageAvailableSemaphores[CurrentFrame], ImageIndex);
+    VkResult Result = Swapchain->GetNextImage(nullptr, ImageAvailableSemaphores[CurrentFrame], ImageIndex);
 
     /// Run some checks
     if (Result == VK_ERROR_OUT_OF_DATE_KHR)
