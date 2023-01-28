@@ -44,7 +44,6 @@ public:
     void InitManagerResources(int Width, int Height, VkSurfaceKHR Surface);
     void QueuePhysicalDeviceProperties();
     void GetDeviceQueues(VkSurfaceKHR Surface);
-    void LoadModelDataToGPU();
     void CreateUniformBuffers();
     void CreatePipelines();
     void CreateSyncObjects();

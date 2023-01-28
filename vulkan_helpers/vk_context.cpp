@@ -3,7 +3,6 @@
 #include "vk_functions.h"
 
 #include "systems/camera_system.h"
-#include "systems/mesh_system.h"
 #include "components/device_camera_component.h"
 #include "components/device_transform_component.h"
 #include "components/device_renderable_component.h"
@@ -42,7 +41,6 @@ void FVulkanContext::Init(GLFWwindow* Window, int Width, int Height)
 {
     try
     {
-        LoadModelDataToGPU();
         CreateUniformBuffers();
         TextureImage = LoadImageFromFile(TexturePath, "V_TextureImage");
 
@@ -434,7 +432,6 @@ uint32_t FVulkanContext::GetPresentIndex()
 }
 
 FBuffer FVulkanContext::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, const std::string& DebugName)
-
 {
     return ResourceAllocator->CreateBuffer(Size, Usage, Properties, DebugName);
 }
@@ -991,17 +988,6 @@ VkFormat FVulkanContext::FindDepthFormat()
 bool FVulkanContext::HasStensilComponent(VkFormat Format)
 {
     return Format == VK_FORMAT_D32_SFLOAT_S8_UINT || Format == VK_FORMAT_D24_UNORM_S8_UINT;
-}
-
-void FVulkanContext::LoadModelDataToGPU()
-{
-    auto MeshSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>();
-
-    for(auto Mesh : *MeshSystem)
-    {
-        MeshSystem->LoadToGPU(Mesh);
-    }
-
 }
 
 void FVulkanContext::CreatePipelines()

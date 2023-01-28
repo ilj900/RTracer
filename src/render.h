@@ -15,9 +15,9 @@ public:
     int Render();
     int Cleanup();
 
+    int LoadDataToGPU();
     int LoadModels(const std::string& Path);
     int AddMesh();
-    GLFWwindow* CreateWindow();
 
     GLFWwindow* Window;
 

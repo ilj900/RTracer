@@ -9,8 +9,8 @@
 #include "components/device_transform_component.h"
 
 #include "vk_context.h"
-#include "vk_functions.h"
 
+#include "vk_functions.h"
 #include "render.h"
 
 FRender::FRender()
@@ -88,6 +88,8 @@ FRender::FRender()
     UtilityImageR8G8B8A8_SRGB = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                               VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_UtilityImageR8G8B8A8_SRGB");
+
+    LoadDataToGPU();
 
     Context.Init(Window, WINDOW_WIDTH, WINDOW_HEIGHT);
 }
@@ -170,6 +172,18 @@ int FRender::LoadModels(const std::string& Path)
     AddMesh({0.0f, 0.9f, 0.6f}, {1.f, 0.f, -2.f}, Hexahedron, std::string(), 0);
 
     AddMesh({0.3f, 0.9f, 0.6f}, {-1.f, 0.f, -2.f}, Model, "../models/viking_room/viking_room.obj", RENDERABLE_HAS_TEXTURE);
+
+    return 0;
+}
+
+int FRender::LoadDataToGPU()
+{
+    auto MeshSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>();
+
+    for(auto Mesh : *MeshSystem)
+    {
+        MeshSystem->LoadToGPU(Mesh);
+    }
 
     return 0;
 }
