@@ -31,6 +31,8 @@ public:
     const uint32_t WINDOW_WIDTH = 1920;
     const uint32_t WINDOW_HEIGHT = 1080;
     const std::string WINDOW_NAME = "RTracer";
+    const int MAX_FRAMES_IN_FLIGHT = 2;
+    uint32_t RenderFrameIndex = 0;
 
     ImagePtr UtilityImageR32 = nullptr;
     ImagePtr UtilityImageR8G8B8A8_SRGB = nullptr;

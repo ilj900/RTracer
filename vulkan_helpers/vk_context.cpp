@@ -1111,36 +1111,6 @@ void FVulkanContext::CreateSyncObjects()
     }
 }
 
-void FVulkanContext::Render()
-{
-    /// Previous rendering iteration of the frame might still be in use, so we wait for it
-    vkWaitForFences(LogicalDevice, 1, &ImagesInFlight[CurrentFrame], VK_TRUE, UINT64_MAX);
-
-    /// Acquire next image from swapchain, also it's index and provide semaphore to signal when image is ready to be used
-    VkResult Result = Swapchain->GetNextImage(nullptr, ImageAvailableSemaphores[CurrentFrame], ImageIndex);
-
-    /// Run some checks
-    if (Result == VK_ERROR_OUT_OF_DATE_KHR)
-    {
-        RecreateSwapChain(Swapchain->GetWidth(), Swapchain->GetHeight());
-        return;
-    }
-    if (Result != VK_SUCCESS && Result != VK_SUBOPTIMAL_KHR)
-    {
-        throw std::runtime_error("Failed to acquire swap chain image!");
-    }
-
-    UpdateUniformBuffer(ImageIndex);
-
-    auto RenderSignalSemaphore = RenderTask-> Submit(GetGraphicsQueue(), ImageAvailableSemaphores[CurrentFrame], ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
-
-    auto PassthroughSignalSemaphore = PassthroughTask->Submit(GetGraphicsQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
-
-    auto ImguiFinishedSemaphore = ImguiTask->Submit(GetGraphicsQueue(), PassthroughSignalSemaphore, VK_NULL_HANDLE, ImagesInFlight[ImageIndex], CurrentFrame);
-
-    ImGuiFinishedSemaphores[CurrentFrame] = ImguiFinishedSemaphore;
-}
-
 void FVulkanContext::Present(VkSemaphore WaitSemaphore, uint32_t ImageIndex)
 {
     VkSemaphore WaitSemaphores[] = {WaitSemaphore};
@@ -1167,13 +1137,6 @@ void FVulkanContext::Present(VkSemaphore WaitSemaphore, uint32_t ImageIndex)
     {
         throw std::runtime_error("Failed to present swap chain image!");
     }
-}
-
-void FVulkanContext::Present()
-{
-    Present(ImGuiFinishedSemaphores[CurrentFrame], CurrentFrame);
-
-    CurrentFrame = (CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 void FVulkanContext::WaitIdle()

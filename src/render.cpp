@@ -122,8 +122,41 @@ int FRender::Render()
         return 1;
     }
     auto& Context = GetContext();
-    Context.Render();
-    Context.Present();
+
+    uint32_t CurrentFrame = RenderFrameIndex % MAX_FRAMES_IN_FLIGHT;
+
+    /// Previous rendering iteration of the frame might still be in use, so we wait for it
+    vkWaitForFences(Context.LogicalDevice, 1, &Context.ImagesInFlight[CurrentFrame], VK_TRUE, UINT64_MAX);
+
+    /// Acquire next image from swapchain, also it's index and provide semaphore to signal when image is ready to be used
+    uint32_t ImageIndex = 0;
+    VkResult Result = Context.Swapchain->GetNextImage(nullptr, Context.ImageAvailableSemaphores[CurrentFrame], ImageIndex);
+
+    /// Run some checks
+    if (Result == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        Context.RecreateSwapChain(WINDOW_WIDTH, WINDOW_HEIGHT);
+        return 1;
+    }
+    if (Result != VK_SUCCESS && Result != VK_SUBOPTIMAL_KHR)
+    {
+        throw std::runtime_error("Failed to acquire swap chain image!");
+    }
+
+    Context.UpdateUniformBuffer(ImageIndex);
+
+    auto RenderSignalSemaphore = Context.RenderTask-> Submit(Context.GetGraphicsQueue(), Context.ImageAvailableSemaphores[CurrentFrame], Context.ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
+
+    auto PassthroughSignalSemaphore = Context.PassthroughTask->Submit(Context.GetGraphicsQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+
+    auto ImguiFinishedSemaphore = Context.ImguiTask->Submit(Context.GetGraphicsQueue(), PassthroughSignalSemaphore, VK_NULL_HANDLE, Context.ImagesInFlight[ImageIndex], CurrentFrame);
+
+    Context.ImGuiFinishedSemaphores[CurrentFrame] = ImguiFinishedSemaphore;
+
+    Context.Present(Context.ImGuiFinishedSemaphores[CurrentFrame], CurrentFrame);
+
+    RenderFrameIndex++;
+
     glfwPollEvents();
 
     return 0;

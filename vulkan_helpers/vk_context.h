@@ -52,8 +52,6 @@ public:
     void CleanUp();
     void UpdateUniformBuffer(uint32_t CurrentImage);
 
-    void Render();
-    void Present();
     void WaitIdle();
 
     VkFormat FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features);
