@@ -4,7 +4,14 @@
 
 #include "image.h"
 
+#include "maths.h"
+
+#include "entities/entity.h"
+
 #include <string>
+#include <vector>
+
+enum MeshType {Tetrahedron, Hexahedron, Icosahedron, Model};
 
 class FRender
 {
@@ -17,7 +24,7 @@ public:
 
     int LoadDataToGPU();
     int LoadModels(const std::string& Path);
-    int AddMesh();
+    int AddMesh(const FVector3& Color, const FVector3& Position, MeshType Type, const std::string& Path, uint32_t RenderableMask);
 
     GLFWwindow* Window;
 
@@ -27,4 +34,6 @@ public:
 
     ImagePtr UtilityImageR32 = nullptr;
     ImagePtr UtilityImageR8G8B8A8_SRGB = nullptr;
+
+    std::vector<ECS::FEntity> Models;
 };
