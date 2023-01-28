@@ -79,6 +79,8 @@ public:
     void SetLogicalDevice(VkDevice LogicalDevice);
     std::vector<VkDeviceQueueCreateInfo> GetDeviceQueueCreateInfo(VkPhysicalDevice PhysicalDevice, std::set<uint32_t> QueueIndices);
 
+    void Present(VkSemaphore WaitSemaphore, uint32_t ImageIndex);
+
     VkQueue GetGraphicsQueue();
     uint32_t GetGraphicsQueueIndex();
     VkQueue GetComputeQueue();

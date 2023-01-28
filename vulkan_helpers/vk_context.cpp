@@ -1141,14 +1141,14 @@ void FVulkanContext::Render()
     ImGuiFinishedSemaphores[CurrentFrame] = ImguiFinishedSemaphore;
 }
 
-void FVulkanContext::Present()
+void FVulkanContext::Present(VkSemaphore WaitSemaphore, uint32_t ImageIndex)
 {
-    VkSemaphore SignalSemaphores[] = {ImGuiFinishedSemaphores[CurrentFrame]};
+    VkSemaphore WaitSemaphores[] = {WaitSemaphore};
 
     VkPresentInfoKHR PresentInfo{};
     PresentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     PresentInfo.waitSemaphoreCount = 1;
-    PresentInfo.pWaitSemaphores = SignalSemaphores;
+    PresentInfo.pWaitSemaphores = WaitSemaphores;
     VkSwapchainKHR SwapChains[] = {Swapchain->GetSwapchain()};
     PresentInfo.swapchainCount = 1;
     PresentInfo.pSwapchains = SwapChains;
@@ -1167,6 +1167,11 @@ void FVulkanContext::Present()
     {
         throw std::runtime_error("Failed to present swap chain image!");
     }
+}
+
+void FVulkanContext::Present()
+{
+    Present(ImGuiFinishedSemaphores[CurrentFrame], CurrentFrame);
 
     CurrentFrame = (CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
