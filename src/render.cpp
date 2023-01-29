@@ -2,6 +2,7 @@
 #include "systems/mesh_system.h"
 #include "systems/transform_system.h"
 #include "systems/renderable_system.h"
+#include "systems/camera_system.h"
 #include "components/mesh_component.h"
 #include "components/device_mesh_component.h"
 #include "components/device_renderable_component.h"
@@ -93,6 +94,8 @@ FRender::FRender()
                                               VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_UtilityImageR8G8B8A8_SRGB");
 
     LoadDataToGPU();
+
+    CAMERA_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
 
     Context.Init(Window, WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -207,6 +210,8 @@ int FRender::Render()
     {
         throw std::runtime_error("Failed to acquire swap chain image!");
     }
+
+    CAMERA_SYSTEM()->Update(CurrentFrame);
 
     Context.UpdateUniformBuffer(ImageIndex);
 

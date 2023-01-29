@@ -5,6 +5,7 @@
 #include "components/device_renderable_component.h"
 #include "components/device_camera_component.h"
 #include "systems/mesh_system.h"
+#include "systems/camera_system.h"
 #include "coordinator.h"
 
 #include "vk_context.h"
@@ -127,7 +128,7 @@ void FRenderTask::UpdateDescriptorSets()
     {
 
         VkDescriptorBufferInfo CameraBufferInfo{};
-        CameraBufferInfo.buffer = Context->DeviceCameraBuffer.Buffer;
+        CameraBufferInfo.buffer = CAMERA_SYSTEM()->DeviceCameraBuffer.Buffer;
         CameraBufferInfo.offset = CameraBufferSize * i;
         CameraBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RENDER_PER_FRAME_LAYOUT_INDEX, CAMERA_LAYOUT_INDEX, i, CameraBufferInfo);

@@ -165,7 +165,6 @@ public:
     std::shared_ptr<FDescriptorSetManager>DescriptorSetManager = nullptr;
 
     FBuffer DeviceTransformBuffer;
-    FBuffer DeviceCameraBuffer;
     FBuffer DeviceRenderableBuffer;
 
     const int MAX_FRAMES_IN_FLIGHT = 2;

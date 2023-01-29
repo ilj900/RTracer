@@ -1,6 +1,9 @@
 #pragma once
 
+#include "buffer.h"
+
 #include "system.h"
+#include "coordinator.h"
 
 namespace ECS
 {
@@ -13,6 +16,8 @@ namespace ECS
             T& GetComponent(FEntity CameraEntity);
 
         public:
+            void Init(int NumberOfSimultaneousSubmits);
+            void Update(int IterationIndex);
             void UpdateAllDeviceComponentsData();
             void UpdateDeviceComponentData(FEntity CameraEntity);
             void MoveCameraForward(FEntity CameraEntity, float Value);
@@ -24,6 +29,14 @@ namespace ECS
             FMatrix4 GetProjectionMatrix(FEntity CameraEntity);
             FMatrix4 GetViewMatrix(FEntity CameraEntity);
             void Orthogonize(FEntity CameraEntity);
+
+        public:
+            bool bNeedsUpdate = false;
+            int NumberOfSimultaneousSubmits = 2;
+
+            FBuffer DeviceCameraBuffer;
         };
     }
 }
+
+#define CAMERA_SYSTEM() ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FCameraSystem>()

@@ -3,6 +3,8 @@
 #include "systems/camera_system.h"
 #include "coordinator.h"
 
+#include "vk_context.h"
+
 #include <cassert>
 
 namespace ECS
@@ -18,6 +20,39 @@ namespace ECS
             return CameraComponent;
         }
 
+        void FCameraSystem::Init(int NumberOfSimultaneousSubmits)
+        {
+            this->NumberOfSimultaneousSubmits = NumberOfSimultaneousSubmits;
+            auto& Coordinator = GetCoordinator();
+            auto& Context = GetContext();
+            auto DeviceCameraComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceCameraComponent>();
+            auto DeviceCameraComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>();
+
+            VkDeviceSize CameraBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>() * NumberOfSimultaneousSubmits;
+
+            DeviceCameraBuffer = GetContext().CreateBuffer(CameraBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Camera_Buffer");
+
+            for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
+            {
+                Context.ResourceAllocator->LoadDataToBuffer(DeviceCameraBuffer, DeviceCameraComponentsSize, DeviceCameraComponentsSize * i, DeviceCameraComponentsData);
+            }
+        }
+
+        void FCameraSystem::Update(int IterationIndex)
+        {
+            if (bNeedsUpdate)
+            {
+                auto& Coordinator = GetCoordinator();
+                auto& Context = GetContext();
+                auto DeviceCameraComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceCameraComponent>();
+                auto DeviceCameraComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>();
+
+                Context.ResourceAllocator->LoadDataToBuffer(DeviceCameraBuffer, DeviceCameraComponentsSize, DeviceCameraComponentsSize * IterationIndex, DeviceCameraComponentsData);
+            }
+
+            bNeedsUpdate = false;
+        }
+
         void FCameraSystem::UpdateAllDeviceComponentsData()
         {
             auto& Coordinator = GetCoordinator();
@@ -29,6 +64,8 @@ namespace ECS
                 DeviceCameraComponent.ViewMatrix = LookAt(CameraComponent.Position, CameraComponent.Position + CameraComponent.Direction, CameraComponent.Up);
                 DeviceCameraComponent.ProjectionMatrix = GetPerspective(CameraComponent.FOV / 90.f, CameraComponent.Ratio, CameraComponent.ZNear, CameraComponent.ZFar);
             }
+
+            bNeedsUpdate = true;
         }
 
         void FCameraSystem::UpdateDeviceComponentData(FEntity CameraEntity)
@@ -38,6 +75,7 @@ namespace ECS
             auto& CameraComponent = Coordinator.GetComponent<COMPONENTS::FCameraComponent>(CameraEntity);
             DeviceCameraComponent.ViewMatrix = LookAt(CameraComponent.Position, CameraComponent.Position + CameraComponent.Direction, CameraComponent.Up);
             DeviceCameraComponent.ProjectionMatrix = GetPerspective(CameraComponent.FOV / 90.f, CameraComponent.Ratio, CameraComponent.ZNear, CameraComponent.ZFar);
+            bNeedsUpdate = true;
         }
 
         void FCameraSystem::MoveCameraForward(FEntity CameraEntity, float Value)

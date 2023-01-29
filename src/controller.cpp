@@ -11,12 +11,11 @@
 FController::FController()
 {
     auto& Coordinator = ECS::GetCoordinator();
-    auto CameraSystem = Coordinator.GetSystem<ECS::SYSTEMS::FCameraSystem>();
 
     Camera = Coordinator.CreateEntity();
     Coordinator.AddComponent<ECS::COMPONENTS::FCameraComponent>(Camera, ECS::COMPONENTS::FCameraComponent());
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera, {});
-    CameraSystem->UpdateDeviceComponentData(Camera);
+    CAMERA_SYSTEM()->UpdateDeviceComponentData(Camera);
 }
 
 void FController::SetWindow(GLFWwindow* Window)
@@ -120,39 +119,37 @@ void FController::Update(float Time)
     if (!Active)
         return;
 
-    auto CameraSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FCameraSystem>();
-
     if (glfwGetKey(Window, GLFW_KEY_W))
     {
-        CameraSystem->MoveCameraForward(Camera, Time * CameraMovementSpeed);
+        CAMERA_SYSTEM()->MoveCameraForward(Camera, Time * CameraMovementSpeed);
     }
     if (glfwGetKey(Window, GLFW_KEY_S))
     {
-        CameraSystem->MoveCameraForward(Camera, -Time * CameraMovementSpeed);
+        CAMERA_SYSTEM()->MoveCameraForward(Camera, -Time * CameraMovementSpeed);
     }
     if (glfwGetKey(Window, GLFW_KEY_A))
     {
-        CameraSystem->MoveCameraRight(Camera, -Time * CameraMovementSpeed);
+        CAMERA_SYSTEM()->MoveCameraRight(Camera, -Time * CameraMovementSpeed);
     }
     if (glfwGetKey(Window, GLFW_KEY_D))
     {
-        CameraSystem->MoveCameraRight(Camera, Time * CameraMovementSpeed);
+        CAMERA_SYSTEM()->MoveCameraRight(Camera, Time * CameraMovementSpeed);
     }
     if (glfwGetKey(Window, GLFW_KEY_Z))
     {
-        CameraSystem->MoveCameraUpward(Camera, Time * CameraMovementSpeed);
+        CAMERA_SYSTEM()->MoveCameraUpward(Camera, Time * CameraMovementSpeed);
     }
     if (glfwGetKey(Window, GLFW_KEY_C))
     {
-        CameraSystem->MoveCameraUpward(Camera, -Time * CameraMovementSpeed);
+        CAMERA_SYSTEM()->MoveCameraUpward(Camera, -Time * CameraMovementSpeed);
     }
     if (glfwGetKey(Window, GLFW_KEY_Q))
     {
-        CameraSystem->Roll(Camera, -Time * CameraRotationSpeed);
+        CAMERA_SYSTEM()->Roll(Camera, -Time * CameraRotationSpeed);
     }
     if (glfwGetKey(Window, GLFW_KEY_E))
     {
-        CameraSystem->Roll(Camera, Time * CameraRotationSpeed);
+        CAMERA_SYSTEM()->Roll(Camera, Time * CameraRotationSpeed);
     }
 
     {
@@ -170,9 +167,9 @@ void FController::Update(float Time)
         else
         {
             static double Sensitivity = 0.001;
-            CameraSystem->LookRight(Camera, float(-XDelta * Sensitivity));
-            CameraSystem->LookUp(Camera, float(-YDelta * Sensitivity));
+            CAMERA_SYSTEM()->LookRight(Camera, float(-XDelta * Sensitivity));
+            CAMERA_SYSTEM()->LookUp(Camera, float(-YDelta * Sensitivity));
         }
     }
-    CameraSystem->UpdateDeviceComponentData(Camera);
+    CAMERA_SYSTEM()->UpdateDeviceComponentData(Camera);
 }
