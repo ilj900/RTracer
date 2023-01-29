@@ -95,7 +95,12 @@ void FRenderTask::Init()
 
 void FRenderTask::UpdateDescriptorSets()
 {
-    auto MeshSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>();
+    auto& Coordinator = ECS::GetCoordinator();
+    auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
+
+    VkDeviceSize TransformBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>();
+    VkDeviceSize CameraBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>();
+    VkDeviceSize RenderableBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>();
 
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
@@ -103,14 +108,14 @@ void FRenderTask::UpdateDescriptorSets()
         for (auto Mesh : *MeshSystem)
         {
             VkDescriptorBufferInfo TransformBufferInfo{};
-            TransformBufferInfo.buffer = Context->DeviceTransformBuffers[i].Buffer;
-            TransformBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceTransformComponent) * j;
+            TransformBufferInfo.buffer = Context->DeviceTransformBuffer.Buffer;
+            TransformBufferInfo.offset = TransformBufferSize * i + sizeof(ECS::COMPONENTS::FDeviceTransformComponent) * j;
             TransformBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceTransformComponent);
             Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, TRANSFORM_LAYOUT_INDEX, j * NumberOfSimultaneousSubmits + i, TransformBufferInfo);
 
             VkDescriptorBufferInfo RenderableBufferInfo{};
-            RenderableBufferInfo.buffer = Context->DeviceRenderableBuffers[i].Buffer;
-            RenderableBufferInfo.offset = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent) * j;
+            RenderableBufferInfo.buffer = Context->DeviceRenderableBuffer.Buffer;
+            RenderableBufferInfo.offset = RenderableBufferSize * i + sizeof(ECS::COMPONENTS::FDeviceRenderableComponent) * j;
             RenderableBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent);
             Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, RENDERABLE_LAYOUT_INDEX, j * NumberOfSimultaneousSubmits + i, RenderableBufferInfo);
 
@@ -122,8 +127,8 @@ void FRenderTask::UpdateDescriptorSets()
     {
 
         VkDescriptorBufferInfo CameraBufferInfo{};
-        CameraBufferInfo.buffer = Context->DeviceCameraBuffers[i].Buffer;
-        CameraBufferInfo.offset = 0;
+        CameraBufferInfo.buffer = Context->DeviceCameraBuffer.Buffer;
+        CameraBufferInfo.offset = CameraBufferSize * i;
         CameraBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RENDER_PER_FRAME_LAYOUT_INDEX, CAMERA_LAYOUT_INDEX, i, CameraBufferInfo);
 

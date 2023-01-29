@@ -1023,20 +1023,13 @@ VkSampler FVulkanContext::CreateTextureSampler(uint32_t MipLevel)
 void FVulkanContext::CreateUniformBuffers()
 {
     auto& Coordinator = ECS::GetCoordinator();
-    VkDeviceSize TransformBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>();
-    VkDeviceSize CameraBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>();
-    VkDeviceSize RenderableBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>();
+    VkDeviceSize TransformBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>() * Swapchain->Size();
+    VkDeviceSize CameraBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>() * Swapchain->Size();
+    VkDeviceSize RenderableBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>() * Swapchain->Size();
 
-    DeviceTransformBuffers.resize(Swapchain->Size());
-    DeviceCameraBuffers.resize(Swapchain->Size());
-    DeviceRenderableBuffers.resize(Swapchain->Size());
-
-    for (size_t i = 0; i < Swapchain->Size(); ++i)
-    {
-        DeviceTransformBuffers[i] = CreateBuffer(TransformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Transform_Buffer_" + std::to_string(i));
-        DeviceCameraBuffers[i] = CreateBuffer(CameraBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Camera_Buffer_" + std::to_string(i));
-        DeviceRenderableBuffers[i] = CreateBuffer(RenderableBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Renderable_Buffer_" + std::to_string(i));
-    }
+    DeviceTransformBuffer = CreateBuffer(TransformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Transform_Buffer");
+    DeviceCameraBuffer = CreateBuffer(CameraBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Camera_Buffer");
+    DeviceRenderableBuffer = CreateBuffer(RenderableBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Renderable_Buffer");
 }
 
 void FVulkanContext::Present(VkSemaphore WaitSemaphore, uint32_t ImageIndex)
@@ -1112,9 +1105,9 @@ void FVulkanContext::UpdateUniformBuffer(uint32_t CurrentImage)
     auto RenderableComponentData = Coordinator.Data<ECS::COMPONENTS::FDeviceRenderableComponent>();
     auto RenderableComponentSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>();
 
-    ResourceAllocator->LoadDataToBuffer(DeviceTransformBuffers[CurrentImage], DeviceTransformComponentsSize, 0, DeviceTransformComponentsData);
-    ResourceAllocator->LoadDataToBuffer(DeviceCameraBuffers[CurrentImage], DeviceCameraComponentsSize, 0, DeviceCameraComponentsData);
-    ResourceAllocator->LoadDataToBuffer(DeviceRenderableBuffers[CurrentImage], RenderableComponentSize, 0, RenderableComponentData);
+    ResourceAllocator->LoadDataToBuffer(DeviceTransformBuffer, DeviceTransformComponentsSize, DeviceTransformComponentsSize * CurrentImage, DeviceTransformComponentsData);
+    ResourceAllocator->LoadDataToBuffer(DeviceCameraBuffer, DeviceCameraComponentsSize, DeviceCameraComponentsSize * CurrentImage, DeviceCameraComponentsData);
+    ResourceAllocator->LoadDataToBuffer(DeviceRenderableBuffer, RenderableComponentSize, RenderableComponentSize * CurrentImage, RenderableComponentData);
 }
 
 #ifndef NDEBUG
@@ -1133,9 +1126,9 @@ void FVulkanContext::CleanUp()
     /// Free all device buffers
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
-        DestroyBuffer(DeviceTransformBuffers[i]);
-        DestroyBuffer(DeviceCameraBuffers[i]);
-        DestroyBuffer(DeviceRenderableBuffers[i]);
+        DestroyBuffer(DeviceTransformBuffer);
+        DestroyBuffer(DeviceCameraBuffer);
+        DestroyBuffer(DeviceRenderableBuffer);
     }
 
     CleanUpSwapChain();

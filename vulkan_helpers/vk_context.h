@@ -164,9 +164,9 @@ public:
     uint32_t MipLevels;
     std::shared_ptr<FDescriptorSetManager>DescriptorSetManager = nullptr;
 
-    std::vector<FBuffer> DeviceTransformBuffers;
-    std::vector<FBuffer> DeviceCameraBuffers;
-    std::vector<FBuffer> DeviceRenderableBuffers;
+    FBuffer DeviceTransformBuffer;
+    FBuffer DeviceCameraBuffer;
+    FBuffer DeviceRenderableBuffer;
 
     const int MAX_FRAMES_IN_FLIGHT = 2;
     bool bFramebufferResized = false;
