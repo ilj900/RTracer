@@ -1096,13 +1096,6 @@ void FVulkanContext::RecreateSwapChain(int Width, int Height)
 void FVulkanContext::CleanUpSwapChain()
 {
     Swapchain = nullptr;
-
-//    RenderTask->Cleanup();
-//    RenderTask = nullptr;
-//    PassthroughTask->Cleanup();
-//    PassthroughTask = nullptr;
-//    ImguiTask->Cleanup();
-//    ImguiTask = nullptr;
 }
 
 void FVulkanContext::UpdateUniformBuffer(uint32_t CurrentImage)

@@ -149,6 +149,24 @@ int FRender::Cleanup()
     UtilityImageR8G8B8A8_SRGB = nullptr;
     UtilityImageR32 = nullptr;
 
+    RenderTask->Cleanup();
+    RenderTask = nullptr;
+    PassthroughTask->Cleanup();
+    PassthroughTask = nullptr;
+    ImguiTask->Cleanup();
+    ImguiTask = nullptr;
+
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    {
+        vkDestroySemaphore(GetContext().LogicalDevice, ImageAvailableSemaphores[i], nullptr);
+        ImageAvailableSemaphores[i] = VK_NULL_HANDLE;
+        vkDestroyFence(GetContext().LogicalDevice, ImagesInFlight[i], nullptr);
+        ImagesInFlight[i] = VK_NULL_HANDLE;
+    }
+
+    ImageAvailableSemaphores.clear();
+    ImagesInFlight.clear();
+
     return 0;
 }
 
