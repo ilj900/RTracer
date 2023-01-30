@@ -24,7 +24,7 @@ FRender::FRender()
     glfwSetWindowPos(Window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
     glfwSetCursorPos(Window, 0.f, 0.f);
 
-    LoadModels("");
+    LoadScene("");
 
     auto& Context = GetContext();
 
@@ -236,7 +236,7 @@ int FRender::Render()
     return 0;
 }
 
-int FRender::LoadModels(const std::string& Path)
+int FRender::LoadScene(const std::string& Path)
 {
     const uint32_t RENDERABLE_HAS_TEXTURE = 1 << 6;
 

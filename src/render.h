@@ -27,7 +27,7 @@ public:
     int Cleanup();
 
     int LoadDataToGPU();
-    int LoadModels(const std::string& Path);
+    int LoadScene(const std::string& Path);
     int AddMesh(const FVector3& Color, const FVector3& Position, MeshType Type, const std::string& Path, uint32_t RenderableMask);
 
     GLFWwindow* Window;
