@@ -3,6 +3,8 @@
 #include "systems/transform_system.h"
 #include "coordinator.h"
 
+#include "vk_context.h"
+
 #include <cassert>
 
 namespace ECS
@@ -18,6 +20,39 @@ namespace ECS
             return TransformComponent;
         }
 
+        void FTransformSystem::Init(int NumberOfSimultaneousSubmits)
+        {
+            this->NumberOfSimultaneousSubmits = NumberOfSimultaneousSubmits;
+            auto& Coordinator = GetCoordinator();
+            auto& Context = GetContext();
+            auto DeviceTransformComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceTransformComponent>();
+            auto DeviceCameraComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>();
+
+            VkDeviceSize CameraBufferSize = DeviceCameraComponentsSize * NumberOfSimultaneousSubmits;
+
+            DeviceTransformBuffer = GetContext().CreateBuffer(CameraBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Camera_Buffer");
+
+            for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
+            {
+                Context.ResourceAllocator->LoadDataToBuffer(DeviceTransformBuffer, DeviceCameraComponentsSize, DeviceCameraComponentsSize * i, DeviceTransformComponentsData);
+            }
+        }
+
+        void FTransformSystem::Update(int IterationIndex)
+        {
+            if (bNeedsUpdate)
+            {
+                auto& Coordinator = GetCoordinator();
+                auto& Context = GetContext();
+                auto DeviceTransformComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceTransformComponent>();
+                auto DeviceTransformComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>();
+
+                Context.ResourceAllocator->LoadDataToBuffer(DeviceTransformBuffer, DeviceTransformComponentsSize, DeviceTransformComponentsSize * IterationIndex, DeviceTransformComponentsData);
+            }
+
+            bNeedsUpdate = false;
+        }
+
         void FTransformSystem::UpdateAllDeviceComponentsData()
         {
             auto& Coordinator = GetCoordinator();
@@ -28,6 +63,8 @@ namespace ECS
                 auto& TransformComponent = Coordinator.GetComponent<COMPONENTS::FTransformComponent>(Entity);
                 DeviceTransformComponent.ModelMatrix = Transform(TransformComponent.Position, TransformComponent.Direction, TransformComponent.Up, TransformComponent.Scale);
             }
+
+            bNeedsUpdate = true;
         }
 
         void FTransformSystem::UpdateDeviceComponentData(FEntity Entity)
@@ -36,6 +73,8 @@ namespace ECS
             auto& DeviceTransformComponent = Coordinator.GetComponent<COMPONENTS::FDeviceTransformComponent>(Entity);
             auto& TransformComponent = Coordinator.GetComponent<COMPONENTS::FTransformComponent>(Entity);
             DeviceTransformComponent.ModelMatrix = Transform(TransformComponent.Position, TransformComponent.Direction, TransformComponent.Up, TransformComponent.Scale);
+
+            bNeedsUpdate = true;
         }
 
         void FTransformSystem::MoveForward(FEntity Entity, float Value)

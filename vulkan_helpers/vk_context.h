@@ -164,10 +164,8 @@ public:
     uint32_t MipLevels;
     std::shared_ptr<FDescriptorSetManager>DescriptorSetManager = nullptr;
 
-    FBuffer DeviceTransformBuffer;
     FBuffer DeviceRenderableBuffer;
 
-    const int MAX_FRAMES_IN_FLIGHT = 2;
     bool bFramebufferResized = false;
 
     std::string ModelPath = "../models/viking_room/viking_room.obj";

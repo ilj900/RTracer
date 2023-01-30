@@ -1,6 +1,9 @@
 #pragma once
 
 #include "system.h"
+#include "coordinator.h"
+
+#include "buffer.h"
 
 #include "maths.h"
 
@@ -15,6 +18,8 @@ namespace ECS
             T& GetComponent(FEntity Entity);
 
         public:
+            void Init(int NumberOfSimultaneousSubmits);
+            void Update(int IterationIndex);
             void UpdateAllDeviceComponentsData();
             void UpdateDeviceComponentData(FEntity Entity);
             void MoveForward(FEntity Entity, float Value);
@@ -26,6 +31,14 @@ namespace ECS
             void Pitch(FEntity Entity, float Value);
             void Yaw(FEntity Entity, float Value);
             FMatrix4 GetModelMatrix(FEntity Entity);
+
+        public:
+            bool bNeedsUpdate = false;
+            int NumberOfSimultaneousSubmits = 2;
+
+            FBuffer DeviceTransformBuffer;
         };
     }
 }
+
+#define TRANSFORM_SYSTEM() ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FTransformSystem>()

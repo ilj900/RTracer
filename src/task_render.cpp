@@ -6,6 +6,7 @@
 #include "components/device_camera_component.h"
 #include "systems/mesh_system.h"
 #include "systems/camera_system.h"
+#include "systems/transform_system.h"
 #include "coordinator.h"
 
 #include "vk_context.h"
@@ -109,7 +110,7 @@ void FRenderTask::UpdateDescriptorSets()
         for (auto Mesh : *MeshSystem)
         {
             VkDescriptorBufferInfo TransformBufferInfo{};
-            TransformBufferInfo.buffer = Context->DeviceTransformBuffer.Buffer;
+            TransformBufferInfo.buffer = TRANSFORM_SYSTEM()->DeviceTransformBuffer.Buffer;
             TransformBufferInfo.offset = TransformBufferSize * i + sizeof(ECS::COMPONENTS::FDeviceTransformComponent) * j;
             TransformBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceTransformComponent);
             Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, TRANSFORM_LAYOUT_INDEX, j * NumberOfSimultaneousSubmits + i, TransformBufferInfo);

@@ -3,6 +3,7 @@
 #include "vk_functions.h"
 
 #include "systems/camera_system.h"
+#include "systems/transform_system.h"
 #include "components/device_camera_component.h"
 #include "components/device_transform_component.h"
 #include "components/device_renderable_component.h"
@@ -1023,10 +1024,8 @@ VkSampler FVulkanContext::CreateTextureSampler(uint32_t MipLevel)
 void FVulkanContext::CreateUniformBuffers()
 {
     auto& Coordinator = ECS::GetCoordinator();
-    VkDeviceSize TransformBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>() * Swapchain->Size();
     VkDeviceSize RenderableBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>() * Swapchain->Size();
 
-    DeviceTransformBuffer = CreateBuffer(TransformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Transform_Buffer");
     DeviceRenderableBuffer = CreateBuffer(RenderableBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Renderable_Buffer");
 }
 
@@ -1093,13 +1092,9 @@ void FVulkanContext::UpdateUniformBuffer(uint32_t CurrentImage)
 {
     auto& Coordinator = ECS::GetCoordinator();
 
-    auto DeviceTransformComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceTransformComponent>();
-    auto DeviceTransformComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>();
-
     auto RenderableComponentData = Coordinator.Data<ECS::COMPONENTS::FDeviceRenderableComponent>();
     auto RenderableComponentSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>();
 
-    ResourceAllocator->LoadDataToBuffer(DeviceTransformBuffer, DeviceTransformComponentsSize, DeviceTransformComponentsSize * CurrentImage, DeviceTransformComponentsData);
     ResourceAllocator->LoadDataToBuffer(DeviceRenderableBuffer, RenderableComponentSize, RenderableComponentSize * CurrentImage, RenderableComponentData);
 }
 
@@ -1119,7 +1114,7 @@ void FVulkanContext::CleanUp()
     /// Free all device buffers
     for (size_t i = 0; i < Swapchain->Size(); ++i)
     {
-        DestroyBuffer(DeviceTransformBuffer);
+        DestroyBuffer(TRANSFORM_SYSTEM()->DeviceTransformBuffer);
         DestroyBuffer(CAMERA_SYSTEM()->DeviceCameraBuffer);
         DestroyBuffer(DeviceRenderableBuffer);
     }
