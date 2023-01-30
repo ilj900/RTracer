@@ -139,7 +139,7 @@ FRender::FRender()
     ImguiTask = std::make_shared<FImguiTask>(&Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     ImguiTask->RegisterInput(0, PassthroughTask->GetOutput(0));
     ImguiTask->Init();
-    
+
     ImGuiFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)

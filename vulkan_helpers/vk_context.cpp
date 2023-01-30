@@ -5,9 +5,6 @@
 #include "systems/camera_system.h"
 #include "systems/transform_system.h"
 #include "systems/renderable_system.h"
-#include "components/device_camera_component.h"
-#include "components/device_transform_component.h"
-#include "components/device_renderable_component.h"
 #include "coordinator.h"
 
 #include <stdexcept>
@@ -52,7 +49,7 @@ void FVulkanContext::Init(GLFWwindow* Window, int Width, int Height)
 }
 
 #ifndef NDEBUG
-VkDebugUtilsMessengerEXT FVulkanContext::CreateDebugMessenger(FVulkanContextOptions& VulkanContextOptions)
+VkDebugUtilsMessengerEXT FVulkanContext::CreateDebugMessenger(FVulkanContextOptions& VulkanContextOptions) const
 {
     VkDebugUtilsMessengerEXT DebugUtilsMessengerEXT;
     auto* DebugCreateInfo = VulkanContextOptions.GetExtensionStructurePtr<VkDebugUtilsMessengerCreateInfoEXT>(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
@@ -68,7 +65,7 @@ void FVulkanContext::SetDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT DebugUti
 }
 #endif
 
-VkSurfaceKHR FVulkanContext::CreateSurface(GLFWwindow* Window)
+VkSurfaceKHR FVulkanContext::CreateSurface(GLFWwindow* Window) const
 {
     VkSurfaceKHR Surface;
     VkResult Result = glfwCreateWindowSurface(Instance, Window, nullptr, &Surface);
@@ -76,7 +73,7 @@ VkSurfaceKHR FVulkanContext::CreateSurface(GLFWwindow* Window)
     return Surface;
 }
 
-void FVulkanContext::DestroySurface(VkSurfaceKHR* Surface)
+void FVulkanContext::DestroySurface(VkSurfaceKHR* Surface) const
 {
     vkDestroySurfaceKHR(Instance, *Surface, nullptr);
     *Surface = VK_NULL_HANDLE;
@@ -87,7 +84,7 @@ void FVulkanContext::SetSurface(VkSurfaceKHR Surface)
     this->Surface = Surface;
 }
 
-VkSurfaceKHR FVulkanContext::GetSurface()
+VkSurfaceKHR FVulkanContext::GetSurface() const
 {
     return Surface;
 }
@@ -97,7 +94,7 @@ void FVulkanContext::SetWindow(GLFWwindow* Window)
     this->Window = Window;
 }
 
-GLFWwindow* FVulkanContext::GetWindow()
+GLFWwindow* FVulkanContext::GetWindow() const
 {
     return Window;
 }
@@ -149,7 +146,7 @@ void FVulkanContext::SetPhysicalDevice(VkPhysicalDevice PhysicalDevice)
     this->PhysicalDevice = PhysicalDevice;
 }
 
-VkPhysicalDevice FVulkanContext::GetPhysicalDevice()
+VkPhysicalDevice FVulkanContext::GetPhysicalDevice() const
 {
     return PhysicalDevice;
 }
@@ -288,7 +285,7 @@ void FVulkanContext::SetInstance(VkInstance Instance)
     this->Instance = Instance;
 }
 
-VkInstance FVulkanContext::GetInstance()
+VkInstance FVulkanContext::GetInstance() const
 {
     return this->Instance;
 }
@@ -352,11 +349,8 @@ bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice, Vk
         }
     }
 
-    if (EverythingIsOK)
-    {
-        if (!CheckDeviceQueuePresentSupport(PhysicalDevice, PresentQueue.QueueIndex, Surface)) {
-            return false;
-        }
+    if (!CheckDeviceQueuePresentSupport(PhysicalDevice, PresentQueue.QueueIndex, Surface)) {
+        return false;
     }
 
     return true;
@@ -420,11 +414,11 @@ uint32_t FVulkanContext::GetSparseBindingQueueIndex()
     return GetQueueIndex(VK_QUEUE_SPARSE_BINDING_BIT);
 }
 
-VkQueue FVulkanContext::GetPresentQueue()
+VkQueue FVulkanContext::GetPresentQueue() const
 {
     return PresentQueue.Queue;
 }
-uint32_t FVulkanContext::GetPresentIndex()
+uint32_t FVulkanContext::GetPresentIndex() const
 {
     return PresentQueue.QueueIndex;
 }
@@ -1054,12 +1048,12 @@ void FVulkanContext::Present(VkSemaphore WaitSemaphore, uint32_t ImageIndex)
     }
 }
 
-void FVulkanContext::WaitIdle()
+void FVulkanContext::WaitIdle() const
 {
     vkDeviceWaitIdle(LogicalDevice);
 }
 
-void FVulkanContext::RecreateSwapChain(int Width, int Height)
+void FVulkanContext::RecreateSwapChain(uint32_t Width, uint32_t Height)
 {
     vkDeviceWaitIdle(LogicalDevice);
 
@@ -1086,7 +1080,7 @@ void FVulkanContext::CleanUpSwapChain()
 }
 
 #ifndef NDEBUG
-void FVulkanContext::DestroyDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT& DebugUtilsMessenger)
+void FVulkanContext::DestroyDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT& DebugUtilsMessenger) const
 {
     if (DebugUtilsMessenger != VK_NULL_HANDLE)
     {
@@ -1107,8 +1101,6 @@ void FVulkanContext::CleanUp()
     TextureImage = nullptr;
 
     DescriptorSetManager = nullptr;
-
-    auto& Coordinator = ECS::GetCoordinator();
 
     CommandBufferManager = nullptr;
     ResourceAllocator = nullptr;
