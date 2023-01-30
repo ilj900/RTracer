@@ -1,6 +1,5 @@
 #include "vk_context.h"
 #include "vk_pipeline.h"
-#include "vk_utils.h"
 #include "vk_functions.h"
 
 #include <map>

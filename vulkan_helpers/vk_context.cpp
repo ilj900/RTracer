@@ -491,6 +491,11 @@ void FVulkanContext::SetLogicalDevice(VkDevice LogicalDevice)
     this->LogicalDevice = LogicalDevice;
 }
 
+VkDevice FVulkanContext::GetLogicalDevice()
+{
+    return LogicalDevice;
+}
+
 void FVulkanContext::GetDeviceQueues(VkSurfaceKHR Surface)
 {
     for (auto& Entry : Queues)
@@ -1080,16 +1085,6 @@ void FVulkanContext::CleanUpSwapChain()
     Swapchain = nullptr;
 }
 
-void FVulkanContext::UpdateUniformBuffer(uint32_t CurrentImage)
-{
-    auto& Coordinator = ECS::GetCoordinator();
-
-    auto RenderableComponentData = Coordinator.Data<ECS::COMPONENTS::FDeviceRenderableComponent>();
-    auto RenderableComponentSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>();
-
-    ResourceAllocator->LoadDataToBuffer(RENDERABLE_SYSTEM()->DeviceRenderableBuffer, RenderableComponentSize, RenderableComponentSize * CurrentImage, RenderableComponentData);
-}
-
 #ifndef NDEBUG
 void FVulkanContext::DestroyDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT& DebugUtilsMessenger)
 {
@@ -1104,14 +1099,10 @@ void FVulkanContext::DestroyDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT& Deb
 void FVulkanContext::CleanUp()
 {
     /// Free all device buffers
-    for (size_t i = 0; i < Swapchain->Size(); ++i)
-    {
-        DestroyBuffer(TRANSFORM_SYSTEM()->DeviceTransformBuffer);
-        DestroyBuffer(CAMERA_SYSTEM()->DeviceCameraBuffer);
-        DestroyBuffer(RENDERABLE_SYSTEM()->DeviceRenderableBuffer);
-    }
-
     CleanUpSwapChain();
+    DestroyBuffer(TRANSFORM_SYSTEM()->DeviceTransformBuffer);
+    DestroyBuffer(CAMERA_SYSTEM()->DeviceCameraBuffer);
+    DestroyBuffer(RENDERABLE_SYSTEM()->DeviceRenderableBuffer);
 
     TextureImage = nullptr;
 

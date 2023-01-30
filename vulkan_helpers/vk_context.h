@@ -43,7 +43,6 @@ public:
     void RecreateSwapChain(int Width, int Height);
     void CleanUpSwapChain();
     void CleanUp();
-    void UpdateUniformBuffer(uint32_t CurrentImage);
 
     void WaitIdle();
 
@@ -68,6 +67,7 @@ public:
     bool CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDevice, uint32_t& QueueFamilyIndex, VkSurfaceKHR Surface);
     VkDevice CreateLogicalDevice(VkPhysicalDevice PhysicalDevice, FVulkanContextOptions& VulkanContextOptions);
     void SetLogicalDevice(VkDevice LogicalDevice);
+    VkDevice GetLogicalDevice();
     std::vector<VkDeviceQueueCreateInfo> GetDeviceQueueCreateInfo(VkPhysicalDevice PhysicalDevice, std::set<uint32_t> QueueIndices);
 
     void Present(VkSemaphore WaitSemaphore, uint32_t ImageIndex);
