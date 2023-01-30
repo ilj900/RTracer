@@ -7,6 +7,7 @@
 #include "systems/mesh_system.h"
 #include "systems/camera_system.h"
 #include "systems/transform_system.h"
+#include "systems/renderable_system.h"
 #include "coordinator.h"
 
 #include "vk_context.h"
@@ -116,7 +117,7 @@ void FRenderTask::UpdateDescriptorSets()
             Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, TRANSFORM_LAYOUT_INDEX, j * NumberOfSimultaneousSubmits + i, TransformBufferInfo);
 
             VkDescriptorBufferInfo RenderableBufferInfo{};
-            RenderableBufferInfo.buffer = Context->DeviceRenderableBuffer.Buffer;
+            RenderableBufferInfo.buffer = RENDERABLE_SYSTEM()->DeviceRenderableBuffer.Buffer;
             RenderableBufferInfo.offset = RenderableBufferSize * i + sizeof(ECS::COMPONENTS::FDeviceRenderableComponent) * j;
             RenderableBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent);
             Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, RENDERABLE_LAYOUT_INDEX, j * NumberOfSimultaneousSubmits + i, RenderableBufferInfo);

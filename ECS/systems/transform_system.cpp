@@ -26,15 +26,15 @@ namespace ECS
             auto& Coordinator = GetCoordinator();
             auto& Context = GetContext();
             auto DeviceTransformComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceTransformComponent>();
-            auto DeviceCameraComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>();
+            auto DeviceTransformComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>();
 
-            VkDeviceSize CameraBufferSize = DeviceCameraComponentsSize * NumberOfSimultaneousSubmits;
+            VkDeviceSize TransformBufferSize = DeviceTransformComponentsSize * NumberOfSimultaneousSubmits;
 
-            DeviceTransformBuffer = GetContext().CreateBuffer(CameraBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Camera_Buffer");
+            DeviceTransformBuffer = GetContext().CreateBuffer(TransformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Transform_Buffer");
 
             for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
             {
-                Context.ResourceAllocator->LoadDataToBuffer(DeviceTransformBuffer, DeviceCameraComponentsSize, DeviceCameraComponentsSize * i, DeviceTransformComponentsData);
+                Context.ResourceAllocator->LoadDataToBuffer(DeviceTransformBuffer, DeviceTransformComponentsSize, DeviceTransformComponentsSize * i, DeviceTransformComponentsData);
             }
         }
 

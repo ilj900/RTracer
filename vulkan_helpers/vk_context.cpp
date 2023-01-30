@@ -4,6 +4,7 @@
 
 #include "systems/camera_system.h"
 #include "systems/transform_system.h"
+#include "systems/renderable_system.h"
 #include "components/device_camera_component.h"
 #include "components/device_transform_component.h"
 #include "components/device_renderable_component.h"
@@ -42,7 +43,6 @@ void FVulkanContext::Init(GLFWwindow* Window, int Width, int Height)
 {
     try
     {
-        CreateUniformBuffers();
         TextureImage = LoadImageFromFile(TexturePath, "V_TextureImage");
     }
     catch (std::runtime_error &Error) {
@@ -1021,14 +1021,6 @@ VkSampler FVulkanContext::CreateTextureSampler(uint32_t MipLevel)
     return Sampler;
 }
 
-void FVulkanContext::CreateUniformBuffers()
-{
-    auto& Coordinator = ECS::GetCoordinator();
-    VkDeviceSize RenderableBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>() * Swapchain->Size();
-
-    DeviceRenderableBuffer = CreateBuffer(RenderableBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Renderable_Buffer");
-}
-
 void FVulkanContext::Present(VkSemaphore WaitSemaphore, uint32_t ImageIndex)
 {
     VkSemaphore WaitSemaphores[] = {WaitSemaphore};
@@ -1095,7 +1087,7 @@ void FVulkanContext::UpdateUniformBuffer(uint32_t CurrentImage)
     auto RenderableComponentData = Coordinator.Data<ECS::COMPONENTS::FDeviceRenderableComponent>();
     auto RenderableComponentSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>();
 
-    ResourceAllocator->LoadDataToBuffer(DeviceRenderableBuffer, RenderableComponentSize, RenderableComponentSize * CurrentImage, RenderableComponentData);
+    ResourceAllocator->LoadDataToBuffer(RENDERABLE_SYSTEM()->DeviceRenderableBuffer, RenderableComponentSize, RenderableComponentSize * CurrentImage, RenderableComponentData);
 }
 
 #ifndef NDEBUG
@@ -1116,7 +1108,7 @@ void FVulkanContext::CleanUp()
     {
         DestroyBuffer(TRANSFORM_SYSTEM()->DeviceTransformBuffer);
         DestroyBuffer(CAMERA_SYSTEM()->DeviceCameraBuffer);
-        DestroyBuffer(DeviceRenderableBuffer);
+        DestroyBuffer(RENDERABLE_SYSTEM()->DeviceRenderableBuffer);
     }
 
     CleanUpSwapChain();

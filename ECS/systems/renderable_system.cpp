@@ -2,6 +2,8 @@
 #include "systems/renderable_system.h"
 #include "coordinator.h"
 
+#include "vk_context.h"
+
 #include <cassert>
 
 namespace ECS
@@ -17,10 +19,45 @@ namespace ECS
             return RenderableComponent;
         }
 
+        void FRenderableSystem::Init(int NumberOfSimultaneousSubmits)
+        {
+            this->NumberOfSimultaneousSubmits = NumberOfSimultaneousSubmits;
+            auto& Coordinator = GetCoordinator();
+            auto& Context = GetContext();
+            auto DeviceRenderableComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceRenderableComponent>();
+            auto DeviceRenderableComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>();
+
+            VkDeviceSize RenderableBufferSize = DeviceRenderableComponentsSize * NumberOfSimultaneousSubmits;
+
+            DeviceRenderableBuffer = GetContext().CreateBuffer(RenderableBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Renderable_Buffer");
+
+            for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
+            {
+                Context.ResourceAllocator->LoadDataToBuffer(DeviceRenderableBuffer, DeviceRenderableComponentsSize, DeviceRenderableComponentsSize * i, DeviceRenderableComponentsData);
+            }
+        }
+
+        void FRenderableSystem::Update(int IterationIndex)
+        {
+            if (bNeedsUpdate)
+            {
+                auto& Coordinator = GetCoordinator();
+                auto& Context = GetContext();
+                auto DeviceRenderableComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceRenderableComponent>();
+                auto DeviceRenderableComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>();
+
+                Context.ResourceAllocator->LoadDataToBuffer(DeviceRenderableBuffer, DeviceRenderableComponentsSize, DeviceRenderableComponentsSize * IterationIndex, DeviceRenderableComponentsData);
+            }
+
+            bNeedsUpdate = false;
+        }
+
         void FRenderableSystem::SetRenderableColor(FEntity Entity, float Red, float Green, float Blue)
         {
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
             RenderableComponent.RenderableColor = {Red, Green, Blue};
+
+            bNeedsUpdate = true;
         }
 
         void FRenderableSystem::SetSelected(FEntity Entity)
@@ -37,6 +74,8 @@ namespace ECS
                     RenderableComponent.RenderablePropertyMask &= ~COMPONENTS::RENDERABLE_SELECTED_BIT;
                 }
             }
+
+            bNeedsUpdate = true;
         }
 
         void FRenderableSystem::SetSelectedByIndex(uint32_t Index)
@@ -53,12 +92,16 @@ namespace ECS
                     RenderableComponent.RenderablePropertyMask &= ~COMPONENTS::RENDERABLE_SELECTED_BIT;
                 }
             }
+
+            bNeedsUpdate = true;
         }
 
         void FRenderableSystem::SetNotSelected(FEntity Entity)
         {
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
             RenderableComponent.RenderablePropertyMask &= ~COMPONENTS::RENDERABLE_SELECTED_BIT;
+
+            bNeedsUpdate = true;
         }
     }
 }

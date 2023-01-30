@@ -40,7 +40,6 @@ public:
     void InitManagerResources(int Width, int Height, VkSurfaceKHR Surface);
     void QueuePhysicalDeviceProperties();
     void GetDeviceQueues(VkSurfaceKHR Surface);
-    void CreateUniformBuffers();
     void RecreateSwapChain(int Width, int Height);
     void CleanUpSwapChain();
     void CleanUp();
@@ -163,8 +162,6 @@ public:
 
     uint32_t MipLevels;
     std::shared_ptr<FDescriptorSetManager>DescriptorSetManager = nullptr;
-
-    FBuffer DeviceRenderableBuffer;
 
     bool bFramebufferResized = false;
 

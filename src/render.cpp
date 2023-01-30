@@ -97,6 +97,7 @@ FRender::FRender()
 
     CAMERA_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     TRANSFORM_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
+    RENDERABLE_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
 
     Context.Init(Window, WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -214,6 +215,7 @@ int FRender::Render()
 
     CAMERA_SYSTEM()->Update(CurrentFrame);
     TRANSFORM_SYSTEM()->Update(CurrentFrame);
+    RENDERABLE_SYSTEM()->Update(CurrentFrame);
 
     Context.UpdateUniformBuffer(ImageIndex);
 
@@ -288,7 +290,7 @@ int FRender::AddMesh(const FVector3& Color, const FVector3& Position, MeshType T
             break;
     }
     TRANSFORM_SYSTEM()->SetTransform(Models.back(), Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-    Coordinator.GetSystem<ECS::SYSTEMS::FRenderableSystem>()->SetRenderableColor(Models.back(), Color.X, Color.Y, Color.Z);
+    RENDERABLE_SYSTEM()->SetRenderableColor(Models.back(), Color.X, Color.Y, Color.Z);
     TRANSFORM_SYSTEM()->UpdateDeviceComponentData(Models.back());
 
     return 0;
