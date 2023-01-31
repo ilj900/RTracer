@@ -31,7 +31,15 @@ VKAPI_ATTR VkBool32 VKAPI_CALL FVulkanContext::DebugCallback(
         const VkDebugUtilsMessengerCallbackDataEXT* pCallBackData,
         void* pUserData)
 {
-    std::cerr << "Validation layer: " << pCallBackData->pMessage << '\n' << std::endl;
+    std::unordered_map<uint32_t, std::string> SeverityFlagToString =
+            {
+                    {VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT, "VERBOSE"},
+                    {VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT, "INFO"},
+                    {VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT, "WARNING"},
+                    {VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT, "ERROR"},
+                    {VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT, "SHOULD NEVER BE PRINTED"}
+            };
+    std::cerr << "Validation layer " << SeverityFlagToString[MessageSeverity] << ": " << pCallBackData->pMessage << '\n' << std::endl;
 
     return VK_FALSE;
 }

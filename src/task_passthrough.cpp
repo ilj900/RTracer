@@ -58,7 +58,7 @@ void FPassthroughTask::Init()
 
 void FPassthroughTask::UpdateDescriptorSets()
 {
-    for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
+    for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
         VkDescriptorImageInfo ImageBufferInfo{};
         ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -72,7 +72,7 @@ void FPassthroughTask::RecordCommands()
 {
     CommandBuffers.resize(NumberOfSimultaneousSubmits);
 
-    for (std::size_t i = 0; i < CommandBuffers.size(); ++i)
+    for (int i = 0; i < CommandBuffers.size(); ++i)
     {
         CommandBuffers[i] = Context->CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {

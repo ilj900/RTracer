@@ -119,7 +119,7 @@ public:
     VkFence CreateSignalledFence() const;
     VkFence CreateUnsignalledFence() const;
 
-    static VKAPI_ATTR VkBool32 VKAPI_CALL FVulkanContext::DebugCallback(
+    static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT MessageSeverity,
             VkDebugUtilsMessageTypeFlagsEXT MessageType,
             const VkDebugUtilsMessengerCallbackDataEXT* pCallBackData,
