@@ -24,12 +24,20 @@ public:
     FRender();
     ~FRender();
 
-    int Render();
+    int Init();
     int Cleanup();
+
+    int Render();
+    int Update();
 
     int LoadDataToGPU();
     int LoadScene(const std::string& Path);
     int AddMesh(const FVector3& Color, const FVector3& Position, MeshType Type, const std::string& Path, uint32_t RenderableMask);
+
+    VkInstance Instance = VK_NULL_HANDLE;
+    VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
+    VkDevice LogicalDevice = VK_NULL_HANDLE;
+    VkSurfaceKHR Surface = VK_NULL_HANDLE;
 
     GLFWwindow* Window;
 

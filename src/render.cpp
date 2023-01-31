@@ -54,7 +54,7 @@ FRender::FRender()
     VulkanContextOptions.AddDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
     /// Create Vulkan instance
-    VkInstance Instance = Context.CreateVkInstance("Hello Triangle", {1, 0, 0}, "No Engine", {1, 0, 0}, VK_API_VERSION_1_0, VulkanContextOptions);
+    Instance = Context.CreateVkInstance("Hello Triangle", {1, 0, 0}, "No Engine", {1, 0, 0}, VK_API_VERSION_1_0, VulkanContextOptions);
     Context.SetInstance(Instance);
 
     /// Load Vulkan options
@@ -67,31 +67,20 @@ FRender::FRender()
 #endif
 
     /// Create Surface
-    VkSurfaceKHR Surface = Context.CreateSurface(Window);
+    Surface = Context.CreateSurface(Window);
     Context.SetSurface(Surface);
 
     /// Pick Physical device
-    VkPhysicalDevice PhysicalDevice = Context.PickPhysicalDevice(VulkanContextOptions, Surface);
+    PhysicalDevice = Context.PickPhysicalDevice(VulkanContextOptions, Surface);
     Context.SetPhysicalDevice(PhysicalDevice);
 
     /// Create Logical device
-    VkDevice LogicalDevice = Context.CreateLogicalDevice(PhysicalDevice, VulkanContextOptions);
+    LogicalDevice = Context.CreateLogicalDevice(PhysicalDevice, VulkanContextOptions);
     Context.SetLogicalDevice(LogicalDevice);
 
     Context.GetDeviceQueues(Surface);
 
-    Context.InitManagerResources(WINDOW_WIDTH, WINDOW_HEIGHT, Surface);
-
-    UtilityImageR32 = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
-                                    VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                    VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_UtilityImageR32");
-
-    UtilityImageR32->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-
-
-    UtilityImageR8G8B8A8_SRGB = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                                              VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                              VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_UtilityImageR8G8B8A8_SRGB");
+    Context.InitManagerResources();
 
     LoadDataToGPU();
 
@@ -99,27 +88,53 @@ FRender::FRender()
     TRANSFORM_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     RENDERABLE_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
 
-    Swapchain = std::make_shared<FSwapchain>(WINDOW_WIDTH, WINDOW_HEIGHT, PhysicalDevice, LogicalDevice, Surface, Context.GetGraphicsQueueIndex(), Context.GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
+    ImGuiFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    {
+        ImageAvailableSemaphores.push_back(Context.CreateSemaphore());
+        ImagesInFlight.push_back(Context.CreateSignalledFence());
+    }
 
     Context.Init(WINDOW_WIDTH, WINDOW_HEIGHT);
 
+    Init();
+}
+
+int FRender::Init()
+{
+    auto& Context = GetContext();
+
+    Swapchain = std::make_shared<FSwapchain>(WINDOW_WIDTH, WINDOW_HEIGHT, PhysicalDevice, LogicalDevice, Surface, Context.GetGraphicsQueueIndex(), Context.GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
+
+    UtilityImageR32 = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
+                                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                            VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_UtilityImageR32");
+
+    UtilityImageR32->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+
+    UtilityImageR8G8B8A8_SRGB = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+                                                      VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                      VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_UtilityImageR8G8B8A8_SRGB");
+
     auto ColorImage = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, Context.MSAASamples, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
-                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                    VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_ColorImage");
+                                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                            VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_ColorImage");
 
 
     auto NormalsImage = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, Context.MSAASamples, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                                      VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                      VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_NormalsImage");
+                                              VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                              VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_NormalsImage");
 
 
     auto RenderableIndexImage = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, Context.MSAASamples, VK_FORMAT_R32_UINT, VK_IMAGE_TILING_OPTIMAL,
-                                              VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                              VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_RenderableIndexImage");
+                                                      VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                      VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_RenderableIndexImage");
 
     auto ResolvedColorImage = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
-                                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                            VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_ResolvedColorImage");
+                                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                    VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_ResolvedColorImage");
 
     RenderTask = std::make_shared<FRenderTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     RenderTask->RegisterOutput(0, ColorImage);
@@ -148,13 +163,7 @@ FRender::FRender()
     }
     ImguiTask->Init();
 
-    ImGuiFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
-    {
-        ImageAvailableSemaphores.push_back(Context.CreateSemaphore());
-        ImagesInFlight.push_back(Context.CreateSignalledFence());
-    }
+    return 0;
 }
 
 int FRender::Cleanup()
@@ -238,9 +247,27 @@ int FRender::Render()
 
     Result = Context.Present(Swapchain->GetSwapchain(), ImGuiFinishedSemaphores[CurrentFrame], CurrentFrame);
 
+    if (Result == VK_ERROR_OUT_OF_DATE_KHR || Result == VK_SUBOPTIMAL_KHR)
+    {
+        bShouldRecreateSwapchain = true;
+        return 1;
+    }
+
     RenderFrameIndex++;
 
     glfwPollEvents();
+
+    return 0;
+}
+
+int FRender::Update()
+{
+    if (bShouldRecreateSwapchain)
+    {
+        Cleanup();
+        Init();
+        bShouldRecreateSwapchain = false;
+    }
 
     return 0;
 }

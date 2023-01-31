@@ -37,7 +37,7 @@ public:
     void SetDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT DebugUtilsMessengerEXT);
     void DestroyDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT& DebugUtilsMessenger) const;
 #endif
-    void InitManagerResources(int Width, int Height, VkSurfaceKHR SurfaceIn);
+    void InitManagerResources();
     void QueuePhysicalDeviceProperties();
     void GetDeviceQueues(VkSurfaceKHR Surface);
     void CleanUp();

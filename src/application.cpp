@@ -95,6 +95,7 @@ int FApplication::Run()
         StartTime = CurrentTime;
 
         Controller->Update(Time);
+        i = Render->Update();
         i = Render->Render();
     }
 

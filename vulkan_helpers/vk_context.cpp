@@ -46,14 +46,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL FVulkanContext::DebugCallback(
 
 void FVulkanContext::Init(int Width, int Height)
 {
-    try
-    {
-        TextureImage = LoadImageFromFile(TexturePath, "V_TextureImage");
-    }
-    catch (std::runtime_error &Error) {
-        std::cout << Error.what() << std::endl;
-        throw;
-    }
+    TextureImage = LoadImageFromFile(TexturePath, "V_TextureImage");
 }
 
 #ifndef NDEBUG
@@ -159,7 +152,7 @@ VkPhysicalDevice FVulkanContext::GetPhysicalDevice() const
     return PhysicalDevice;
 }
 
-void FVulkanContext::InitManagerResources(int Width, int Height, VkSurfaceKHR SurfaceIn)
+void FVulkanContext::InitManagerResources()
 {
     ResourceAllocator = std::make_shared<FResourceAllocator>(PhysicalDevice, LogicalDevice, this);
 
