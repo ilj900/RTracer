@@ -1109,9 +1109,9 @@ void FVulkanContext::CleanUp()
     TextureImage = nullptr;
 
     DescriptorSetManager = nullptr;
-
     CommandBufferManager = nullptr;
     ResourceAllocator = nullptr;
+
     vkDestroyDevice(LogicalDevice, nullptr);
 
     /// TODO
