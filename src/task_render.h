@@ -9,7 +9,7 @@ class FVulkanContext;
 class FRenderTask : public FExecutableTask
 {
 public:
-    FRenderTask(FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+    FRenderTask(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
     ~FRenderTask() override;
 
     void Init() override;

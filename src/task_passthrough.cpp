@@ -6,8 +6,8 @@
 
 #include "vk_debug.h"
 
-FPassthroughTask::FPassthroughTask(FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
-        FExecutableTask(Context, NumberOfSimultaneousSubmits, LogicalDevice)
+FPassthroughTask::FPassthroughTask(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+        FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
     Name = "Passthrough pipeline";
 }
@@ -31,10 +31,10 @@ void FPassthroughTask::Init()
     auto VertexShader = Context->CreateShaderFromFile("../shaders/passthrough_vert.spv");
     auto FragmentShader = Context->CreateShaderFromFile("../shaders/passthrough_frag.spv");
 
-    GraphicsPipelineOptions.RegisterColorAttachment(0, Context->Swapchain->Images[0], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    GraphicsPipelineOptions.RegisterColorAttachment(0, Outputs[0], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
     GraphicsPipelineOptions.SetPipelineLayout(DescriptorSetManager->GetPipelineLayout(Name));
 
-    Pipeline = Context->CreateGraphicsPipeline(VertexShader, FragmentShader, Context->Swapchain->GetWidth(), Context->Swapchain->GetHeight(), GraphicsPipelineOptions);
+    Pipeline = Context->CreateGraphicsPipeline(VertexShader, FragmentShader, Width, Height, GraphicsPipelineOptions);
     RenderPass = GraphicsPipelineOptions.RenderPass;
 
     vkDestroyShaderModule(LogicalDevice, VertexShader, nullptr);
@@ -43,7 +43,7 @@ void FPassthroughTask::Init()
     PassthroughFramebuffers.resize(NumberOfSimultaneousSubmits);
     for (std::size_t i = 0; i < PassthroughFramebuffers.size(); ++i)
     {
-        PassthroughFramebuffers[i] = Context->CreateFramebuffer({Context->Swapchain->Images[i]}, RenderPass, "V_Passthrough_fb_" + std::to_string(i));
+        PassthroughFramebuffers[i] = Context->CreateFramebuffer(Width, Height, {Outputs[i]}, RenderPass, "V_Passthrough_fb_" + std::to_string(i));
     }
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
@@ -62,7 +62,7 @@ void FPassthroughTask::UpdateDescriptorSets()
     {
         VkDescriptorImageInfo ImageBufferInfo{};
         ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        ImageBufferInfo.imageView = Inputs[0]->View;
+        ImageBufferInfo.imageView = Inputs[i]->View;
         ImageBufferInfo.sampler = Sampler;
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX, i, ImageBufferInfo);
     }
@@ -98,7 +98,8 @@ void FPassthroughTask::RecordCommands()
             RenderPassInfo.renderPass = RenderPass;
             RenderPassInfo.framebuffer = PassthroughFramebuffers[i];
             RenderPassInfo.renderArea.offset = {0, 0};
-            RenderPassInfo.renderArea.extent = Context->Swapchain->GetExtent2D();
+            /// TODO: find a better way to pass extent
+            RenderPassInfo.renderArea.extent = {uint32_t(Width), uint32_t(Height)};
 
             std::vector<VkClearValue> ClearValues{1};
             ClearValues[0].color = {0.f, 0.f, 1.f, 1.f};

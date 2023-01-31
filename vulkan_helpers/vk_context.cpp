@@ -167,7 +167,6 @@ void FVulkanContext::InitManagerResources(int Width, int Height, VkSurfaceKHR Su
 
     CommandBufferManager = std::make_shared<FCommandBufferManager>(LogicalDevice, this, GetQueue(VK_QUEUE_GRAPHICS_BIT),
                                                                    GetQueueIndex(VK_QUEUE_GRAPHICS_BIT));
-    Swapchain = std::make_shared<FSwapchain>(*this, Width, Height, PhysicalDevice, LogicalDevice, SurfaceIn, GetGraphicsQueueIndex(), GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
 }
 
 void FVulkanContext::QueuePhysicalDeviceProperties()
@@ -623,7 +622,7 @@ ImagePtr FVulkanContext::Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspec
     return Image;
 }
 
-VkFramebuffer FVulkanContext::CreateFramebuffer(std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name) const
+VkFramebuffer FVulkanContext::CreateFramebuffer(int Width, int Height, std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name) const
 {
     std::vector<VkImageView> Attachments;
 
@@ -637,8 +636,8 @@ VkFramebuffer FVulkanContext::CreateFramebuffer(std::vector<ImagePtr> Images, Vk
     FramebufferCreateInfo.renderPass = RenderPass;
     FramebufferCreateInfo.attachmentCount = static_cast<uint32_t>(Attachments.size());
     FramebufferCreateInfo.pAttachments = Attachments.data();
-    FramebufferCreateInfo.width = Swapchain->GetWidth();
-    FramebufferCreateInfo.height = Swapchain->GetHeight();
+    FramebufferCreateInfo.width = Width;
+    FramebufferCreateInfo.height = Height;
     FramebufferCreateInfo.layers = 1;
 
     VkFramebuffer Framebuffer = nullptr;
@@ -1028,7 +1027,7 @@ VkSampler FVulkanContext::CreateTextureSampler(uint32_t MipLevel)
     return Sampler;
 }
 
-void FVulkanContext::Present(VkSemaphore WaitSemaphore, uint32_t ImageIndex)
+VkResult FVulkanContext::Present(VkSwapchainKHR Swapchain, VkSemaphore WaitSemaphore, uint32_t ImageIndex)
 {
     VkSemaphore WaitSemaphores[] = {WaitSemaphore};
 
@@ -1036,7 +1035,7 @@ void FVulkanContext::Present(VkSemaphore WaitSemaphore, uint32_t ImageIndex)
     PresentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     PresentInfo.waitSemaphoreCount = 1;
     PresentInfo.pWaitSemaphores = WaitSemaphores;
-    VkSwapchainKHR SwapChains[] = {Swapchain->GetSwapchain()};
+    VkSwapchainKHR SwapChains[] = {Swapchain};
     PresentInfo.swapchainCount = 1;
     PresentInfo.pSwapchains = SwapChains;
     PresentInfo.pImageIndices = &ImageIndex;
@@ -1044,47 +1043,17 @@ void FVulkanContext::Present(VkSemaphore WaitSemaphore, uint32_t ImageIndex)
 
     VkResult Result = vkQueuePresentKHR(PresentQueue.Queue, &PresentInfo);
 
-    if (Result == VK_ERROR_OUT_OF_DATE_KHR || Result == VK_SUBOPTIMAL_KHR || bFramebufferResized)
-    {
-        bFramebufferResized = false;
-        RecreateSwapChain(Swapchain->GetWidth(), Swapchain->GetHeight());
-        return;
-    }
-    else if (Result != VK_SUCCESS)
+    if (Result != VK_ERROR_OUT_OF_DATE_KHR && Result != VK_SUBOPTIMAL_KHR && Result != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to present swap chain image!");
     }
+
+    return Result;
 }
 
 void FVulkanContext::WaitIdle() const
 {
     vkDeviceWaitIdle(LogicalDevice);
-}
-
-void FVulkanContext::RecreateSwapChain(uint32_t Width, uint32_t Height)
-{
-    vkDeviceWaitIdle(LogicalDevice);
-
-    CleanUpSwapChain();
-
-    Swapchain = std::make_shared<FSwapchain>(*this, Width, Height, PhysicalDevice, LogicalDevice, Surface, GetGraphicsQueueIndex(), GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
-
-//    RenderTask = std::make_shared<FRenderTask>(this, int(Swapchain->Size()), LogicalDevice);
-//    RenderTask->Init();
-//    RenderTask->UpdateDescriptorSets();
-//    RenderTask->RecordCommands();
-//
-//    PassthroughTask = std::make_shared<FPassthroughTask>(this, int(Swapchain->Size()), LogicalDevice);
-//    PassthroughTask->Init();
-//    PassthroughTask->UpdateDescriptorSets();
-//    PassthroughTask->RecordCommands();
-//
-//    CurrentFrame = 0;
-}
-
-void FVulkanContext::CleanUpSwapChain()
-{
-    Swapchain = nullptr;
 }
 
 #ifndef NDEBUG
@@ -1101,7 +1070,6 @@ void FVulkanContext::DestroyDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT& Deb
 void FVulkanContext::CleanUp()
 {
     /// Free all device buffers
-    CleanUpSwapChain();
     DestroyBuffer(TRANSFORM_SYSTEM()->DeviceTransformBuffer);
     DestroyBuffer(CAMERA_SYSTEM()->DeviceCameraBuffer);
     DestroyBuffer(RENDERABLE_SYSTEM()->DeviceRenderableBuffer);
@@ -1114,8 +1082,9 @@ void FVulkanContext::CleanUp()
 
     vkDestroyDevice(LogicalDevice, nullptr);
 
-    /// TODO
+#ifndef NDEBUG
     DestroyDebugUtilsMessengerEXT(DebugMessenger);
+#endif
 
     vkDestroySurfaceKHR(Instance, Surface, nullptr);
     vkDestroyInstance(Instance, nullptr);

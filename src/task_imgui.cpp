@@ -10,8 +10,8 @@
 
 #include <iostream>
 
-FImguiTask::FImguiTask(FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
-        FExecutableTask(Context, NumberOfSimultaneousSubmits, LogicalDevice)
+FImguiTask::FImguiTask(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+        FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
     Name = "Imgui pipeline";
 }
@@ -30,7 +30,7 @@ void FImguiTask::Init()
     auto& Context = GetContext();
     FGraphicsPipelineOptions ImguiPipelineOptions;
 
-    ImguiPipelineOptions.RegisterColorAttachment(0, Context.Swapchain->Images[0], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
+    ImguiPipelineOptions.RegisterColorAttachment(0, Outputs[0], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
     RenderPass = Context.CreateRenderpass(LogicalDevice, ImguiPipelineOptions);
 
     V::SetName(LogicalDevice, RenderPass, "V_ImGuiRenderPass");
@@ -39,7 +39,7 @@ void FImguiTask::Init()
 
     for(int i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        ImguiFramebuffers[i] = Context.CreateFramebuffer({Context.Swapchain->Images[i]}, RenderPass, "V_Imgui_fb_" + std::to_string(i));
+        ImguiFramebuffers[i] = Context.CreateFramebuffer(Width, Height, {Outputs[i]}, RenderPass, "V_Imgui_fb_" + std::to_string(i));
     }
 
     std::map<VkDescriptorType, uint32_t> PoolSizes =
@@ -149,7 +149,8 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence
             RenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
             RenderPassBeginInfo.renderPass = RenderPass;
             RenderPassBeginInfo.framebuffer = ImguiFramebuffers[IterationIndex % NumberOfSimultaneousSubmits];
-            RenderPassBeginInfo.renderArea.extent = Context.Swapchain->GetExtent2D();
+            /// TODO: find a better way to pass extent
+            RenderPassBeginInfo.renderArea.extent = {uint32_t(Width), uint32_t(Height)};
             RenderPassBeginInfo.clearValueCount = 0;
             vkCmdBeginRenderPass(CommandBuffer, &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         }

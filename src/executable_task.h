@@ -8,7 +8,7 @@ class FVulkanContext;
 class FExecutableTask
 {
 public:
-    FExecutableTask(FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+    FExecutableTask(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
     virtual ~FExecutableTask();
 
     virtual void Init() = 0;
@@ -30,6 +30,9 @@ public:
     std::vector<VkSemaphore> SignalSemaphores;
 
     std::string Name;
+
+    int Width = 0;
+    int Height = 0;
 
     FVulkanContext* Context = nullptr;
     int NumberOfSimultaneousSubmits;

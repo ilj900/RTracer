@@ -40,8 +40,6 @@ public:
     void InitManagerResources(int Width, int Height, VkSurfaceKHR SurfaceIn);
     void QueuePhysicalDeviceProperties();
     void GetDeviceQueues(VkSurfaceKHR Surface);
-    void RecreateSwapChain(uint32_t Width, uint32_t Height);
-    void CleanUpSwapChain();
     void CleanUp();
 
     void WaitIdle() const;
@@ -70,7 +68,7 @@ public:
     VkDevice GetLogicalDevice() const;
     std::vector<VkDeviceQueueCreateInfo> GetDeviceQueueCreateInfo(VkPhysicalDevice PhysicalDevice, std::set<uint32_t> QueueIndices);
 
-    void Present(VkSemaphore WaitSemaphore, uint32_t ImageIndex);
+    VkResult Present(VkSwapchainKHR Swapchain, VkSemaphore WaitSemaphore, uint32_t ImageIndex);
 
     VkQueue GetGraphicsQueue();
     uint32_t GetGraphicsQueueIndex();
@@ -107,7 +105,7 @@ public:
 
     VkSampler CreateTextureSampler(uint32_t MipLevel);
 
-    VkFramebuffer CreateFramebuffer(std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name) const;
+    VkFramebuffer CreateFramebuffer(int Width, int Height, std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name) const;
 
     VkDescriptorPool CreateDescriptorPool(const std::map<VkDescriptorType, uint32_t>& DescriptorsMap, VkDevice LogicalDevice, const std::string& debug_name);
 
@@ -149,9 +147,6 @@ public:
     std::map <VkQueueFlagBits, IndexQueue> Queues = {{VK_QUEUE_GRAPHICS_BIT, {UINT32_MAX, VK_NULL_HANDLE}},
                                                   {VK_QUEUE_COMPUTE_BIT,  {UINT32_MAX, VK_NULL_HANDLE}},};
     IndexQueue PresentQueue;
-
-    /// SwapChain
-    std::shared_ptr<FSwapchain> Swapchain = nullptr;
 
 #ifndef NDEBUG
     VkDebugUtilsMessengerEXT DebugMessenger = VK_NULL_HANDLE;

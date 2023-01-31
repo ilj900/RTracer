@@ -2,8 +2,9 @@
 #include "vk_context.h"
 #include "vk_debug.h"
 
-FExecutableTask::FExecutableTask(FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
-        Context(Context), NumberOfSimultaneousSubmits(NumberOfSimultaneousSubmits), LogicalDevice(LogicalDevice)
+FExecutableTask::FExecutableTask(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+        Width(WidthIn), Height(HeightIn), Context(Context),
+        NumberOfSimultaneousSubmits(NumberOfSimultaneousSubmits), LogicalDevice(LogicalDevice)
 {
 }
 

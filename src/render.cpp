@@ -99,6 +99,8 @@ FRender::FRender()
     TRANSFORM_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     RENDERABLE_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
 
+    Swapchain = std::make_shared<FSwapchain>(WINDOW_WIDTH, WINDOW_HEIGHT, PhysicalDevice, LogicalDevice, Surface, Context.GetGraphicsQueueIndex(), Context.GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
+
     Context.Init(WINDOW_WIDTH, WINDOW_HEIGHT);
 
     auto ColorImage = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, Context.MSAASamples, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
@@ -119,7 +121,7 @@ FRender::FRender()
                                             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                             VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_ResolvedColorImage");
 
-    RenderTask = std::make_shared<FRenderTask>(&Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    RenderTask = std::make_shared<FRenderTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     RenderTask->RegisterOutput(0, ColorImage);
     RenderTask->RegisterOutput(1, NormalsImage);
     RenderTask->RegisterOutput(2, RenderableIndexImage);
@@ -129,15 +131,23 @@ FRender::FRender()
     RenderTask->UpdateDescriptorSets();
     RenderTask->RecordCommands();
 
-    PassthroughTask = std::make_shared<FPassthroughTask>(&Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    PassthroughTask = std::make_shared<FPassthroughTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     PassthroughTask->RegisterInput(0, RenderTask->GetOutput(3));
     PassthroughTask->RegisterOutput(0, RenderTask->GetOutput(3));
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    {
+        PassthroughTask->RegisterOutput(i + 1, Swapchain->Images[i]);
+    }
     PassthroughTask->Init();
     PassthroughTask->UpdateDescriptorSets();
     PassthroughTask->RecordCommands();
 
-    ImguiTask = std::make_shared<FImguiTask>(&Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    ImguiTask = std::make_shared<FImguiTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     ImguiTask->RegisterInput(0, PassthroughTask->GetOutput(0));
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    {
+        ImguiTask->RegisterOutput(i, Swapchain->Images[i]);
+    }
     ImguiTask->Init();
 
     ImGuiFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -161,6 +171,16 @@ int FRender::Cleanup()
     ImguiTask->Cleanup();
     ImguiTask = nullptr;
 
+    Swapchain = nullptr;
+
+    return 0;
+}
+
+FRender::~FRender()
+{
+    GetContext().WaitIdle();
+    Cleanup();
+
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
         vkDestroySemaphore(GetContext().LogicalDevice, ImageAvailableSemaphores[i], nullptr);
@@ -172,13 +192,6 @@ int FRender::Cleanup()
     ImageAvailableSemaphores.clear();
     ImagesInFlight.clear();
 
-    return 0;
-}
-
-FRender::~FRender()
-{
-    GetContext().WaitIdle();
-    Cleanup();
     GetContext().CleanUp();
 
     glfwDestroyWindow(Window);
@@ -200,12 +213,12 @@ int FRender::Render()
 
     /// Acquire next image from swapchain, also it's index and provide semaphore to signal when image is ready to be used
     uint32_t ImageIndex = 0;
-    VkResult Result = Context.Swapchain->GetNextImage(nullptr, ImageAvailableSemaphores[CurrentFrame], ImageIndex);
+    VkResult Result = Swapchain->GetNextImage(nullptr, ImageAvailableSemaphores[CurrentFrame], ImageIndex);
 
     /// Run some checks
     if (Result == VK_ERROR_OUT_OF_DATE_KHR)
     {
-        Context.RecreateSwapChain(WINDOW_WIDTH, WINDOW_HEIGHT);
+        bShouldRecreateSwapchain = true;
         return 1;
     }
     if (Result != VK_SUCCESS && Result != VK_SUBOPTIMAL_KHR)
@@ -225,7 +238,7 @@ int FRender::Render()
 
     ImGuiFinishedSemaphores[CurrentFrame] = ImguiFinishedSemaphore;
 
-    Context.Present(ImGuiFinishedSemaphores[CurrentFrame], CurrentFrame);
+    Result = Context.Present(Swapchain->GetSwapchain(), ImGuiFinishedSemaphores[CurrentFrame], CurrentFrame);
 
     RenderFrameIndex++;
 

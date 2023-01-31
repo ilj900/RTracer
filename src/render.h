@@ -3,6 +3,7 @@
 #include "GLFW/glfw3.h"
 
 #include "image.h"
+#include "swapchain.h"
 
 #include "maths.h"
 
@@ -31,6 +32,9 @@ public:
     int AddMesh(const FVector3& Color, const FVector3& Position, MeshType Type, const std::string& Path, uint32_t RenderableMask);
 
     GLFWwindow* Window;
+
+    std::shared_ptr<FSwapchain> Swapchain = nullptr;
+    bool bShouldRecreateSwapchain = false;
 
     const uint32_t WINDOW_WIDTH = 1920;
     const uint32_t WINDOW_HEIGHT = 1080;

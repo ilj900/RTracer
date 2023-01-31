@@ -6,7 +6,7 @@
 
 #include <stdexcept>
 
-FSwapchain::FSwapchain(FVulkanContext &Context, uint32_t Width, uint32_t Height, VkPhysicalDevice PhysicalDevice, VkDevice LogicalDevice,
+FSwapchain::FSwapchain(uint32_t Width, uint32_t Height, VkPhysicalDevice PhysicalDevice, VkDevice LogicalDevice,
                        VkSurfaceKHR Surface, uint32_t GraphicsQueueFamilyIndex, uint32_t PresentQueueFamilyIndex,
                        VkFormat Format, VkColorSpaceKHR ColorSpace, VkPresentModeKHR PresentMode) :
                        LogicalDevice(LogicalDevice)
@@ -126,7 +126,7 @@ FSwapchain::FSwapchain(FVulkanContext &Context, uint32_t Width, uint32_t Height,
 
     for (uint32_t i = 0; i < SwapchainImages.size(); ++i)
     {
-        Images[i] = Context.Wrap(SwapchainImages[i], SurfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_SwapchainImage");
+        Images[i] = GetContext().Wrap(SwapchainImages[i], SurfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_SwapchainImage");
     }
 }
 

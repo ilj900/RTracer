@@ -13,8 +13,8 @@
 #include "vk_context.h"
 #include "vk_debug.h"
 
-FRenderTask::FRenderTask(FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
-        FExecutableTask(Context, NumberOfSimultaneousSubmits, LogicalDevice)
+FRenderTask::FRenderTask(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+        FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
     Name = "Render pipeline";
 }
@@ -39,9 +39,6 @@ void FRenderTask::Init()
                                               {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
 
     DescriptorSetManager->CreateDescriptorSetLayout(Name);
-
-    uint32_t Width = Context->Swapchain->GetWidth();
-    uint32_t Height = Context->Swapchain->GetHeight();
 
     /// Create Image and ImageView for Depth
     VkFormat DepthFormat = Context->FindDepthFormat();
@@ -80,7 +77,7 @@ void FRenderTask::Init()
     RenderFramebuffers.resize(NumberOfSimultaneousSubmits);
 
     for (std::size_t i = 0; i < NumberOfSimultaneousSubmits; ++i) {
-        RenderFramebuffers[i] = Context->CreateFramebuffer({Outputs[0], Outputs[1], Outputs[2], DepthImage, Outputs[3]}, GraphicsPipelineOptions.RenderPass, "V_Render_fb_" + std::to_string(i));
+        RenderFramebuffers[i] = Context->CreateFramebuffer(Width, Height, {Outputs[0], Outputs[1], Outputs[2], DepthImage, Outputs[3]}, GraphicsPipelineOptions.RenderPass, "V_Render_fb_" + std::to_string(i));
     }
 
     auto ModelsCount = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>()->Size();
@@ -153,7 +150,8 @@ void FRenderTask::RecordCommands()
             RenderPassInfo.renderPass = GraphicsPipelineOptions.RenderPass;
             RenderPassInfo.framebuffer = RenderFramebuffers[i];
             RenderPassInfo.renderArea.offset = {0, 0};
-            RenderPassInfo.renderArea.extent = Context->Swapchain->GetExtent2D();
+            /// TODO: find a better way to pass extent
+            RenderPassInfo.renderArea.extent = {uint32_t(Width), uint32_t(Height)};
 
             std::vector<VkClearValue> ClearValues{7};
             ClearValues[0].color = {0.f, 0.f, 0.f, 1.f};
