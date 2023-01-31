@@ -423,22 +423,22 @@ uint32_t FVulkanContext::GetPresentIndex() const
     return PresentQueue.QueueIndex;
 }
 
-FBuffer FVulkanContext::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, const std::string& DebugName)
+FBuffer FVulkanContext::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, const std::string& DebugName) const
 {
     return ResourceAllocator->CreateBuffer(Size, Usage, Properties, DebugName);
 }
 
-FMemoryPtr FVulkanContext::PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data)
+FMemoryPtr FVulkanContext::PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data) const
 {
     return ResourceAllocator->PushDataToBuffer(Buffer, Size, Data);
 }
 
-void FVulkanContext::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset)
+void FVulkanContext::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset) const
 {
     return ResourceAllocator->CopyBuffer(SrcBuffer, DstBuffer, Size, SourceOffset, DestinationOffset);
 }
 
-void FVulkanContext::DestroyBuffer(FBuffer& Buffer)
+void FVulkanContext::DestroyBuffer(FBuffer& Buffer) const
 {
     ResourceAllocator->DestroyBuffer(Buffer);
 }
@@ -485,7 +485,7 @@ void FVulkanContext::SetLogicalDevice(VkDevice LogicalDevice)
     this->LogicalDevice = LogicalDevice;
 }
 
-VkDevice FVulkanContext::GetLogicalDevice()
+VkDevice FVulkanContext::GetLogicalDevice() const
 {
     return LogicalDevice;
 }
@@ -615,7 +615,7 @@ ImagePtr FVulkanContext::Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspec
     return Image;
 }
 
-VkFramebuffer FVulkanContext::CreateFramebuffer(std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name)
+VkFramebuffer FVulkanContext::CreateFramebuffer(std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name) const
 {
     std::vector<VkImageView> Attachments;
 
@@ -907,7 +907,7 @@ VkPipeline FVulkanContext::CreateGraphicsPipeline(VkShaderModule VertexShader, V
     return Pipeline;
 }
 
-VkSemaphore FVulkanContext::CreateSemaphore()
+VkSemaphore FVulkanContext::CreateSemaphore() const
 {
     VkSemaphoreCreateInfo SemaphoreInfo{};
     SemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -922,7 +922,7 @@ VkSemaphore FVulkanContext::CreateSemaphore()
     return Semaphore;
 }
 
-VkFence FVulkanContext::CreateSignalledFence()
+VkFence FVulkanContext::CreateSignalledFence() const
 {
     VkFenceCreateInfo FenceInfo{};
     FenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -938,7 +938,7 @@ VkFence FVulkanContext::CreateSignalledFence()
     return Fence;
 }
 
-VkFence FVulkanContext::CreateUnsignalledFence()
+VkFence FVulkanContext::CreateUnsignalledFence() const
 {
     VkFenceCreateInfo FenceInfo{};
     FenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -953,7 +953,7 @@ VkFence FVulkanContext::CreateUnsignalledFence()
     return Fence;
 }
 
-VkFormat FVulkanContext::FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features)
+VkFormat FVulkanContext::FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features) const
 {
     for (VkFormat Format : Candidates)
     {

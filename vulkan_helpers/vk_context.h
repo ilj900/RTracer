@@ -46,9 +46,9 @@ public:
 
     void WaitIdle() const;
 
-    VkFormat FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features);
+    VkFormat FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features) const;
     VkFormat FindDepthFormat();
-    bool HasStensilComponent(VkFormat Format);
+    static bool HasStensilComponent(VkFormat Format);
 
     bool CheckInstanceLayersSupport(const std::vector<const char*>& Layers);
     void SetInstance(VkInstance Instance);
@@ -67,7 +67,7 @@ public:
     bool CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDevice, uint32_t& QueueFamilyIndex, VkSurfaceKHR Surface);
     VkDevice CreateLogicalDevice(VkPhysicalDevice PhysicalDevice, FVulkanContextOptions& VulkanContextOptions);
     void SetLogicalDevice(VkDevice LogicalDevice);
-    VkDevice GetLogicalDevice();
+    VkDevice GetLogicalDevice() const;
     std::vector<VkDeviceQueueCreateInfo> GetDeviceQueueCreateInfo(VkPhysicalDevice PhysicalDevice, std::set<uint32_t> QueueIndices);
 
     void Present(VkSemaphore WaitSemaphore, uint32_t ImageIndex);
@@ -91,10 +91,10 @@ public:
     void SetWindow(GLFWwindow* Window);
     GLFWwindow* GetWindow() const;
 
-    FBuffer CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, const std::string& DebugName = "");
-    FMemoryPtr PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data);
-    void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset);
-    void DestroyBuffer(FBuffer& Buffer);
+    FBuffer CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, const std::string& DebugName = "") const;
+    FMemoryPtr PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data) const;
+    void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset) const;
+    void DestroyBuffer(FBuffer& Buffer) const;
 
     ImagePtr CreateImage2D(uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format,
                                VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties,
@@ -107,7 +107,7 @@ public:
 
     VkSampler CreateTextureSampler(uint32_t MipLevel);
 
-    VkFramebuffer CreateFramebuffer(std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name);
+    VkFramebuffer CreateFramebuffer(std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name) const;
 
     VkDescriptorPool CreateDescriptorPool(const std::map<VkDescriptorType, uint32_t>& DescriptorsMap, VkDevice LogicalDevice, const std::string& debug_name);
 
@@ -115,9 +115,9 @@ public:
     VkRenderPass CreateRenderpass(VkDevice LogicalDevice, FGraphicsPipelineOptions& GraphicsPipelineOptions);
     VkPipeline CreateGraphicsPipeline(VkShaderModule VertexShader, VkShaderModule FragmentShader, std::uint32_t Width, std::uint32_t Height, FGraphicsPipelineOptions& GraphicsPipelineOptions);
 
-    VkSemaphore CreateSemaphore();
-    VkFence CreateSignalledFence();
-    VkFence CreateUnsignalledFence();
+    VkSemaphore CreateSemaphore() const;
+    VkFence CreateSignalledFence() const;
+    VkFence CreateUnsignalledFence() const;
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL FVulkanContext::DebugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT MessageSeverity,
