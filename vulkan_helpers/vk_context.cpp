@@ -36,7 +36,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL FVulkanContext::DebugCallback(
     return VK_FALSE;
 }
 
-void FVulkanContext::Init(GLFWwindow* Window, int Width, int Height)
+void FVulkanContext::Init(int Width, int Height)
 {
     try
     {
@@ -65,23 +65,23 @@ void FVulkanContext::SetDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT DebugUti
 }
 #endif
 
-VkSurfaceKHR FVulkanContext::CreateSurface(GLFWwindow* Window) const
+VkSurfaceKHR FVulkanContext::CreateSurface(GLFWwindow* WindowIn) const
 {
-    VkSurfaceKHR Surface;
-    VkResult Result = glfwCreateWindowSurface(Instance, Window, nullptr, &Surface);
+    VkSurfaceKHR SurfaceIn;
+    VkResult Result = glfwCreateWindowSurface(Instance, WindowIn, nullptr, &SurfaceIn);
     assert((Result == VK_SUCCESS) && "Failed to create window surface!");
-    return Surface;
+    return SurfaceIn;
 }
 
-void FVulkanContext::DestroySurface(VkSurfaceKHR* Surface) const
+void FVulkanContext::DestroySurface(VkSurfaceKHR* SurfaceIn) const
 {
-    vkDestroySurfaceKHR(Instance, *Surface, nullptr);
-    *Surface = VK_NULL_HANDLE;
+    vkDestroySurfaceKHR(Instance, *SurfaceIn, nullptr);
+    *SurfaceIn = VK_NULL_HANDLE;
 }
 
-void FVulkanContext::SetSurface(VkSurfaceKHR Surface)
+void FVulkanContext::SetSurface(VkSurfaceKHR SurfaceIn)
 {
-    this->Surface = Surface;
+    this->Surface = SurfaceIn;
 }
 
 VkSurfaceKHR FVulkanContext::GetSurface() const
@@ -89,9 +89,9 @@ VkSurfaceKHR FVulkanContext::GetSurface() const
     return Surface;
 }
 
-void FVulkanContext::SetWindow(GLFWwindow* Window)
+void FVulkanContext::SetWindow(GLFWwindow* WindowIn)
 {
-    this->Window = Window;
+    this->Window = WindowIn;
 }
 
 GLFWwindow* FVulkanContext::GetWindow() const
@@ -99,10 +99,10 @@ GLFWwindow* FVulkanContext::GetWindow() const
     return Window;
 }
 
-std::vector<VkPhysicalDevice> FVulkanContext::EnumerateAllPhysicalDevices(VkInstance Instance)
+std::vector<VkPhysicalDevice> FVulkanContext::EnumerateAllPhysicalDevices(VkInstance InstanceIn)
 {
     uint32_t DeviceCount = 0;
-    vkEnumeratePhysicalDevices(Instance, &DeviceCount, nullptr);
+    vkEnumeratePhysicalDevices(InstanceIn, &DeviceCount, nullptr);
 
     if (DeviceCount == 0)
     {
@@ -110,12 +110,12 @@ std::vector<VkPhysicalDevice> FVulkanContext::EnumerateAllPhysicalDevices(VkInst
     }
 
     std::vector<VkPhysicalDevice> Devices(DeviceCount);
-    vkEnumeratePhysicalDevices(Instance, &DeviceCount, Devices.data());
+    vkEnumeratePhysicalDevices(InstanceIn, &DeviceCount, Devices.data());
 
     return Devices;
 }
 
-VkPhysicalDevice FVulkanContext::PickPhysicalDevice(FVulkanContextOptions& VulkanContextOptions, VkSurfaceKHR Surface)
+VkPhysicalDevice FVulkanContext::PickPhysicalDevice(FVulkanContextOptions& VulkanContextOptions, VkSurfaceKHR SurfaceIn)
 {
     auto Devices = EnumerateAllPhysicalDevices(Instance);
 
@@ -125,7 +125,7 @@ VkPhysicalDevice FVulkanContext::PickPhysicalDevice(FVulkanContextOptions& Vulka
 
     for (const auto& Device : Devices)
     {
-        if (CheckDeviceExtensionsSupport(Device, RequiredExtensions) && (CheckDeviceQueueSupport(Device, Surface)))
+        if (CheckDeviceExtensionsSupport(Device, RequiredExtensions) && (CheckDeviceQueueSupport(Device, SurfaceIn)))
         {
             PhysicalDevice = Device;
             QueuePhysicalDeviceProperties();
@@ -141,9 +141,9 @@ VkPhysicalDevice FVulkanContext::PickPhysicalDevice(FVulkanContextOptions& Vulka
     return PhysicalDevice;
 }
 
-void FVulkanContext::SetPhysicalDevice(VkPhysicalDevice PhysicalDevice)
+void FVulkanContext::SetPhysicalDevice(VkPhysicalDevice PhysicalDeviceIn)
 {
-    this->PhysicalDevice = PhysicalDevice;
+    this->PhysicalDevice = PhysicalDeviceIn;
 }
 
 VkPhysicalDevice FVulkanContext::GetPhysicalDevice() const
@@ -151,7 +151,7 @@ VkPhysicalDevice FVulkanContext::GetPhysicalDevice() const
     return PhysicalDevice;
 }
 
-void FVulkanContext::InitManagerResources(int Width, int Height, VkSurfaceKHR Surface)
+void FVulkanContext::InitManagerResources(int Width, int Height, VkSurfaceKHR SurfaceIn)
 {
     ResourceAllocator = std::make_shared<FResourceAllocator>(PhysicalDevice, LogicalDevice, this);
 
@@ -159,7 +159,7 @@ void FVulkanContext::InitManagerResources(int Width, int Height, VkSurfaceKHR Su
 
     CommandBufferManager = std::make_shared<FCommandBufferManager>(LogicalDevice, this, GetQueue(VK_QUEUE_GRAPHICS_BIT),
                                                                    GetQueueIndex(VK_QUEUE_GRAPHICS_BIT));
-    Swapchain = std::make_shared<FSwapchain>(*this, Width, Height, PhysicalDevice, LogicalDevice, Surface, GetGraphicsQueueIndex(), GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
+    Swapchain = std::make_shared<FSwapchain>(*this, Width, Height, PhysicalDevice, LogicalDevice, SurfaceIn, GetGraphicsQueueIndex(), GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
 }
 
 void FVulkanContext::QueuePhysicalDeviceProperties()
@@ -280,9 +280,9 @@ VkInstance FVulkanContext::CreateVkInstance(const std::string& AppName, const FV
     return ResultingInstance;
 }
 
-void FVulkanContext::SetInstance(VkInstance Instance)
+void FVulkanContext::SetInstance(VkInstance InstanceIn)
 {
-    this->Instance = Instance;
+    this->Instance = InstanceIn;
 }
 
 VkInstance FVulkanContext::GetInstance() const
@@ -301,9 +301,9 @@ std::vector<VkQueueFamilyProperties> FVulkanContext::EnumeratePhysicalDeviceQueu
     return QueueFamilyProperties;
 }
 
-bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice, VkQueueFlagBits QueueFlagBits, uint32_t& QueueFamilyIndex)
+bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDeviceIn, VkQueueFlagBits QueueFlagBits, uint32_t& QueueFamilyIndex)
 {
-    auto Properties = EnumeratePhysicalDeviceQueueFamilyProperties(PhysicalDevice);
+    auto Properties = EnumeratePhysicalDeviceQueueFamilyProperties(PhysicalDeviceIn);
 
     for (uint32_t i = 0; i < Properties.size(); ++i)
     {
@@ -317,15 +317,15 @@ bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice, Vk
     return false;
 }
 
-bool FVulkanContext::CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDevice, uint32_t& QueueFamilyIndex, VkSurfaceKHR Surface)
+bool FVulkanContext::CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDeviceIn, uint32_t& QueueFamilyIndex, VkSurfaceKHR SurfaceIn)
 {
-    auto Properties = EnumeratePhysicalDeviceQueueFamilyProperties(PhysicalDevice);
+    auto Properties = EnumeratePhysicalDeviceQueueFamilyProperties(PhysicalDeviceIn);
 
     VkBool32 PresentSupported = false;
 
     for (uint32_t i = 0; i < Properties.size(); ++i)
     {
-        vkGetPhysicalDeviceSurfaceSupportKHR(PhysicalDevice, i, Surface, &PresentSupported);
+        vkGetPhysicalDeviceSurfaceSupportKHR(PhysicalDeviceIn, i, SurfaceIn, &PresentSupported);
         if (PresentSupported)
         {
             QueueFamilyIndex = i;
@@ -336,20 +336,20 @@ bool FVulkanContext::CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDev
     return false;
 }
 
-bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
+bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDeviceIn, VkSurfaceKHR SurfaceIn)
 {
     bool EverythingIsOK = true;
 
     for (auto& Entry : Queues)
     {
-        EverythingIsOK = CheckDeviceQueueSupport(PhysicalDevice, Entry.first, Entry.second.QueueIndex);
+        EverythingIsOK = CheckDeviceQueueSupport(PhysicalDeviceIn, Entry.first, Entry.second.QueueIndex);
         if (!EverythingIsOK)
         {
             return false;
         }
     }
 
-    if (!CheckDeviceQueuePresentSupport(PhysicalDevice, PresentQueue.QueueIndex, Surface)) {
+    if (!CheckDeviceQueuePresentSupport(PhysicalDeviceIn, PresentQueue.QueueIndex, SurfaceIn)) {
         return false;
     }
 
@@ -443,7 +443,7 @@ void FVulkanContext::DestroyBuffer(FBuffer& Buffer) const
     ResourceAllocator->DestroyBuffer(Buffer);
 }
 
-VkDevice FVulkanContext::CreateLogicalDevice(VkPhysicalDevice PhysicalDevice, FVulkanContextOptions& VulkanContextOptions)
+VkDevice FVulkanContext::CreateLogicalDevice(VkPhysicalDevice PhysicalDeviceIn, FVulkanContextOptions& VulkanContextOptions)
 {
     std::set<uint32_t> QueueIndices;
     QueueIndices.insert(PresentQueue.QueueIndex);
@@ -451,7 +451,7 @@ VkDevice FVulkanContext::CreateLogicalDevice(VkPhysicalDevice PhysicalDevice, FV
     {
         QueueIndices.insert(Entry.second.QueueIndex);
     }
-    auto DeviceQueueCreateInfo = GetDeviceQueueCreateInfo(PhysicalDevice, QueueIndices);
+    auto DeviceQueueCreateInfo = GetDeviceQueueCreateInfo(PhysicalDeviceIn, QueueIndices);
     VkDeviceCreateInfo CreateInfo{};
 
     VkPhysicalDeviceFeatures DeviceFeatures{};
@@ -470,19 +470,19 @@ VkDevice FVulkanContext::CreateLogicalDevice(VkPhysicalDevice PhysicalDevice, FV
     CreateInfo.enabledLayerCount = static_cast<uint32_t>(DeviceLayers.size());
     CreateInfo.ppEnabledLayerNames = DeviceLayers.data();
 
-    VkDevice LogicalDevice;
+    VkDevice LogicalDeviceIn;
 
-    if (vkCreateDevice(PhysicalDevice, &CreateInfo, nullptr, &LogicalDevice) != VK_SUCCESS)
+    if (vkCreateDevice(PhysicalDeviceIn, &CreateInfo, nullptr, &LogicalDeviceIn) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create logical device!");
     }
 
-    return LogicalDevice;
+    return LogicalDeviceIn;
 }
 
-void FVulkanContext::SetLogicalDevice(VkDevice LogicalDevice)
+void FVulkanContext::SetLogicalDevice(VkDevice LogicalDeviceIn)
 {
-    this->LogicalDevice = LogicalDevice;
+    this->LogicalDevice = LogicalDeviceIn;
 }
 
 VkDevice FVulkanContext::GetLogicalDevice() const

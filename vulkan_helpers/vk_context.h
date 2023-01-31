@@ -30,14 +30,14 @@ public:
     FVulkanContext(const FVulkanContext& Other) = delete;
     ~FVulkanContext();
 
-    void Init(GLFWwindow* Window, int Width, int Height);
+    void Init(int Width, int Height);
 
 #ifndef NDEBUG
     VkDebugUtilsMessengerEXT CreateDebugMessenger(FVulkanContextOptions& VulkanContextOptions) const;
     void SetDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT DebugUtilsMessengerEXT);
     void DestroyDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT& DebugUtilsMessenger) const;
 #endif
-    void InitManagerResources(int Width, int Height, VkSurfaceKHR Surface);
+    void InitManagerResources(int Width, int Height, VkSurfaceKHR SurfaceIn);
     void QueuePhysicalDeviceProperties();
     void GetDeviceQueues(VkSurfaceKHR Surface);
     void RecreateSwapChain(uint32_t Width, uint32_t Height);
@@ -51,22 +51,22 @@ public:
     static bool HasStensilComponent(VkFormat Format);
 
     bool CheckInstanceLayersSupport(const std::vector<const char*>& Layers);
-    void SetInstance(VkInstance Instance);
+    void SetInstance(VkInstance InstanceIn);
     VkInstance GetInstance() const;
 
     bool CheckDeviceExtensionsSupport(VkPhysicalDevice Device, std::set<std::string>& RequiredExtension);
-    bool CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface);
-    bool CheckDeviceQueueSupport(VkPhysicalDevice Device, VkQueueFlagBits QueueFlagBits, uint32_t& QueueFamilyIndex);
-    VkPhysicalDevice PickPhysicalDevice(FVulkanContextOptions& VulkanContextOptions, VkSurfaceKHR Surface);
-    void SetPhysicalDevice(VkPhysicalDevice PhysicalDevice);
+    bool CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDeviceIn, VkSurfaceKHR SurfaceIn);
+    bool CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDeviceIn, VkQueueFlagBits QueueFlagBits, uint32_t& QueueFamilyIndex);
+    VkPhysicalDevice PickPhysicalDevice(FVulkanContextOptions& VulkanContextOptions, VkSurfaceKHR SurfaceIn);
+    void SetPhysicalDevice(VkPhysicalDevice PhysicalDeviceIn);
     VkPhysicalDevice GetPhysicalDevice() const;
 
     VkInstance CreateVkInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FVulkanContextOptions& VulkanContextOptions);
-    std::vector<VkPhysicalDevice> EnumerateAllPhysicalDevices(VkInstance Instance);
+    std::vector<VkPhysicalDevice> EnumerateAllPhysicalDevices(VkInstance InstanceIn);
     std::vector<VkQueueFamilyProperties> EnumeratePhysicalDeviceQueueFamilyProperties(VkPhysicalDevice Device);
-    bool CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDevice, uint32_t& QueueFamilyIndex, VkSurfaceKHR Surface);
-    VkDevice CreateLogicalDevice(VkPhysicalDevice PhysicalDevice, FVulkanContextOptions& VulkanContextOptions);
-    void SetLogicalDevice(VkDevice LogicalDevice);
+    bool CheckDeviceQueuePresentSupport(VkPhysicalDevice PhysicalDeviceIn, uint32_t& QueueFamilyIndex, VkSurfaceKHR SurfaceIn);
+    VkDevice CreateLogicalDevice(VkPhysicalDevice PhysicalDeviceIn, FVulkanContextOptions& VulkanContextOptions);
+    void SetLogicalDevice(VkDevice LogicalDeviceIn);
     VkDevice GetLogicalDevice() const;
     std::vector<VkDeviceQueueCreateInfo> GetDeviceQueueCreateInfo(VkPhysicalDevice PhysicalDevice, std::set<uint32_t> QueueIndices);
 
@@ -83,12 +83,12 @@ public:
     VkQueue GetPresentQueue() const;
     uint32_t GetPresentIndex() const;
 
-    VkSurfaceKHR CreateSurface(GLFWwindow* Window) const;
-    void DestroySurface(VkSurfaceKHR* Surface) const;
-    void SetSurface(VkSurfaceKHR Surface);
+    VkSurfaceKHR CreateSurface(GLFWwindow* WindowIn) const;
+    void DestroySurface(VkSurfaceKHR* SurfaceIn) const;
+    void SetSurface(VkSurfaceKHR SurfaceIn);
     VkSurfaceKHR GetSurface() const;
 
-    void SetWindow(GLFWwindow* Window);
+    void SetWindow(GLFWwindow* WindowIn);
     GLFWwindow* GetWindow() const;
 
     FBuffer CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, const std::string& DebugName = "") const;
@@ -138,7 +138,7 @@ public:
     VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
     VkDevice LogicalDevice = VK_NULL_HANDLE;
     VkSurfaceKHR Surface = VK_NULL_HANDLE;
-    GLFWwindow* Window;
+    GLFWwindow* Window = nullptr;
 
     /// Queues
     struct IndexQueue
@@ -154,13 +154,13 @@ public:
     std::shared_ptr<FSwapchain> Swapchain = nullptr;
 
 #ifndef NDEBUG
-    VkDebugUtilsMessengerEXT DebugMessenger;
+    VkDebugUtilsMessengerEXT DebugMessenger = VK_NULL_HANDLE;
 #endif
 
     /// Texture used to pain the model
     ImagePtr TextureImage;
 
-    uint32_t MipLevels;
+    uint32_t MipLevels = 0;
     std::shared_ptr<FDescriptorSetManager>DescriptorSetManager = nullptr;
 
     bool bFramebufferResized = false;
