@@ -133,17 +133,15 @@ FRender::FRender()
 
     PassthroughTask = std::make_shared<FPassthroughTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     PassthroughTask->RegisterInput(0, RenderTask->GetOutput(3));
-    PassthroughTask->RegisterOutput(0, RenderTask->GetOutput(3));
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
-        PassthroughTask->RegisterOutput(i + 1, Swapchain->Images[i]);
+        PassthroughTask->RegisterOutput(i, Swapchain->Images[i]);
     }
     PassthroughTask->Init();
     PassthroughTask->UpdateDescriptorSets();
     PassthroughTask->RecordCommands();
 
     ImguiTask = std::make_shared<FImguiTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
-    ImguiTask->RegisterInput(0, PassthroughTask->GetOutput(0));
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
         ImguiTask->RegisterOutput(i, Swapchain->Images[i]);

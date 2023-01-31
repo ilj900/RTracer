@@ -62,7 +62,7 @@ void FPassthroughTask::UpdateDescriptorSets()
     {
         VkDescriptorImageInfo ImageBufferInfo{};
         ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        ImageBufferInfo.imageView = Inputs[i]->View;
+        ImageBufferInfo.imageView = Inputs[0]->View;
         ImageBufferInfo.sampler = Sampler;
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX, i, ImageBufferInfo);
     }
