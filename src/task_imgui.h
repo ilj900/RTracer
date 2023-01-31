@@ -9,7 +9,7 @@ class FImguiTask : public FExecutableTask
 {
 public:
     FImguiTask(FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
-    ~FImguiTask();
+    ~FImguiTask() override;
 
     void Init() override;
     void UpdateDescriptorSets() override;

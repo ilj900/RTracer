@@ -10,7 +10,7 @@ class FRenderTask : public FExecutableTask
 {
 public:
     FRenderTask(FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
-    ~FRenderTask();
+    ~FRenderTask() override;
 
     void Init() override;
     void UpdateDescriptorSets() override;
@@ -18,7 +18,7 @@ public:
     void Cleanup() override;
     VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex) override;
 
-    VkSampler Sampler;
+    VkSampler Sampler = VK_NULL_HANDLE;
 
     ImagePtr DepthImage;
 

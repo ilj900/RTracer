@@ -10,7 +10,7 @@ class FPassthroughTask : public FExecutableTask
 {
 public:
     FPassthroughTask(FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
-    ~FPassthroughTask();
+    ~FPassthroughTask() override;
 
     void Init() override;
     void UpdateDescriptorSets() override;
@@ -18,7 +18,7 @@ public:
     void Cleanup() override;
     VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex) override;
 
-    VkSampler Sampler;
+    VkSampler Sampler = VK_NULL_HANDLE;
 
     FGraphicsPipelineOptions GraphicsPipelineOptions;
 

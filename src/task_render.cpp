@@ -107,8 +107,7 @@ void FRenderTask::UpdateDescriptorSets()
 
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        uint32_t j = 0;
-        for (auto Mesh : *MeshSystem)
+        for (int j = 0; j < MeshSystem->Size(); ++j)
         {
             VkDescriptorBufferInfo TransformBufferInfo{};
             TransformBufferInfo.buffer = TRANSFORM_SYSTEM()->DeviceTransformBuffer.Buffer;
@@ -121,8 +120,6 @@ void FRenderTask::UpdateDescriptorSets()
             RenderableBufferInfo.offset = RenderableBufferSize * i + sizeof(ECS::COMPONENTS::FDeviceRenderableComponent) * j;
             RenderableBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceRenderableComponent);
             Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RENDER_PER_RENDERABLE_LAYOUT_INDEX, RENDERABLE_LAYOUT_INDEX, j * NumberOfSimultaneousSubmits + i, RenderableBufferInfo);
-
-            ++j;
         }
     }
 
