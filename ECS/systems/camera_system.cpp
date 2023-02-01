@@ -48,9 +48,9 @@ namespace ECS
                 auto DeviceCameraComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>();
 
                 Context.ResourceAllocator->LoadDataToBuffer(DeviceCameraBuffer, DeviceCameraComponentsSize, DeviceCameraComponentsSize * IterationIndex, DeviceCameraComponentsData);
-            }
 
-            bNeedsUpdate--;
+                bNeedsUpdate--;
+            }
         }
 
         void FCameraSystem::UpdateAllDeviceComponentsData()
@@ -75,7 +75,7 @@ namespace ECS
             auto& CameraComponent = Coordinator.GetComponent<COMPONENTS::FCameraComponent>(CameraEntity);
             DeviceCameraComponent.ViewMatrix = LookAt(CameraComponent.Position, CameraComponent.Position + CameraComponent.Direction, CameraComponent.Up);
             DeviceCameraComponent.ProjectionMatrix = GetPerspective(CameraComponent.FOV / 90.f, CameraComponent.Ratio, CameraComponent.ZNear, CameraComponent.ZFar);
-            bNeedsUpdate = 1;
+            bNeedsUpdate = 2;
         }
 
         void FCameraSystem::MoveCameraForward(FEntity CameraEntity, float Value)

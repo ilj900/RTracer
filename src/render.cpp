@@ -236,7 +236,7 @@ int FRender::Render()
     if (Result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         bShouldRecreateSwapchain = true;
-        return 1;
+        return 0;
     }
     if (Result != VK_SUCCESS && Result != VK_SUBOPTIMAL_KHR)
     {
