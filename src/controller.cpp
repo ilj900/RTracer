@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <map>
+#include <utility>
 
 FController::FController()
 {
@@ -16,6 +17,7 @@ FController::FController()
     Coordinator.AddComponent<ECS::COMPONENTS::FCameraComponent>(Camera, ECS::COMPONENTS::FCameraComponent());
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera, {});
     CAMERA_SYSTEM()->UpdateDeviceComponentData(Camera);
+    CAMERA_SYSTEM()->RequestNumberOfSimultaniousUpdate(2);
 }
 
 void FController::SetWindow(GLFWwindow* Window)
@@ -25,12 +27,15 @@ void FController::SetWindow(GLFWwindow* Window)
 
 void FController::SetRender(std::shared_ptr<FRender> Render)
 {
-    this->Render = Render;
+    this->Render = std::move(Render);
 }
 
 void FramebufferResizeCallback(GLFWwindow* Window, int Width, int Height) {
     auto Controller = static_cast<FController*>(glfwGetWindowUserPointer(Window));
     Controller->Render->SetSize(Width, Height);
+    CAMERA_SYSTEM()->SetAspectRatio(Controller->Camera, float(Width) / float(Height));
+    CAMERA_SYSTEM()->UpdateDeviceComponentData(Controller->Camera);
+    CAMERA_SYSTEM()->RequestNumberOfSimultaniousUpdate(2);
 }
 
 void FController::UpdateCallbacks()

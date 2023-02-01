@@ -26,12 +26,14 @@ namespace ECS
             void LookUp(FEntity CameraEntity, float Value);
             void LookRight(FEntity CameraEntity, float Value);
             void Roll(FEntity CameraEntity, float Value);
+            void SetAspectRatio(FEntity CameraEntity, float AspectRatio);
+            void RequestNumberOfSimultaniousUpdate(int Count);
             FMatrix4 GetProjectionMatrix(FEntity CameraEntity);
             FMatrix4 GetViewMatrix(FEntity CameraEntity);
             void Orthogonize(FEntity CameraEntity);
 
         public:
-            bool bNeedsUpdate = false;
+            int bNeedsUpdate = 0;
             int NumberOfSimultaneousSubmits = 2;
 
             FBuffer DeviceCameraBuffer;

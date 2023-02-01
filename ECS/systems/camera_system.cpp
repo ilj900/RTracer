@@ -50,7 +50,7 @@ namespace ECS
                 Context.ResourceAllocator->LoadDataToBuffer(DeviceCameraBuffer, DeviceCameraComponentsSize, DeviceCameraComponentsSize * IterationIndex, DeviceCameraComponentsData);
             }
 
-            bNeedsUpdate = false;
+            bNeedsUpdate--;
         }
 
         void FCameraSystem::UpdateAllDeviceComponentsData()
@@ -65,7 +65,7 @@ namespace ECS
                 DeviceCameraComponent.ProjectionMatrix = GetPerspective(CameraComponent.FOV / 90.f, CameraComponent.Ratio, CameraComponent.ZNear, CameraComponent.ZFar);
             }
 
-            bNeedsUpdate = true;
+            bNeedsUpdate--;
         }
 
         void FCameraSystem::UpdateDeviceComponentData(FEntity CameraEntity)
@@ -75,7 +75,7 @@ namespace ECS
             auto& CameraComponent = Coordinator.GetComponent<COMPONENTS::FCameraComponent>(CameraEntity);
             DeviceCameraComponent.ViewMatrix = LookAt(CameraComponent.Position, CameraComponent.Position + CameraComponent.Direction, CameraComponent.Up);
             DeviceCameraComponent.ProjectionMatrix = GetPerspective(CameraComponent.FOV / 90.f, CameraComponent.Ratio, CameraComponent.ZNear, CameraComponent.ZFar);
-            bNeedsUpdate = true;
+            bNeedsUpdate = 1;
         }
 
         void FCameraSystem::MoveCameraForward(FEntity CameraEntity, float Value)
@@ -115,6 +115,17 @@ namespace ECS
         {
             auto& CameraComponent = GetComponent<ECS::COMPONENTS::FCameraComponent>(CameraEntity);
             CameraComponent.Up = CameraComponent.Up.Rotate(Value, CameraComponent.Direction);
+        }
+
+        void FCameraSystem::SetAspectRatio(FEntity CameraEntity, float AspectRatio)
+        {
+            auto& CameraComponent = GetComponent<ECS::COMPONENTS::FCameraComponent>(CameraEntity);
+            CameraComponent.Ratio = AspectRatio;
+        }
+
+        void FCameraSystem::RequestNumberOfSimultaniousUpdate(int Count)
+        {
+            bNeedsUpdate = Count;
         }
 
         FMatrix4 FCameraSystem::GetProjectionMatrix(FEntity CameraEntity)
