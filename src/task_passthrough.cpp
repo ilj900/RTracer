@@ -10,6 +10,13 @@ FPassthroughTask::FPassthroughTask(int WidthIn, int HeightIn, FVulkanContext* Co
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
     Name = "Passthrough pipeline";
+
+    auto& DescriptorSetManager = Context->DescriptorSetManager;
+
+    DescriptorSetManager->AddDescriptorLayout(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX,
+                                              {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
+
+    DescriptorSetManager->CreateDescriptorSetLayout(Name);
 }
 
 FPassthroughTask::~FPassthroughTask()
@@ -20,11 +27,6 @@ FPassthroughTask::~FPassthroughTask()
 void FPassthroughTask::Init()
 {
     auto& DescriptorSetManager = Context->DescriptorSetManager;
-
-    DescriptorSetManager->AddDescriptorLayout(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX,
-                                              {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
-
-    DescriptorSetManager->CreateDescriptorSetLayout(Name);
 
     Sampler = Context->CreateTextureSampler(Context->MipLevels);
 

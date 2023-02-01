@@ -17,15 +17,7 @@ FRenderTask::FRenderTask(int WidthIn, int HeightIn, FVulkanContext* Context, int
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
     Name = "Render pipeline";
-}
 
-FRenderTask::~FRenderTask()
-{
-    FreeSyncObjects();
-}
-
-void FRenderTask::Init()
-{
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
     DescriptorSetManager->AddDescriptorLayout(Name, RENDER_PER_FRAME_LAYOUT_INDEX, TEXTURE_SAMPLER_LAYOUT_INDEX,
@@ -39,6 +31,16 @@ void FRenderTask::Init()
                                               {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT});
 
     DescriptorSetManager->CreateDescriptorSetLayout(Name);
+}
+
+FRenderTask::~FRenderTask()
+{
+    FreeSyncObjects();
+}
+
+void FRenderTask::Init()
+{
+    auto& DescriptorSetManager = Context->DescriptorSetManager;
 
     /// Create Image and ImageView for Depth
     VkFormat DepthFormat = Context->FindDepthFormat();

@@ -20,7 +20,7 @@ struct FDescriptorSetLayout
 struct FPipelineDescriptorSetLayout
 {
     void AddDescriptorLayout(uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, const FDescriptor& Descriptor);
-    void CreateDescriptorSetLayout(VkDevice LogicalDevice);
+    void CreateDescriptorSetLayout(VkDevice LogicalDevice, const std::string& PipelineDebugName);
     VkDescriptorSetLayout GetVkDescriptorSetLayout(uint32_t DescriptorSetLayoutIndex);
     VkPipelineLayout GetPipelineLayout();
 
@@ -40,10 +40,12 @@ struct FPipelineDescriptorSetLayout
     void FreeDescriptorPool(VkDevice LogicalDevice);
     void Reset(VkDevice LogicalDevice);
 
-    std::map<uint32_t, FDescriptorSetLayout> PipelineDescriptorSets;
-    std::map<uint32_t, VkDescriptorSetLayout> VkDescriptorSetLayouts;
-    std::map<uint32_t, uint32_t> Sets;
-    std::map<uint32_t, std::vector<VkDescriptorSet>> VkDescriptorSets;
+    using SetIndex = uint32_t;
+
+    std::map<SetIndex, FDescriptorSetLayout> PipelineDescriptorSets;
+    std::map<SetIndex, VkDescriptorSetLayout> VkDescriptorSetLayouts;
+    std::map<SetIndex, uint32_t> Sets;
+    std::map<SetIndex, std::vector<VkDescriptorSet>> VkDescriptorSets;
     VkPipelineLayout PipelineLayout;
     VkDescriptorPool DescriptorPool;
 };

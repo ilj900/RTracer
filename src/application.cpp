@@ -75,6 +75,7 @@ FApplication::FApplication()
     Render = std::make_shared<FRender>();
 
     Controller->SetWindow(Render->Window);
+    Controller->SetRender(Render);
     Controller->UpdateCallbacks();
 }
 

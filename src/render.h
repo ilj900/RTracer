@@ -26,6 +26,7 @@ public:
 
     int Init();
     int Cleanup();
+    int SetSize(int Width, int Height);
 
     int Render();
     int Update();
@@ -44,8 +45,8 @@ public:
     std::shared_ptr<FSwapchain> Swapchain = nullptr;
     bool bShouldRecreateSwapchain = false;
 
-    const uint32_t WINDOW_WIDTH = 1920;
-    const uint32_t WINDOW_HEIGHT = 1080;
+    uint32_t WINDOW_WIDTH = 1920;
+    uint32_t WINDOW_HEIGHT = 1080;
     const std::string WINDOW_NAME = "RTracer";
     const int MAX_FRAMES_IN_FLIGHT = 2;
     uint32_t RenderFrameIndex = 0;

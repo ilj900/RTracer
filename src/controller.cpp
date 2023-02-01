@@ -23,12 +23,23 @@ void FController::SetWindow(GLFWwindow* Window)
     this->Window = Window;
 }
 
+void FController::SetRender(std::shared_ptr<FRender> Render)
+{
+    this->Render = Render;
+}
+
+void FramebufferResizeCallback(GLFWwindow* Window, int Width, int Height) {
+    auto Controller = static_cast<FController*>(glfwGetWindowUserPointer(Window));
+    Controller->Render->SetSize(Width, Height);
+}
+
 void FController::UpdateCallbacks()
 {
     glfwSetWindowUserPointer(Window, this);
     glfwSetKeyCallback(Window, KeyboardKeyPressedOrReleased);
     glfwSetCursorPosCallback(Window, MouseMoved);
     glfwSetMouseButtonCallback(Window, MouseButtonPressedOrReleased);
+    glfwSetFramebufferSizeCallback(Window, FramebufferResizeCallback);
 }
 
 void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int Action, int Mods) {

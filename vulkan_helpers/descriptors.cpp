@@ -21,7 +21,7 @@ void FPipelineDescriptorSetLayout::AddDescriptorLayout(uint32_t DescriptorSetLay
     PipelineDescriptorSets[DescriptorSetLayoutIndex].DescriptorSets[DescriptorLayoutIndex] = Descriptor;
 }
 
-void FPipelineDescriptorSetLayout::CreateDescriptorSetLayout(VkDevice LogicalDevice)
+void FPipelineDescriptorSetLayout::CreateDescriptorSetLayout(VkDevice LogicalDevice, const std::string& PipelineDebugName)
 {
     for (auto Entry : PipelineDescriptorSets)
     {
@@ -53,6 +53,8 @@ void FPipelineDescriptorSetLayout::CreateDescriptorSetLayout(VkDevice LogicalDev
         {
             throw std::runtime_error("Failed to create descriptor set layout!");
         }
+
+        V::SetName(LogicalDevice, DescriptorSetLayout, "V::DescriptorSetLayout_Pipeline:_" + PipelineDebugName + "_SetLayoutIndex:_" + std::to_string(SetIndex));
 
         VkDescriptorSetLayouts[SetIndex] = DescriptorSetLayout;
     }
@@ -213,6 +215,7 @@ void FPipelineDescriptorSetLayout::FreeDescriptorPool(VkDevice LogicalDevice)
 
 void FPipelineDescriptorSetLayout::Reset(VkDevice LogicalDevice)
 {
+    CleanAll(LogicalDevice);
     if (DescriptorPool)
     {
         FreeDescriptorPool(LogicalDevice);
@@ -220,6 +223,7 @@ void FPipelineDescriptorSetLayout::Reset(VkDevice LogicalDevice)
 
     Sets.clear();
     VkDescriptorSets.clear();
+    PipelineDescriptorSets.clear();
 }
 
 FDescriptorSetManager::FDescriptorSetManager(VkDevice LogicalDevice):
@@ -242,7 +246,7 @@ void FDescriptorSetManager::AddDescriptorLayout(const std::string& PipelineName,
 
 void FDescriptorSetManager::CreateDescriptorSetLayout(const std::string& PipelineName)
 {
-    PipelineDescriptorSetLayouts[PipelineName].CreateDescriptorSetLayout(LogicalDevice);
+    PipelineDescriptorSetLayouts[PipelineName].CreateDescriptorSetLayout(LogicalDevice, PipelineName);
 }
 
 VkDescriptorSetLayout FDescriptorSetManager::GetVkDescriptorSetLayout(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex)
@@ -287,7 +291,6 @@ VkDescriptorSet FDescriptorSetManager::GetSet(const std::string& PipelineName, u
     return PipelineDescriptorSetLayouts[PipelineName].GetSet(SetIndex, Index);
 }
 
-
 void FDescriptorSetManager::DestroyDescriptorSetLayout(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex)
 {
     PipelineDescriptorSetLayouts[PipelineName].DestroyDescriptorSetLayout(LogicalDevice, DescriptorSetLayoutIndex);
@@ -297,7 +300,6 @@ void FDescriptorSetManager::DestroyPipelineLayout(const std::string& PipelineNam
 {
     PipelineDescriptorSetLayouts[PipelineName].DestroyPipelineLayout(LogicalDevice);
 }
-
 
 void FDescriptorSetManager::FreeDescriptorPool(const std::string& PipelineName)
 {

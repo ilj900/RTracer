@@ -163,6 +163,8 @@ int FRender::Init()
     }
     ImguiTask->Init();
 
+    RenderFrameIndex = 0;
+
     return 0;
 }
 
@@ -180,6 +182,14 @@ int FRender::Cleanup()
 
     Swapchain = nullptr;
 
+    return 0;
+}
+
+int FRender::SetSize(int Width, int Height)
+{
+    WINDOW_WIDTH = Width;
+    WINDOW_HEIGHT = Height;
+    bShouldRecreateSwapchain = true;
     return 0;
 }
 
@@ -264,6 +274,7 @@ int FRender::Update()
 {
     if (bShouldRecreateSwapchain)
     {
+        GetContext().WaitIdle();
         Cleanup();
         Init();
         bShouldRecreateSwapchain = false;
