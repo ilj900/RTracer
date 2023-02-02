@@ -74,7 +74,7 @@ void FImguiTask::Init()
 
     ImGui::StyleColorsDark();
 
-    ImGui_ImplGlfw_InitForVulkan(Context.GetWindow(), true);
+    ImGui_ImplGlfw_InitForVulkan(Context.GetWindow(), false);
     ImGui_ImplVulkan_InitInfo InitInfo{};
     InitInfo.Instance = Context.GetInstance();
     InitInfo.PhysicalDevice = Context.GetPhysicalDevice();
