@@ -53,7 +53,7 @@ void FVulkanContext::Init(int Width, int Height)
 VkDebugUtilsMessengerEXT FVulkanContext::CreateDebugMessenger(FVulkanContextOptions& VulkanContextOptions) const
 {
     VkDebugUtilsMessengerEXT DebugUtilsMessengerEXT;
-    auto* DebugCreateInfo = VulkanContextOptions.GetExtensionStructurePtr<VkDebugUtilsMessengerCreateInfoEXT>(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
+    auto* DebugCreateInfo = VulkanContextOptions.GetInstanceExtensionStructurePtr<VkDebugUtilsMessengerCreateInfoEXT>(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
 
     V::vkCreateDebugUtilsMessengerEXT(Instance, DebugCreateInfo, nullptr, &DebugUtilsMessengerEXT);
 
@@ -150,6 +150,25 @@ void FVulkanContext::SetPhysicalDevice(VkPhysicalDevice PhysicalDeviceIn)
 VkPhysicalDevice FVulkanContext::GetPhysicalDevice() const
 {
     return PhysicalDevice;
+}
+
+VkPhysicalDeviceProperties2 FVulkanContext::GetPhysicalDeviceProperties2(VkPhysicalDevice PhysicalDevice, void* pNextStructure)
+{
+    VkPhysicalDeviceProperties2 PhysicalDeviceProperties2{};
+    PhysicalDeviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    PhysicalDeviceProperties2.pNext = pNextStructure;
+
+    vkGetPhysicalDeviceProperties2(PhysicalDevice, &PhysicalDeviceProperties2);
+
+    return PhysicalDeviceProperties2;
+}
+
+VkPhysicalDeviceRayTracingPipelinePropertiesKHR FVulkanContext::GetRTProperties()
+{
+    VkPhysicalDeviceRayTracingPipelinePropertiesKHR PhysicalDeviceRayTracingPipelinePropertiesKHR{};
+    PhysicalDeviceRayTracingPipelinePropertiesKHR.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+    VkPhysicalDeviceProperties2 PhysicalDeviceProperties2 = GetPhysicalDeviceProperties2(PhysicalDevice, &PhysicalDeviceRayTracingPipelinePropertiesKHR);
+    return PhysicalDeviceRayTracingPipelinePropertiesKHR;
 }
 
 void FVulkanContext::InitManagerResources()
@@ -443,6 +462,249 @@ void FVulkanContext::DestroyBuffer(FBuffer& Buffer) const
     ResourceAllocator->DestroyBuffer(Buffer);
 }
 
+FAccelerationStructure FVulkanContext::CreateAccelerationStructure(VkDeviceSize Size, VkAccelerationStructureTypeKHR Type, const std::string& DebugName)
+{
+    FAccelerationStructure AccelerationStructure;
+    AccelerationStructure.Type = Type;
+
+    AccelerationStructure.Buffer = ResourceAllocator->CreateBuffer(Size, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, DebugName + "_Buffer");
+
+    VkAccelerationStructureCreateInfoKHR AccelerationStructureCreateInfoKHR{};
+    AccelerationStructureCreateInfoKHR.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+    AccelerationStructureCreateInfoKHR.type = Type;
+    AccelerationStructureCreateInfoKHR.size = Size;
+    AccelerationStructureCreateInfoKHR.buffer = AccelerationStructure.Buffer.Buffer;
+
+    VkResult Result = V::vkCreateAccelerationStructureKHR(LogicalDevice, &AccelerationStructureCreateInfoKHR, nullptr, &AccelerationStructure.AccelerationStructure);
+    assert((Result == VK_SUCCESS) && "Failed to create acceleration structure");
+    V::SetName(LogicalDevice, AccelerationStructure.AccelerationStructure, DebugName);
+    return AccelerationStructure;
+}
+
+void FVulkanContext::DestroyAccelerationStructure(FAccelerationStructure &AccelerationStructure)
+{
+    V::vkDestroyAccelerationStructureKHR(LogicalDevice, AccelerationStructure.AccelerationStructure, nullptr);
+    ResourceAllocator->DestroyBuffer(AccelerationStructure.Buffer);
+}
+
+VkDeviceAddress FVulkanContext::GetBufferDeviceAddressInfo(FBuffer& Buffer)
+{
+    VkBufferDeviceAddressInfo BufferDeviceAddressInfo{};
+    BufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    BufferDeviceAddressInfo.buffer = Buffer.Buffer;
+
+    auto Result = vkGetBufferDeviceAddress(LogicalDevice, &BufferDeviceAddressInfo);
+
+    return Result;
+}
+
+VkDeviceAddress FVulkanContext::GetASDeviceAddressInfo(FAccelerationStructure& AS)
+{
+    VkAccelerationStructureDeviceAddressInfoKHR AccelerationStructureDeviceAddressInfo{};
+    AccelerationStructureDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
+    AccelerationStructureDeviceAddressInfo.accelerationStructure = AS.AccelerationStructure;
+    return V::vkGetAccelerationStructureDeviceAddressKHR(LogicalDevice, &AccelerationStructureDeviceAddressInfo);
+}
+
+VkAccelerationStructureGeometryTrianglesDataKHR FVulkanContext::GetAccelerationStructureGeometryTrianglesData(FBuffer& VertexBuffer, FBuffer& IndexBuffer, VkDeviceSize VertexStride, uint32_t MaxVertices)
+{
+    VkAccelerationStructureGeometryTrianglesDataKHR AccelerationStructureGeometryTrianglesData{};
+    AccelerationStructureGeometryTrianglesData.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+    AccelerationStructureGeometryTrianglesData.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+    AccelerationStructureGeometryTrianglesData.vertexData.deviceAddress = GetBufferDeviceAddressInfo(VertexBuffer);
+    AccelerationStructureGeometryTrianglesData.vertexStride = VertexStride;
+//    if (IndexBuffer.Buffer)
+//    {
+//        AccelerationStructureGeometryTrianglesData.indexType = VK_INDEX_TYPE_UINT32;
+//        AccelerationStructureGeometryTrianglesData.indexData.deviceAddress = GetBufferDeviceAddressInfo(IndexBuffer);
+//    }
+    AccelerationStructureGeometryTrianglesData.maxVertex = MaxVertices;
+
+    return AccelerationStructureGeometryTrianglesData;
+}
+
+VkAccelerationStructureGeometryKHR FVulkanContext::GetAccelerationStructureGeometry(VkAccelerationStructureGeometryTrianglesDataKHR& AccelerationStructureGeometryTrianglesData)
+{
+    VkAccelerationStructureGeometryKHR AccelerationStructureGeometry{};
+    AccelerationStructureGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+    AccelerationStructureGeometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
+    AccelerationStructureGeometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
+    AccelerationStructureGeometry.geometry.triangles = AccelerationStructureGeometryTrianglesData;
+
+    return AccelerationStructureGeometry;
+}
+
+VkAccelerationStructureBuildRangeInfoKHR FVulkanContext::GetAccelerationStructureBuildRangeInfo(uint32_t PrimitiveCount, uint32_t FirstVertex, uint32_t PrimitiveOffset)
+{
+    VkAccelerationStructureBuildRangeInfoKHR AccelerationStructureBuildRangeInfo{};
+    AccelerationStructureBuildRangeInfo.firstVertex = FirstVertex;
+    AccelerationStructureBuildRangeInfo.primitiveCount = PrimitiveCount;
+    AccelerationStructureBuildRangeInfo.primitiveOffset = PrimitiveOffset;
+    AccelerationStructureBuildRangeInfo.transformOffset = 0;
+
+    return AccelerationStructureBuildRangeInfo;
+}
+
+VkAccelerationStructureBuildGeometryInfoKHR FVulkanContext::GetAccelerationStructureBuildGeometryInfo(VkAccelerationStructureGeometryKHR& AccelerationStructureGeometry, VkBuildAccelerationStructureFlagsKHR Flags)
+{
+    VkAccelerationStructureBuildGeometryInfoKHR AccelerationStructureBuildGeometryInfo{};
+    AccelerationStructureBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    AccelerationStructureBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+    AccelerationStructureBuildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+    AccelerationStructureBuildGeometryInfo.flags = Flags;
+    AccelerationStructureBuildGeometryInfo.geometryCount = 1;
+    AccelerationStructureBuildGeometryInfo.pGeometries = &AccelerationStructureGeometry;
+
+    return AccelerationStructureBuildGeometryInfo;
+}
+
+FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuffer& IndexBuffer, VkDeviceSize VertexStride, uint32_t MaxVertices, uint32_t FirstVertex, uint32_t PrimitiveOffset)
+{
+    VkAccelerationStructureGeometryTrianglesDataKHR AccelerationStructureGeometryTrianglesData = GetAccelerationStructureGeometryTrianglesData(VertexBuffer, IndexBuffer, VertexStride, MaxVertices);
+    VkAccelerationStructureGeometryKHR AccelerationStructureGeometry = GetAccelerationStructureGeometry(AccelerationStructureGeometryTrianglesData);
+    VkAccelerationStructureBuildGeometryInfoKHR AccelerationStructureBuildGeometryInfo = GetAccelerationStructureBuildGeometryInfo(AccelerationStructureGeometry, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR);
+    VkAccelerationStructureBuildRangeInfoKHR AccelerationStructureBuildRangeInfo = GetAccelerationStructureBuildRangeInfo(MaxVertices/3, FirstVertex, PrimitiveOffset);
+
+    const VkAccelerationStructureBuildRangeInfoKHR*  VkAccelerationStructureBuildRangeInfoKHRPtr= &AccelerationStructureBuildRangeInfo;
+
+    uint32_t MaxPrimitiveCount = AccelerationStructureBuildRangeInfo.primitiveCount;
+
+    VkAccelerationStructureBuildSizesInfoKHR AccelerationStructureBuildSizesInfo{};
+    AccelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+
+    V::vkGetAccelerationStructureBuildSizesKHR(LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &AccelerationStructureBuildGeometryInfo, &MaxPrimitiveCount, &AccelerationStructureBuildSizesInfo);
+
+    FAccelerationStructure NotCompactedBLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR, "NotCompactedBLAS");
+
+    FBuffer ScratchBuffer = ResourceAllocator->CreateBuffer(AccelerationStructureBuildSizesInfo.buildScratchSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    V::SetName(LogicalDevice, ScratchBuffer.Buffer, "ScratchBuffer");
+    auto ScratchAddress = GetBufferDeviceAddressInfo(ScratchBuffer);
+
+    AccelerationStructureBuildGeometryInfo.dstAccelerationStructure = NotCompactedBLAS.AccelerationStructure;
+    AccelerationStructureBuildGeometryInfo.scratchData.deviceAddress = ScratchAddress;
+
+    VkQueryPool QueryPool{};
+    VkQueryPoolCreateInfo QueryPoolCreateInfo{};
+    QueryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+    QueryPoolCreateInfo.queryCount = 1;
+    QueryPoolCreateInfo.queryType = VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR;
+    vkCreateQueryPool(LogicalDevice, &QueryPoolCreateInfo, nullptr, &QueryPool);
+
+    vkResetQueryPool(LogicalDevice, QueryPool, 0, 1);
+
+    CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    {
+        V::vkCmdBuildAccelerationStructuresKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometryInfo, &VkAccelerationStructureBuildRangeInfoKHRPtr);
+
+        VkMemoryBarrier Barrier{};
+        Barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+        Barrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+        Barrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+        vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+                             0, 1, &Barrier, 0, nullptr, 0, nullptr);
+
+        V::vkCmdWriteAccelerationStructuresPropertiesKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometryInfo.dstAccelerationStructure, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR, QueryPool, 0);
+    });
+
+    FAccelerationStructure CompactedBLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR, "CompactedBLAS");
+
+    VkDeviceSize CompactedSize = 0;
+    vkGetQueryPoolResults(LogicalDevice, QueryPool, 0, 1, sizeof(VkDeviceSize), &CompactedSize, sizeof(VkDeviceSize), VK_QUERY_RESULT_WAIT_BIT);
+
+    CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    {
+        VkCopyAccelerationStructureInfoKHR CopyAccelerationStructureInfo{};
+        CopyAccelerationStructureInfo.sType = VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR;
+        CopyAccelerationStructureInfo.src = NotCompactedBLAS.AccelerationStructure;
+        CopyAccelerationStructureInfo.dst = CompactedBLAS.AccelerationStructure;
+        CopyAccelerationStructureInfo.mode = VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR;
+
+        V::vkCmdCopyAccelerationStructureKHR(CommandBuffer, &CopyAccelerationStructureInfo);
+    });
+
+//    DestroyAccelerationStructure(NotCompactedBLAS);
+
+    std::cout << "Delta in size: " << AccelerationStructureBuildSizesInfo.accelerationStructureSize - CompactedSize
+              << ", not compacted size is: "<< AccelerationStructureBuildSizesInfo.accelerationStructureSize<< ", compacted: " << CompactedSize << "." << std::endl;
+
+    vkDestroyQueryPool(LogicalDevice, QueryPool, nullptr);
+
+    return CompactedBLAS;
+}
+
+FAccelerationStructure FVulkanContext::GenerateTlas(std::vector<FAccelerationStructure> BLASes, std::vector<FMatrix4> TransformMatrices, std::vector<uint32_t> BlasIndices)
+{
+    uint32_t BLASCount = BLASes.size();
+
+    std::vector<VkAccelerationStructureInstanceKHR> AccelerationStructureInstanceVector;
+    AccelerationStructureInstanceVector.reserve(BLASes.size());
+    for (int i = 0; i < BLASCount; ++i)
+    {
+        VkAccelerationStructureInstanceKHR BlasInstance{};
+        auto& T = TransformMatrices[i].Data;
+        BlasInstance.transform = {T[0].X, T[1].X, T[2].X, T[3].X,
+                                  T[0].Y, T[1].Y, T[2].Y, T[3].Y,
+                                  T[0].Z, T[1].Z, T[2].Z, T[3].Z,};
+        BlasInstance.instanceCustomIndex = BlasIndices[i];
+        BlasInstance.accelerationStructureReference = GetASDeviceAddressInfo(BLASes[i]);
+        BlasInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+        BlasInstance.mask = 0xFF;
+        BlasInstance.instanceShaderBindingTableRecordOffset = 0;
+        AccelerationStructureInstanceVector.emplace_back(BlasInstance);
+    }
+
+    auto BlasInstanceBuffer = ResourceAllocator->CreateBuffer(AccelerationStructureInstanceVector.size() * sizeof(VkAccelerationStructureInstanceKHR),
+                                                                       VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V_BLAS_Instance_Buffer");
+    ResourceAllocator->PushDataToBuffer(BlasInstanceBuffer, AccelerationStructureInstanceVector.size(), AccelerationStructureInstanceVector.data());
+    auto BlasInstanceBufferAddress = GetBufferDeviceAddressInfo(BlasInstanceBuffer);
+
+    FAccelerationStructure TLAS;
+    FBuffer ScratchBuffer;
+
+    CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    {
+        VkMemoryBarrier MemoryBarrier{};
+        MemoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+        MemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        MemoryBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+        vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, 0, 1,
+                             &MemoryBarrier, 0, nullptr, 0, nullptr);
+        VkAccelerationStructureGeometryInstancesDataKHR AccelerationStructureGeometryInstancesData{};
+        AccelerationStructureGeometryInstancesData.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+        AccelerationStructureGeometryInstancesData.data.deviceAddress = BlasInstanceBufferAddress;
+        VkAccelerationStructureGeometryKHR AccelerationStructureGeometry{};
+        AccelerationStructureGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+        AccelerationStructureGeometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
+        AccelerationStructureGeometry.geometry.instances = AccelerationStructureGeometryInstancesData;
+        VkAccelerationStructureBuildGeometryInfoKHR AccelerationStructureBuildGeometry{};
+        AccelerationStructureBuildGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+        AccelerationStructureBuildGeometry.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+        AccelerationStructureBuildGeometry.geometryCount = 1;
+        AccelerationStructureBuildGeometry.pGeometries = &AccelerationStructureGeometry;
+        AccelerationStructureBuildGeometry.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+        AccelerationStructureBuildGeometry.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+        AccelerationStructureBuildGeometry.srcAccelerationStructure = VK_NULL_HANDLE;
+        uint32_t CountInstances = BLASCount;
+        VkAccelerationStructureBuildSizesInfoKHR AccelerationStructureBuildSizesInfo{};
+        AccelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+        V::vkGetAccelerationStructureBuildSizesKHR(LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &AccelerationStructureBuildGeometry, &CountInstances, &AccelerationStructureBuildSizesInfo);
+        TLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
+        ScratchBuffer = ResourceAllocator->CreateBuffer(AccelerationStructureBuildSizesInfo.buildScratchSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        AccelerationStructureBuildGeometry.srcAccelerationStructure = TLAS.AccelerationStructure;
+        AccelerationStructureBuildGeometry.dstAccelerationStructure = TLAS.AccelerationStructure;
+        AccelerationStructureBuildGeometry.scratchData.deviceAddress = GetBufferDeviceAddressInfo(ScratchBuffer);
+        VkAccelerationStructureBuildRangeInfoKHR AccelerationStructureBuildRangeInfo{};
+        AccelerationStructureBuildRangeInfo.primitiveCount = CountInstances;
+        const VkAccelerationStructureBuildRangeInfoKHR* AccelerationStructureBuildRangeInfoPtr = &AccelerationStructureBuildRangeInfo;
+        V::vkCmdBuildAccelerationStructuresKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometry, &AccelerationStructureBuildRangeInfoPtr);
+    });
+
+    ResourceAllocator->DestroyBuffer(BlasInstanceBuffer);
+    ResourceAllocator->DestroyBuffer(ScratchBuffer);
+
+    return TLAS;
+}
+
 VkDevice FVulkanContext::CreateLogicalDevice(VkPhysicalDevice PhysicalDeviceIn, FVulkanContextOptions& VulkanContextOptions)
 {
     std::set<uint32_t> QueueIndices;
@@ -454,18 +716,28 @@ VkDevice FVulkanContext::CreateLogicalDevice(VkPhysicalDevice PhysicalDeviceIn, 
     auto DeviceQueueCreateInfo = GetDeviceQueueCreateInfo(PhysicalDeviceIn, QueueIndices);
     VkDeviceCreateInfo CreateInfo{};
 
-    VkPhysicalDeviceFeatures DeviceFeatures{};
-    DeviceFeatures.samplerAnisotropy = VK_TRUE;
-    DeviceFeatures.sampleRateShading = VK_TRUE;
+    VkPhysicalDeviceFeatures2 DeviceFeatures2{};
+    DeviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    DeviceFeatures2.features.samplerAnisotropy = VK_TRUE;
+    DeviceFeatures2.features.sampleRateShading = VK_TRUE;
+
+    VulkanContextOptions.BuildDevicePNextChain(reinterpret_cast<BaseVulkanStructure*>(&DeviceFeatures2));
+
+    auto Debug = VulkanContextOptions.GetDeviceExtensionStructurePtr<VkDebugUtilsMessengerCreateInfoEXT>(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
+    auto AccelerationStructure = VulkanContextOptions.GetDeviceExtensionStructurePtr<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR);
+    auto RayTracingPipeline = VulkanContextOptions.GetDeviceExtensionStructurePtr<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR);
+    auto DeviceBufferDeviceAddress = VulkanContextOptions.GetDeviceExtensionStructurePtr<VkPhysicalDeviceBufferDeviceAddressFeatures>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES);
+    auto HostQueryReset = VulkanContextOptions.GetDeviceExtensionStructurePtr<VkPhysicalDeviceHostQueryResetFeatures>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES);
 
     CreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     CreateInfo.pQueueCreateInfos = DeviceQueueCreateInfo.data();
     CreateInfo.queueCreateInfoCount = static_cast<uint32_t>(QueueIndices.size());
-    CreateInfo.pEnabledFeatures = &DeviceFeatures;
-    VulkanContextOptions.BuildDevicePNextChain(reinterpret_cast<BaseVulkanStructure*>(&CreateInfo));
+    CreateInfo.pNext = &DeviceFeatures2;
+
     auto DeviceExtensions = VulkanContextOptions.GetDeviceExtensionsList();
     CreateInfo.enabledExtensionCount = static_cast<uint32_t>(DeviceExtensions.size());
     CreateInfo.ppEnabledExtensionNames = DeviceExtensions.data();
+
     auto DeviceLayers = VulkanContextOptions.GetDeviceLayers();
     CreateInfo.enabledLayerCount = static_cast<uint32_t>(DeviceLayers.size());
     CreateInfo.ppEnabledLayerNames = DeviceLayers.data();
@@ -903,6 +1175,81 @@ VkPipeline FVulkanContext::CreateGraphicsPipeline(VkShaderModule VertexShader, V
     {
         throw std::runtime_error("Failed to create graphics pipeline!");
     }
+
+    return Pipeline;
+}
+
+VkPipeline FVulkanContext::CreateRayTracingPipeline(VkShaderModule RayGenShader, VkShaderModule RayMissShader, VkShaderModule RayClosestHitShader, std::uint32_t Width, std::uint32_t Height, VkPipelineLayout PipelineLayout)
+{
+    std::vector<VkPipelineShaderStageCreateInfo> Stages(3);
+
+    Stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    Stages[0].pName = "main";
+    Stages[0].module = RayGenShader;
+    Stages[0].stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+
+    Stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    Stages[1].pName = "main";
+    Stages[1].module = RayMissShader;
+    Stages[1].stage = VK_SHADER_STAGE_MISS_BIT_KHR;
+
+    Stages[2].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    Stages[2].pName = "main";
+    Stages[2].module = RayClosestHitShader;
+    Stages[2].stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+
+    std::vector<VkRayTracingShaderGroupCreateInfoKHR> RayTracingShaderGroupCreateInfoVector;
+
+    for (uint32_t i = 0; i < Stages.size(); ++i)
+    {
+        VkRayTracingShaderGroupCreateInfoKHR RayTracingShaderGroupCreateInfo{};
+        RayTracingShaderGroupCreateInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+        RayTracingShaderGroupCreateInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
+        RayTracingShaderGroupCreateInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
+        RayTracingShaderGroupCreateInfo.generalShader = VK_SHADER_UNUSED_KHR;
+        RayTracingShaderGroupCreateInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+
+        switch (Stages[i].stage)
+        {
+            case VK_SHADER_STAGE_RAYGEN_BIT_KHR:
+            {
+                RayTracingShaderGroupCreateInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+                RayTracingShaderGroupCreateInfo.generalShader = i;
+                break;
+            }
+            case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
+            {
+                RayTracingShaderGroupCreateInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
+                RayTracingShaderGroupCreateInfo.closestHitShader = i;
+                break;
+            }
+            case VK_SHADER_STAGE_MISS_BIT_KHR:
+            {
+                RayTracingShaderGroupCreateInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+                RayTracingShaderGroupCreateInfo.generalShader = i;
+                break;
+            }
+            default:
+            {
+                throw std::runtime_error("Failed to create ray tracing pipeline! Incorrect group info.");
+            }
+        }
+
+        RayTracingShaderGroupCreateInfoVector.push_back(RayTracingShaderGroupCreateInfo);
+    }
+
+    VkRayTracingPipelineCreateInfoKHR RayTracingPipelineCreateInfo{};
+    RayTracingPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
+    RayTracingPipelineCreateInfo.stageCount = static_cast<uint32_t>(Stages.size());
+    RayTracingPipelineCreateInfo.pStages = Stages.data();
+    RayTracingPipelineCreateInfo.groupCount = static_cast<uint32_t>(RayTracingShaderGroupCreateInfoVector.size());
+    RayTracingPipelineCreateInfo.pGroups = RayTracingShaderGroupCreateInfoVector.data();
+    RayTracingPipelineCreateInfo.maxPipelineRayRecursionDepth = 1;
+    RayTracingPipelineCreateInfo.layout = PipelineLayout;
+
+    VkPipeline Pipeline;
+
+    V::vkCreateRayTracingPipelinesKHR(LogicalDevice, {}, {}, 1, &RayTracingPipelineCreateInfo, nullptr, &Pipeline);
 
     return Pipeline;
 }

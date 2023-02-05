@@ -13,7 +13,7 @@ FResourceAllocator::FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice
 
     /// Create staging buffer
     StagingBuffer = CreateBuffer(StagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Staging_Buffer");
-    MeshBuffer = CreateBuffer(MeshBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "Mesh_Buffer");
+    MeshBuffer = CreateBuffer(MeshBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "Mesh_Buffer");
 }
 
 FResourceAllocator::~FResourceAllocator()
@@ -22,7 +22,7 @@ FResourceAllocator::~FResourceAllocator()
     DestroyBuffer(MeshBuffer);
 }
 
-FMemoryRegion FResourceAllocator::AllocateMemory(VkDeviceSize Size, VkMemoryRequirements MemRequirements, VkMemoryPropertyFlags Properties)
+FMemoryRegion FResourceAllocator::AllocateMemory(VkDeviceSize Size, VkMemoryRequirements MemRequirements, VkMemoryPropertyFlags Properties, bool bDeviceAddressRequired)
 {
     /// Allocate Device Memory
 
@@ -32,6 +32,14 @@ FMemoryRegion FResourceAllocator::AllocateMemory(VkDeviceSize Size, VkMemoryRequ
     AllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     AllocInfo.allocationSize = MemRequirements.size;
     AllocInfo.memoryTypeIndex = FindMemoryType(MemRequirements.memoryTypeBits, Properties);
+
+    if (bDeviceAddressRequired)
+    {
+        VkMemoryAllocateFlagsInfo MemoryAllocateFlagsInfo{};
+        MemoryAllocateFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
+        MemoryAllocateFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+        AllocInfo.pNext = &MemoryAllocateFlagsInfo;
+    }
 
     if (vkAllocateMemory(Device, &AllocInfo, nullptr, &MemoryRegion.Memory) != VK_SUCCESS)
     {
@@ -64,7 +72,9 @@ FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags U
     VkMemoryRequirements MemRequirements;
     vkGetBufferMemoryRequirements(Device, Buffer.Buffer, &MemRequirements);
 
-    Buffer.MemoryRegion = AllocateMemory(Size, MemRequirements, Properties);
+    bool bDeviceAddressRequired = (Usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) == VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
+    Buffer.MemoryRegion = AllocateMemory(Size, MemRequirements, Properties, bDeviceAddressRequired);
 
     V::SetName(Device, Buffer.MemoryRegion.Memory, DebugName + "_Memmory");
 
@@ -159,6 +169,18 @@ void FResourceAllocator::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDe
         CopyRegion.dstOffset = DestinationOffset;
         vkCmdCopyBuffer(CommandBuffer, SrcBuffer.Buffer, DstBuffer.Buffer, 1, &CopyRegion);
     });
+}
+
+void* FResourceAllocator::Map(FBuffer& Buffer)
+{
+    void* Data;
+    vkMapMemory(Device, Buffer.MemoryRegion.Memory, 0, Buffer.BufferSize, 0, &Data);
+    return Data;
+}
+
+void FResourceAllocator::Unmap(FBuffer& Buffer)
+{
+    vkUnmapMemory(Device, Buffer.MemoryRegion.Memory);
 }
 
 void FResourceAllocator::CopyBufferToImage(FBuffer &SrcBuffer, FImage &DstImage)

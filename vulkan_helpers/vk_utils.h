@@ -94,11 +94,26 @@ struct FVulkanContextOptions
     void BuildDevicePNextChain(BaseVulkanStructure* CreateInfo);
 
     template <class T>
-    T* GetExtensionStructurePtr(VkStructureType StructureType)
+    T* GetInstanceExtensionStructurePtr(VkStructureType StructureType)
     {
         for (auto Extension : InstanceOptions.ExtensionVector.Extensions)
         {
             void* Ptr = &InstanceOptions.ExtensionVector.ExtensionsData[Extension.ExtensionStructureOffset];
+            auto CastedStruct = reinterpret_cast<BaseVulkanStructure*>(Ptr);
+            if (CastedStruct->sType == StructureType)
+            {
+                return reinterpret_cast<T*>(Ptr);;
+            }
+        }
+        return nullptr;
+    }
+
+    template <class T>
+    T* GetDeviceExtensionStructurePtr(VkStructureType StructureType)
+    {
+        for (auto Extension : DeviceOptions.ExtensionVector.Extensions)
+        {
+            void* Ptr = &DeviceOptions.ExtensionVector.ExtensionsData[Extension.ExtensionStructureOffset];
             auto CastedStruct = reinterpret_cast<BaseVulkanStructure*>(Ptr);
             if (CastedStruct->sType == StructureType)
             {

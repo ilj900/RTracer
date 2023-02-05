@@ -13,7 +13,7 @@ public:
     FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice Device, FVulkanContext* Context);
     ~FResourceAllocator();
 
-    FMemoryRegion AllocateMemory(VkDeviceSize Size, VkMemoryRequirements MemRequirements, VkMemoryPropertyFlags Properties);
+    FMemoryRegion AllocateMemory(VkDeviceSize Size, VkMemoryRequirements MemRequirements, VkMemoryPropertyFlags Properties, bool bDeviceAddressRequired = false);
 
     FBuffer CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, const std::string& DebugName = "");
     FMemoryPtr PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data);
@@ -22,6 +22,8 @@ public:
     void LoadDataToStagingBuffer(VkDeviceSize Size, void* Data);
     void LoadDataFromStaginBuffer(VkDeviceSize Size, void* Data);
     void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset);
+    void* Map(FBuffer& Buffer);
+    void Unmap(FBuffer& Buffer);
 
     FMemoryRegion LoadDataToImage(FImage& Image, VkDeviceSize Size, void* Data);
     void CopyBufferToImage(FBuffer& SrcBuffer, FImage& DstImage);

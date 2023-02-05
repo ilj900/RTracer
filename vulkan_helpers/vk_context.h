@@ -13,6 +13,7 @@
 #include "descriptors.h"
 #include "image.h"
 #include "renderpass.h"
+#include "vk_acceleration_structure.h"
 #include "vk_utils.h"
 #include "vk_pipeline.h"
 
@@ -58,6 +59,8 @@ public:
     VkPhysicalDevice PickPhysicalDevice(FVulkanContextOptions& VulkanContextOptions, VkSurfaceKHR SurfaceIn);
     void SetPhysicalDevice(VkPhysicalDevice PhysicalDeviceIn);
     VkPhysicalDevice GetPhysicalDevice() const;
+    VkPhysicalDeviceProperties2 GetPhysicalDeviceProperties2(VkPhysicalDevice PhysicalDevice, void* pNextStructure);
+    VkPhysicalDeviceRayTracingPipelinePropertiesKHR GetRTProperties();
 
     VkInstance CreateVkInstance(const std::string& AppName, const FVersion3& AppVersion, const std::string& EngineName, const FVersion3& EngineVersion, uint32_t ApiVersion, FVulkanContextOptions& VulkanContextOptions);
     std::vector<VkPhysicalDevice> EnumerateAllPhysicalDevices(VkInstance InstanceIn);
@@ -94,6 +97,17 @@ public:
     void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset) const;
     void DestroyBuffer(FBuffer& Buffer) const;
 
+    FAccelerationStructure CreateAccelerationStructure(VkDeviceSize Size, VkAccelerationStructureTypeKHR Type, const std::string& DebugName = "");
+    void DestroyAccelerationStructure(FAccelerationStructure &AccelerationStructure);
+    VkDeviceAddress GetBufferDeviceAddressInfo(FBuffer& Buffer);
+    VkDeviceAddress GetASDeviceAddressInfo(FAccelerationStructure& AS);
+    VkAccelerationStructureGeometryTrianglesDataKHR GetAccelerationStructureGeometryTrianglesData(FBuffer& VertexBuffer, FBuffer& IndexBuffer, VkDeviceSize VertexStride, uint32_t MaxVertices);
+    VkAccelerationStructureGeometryKHR GetAccelerationStructureGeometry(VkAccelerationStructureGeometryTrianglesDataKHR& AccelerationStructureGeometryTrianglesData);
+    VkAccelerationStructureBuildRangeInfoKHR GetAccelerationStructureBuildRangeInfo(uint32_t PrimitiveCount, uint32_t FirstVertex, uint32_t PrimitiveOffset);
+    VkAccelerationStructureBuildGeometryInfoKHR GetAccelerationStructureBuildGeometryInfo(VkAccelerationStructureGeometryKHR& AccelerationStructureGeometry, VkBuildAccelerationStructureFlagsKHR Flags);
+    FAccelerationStructure GenerateBlas(FBuffer& VertexBuffer, FBuffer& IndexBuffer, VkDeviceSize VertexStride, uint32_t MaxVertices, uint32_t FirstVertex, uint32_t PrimitiveOffset);
+    FAccelerationStructure GenerateTlas(std::vector<FAccelerationStructure> BLASes, std::vector<FMatrix4> TransformMatrices, std::vector<uint32_t> BlasIndices);
+
     ImagePtr CreateImage2D(uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format,
                                VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties,
                                VkImageAspectFlags AspectFlags, VkDevice Device, const std::string& DebugImageName);
@@ -112,6 +126,7 @@ public:
     VkShaderModule CreateShaderFromFile(const std::string& FileName);
     VkRenderPass CreateRenderpass(VkDevice LogicalDevice, FGraphicsPipelineOptions& GraphicsPipelineOptions);
     VkPipeline CreateGraphicsPipeline(VkShaderModule VertexShader, VkShaderModule FragmentShader, std::uint32_t Width, std::uint32_t Height, FGraphicsPipelineOptions& GraphicsPipelineOptions);
+    VkPipeline CreateRayTracingPipeline(VkShaderModule RayGenShader, VkShaderModule RayMissShader, VkShaderModule VertexShader, std::uint32_t Width, std::uint32_t Height, VkPipelineLayout PipelineLayout);
 
     VkSemaphore CreateSemaphore() const;
     VkFence CreateSignalledFence() const;

@@ -51,10 +51,32 @@ FRender::FRender()
         VulkanContextOptions.AddInstanceExtension(ExtensionsRequiredByGLFW[i]);
     }
 
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR PhysicalDeviceAccelerationStructureFeatures{};
+    PhysicalDeviceAccelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+    PhysicalDeviceAccelerationStructureFeatures.accelerationStructure = VK_TRUE;
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, &PhysicalDeviceAccelerationStructureFeatures, sizeof(VkPhysicalDeviceAccelerationStructureFeaturesKHR));
+
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR PhysicalDeviceRayTracingPipelineFeatures{};
+    PhysicalDeviceRayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+    PhysicalDeviceRayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, &PhysicalDeviceRayTracingPipelineFeatures, sizeof(VkPhysicalDeviceRayTracingPipelineFeaturesKHR));
+
+    VkPhysicalDeviceBufferDeviceAddressFeatures PhysicalDeviceBufferDeviceAddressFeatures{};
+    PhysicalDeviceBufferDeviceAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+    PhysicalDeviceBufferDeviceAddressFeatures.bufferDeviceAddress = VK_TRUE;
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, &PhysicalDeviceBufferDeviceAddressFeatures, sizeof(VkPhysicalDeviceBufferDeviceAddressFeatures));
+
+    VkPhysicalDeviceHostQueryResetFeatures PhysicalDeviceHostQueryResetFeatures{};
+    PhysicalDeviceHostQueryResetFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES;
+    PhysicalDeviceHostQueryResetFeatures.hostQueryReset = VK_TRUE;
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_RAY_QUERY_EXTENSION_NAME, &PhysicalDeviceHostQueryResetFeatures, sizeof(VkPhysicalDeviceHostQueryResetFeatures));
+
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
     VulkanContextOptions.AddDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
     /// Create Vulkan instance
-    Instance = Context.CreateVkInstance("Hello Triangle", {1, 0, 0}, "No Engine", {1, 0, 0}, VK_API_VERSION_1_0, VulkanContextOptions);
+    Instance = Context.CreateVkInstance("Hello Triangle", {1, 3, 0}, "No Engine", {1, 3, 0}, VK_API_VERSION_1_3, VulkanContextOptions);
     Context.SetInstance(Instance);
 
     /// Load Vulkan options
@@ -136,18 +158,30 @@ int FRender::Init()
                                                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                                     VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_ResolvedColorImage");
 
-    RenderTask = std::make_shared<FRenderTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
-    RenderTask->RegisterOutput(0, ColorImage);
-    RenderTask->RegisterOutput(1, NormalsImage);
-    RenderTask->RegisterOutput(2, RenderableIndexImage);
-    RenderTask->RegisterOutput(3, ResolvedColorImage);
+    auto RTColorImage = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+                                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                              VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_RayTracingColorImage");
+    RTColorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-    RenderTask->Init();
-    RenderTask->UpdateDescriptorSets();
-    RenderTask->RecordCommands();
+//    RenderTask = std::make_shared<FRenderTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+//    RenderTask->RegisterOutput(0, ColorImage);
+//    RenderTask->RegisterOutput(1, NormalsImage);
+//    RenderTask->RegisterOutput(2, RenderableIndexImage);
+//    RenderTask->RegisterOutput(3, ResolvedColorImage);
+//
+//    RenderTask->Init();
+//    RenderTask->UpdateDescriptorSets();
+//    RenderTask->RecordCommands();
+
+    RayTraceTask = std::make_shared<FRaytraceTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    RayTraceTask->RegisterOutput(0, RTColorImage);
+
+    RayTraceTask->Init();
+    RayTraceTask->UpdateDescriptorSets();
+    RayTraceTask->RecordCommands();
 
     PassthroughTask = std::make_shared<FPassthroughTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
-    PassthroughTask->RegisterInput(0, RenderTask->GetOutput(3));
+    PassthroughTask->RegisterInput(0, RayTraceTask->GetOutput(0));
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
         PassthroughTask->RegisterOutput(i, Swapchain->Images[i]);
@@ -173,8 +207,8 @@ int FRender::Cleanup()
     UtilityImageR8G8B8A8_SRGB = nullptr;
     UtilityImageR32 = nullptr;
 
-    RenderTask->Cleanup();
-    RenderTask = nullptr;
+//    RenderTask->Cleanup();
+//    RenderTask = nullptr;
     PassthroughTask->Cleanup();
     PassthroughTask = nullptr;
     ImguiTask->Cleanup();
@@ -247,7 +281,7 @@ int FRender::Render()
     TRANSFORM_SYSTEM()->Update(CurrentFrame);
     RENDERABLE_SYSTEM()->Update(CurrentFrame);
 
-    auto RenderSignalSemaphore = RenderTask-> Submit(Context.GetGraphicsQueue(), ImageAvailableSemaphores[CurrentFrame], ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
+    auto RenderSignalSemaphore = RayTraceTask->Submit(Context.GetGraphicsQueue(), ImageAvailableSemaphores[CurrentFrame], ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
 
     auto PassthroughSignalSemaphore = PassthroughTask->Submit(Context.GetGraphicsQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
@@ -287,11 +321,11 @@ int FRender::LoadScene(const std::string& Path)
 {
     const uint32_t RENDERABLE_HAS_TEXTURE = 1 << 6;
 
-    AddMesh({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, Icosahedron, std::string(), 0);
+//    AddMesh({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, Icosahedron, std::string(), 0);
     AddMesh({0.9f, 0.6f, 0.0f}, {-3.f, 0.f, -2.f}, Tetrahedron, std::string(), 0);
     AddMesh({0.0f, 0.9f, 0.6f}, {1.f, 0.f, -2.f}, Hexahedron, std::string(), 0);
 
-    AddMesh({0.3f, 0.9f, 0.6f}, {-1.f, 0.f, -2.f}, Model, "../models/viking_room/viking_room.obj", RENDERABLE_HAS_TEXTURE);
+//    AddMesh({0.3f, 0.9f, 0.6f}, {-1.f, 0.f, -2.f}, Model, "../models/viking_room/viking_room.obj", RENDERABLE_HAS_TEXTURE);
 
     return 0;
 }
