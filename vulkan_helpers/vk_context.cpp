@@ -622,7 +622,7 @@ FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuff
         V::vkCmdCopyAccelerationStructureKHR(CommandBuffer, &CopyAccelerationStructureInfo);
     });
 
-//    DestroyAccelerationStructure(NotCompactedBLAS);
+    DestroyAccelerationStructure(NotCompactedBLAS);
 
     std::cout << "Delta in size: " << AccelerationStructureBuildSizesInfo.accelerationStructureSize - CompactedSize
               << ", not compacted size is: "<< AccelerationStructureBuildSizesInfo.accelerationStructureSize<< ", compacted: " << CompactedSize << "." << std::endl;
@@ -1190,13 +1190,13 @@ VkPipeline FVulkanContext::CreateRayTracingPipeline(VkShaderModule RayGenShader,
 
     Stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     Stages[1].pName = "main";
-    Stages[1].module = RayMissShader;
-    Stages[1].stage = VK_SHADER_STAGE_MISS_BIT_KHR;
+    Stages[1].module = RayClosestHitShader;
+    Stages[1].stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
 
     Stages[2].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     Stages[2].pName = "main";
-    Stages[2].module = RayClosestHitShader;
-    Stages[2].stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+    Stages[2].module = RayMissShader;
+    Stages[2].stage = VK_SHADER_STAGE_MISS_BIT_KHR;
 
     std::vector<VkRayTracingShaderGroupCreateInfoKHR> RayTracingShaderGroupCreateInfoVector;
 
@@ -1247,7 +1247,7 @@ VkPipeline FVulkanContext::CreateRayTracingPipeline(VkShaderModule RayGenShader,
     RayTracingPipelineCreateInfo.maxPipelineRayRecursionDepth = 1;
     RayTracingPipelineCreateInfo.layout = PipelineLayout;
 
-    VkPipeline Pipeline;
+    VkPipeline Pipeline = VK_NULL_HANDLE;
 
     V::vkCreateRayTracingPipelinesKHR(LogicalDevice, {}, {}, 1, &RayTracingPipelineCreateInfo, nullptr, &Pipeline);
 

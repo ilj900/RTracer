@@ -39,8 +39,8 @@ void FRaytraceTask::Init()
 {
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
-    auto RayClosestHitShader = Context->CreateShaderFromFile("../shaders/ray_closest_hit.spv");
     auto RayGenerationShader = Context->CreateShaderFromFile("../shaders/ray_gen.spv");
+    auto RayClosestHitShader = Context->CreateShaderFromFile("../shaders/ray_closest_hit.spv");
     auto RayMissShader = Context->CreateShaderFromFile("../shaders/ray_miss.spv");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
@@ -112,7 +112,7 @@ void FRaytraceTask::Init()
 
     VkDeviceSize SBTSize = RGenRegion.size + RMissRegion.size + RHitRegion.size;
     auto SBTBuffer = Context->ResourceAllocator->CreateBuffer(SBTSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
-                                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "V::SBT_Buffer");
 
     auto SBTBufferAddress = Context->GetBufferDeviceAddressInfo(SBTBuffer);
     RGenRegion.deviceAddress = SBTBufferAddress;

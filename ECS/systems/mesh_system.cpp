@@ -108,15 +108,24 @@ namespace ECS
                             Attrib.vertices[3 * Index.vertex_index + 2]
                     };
 
-                    Vert.Normal = {Attrib.normals[3 * Index.normal_index + 0],
-                                   Attrib.normals[3 * Index.normal_index + 1],
-                                   Attrib.normals[3 * Index.normal_index + 2]
-                    };
+                    if (!Attrib.normals.empty())
+                    {
+                        Vert.Normal =
+                        {
+                            Attrib.normals[3 * Index.normal_index + 0],
+                            Attrib.normals[3 * Index.normal_index + 1],
+                            Attrib.normals[3 * Index.normal_index + 2]
+                        };
+                    }
 
-                    Vert.TexCoord = {
-                            Attrib.texcoords[2 * Index.texcoord_index + 0],
-                            1.f - Attrib.texcoords[2 * Index.texcoord_index + 1],
-                    };
+                    if (!Attrib.texcoords.empty())
+                    {
+                        Vert.TexCoord =
+                        {
+                        Attrib.texcoords[2 * Index.texcoord_index + 0],
+                        1.f - Attrib.texcoords[2 * Index.texcoord_index + 1],
+                        };
+                    }
 
                     if (UniqueVertices.find(Vert) == UniqueVertices.end())
                     {
