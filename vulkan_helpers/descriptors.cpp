@@ -196,8 +196,6 @@ void FPipelineDescriptorSetLayout::UpdateDescriptorSetInfo(VkDevice LogicalDevic
 
 void FPipelineDescriptorSetLayout::UpdateDescriptorSetInfo(VkDevice LogicalDevice, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkAccelerationStructureKHR& ASInfo)
 {
-    auto& Descriptor = PipelineDescriptorSets[DescriptorSetLayoutIndex].DescriptorSets[DescriptorLayoutIndex];
-
     VkWriteDescriptorSetAccelerationStructureKHR WriteDescriptorSetAccelerationStructureKHR{};
     WriteDescriptorSetAccelerationStructureKHR.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
     WriteDescriptorSetAccelerationStructureKHR.pAccelerationStructures = &ASInfo;

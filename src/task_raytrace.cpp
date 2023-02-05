@@ -33,6 +33,12 @@ FRaytraceTask::FRaytraceTask(int WidthIn, int HeightIn, FVulkanContext* Context,
 FRaytraceTask::~FRaytraceTask()
 {
     FreeSyncObjects();
+
+    Context->DestroyAccelerationStructure(TLAS);
+    for (auto BLAS : BLASVector)
+    {
+        Context->DestroyAccelerationStructure(BLAS);
+    }
 }
 
 void FRaytraceTask::Init()
@@ -111,7 +117,7 @@ void FRaytraceTask::Init()
     assert(Result == VK_SUCCESS && "Failed to get handles for SBT");
 
     VkDeviceSize SBTSize = RGenRegion.size + RMissRegion.size + RHitRegion.size;
-    auto SBTBuffer = Context->ResourceAllocator->CreateBuffer(SBTSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
+    SBTBuffer = Context->ResourceAllocator->CreateBuffer(SBTSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "V::SBT_Buffer");
 
     auto SBTBufferAddress = Context->GetBufferDeviceAddressInfo(SBTBuffer);
@@ -180,7 +186,20 @@ void FRaytraceTask::RecordCommands()
 
 void FRaytraceTask::Cleanup()
 {
+    Inputs.clear();
+    Outputs.clear();
 
+    for (auto& CommandBuffer : CommandBuffers)
+    {
+        Context->CommandBufferManager->FreeCommandBuffer(CommandBuffer);
+    }
+
+    Context->DescriptorSetManager->DestroyPipelineLayout(Name);
+    vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
+
+    Context->DescriptorSetManager->Reset(Name);
+
+    Context->DestroyBuffer(SBTBuffer);
 };
 
 VkSemaphore FRaytraceTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)

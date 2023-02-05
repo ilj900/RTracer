@@ -209,6 +209,8 @@ int FRender::Cleanup()
 
 //    RenderTask->Cleanup();
 //    RenderTask = nullptr;
+    RayTraceTask->Cleanup();
+    RayTraceTask = nullptr;
     PassthroughTask->Cleanup();
     PassthroughTask = nullptr;
     ImguiTask->Cleanup();

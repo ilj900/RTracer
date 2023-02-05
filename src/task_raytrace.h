@@ -17,6 +17,7 @@ public:
 
     std::vector<FAccelerationStructure> BLASVector;
     FAccelerationStructure TLAS;
+    FBuffer SBTBuffer;
 
     VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
     VkPipeline Pipeline = VK_NULL_HANDLE;

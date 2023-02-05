@@ -623,6 +623,7 @@ FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuff
     });
 
     DestroyAccelerationStructure(NotCompactedBLAS);
+    DestroyBuffer(ScratchBuffer);
 
     std::cout << "Delta in size: " << AccelerationStructureBuildSizesInfo.accelerationStructureSize - CompactedSize
               << ", not compacted size is: "<< AccelerationStructureBuildSizesInfo.accelerationStructureSize<< ", compacted: " << CompactedSize << "." << std::endl;
@@ -655,7 +656,8 @@ FAccelerationStructure FVulkanContext::GenerateTlas(std::vector<FAccelerationStr
 
     auto BlasInstanceBuffer = ResourceAllocator->CreateBuffer(AccelerationStructureInstanceVector.size() * sizeof(VkAccelerationStructureInstanceKHR),
                                                                        VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V_BLAS_Instance_Buffer");
-    ResourceAllocator->PushDataToBuffer(BlasInstanceBuffer, AccelerationStructureInstanceVector.size(), AccelerationStructureInstanceVector.data());
+    ResourceAllocator->PushDataToBuffer(BlasInstanceBuffer, AccelerationStructureInstanceVector.size() * sizeof(VkAccelerationStructureInstanceKHR), AccelerationStructureInstanceVector.data());
+
     auto BlasInstanceBufferAddress = GetBufferDeviceAddressInfo(BlasInstanceBuffer);
 
     FAccelerationStructure TLAS;
@@ -688,8 +690,8 @@ FAccelerationStructure FVulkanContext::GenerateTlas(std::vector<FAccelerationStr
         VkAccelerationStructureBuildSizesInfoKHR AccelerationStructureBuildSizesInfo{};
         AccelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
         V::vkGetAccelerationStructureBuildSizesKHR(LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &AccelerationStructureBuildGeometry, &CountInstances, &AccelerationStructureBuildSizesInfo);
-        TLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
-        ScratchBuffer = ResourceAllocator->CreateBuffer(AccelerationStructureBuildSizesInfo.buildScratchSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        TLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR, "V::TLAS");
+        ScratchBuffer = ResourceAllocator->CreateBuffer(AccelerationStructureBuildSizesInfo.buildScratchSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V::TLAS_Scratch_Buffer");
         AccelerationStructureBuildGeometry.srcAccelerationStructure = TLAS.AccelerationStructure;
         AccelerationStructureBuildGeometry.dstAccelerationStructure = TLAS.AccelerationStructure;
         AccelerationStructureBuildGeometry.scratchData.deviceAddress = GetBufferDeviceAddressInfo(ScratchBuffer);
