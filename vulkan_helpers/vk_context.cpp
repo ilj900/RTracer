@@ -506,12 +506,12 @@ VkDeviceAddress FVulkanContext::GetASDeviceAddressInfo(FAccelerationStructure& A
     return V::vkGetAccelerationStructureDeviceAddressKHR(LogicalDevice, &AccelerationStructureDeviceAddressInfo);
 }
 
-VkAccelerationStructureGeometryTrianglesDataKHR FVulkanContext::GetAccelerationStructureGeometryTrianglesData(FBuffer& VertexBuffer, FBuffer& IndexBuffer, VkDeviceSize VertexStride, uint32_t MaxVertices)
+VkAccelerationStructureGeometryTrianglesDataKHR FVulkanContext::GetAccelerationStructureGeometryTrianglesData(FBuffer& VertexBuffer, FBuffer& IndexBuffer, VkDeviceSize VertexStride, uint32_t MaxVertices, uint32_t BufferVertexDataOffset)
 {
     VkAccelerationStructureGeometryTrianglesDataKHR AccelerationStructureGeometryTrianglesData{};
     AccelerationStructureGeometryTrianglesData.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
     AccelerationStructureGeometryTrianglesData.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
-    AccelerationStructureGeometryTrianglesData.vertexData.deviceAddress = GetBufferDeviceAddressInfo(VertexBuffer);
+    AccelerationStructureGeometryTrianglesData.vertexData.deviceAddress = GetBufferDeviceAddressInfo(VertexBuffer) + BufferVertexDataOffset;
     AccelerationStructureGeometryTrianglesData.vertexStride = VertexStride;
 //    if (IndexBuffer.Buffer)
 //    {
@@ -534,12 +534,12 @@ VkAccelerationStructureGeometryKHR FVulkanContext::GetAccelerationStructureGeome
     return AccelerationStructureGeometry;
 }
 
-VkAccelerationStructureBuildRangeInfoKHR FVulkanContext::GetAccelerationStructureBuildRangeInfo(uint32_t PrimitiveCount, uint32_t FirstVertex, uint32_t PrimitiveOffset)
+VkAccelerationStructureBuildRangeInfoKHR FVulkanContext::GetAccelerationStructureBuildRangeInfo(uint32_t PrimitiveCount, uint32_t PrimitiveOffset)
 {
     VkAccelerationStructureBuildRangeInfoKHR AccelerationStructureBuildRangeInfo{};
-    AccelerationStructureBuildRangeInfo.firstVertex = FirstVertex;
+    AccelerationStructureBuildRangeInfo.firstVertex = 0;
     AccelerationStructureBuildRangeInfo.primitiveCount = PrimitiveCount;
-    AccelerationStructureBuildRangeInfo.primitiveOffset = PrimitiveOffset;
+    AccelerationStructureBuildRangeInfo.primitiveOffset = 0;
     AccelerationStructureBuildRangeInfo.transformOffset = 0;
 
     return AccelerationStructureBuildRangeInfo;
@@ -558,12 +558,12 @@ VkAccelerationStructureBuildGeometryInfoKHR FVulkanContext::GetAccelerationStruc
     return AccelerationStructureBuildGeometryInfo;
 }
 
-FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuffer& IndexBuffer, VkDeviceSize VertexStride, uint32_t MaxVertices, uint32_t FirstVertex, uint32_t PrimitiveOffset)
+FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuffer& IndexBuffer, VkDeviceSize VertexStride, uint32_t MaxVertices, uint32_t PrimitiveOffset)
 {
-    VkAccelerationStructureGeometryTrianglesDataKHR AccelerationStructureGeometryTrianglesData = GetAccelerationStructureGeometryTrianglesData(VertexBuffer, IndexBuffer, VertexStride, MaxVertices);
+    VkAccelerationStructureGeometryTrianglesDataKHR AccelerationStructureGeometryTrianglesData = GetAccelerationStructureGeometryTrianglesData(VertexBuffer, IndexBuffer, VertexStride, MaxVertices, PrimitiveOffset);
     VkAccelerationStructureGeometryKHR AccelerationStructureGeometry = GetAccelerationStructureGeometry(AccelerationStructureGeometryTrianglesData);
     VkAccelerationStructureBuildGeometryInfoKHR AccelerationStructureBuildGeometryInfo = GetAccelerationStructureBuildGeometryInfo(AccelerationStructureGeometry, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR);
-    VkAccelerationStructureBuildRangeInfoKHR AccelerationStructureBuildRangeInfo = GetAccelerationStructureBuildRangeInfo(MaxVertices/3, FirstVertex, PrimitiveOffset);
+    VkAccelerationStructureBuildRangeInfoKHR AccelerationStructureBuildRangeInfo = GetAccelerationStructureBuildRangeInfo(MaxVertices/3, PrimitiveOffset);
 
     const VkAccelerationStructureBuildRangeInfoKHR*  VkAccelerationStructureBuildRangeInfoKHRPtr= &AccelerationStructureBuildRangeInfo;
 
