@@ -766,13 +766,22 @@ VkDevice FVulkanContext::GetLogicalDevice() const
 
 void FVulkanContext::GetDeviceQueues(VkSurfaceKHR Surface)
 {
+    static std::unordered_map<VkQueueFlagBits, std::string> QueueTypeToStringNameMap =
+            {
+                    {VK_QUEUE_GRAPHICS_BIT, "V::Graphics_Queue"},
+                    {VK_QUEUE_COMPUTE_BIT, "V::Compute_Queue"},
+                    {VK_QUEUE_TRANSFER_BIT, "V::Transfer_Queue"},
+                    {VK_QUEUE_SPARSE_BINDING_BIT, "V::Sparse_Binding_Queue"}
+            };
     for (auto& Entry : Queues)
     {
         CheckDeviceQueueSupport(PhysicalDevice, Entry.first, Entry.second.QueueIndex);
         vkGetDeviceQueue(LogicalDevice, Entry.second.QueueIndex, 0, &Entry.second.Queue);
+        V::SetName(LogicalDevice, Entry.second.Queue, QueueTypeToStringNameMap[Entry.first]);
     }
     CheckDeviceQueuePresentSupport(PhysicalDevice, PresentQueue.QueueIndex, Surface);
     vkGetDeviceQueue(LogicalDevice, PresentQueue.QueueIndex, 0, &PresentQueue.Queue);
+    V::SetName(LogicalDevice, PresentQueue.Queue, "V::Present_Queue");
 }
 
 std::vector<VkDeviceQueueCreateInfo> FVulkanContext::GetDeviceQueueCreateInfo(VkPhysicalDevice PhysicalDevice, std::set<uint32_t> UniqueQueueFamilies)
