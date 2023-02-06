@@ -1199,15 +1199,15 @@ VkPipeline FVulkanContext::CreateRayTracingPipeline(VkShaderModule RayGenShader,
     Stages[0].module = RayGenShader;
     Stages[0].stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
 
-    Stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    Stages[1].pName = "main";
-    Stages[1].module = RayClosestHitShader;
-    Stages[1].stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-
     Stages[2].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     Stages[2].pName = "main";
-    Stages[2].module = RayMissShader;
-    Stages[2].stage = VK_SHADER_STAGE_MISS_BIT_KHR;
+    Stages[2].module = RayClosestHitShader;
+    Stages[2].stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+
+    Stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    Stages[1].pName = "main";
+    Stages[1].module = RayMissShader;
+    Stages[1].stage = VK_SHADER_STAGE_MISS_BIT_KHR;
 
     std::vector<VkRayTracingShaderGroupCreateInfoKHR> RayTracingShaderGroupCreateInfoVector;
 
