@@ -506,18 +506,18 @@ VkDeviceAddress FVulkanContext::GetASDeviceAddressInfo(FAccelerationStructure& A
     return V::vkGetAccelerationStructureDeviceAddressKHR(LogicalDevice, &AccelerationStructureDeviceAddressInfo);
 }
 
-VkAccelerationStructureGeometryTrianglesDataKHR FVulkanContext::GetAccelerationStructureGeometryTrianglesData(FBuffer& VertexBuffer, FBuffer& IndexBuffer, VkDeviceSize VertexStride, uint32_t MaxVertices, uint32_t BufferVertexDataOffset)
+VkAccelerationStructureGeometryTrianglesDataKHR FVulkanContext::GetAccelerationStructureGeometryTrianglesData(FBuffer& VertexBuffer, FBuffer& IndexBuffer, VkDeviceSize VertexStride, uint32_t MaxVertices, FMemoryPtr& VertexBufferPtr, FMemoryPtr& IndexBufferPtr)
 {
     VkAccelerationStructureGeometryTrianglesDataKHR AccelerationStructureGeometryTrianglesData{};
     AccelerationStructureGeometryTrianglesData.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
     AccelerationStructureGeometryTrianglesData.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
-    AccelerationStructureGeometryTrianglesData.vertexData.deviceAddress = GetBufferDeviceAddressInfo(VertexBuffer) + BufferVertexDataOffset;
+    AccelerationStructureGeometryTrianglesData.vertexData.deviceAddress = GetBufferDeviceAddressInfo(VertexBuffer) + VertexBufferPtr.Offset;
     AccelerationStructureGeometryTrianglesData.vertexStride = VertexStride;
-//    if (IndexBuffer.Buffer)
-//    {
-//        AccelerationStructureGeometryTrianglesData.indexType = VK_INDEX_TYPE_UINT32;
-//        AccelerationStructureGeometryTrianglesData.indexData.deviceAddress = GetBufferDeviceAddressInfo(IndexBuffer);
-//    }
+    if (IndexBufferPtr.Size != 0)
+    {
+        AccelerationStructureGeometryTrianglesData.indexType = VK_INDEX_TYPE_UINT32;
+        AccelerationStructureGeometryTrianglesData.indexData.deviceAddress = GetBufferDeviceAddressInfo(IndexBuffer) + IndexBufferPtr.Offset;
+    }
     AccelerationStructureGeometryTrianglesData.maxVertex = MaxVertices;
 
     return AccelerationStructureGeometryTrianglesData;
@@ -534,7 +534,7 @@ VkAccelerationStructureGeometryKHR FVulkanContext::GetAccelerationStructureGeome
     return AccelerationStructureGeometry;
 }
 
-VkAccelerationStructureBuildRangeInfoKHR FVulkanContext::GetAccelerationStructureBuildRangeInfo(uint32_t PrimitiveCount, uint32_t PrimitiveOffset)
+VkAccelerationStructureBuildRangeInfoKHR FVulkanContext::GetAccelerationStructureBuildRangeInfo(uint32_t PrimitiveCount)
 {
     VkAccelerationStructureBuildRangeInfoKHR AccelerationStructureBuildRangeInfo{};
     AccelerationStructureBuildRangeInfo.firstVertex = 0;
@@ -558,12 +558,12 @@ VkAccelerationStructureBuildGeometryInfoKHR FVulkanContext::GetAccelerationStruc
     return AccelerationStructureBuildGeometryInfo;
 }
 
-FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuffer& IndexBuffer, VkDeviceSize VertexStride, uint32_t MaxVertices, uint32_t PrimitiveOffset)
+FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuffer& IndexBuffer, VkDeviceSize VertexStride, uint32_t MaxVertices, FMemoryPtr& VertexBufferPtr, FMemoryPtr& IndexBufferPtr)
 {
-    VkAccelerationStructureGeometryTrianglesDataKHR AccelerationStructureGeometryTrianglesData = GetAccelerationStructureGeometryTrianglesData(VertexBuffer, IndexBuffer, VertexStride, MaxVertices, PrimitiveOffset);
+    VkAccelerationStructureGeometryTrianglesDataKHR AccelerationStructureGeometryTrianglesData = GetAccelerationStructureGeometryTrianglesData(VertexBuffer, IndexBuffer, VertexStride, MaxVertices, VertexBufferPtr, IndexBufferPtr);
     VkAccelerationStructureGeometryKHR AccelerationStructureGeometry = GetAccelerationStructureGeometry(AccelerationStructureGeometryTrianglesData);
     VkAccelerationStructureBuildGeometryInfoKHR AccelerationStructureBuildGeometryInfo = GetAccelerationStructureBuildGeometryInfo(AccelerationStructureGeometry, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR);
-    VkAccelerationStructureBuildRangeInfoKHR AccelerationStructureBuildRangeInfo = GetAccelerationStructureBuildRangeInfo(MaxVertices/3, PrimitiveOffset);
+    VkAccelerationStructureBuildRangeInfoKHR AccelerationStructureBuildRangeInfo = GetAccelerationStructureBuildRangeInfo(MaxVertices/3);
 
     const VkAccelerationStructureBuildRangeInfoKHR*  VkAccelerationStructureBuildRangeInfoKHRPtr= &AccelerationStructureBuildRangeInfo;
 
