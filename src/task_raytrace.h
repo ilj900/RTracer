@@ -33,4 +33,5 @@ public:
     const uint32_t TLAS_LAYOUT_INDEX = 0;
     const uint32_t CAMERA_LAYOUT_INDEX = 1;
     const uint32_t RT_FINAL_IMAGE_INDEX = 2;
+    const uint32_t RENDERABLE_BUFFER_INDEX = 3;
 };

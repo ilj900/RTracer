@@ -8,6 +8,7 @@
 #include "components/device_camera_component.h"
 #include "systems/camera_system.h"
 #include "systems/mesh_system.h"
+#include "systems/renderable_system.h"
 
 #include "task_raytrace.h"
 
@@ -24,6 +25,8 @@ FRaytraceTask::FRaytraceTask(int WidthIn, int HeightIn, FVulkanContext* Context,
                                               {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, RT_FINAL_IMAGE_INDEX,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, RENDERABLE_BUFFER_INDEX,
+                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 
     DescriptorSetManager->CreateDescriptorSetLayout(Name);
 
@@ -162,6 +165,12 @@ void FRaytraceTask::UpdateDescriptorSets()
         CameraBufferInfo.offset = 0;
         CameraBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, CAMERA_LAYOUT_INDEX, i, CameraBufferInfo);
+
+        VkDescriptorBufferInfo RenderableBufferInfo{};
+        RenderableBufferInfo.buffer = RENDERABLE_SYSTEM()->DeviceRenderableBuffer.Buffer;
+        RenderableBufferInfo.offset = 0;
+        RenderableBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, RENDERABLE_BUFFER_INDEX, i, RenderableBufferInfo);
     }
 };
 

@@ -29,7 +29,7 @@ namespace ECS
 
             VkDeviceSize RenderableBufferSize = DeviceRenderableComponentsSize * NumberOfSimultaneousSubmits;
 
-            DeviceRenderableBuffer = GetContext().CreateBuffer(RenderableBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Renderable_Buffer");
+            DeviceRenderableBuffer = GetContext().CreateBuffer(RenderableBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Renderable_Buffer");
 
             for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
             {
