@@ -22,6 +22,8 @@ public:
     VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
     VkPipeline Pipeline = VK_NULL_HANDLE;
 
+    VkSampler Sampler = VK_NULL_HANDLE;
+
     VkStridedDeviceAddressRegionKHR RGenRegion{};
     VkStridedDeviceAddressRegionKHR RMissRegion{};
     VkStridedDeviceAddressRegionKHR RHitRegion{};
@@ -34,4 +36,5 @@ public:
     const uint32_t CAMERA_LAYOUT_INDEX = 1;
     const uint32_t RT_FINAL_IMAGE_INDEX = 2;
     const uint32_t RENDERABLE_BUFFER_INDEX = 3;
+    const uint32_t IBL_IMAGE_INDEX = 4;
 };

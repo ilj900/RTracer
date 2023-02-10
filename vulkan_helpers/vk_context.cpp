@@ -18,6 +18,8 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+#include "tinyexr.h"
+
 static FVulkanContext Context{};
 
 FVulkanContext& GetContext()
@@ -858,6 +860,32 @@ ImagePtr FVulkanContext::CreateImage2D(uint32_t Width, uint32_t Height, bool bMi
 
     ImagePtr Image = std::make_shared<FImage>(Width, Height, bMipMapsRequired, NumSamples, Format, Tiling, Usage,
                                                  Properties, AspectFlags, Device, DebugImageName);
+    return Image;
+}
+
+ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const std::string& DebugImageName)
+{
+    float* Out;
+    int Width;
+    int Height;
+    const char* Err = nullptr;
+
+    int Result = LoadEXR(&Out, &Width, &Height, Path.c_str(), &Err);
+
+    assert(TINYEXR_SUCCESS == Result && "Failed to load .exr image.");
+
+    ImagePtr Image = std::make_shared<FImage>(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+                                              VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                              VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, DebugImageName);
+
+    V::SetName(LogicalDevice, Image->Image, DebugImageName);
+    V::SetName(LogicalDevice, Image->View, (std::string(DebugImageName) + "_ImageView").c_str());
+
+    Image->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    ResourceAllocator->LoadDataToImage(*Image, Width * Height * 4 * sizeof(float), Out);
+
+    free(Out);
+
     return Image;
 }
 

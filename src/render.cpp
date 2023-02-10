@@ -175,6 +175,7 @@ int FRender::Init()
 
     RayTraceTask = std::make_shared<FRaytraceTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     RayTraceTask->RegisterOutput(0, RTColorImage);
+    SetIBL("../resources/brown_photostudio_02_4k.exr");
 
     RayTraceTask->Init();
     RayTraceTask->UpdateDescriptorSets();
@@ -328,6 +329,15 @@ int FRender::LoadScene(const std::string& Path)
     AddMesh({0.9f, 0.6f, 0.0f}, {-3.f, 0.f, -2.f}, Tetrahedron, std::string(), 0);
     AddMesh({0.0f, 0.9f, 0.6f}, {1.f, 0.f, -2.f}, Hexahedron, std::string(), 0);
     AddMesh({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, Icosahedron, std::string(), 0);
+
+    return 0;
+}
+
+int FRender::SetIBL(const std::string& Path)
+{
+    ImagePtr IBLImage = GetContext().CreateEXRImageFromFile(Path, "V::IBL_Image");
+    IBLImage->Transition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    RayTraceTask->RegisterInput(0, IBLImage);
 
     return 0;
 }

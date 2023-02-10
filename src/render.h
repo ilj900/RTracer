@@ -32,9 +32,10 @@ public:
     int Render();
     int Update();
 
-    int LoadDataToGPU();
     int LoadScene(const std::string& Path);
     int AddMesh(const FVector3& Color, const FVector3& Position, MeshType Type, const std::string& Path, uint32_t RenderableMask);
+    int SetIBL(const std::string& Path);
+    int LoadDataToGPU();
 
     VkInstance Instance = VK_NULL_HANDLE;
     VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;

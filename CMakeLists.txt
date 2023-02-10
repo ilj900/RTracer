@@ -71,6 +71,7 @@ set(SOURCE
         src/task_imgui.cpp
         src/task_raytrace.h
         src/task_raytrace.cpp
+        src/tinyexr.cpp
         vulkan_helpers/vk_acceleration_structure.h
         vulkan_helpers/vk_context.h
         vulkan_helpers/vk_utils.cpp
@@ -82,6 +83,7 @@ set(SOURCE
         vulkan_helpers/descriptors.cpp
         vulkan_helpers/command_buffer_manager.cpp
         math/maths.cpp
+        include/miniz.c
         ${IMGUI_SOURCE})
 
 set(INCLUDE
@@ -105,6 +107,8 @@ set(INCLUDE
         include/stb_image.h
         include/stb_image_write.h
         include/tiny_obj_loader.h
+        include/tinyexr.h
+        include/miniz.c
         math/maths.h)
 
 add_executable(RTracer ${SOURCE} ${INCLUDE})

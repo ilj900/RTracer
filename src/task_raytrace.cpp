@@ -27,6 +27,8 @@ FRaytraceTask::FRaytraceTask(int WidthIn, int HeightIn, FVulkanContext* Context,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, RENDERABLE_BUFFER_INDEX,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, IBL_IMAGE_INDEX,
+                                              {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 
     DescriptorSetManager->CreateDescriptorSetLayout(Name);
 
@@ -147,6 +149,8 @@ void FRaytraceTask::Init()
     memcpy(DataPtr, GetHandle(HandleIndex++), HandleSize);
 
     Context->ResourceAllocator->Unmap(SBTBuffer);
+
+    Sampler = Context->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT);
 };
 
 void FRaytraceTask::UpdateDescriptorSets()
@@ -171,6 +175,12 @@ void FRaytraceTask::UpdateDescriptorSets()
         RenderableBufferInfo.offset = 0;
         RenderableBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, RENDERABLE_BUFFER_INDEX, i, RenderableBufferInfo);
+
+        VkDescriptorImageInfo ImageBufferInfo{};
+        ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        ImageBufferInfo.imageView = Inputs[0]->View;
+        ImageBufferInfo.sampler = Sampler;
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, IBL_IMAGE_INDEX, i, ImageBufferInfo);
     }
 };
 
@@ -197,6 +207,8 @@ void FRaytraceTask::Cleanup()
 {
     Inputs.clear();
     Outputs.clear();
+
+    vkDestroySampler(LogicalDevice, Sampler, nullptr);
 
     for (auto& CommandBuffer : CommandBuffers)
     {
