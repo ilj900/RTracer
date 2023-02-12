@@ -2,6 +2,7 @@
 
 #include "system.h"
 
+#include "buffer.h"
 #include "vulkan/vulkan.h"
 
 namespace ECS
@@ -15,6 +16,8 @@ namespace ECS
             T& GetComponent(FEntity Entity);
 
         public:
+            void Init(int NumberOfSimultaneousSubmits);
+
             void LoadMesh(FEntity Entity, const std::string &Path);
             void CreateTetrahedron(FEntity Entity);
             void CreateHexahedron(FEntity Entity);
@@ -26,6 +29,14 @@ namespace ECS
             void Draw(FEntity Entity, VkCommandBuffer CommandBuffer);
             void Bind(FEntity Entity, VkCommandBuffer CommandBuffer);
             void LoadToGPU(FEntity Entity);
+
+            VkDeviceSize VertexBufferSize = uint64_t(2) * 1024 * 1024 * 1024;
+            VkDeviceSize IndexBufferSize = uint64_t(1) * 1024 * 1024 * 1024;
+
+            FBuffer VertexBuffer;
+            FBuffer IndexBuffer;
         };
     }
 }
+
+#define MESH_SYSTEM() ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>()

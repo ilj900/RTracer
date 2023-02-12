@@ -13,13 +13,11 @@ FResourceAllocator::FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice
 
     /// Create staging buffer
     StagingBuffer = CreateBuffer(StagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Staging_Buffer");
-    MeshBuffer = CreateBuffer(MeshBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "Mesh_Buffer");
 }
 
 FResourceAllocator::~FResourceAllocator()
 {
     DestroyBuffer(StagingBuffer);
-    DestroyBuffer(MeshBuffer);
 }
 
 FMemoryRegion FResourceAllocator::AllocateMemory(VkDeviceSize Size, VkMemoryRequirements MemRequirements, VkMemoryPropertyFlags Properties, bool bDeviceAddressRequired)

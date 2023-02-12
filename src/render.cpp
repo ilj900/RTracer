@@ -104,11 +104,12 @@ FRender::FRender()
 
     Context.InitManagerResources();
 
-    LoadDataToGPU();
-
     CAMERA_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     TRANSFORM_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     RENDERABLE_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
+    MESH_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
+
+    LoadDataToGPU();
 
     ImGuiFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 

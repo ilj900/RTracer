@@ -68,7 +68,7 @@ void FRaytraceTask::Init()
     {
         auto MeshComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FMeshComponent>(Mesh);
         auto DeviceMeshComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Mesh);
-        BLASVector.emplace_back(Context->GenerateBlas(Context->ResourceAllocator->MeshBuffer, Context->ResourceAllocator->MeshBuffer,
+        BLASVector.emplace_back(Context->GenerateBlas(MESH_SYSTEM()->VertexBuffer, MESH_SYSTEM()->IndexBuffer,
                                                       sizeof (FVertex), MeshComponent.Vertices.size(),
                                                       DeviceMeshComponent.VertexPtr, DeviceMeshComponent.IndexPtr));
     }
