@@ -22,6 +22,10 @@ namespace ECS
             void SetSelected(FEntity Entity);
             void SetSelectedByIndex(uint32_t Index);
             void SetNotSelected(FEntity Entity);
+            void SetRenderableDeviceAddress(FEntity Entity, VkDeviceAddress VertexDeviceAddress, VkDeviceAddress IndexDeviceAddress);
+
+            std::set<FEntity>::iterator begin();
+            std::set<FEntity>::iterator end();
 
         public:
             bool bNeedsUpdate = false;

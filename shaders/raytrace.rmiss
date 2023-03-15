@@ -1,1 +1,1 @@
-#version 460#extension GL_EXT_ray_tracing : requirestruct HitPayload{    int InstanceIndex;};layout(location = 0) rayPayloadInEXT HitPayload Hit;void main(){    Hit.InstanceIndex = 10;}
+#version 460#extension GL_EXT_ray_tracing : requirestruct HitPayload{    int InstanceIndex;    int PrimitiveIndex;    vec2 HitAttributes;};layout(location = 0) rayPayloadInEXT HitPayload Hit;void main(){    Hit.InstanceIndex = 10;}

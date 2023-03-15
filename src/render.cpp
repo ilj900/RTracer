@@ -325,7 +325,7 @@ int FRender::LoadScene(const std::string& Path)
 {
     const uint32_t RENDERABLE_HAS_TEXTURE = 1 << 6;
 
-    AddMesh({0.9f, 0.0f, 0.6f}, {-1.f, 0.f, -2.f}, Model, "../models/viking_room/viking_room.obj", RENDERABLE_HAS_TEXTURE);
+    //AddMesh({0.9f, 0.0f, 0.6f}, {-1.f, 0.f, -2.f}, Model, "../models/viking_room/viking_room.obj", RENDERABLE_HAS_TEXTURE);
 
     AddMesh({0.9f, 0.6f, 0.0f}, {-3.f, 0.f, -2.f}, Tetrahedron, std::string(), 0);
     AddMesh({0.0f, 0.9f, 0.6f}, {1.f, 0.f, -2.f}, Hexahedron, std::string(), 0);
@@ -345,11 +345,18 @@ int FRender::SetIBL(const std::string& Path)
 
 int FRender::LoadDataToGPU()
 {
-    auto MeshSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>();
+    auto MeshSystem = MESH_SYSTEM();
 
     for(auto Mesh : *MeshSystem)
     {
         MeshSystem->LoadToGPU(Mesh);
+    }
+
+    auto RenderableSystem = RENDERABLE_SYSTEM();
+
+    for (auto Renderable : *RenderableSystem)
+    {
+        RenderableSystem->SetRenderableDeviceAddress(Renderable, MeshSystem->GetVertexBufferAddress(Renderable), MeshSystem->GetIndexBufferAddress(Renderable));
     }
 
     return 0;

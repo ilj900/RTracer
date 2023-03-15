@@ -1,5 +1,6 @@
 #include "components/device_renderable_component.h"
 #include "systems/renderable_system.h"
+#include "mesh_system.h"
 #include "coordinator.h"
 
 #include "vk_context.h"
@@ -102,6 +103,24 @@ namespace ECS
             RenderableComponent.RenderablePropertyMask &= ~COMPONENTS::RENDERABLE_SELECTED_BIT;
 
             bNeedsUpdate = true;
+        }
+
+        void FRenderableSystem::SetRenderableDeviceAddress(FEntity Entity, VkDeviceAddress VertexDeviceAddress, VkDeviceAddress IndexDeviceAddress)
+        {
+            auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
+
+            RenderableComponent.VertexBufferAddress = VertexDeviceAddress;
+            RenderableComponent.IndexBufferAddress = IndexDeviceAddress;
+        }
+
+        std::set<FEntity>::iterator  FRenderableSystem::begin()
+        {
+            return Entities.begin();
+        }
+
+        std::set<FEntity>::iterator  FRenderableSystem::end()
+        {
+            return Entities.end();
         }
     }
 }

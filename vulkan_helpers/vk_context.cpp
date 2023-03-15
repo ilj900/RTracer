@@ -726,14 +726,9 @@ VkDevice FVulkanContext::CreateLogicalDevice(VkPhysicalDevice PhysicalDeviceIn, 
     DeviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
     DeviceFeatures2.features.samplerAnisotropy = VK_TRUE;
     DeviceFeatures2.features.sampleRateShading = VK_TRUE;
+    DeviceFeatures2.features.shaderInt64 = VK_TRUE;
 
     VulkanContextOptions.BuildDevicePNextChain(reinterpret_cast<BaseVulkanStructure*>(&DeviceFeatures2));
-
-    auto Debug = VulkanContextOptions.GetDeviceExtensionStructurePtr<VkDebugUtilsMessengerCreateInfoEXT>(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
-    auto AccelerationStructure = VulkanContextOptions.GetDeviceExtensionStructurePtr<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR);
-    auto RayTracingPipeline = VulkanContextOptions.GetDeviceExtensionStructurePtr<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR);
-    auto DeviceBufferDeviceAddress = VulkanContextOptions.GetDeviceExtensionStructurePtr<VkPhysicalDeviceBufferDeviceAddressFeatures>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES);
-    auto HostQueryReset = VulkanContextOptions.GetDeviceExtensionStructurePtr<VkPhysicalDeviceHostQueryResetFeatures>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES);
 
     CreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     CreateInfo.pQueueCreateInfos = DeviceQueueCreateInfo.data();

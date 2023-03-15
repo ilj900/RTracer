@@ -16,6 +16,9 @@ const uint32_t RENDERABLE_SELECTED_BIT = 1 << 5;
 
             uint32_t RenderableIndex = 0;
             uint32_t RenderablePropertyMask = 0;
+
+            uint64_t VertexBufferAddress;
+            uint64_t IndexBufferAddress;
         };
     }
 }

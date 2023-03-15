@@ -56,6 +56,20 @@ namespace ECS
             }
         }
 
+        VkDeviceAddress FMeshSystem::GetVertexBufferAddress(FEntity Entity)
+        {
+            auto& DeviceMeshComponent = GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Entity);
+
+            return GetContext().GetBufferDeviceAddressInfo(VertexBuffer) + DeviceMeshComponent.VertexPtr.Offset;
+        }
+
+        VkDeviceAddress FMeshSystem::GetIndexBufferAddress(FEntity Entity)
+        {
+            auto& DeviceMeshComponent = GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Entity);
+
+            return GetContext().GetBufferDeviceAddressInfo(IndexBuffer) + DeviceMeshComponent.IndexPtr.Offset;
+        }
+
         void FMeshSystem::LoadToGPU(FEntity Entity)
         {
             auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);

@@ -28,6 +28,8 @@ namespace ECS
 
             void Draw(FEntity Entity, VkCommandBuffer CommandBuffer);
             void Bind(FEntity Entity, VkCommandBuffer CommandBuffer);
+            VkDeviceAddress GetVertexBufferAddress(FEntity Entity);
+            VkDeviceAddress GetIndexBufferAddress(FEntity Entity);
             void LoadToGPU(FEntity Entity);
 
             VkDeviceSize VertexBufferSize = uint64_t(2) * 1024 * 1024 * 1024;
