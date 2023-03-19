@@ -1,6 +1,7 @@
 #include "vk_context.h"
 #include "vk_debug.h"
 #include "vk_functions.h"
+#include "vk_shader_compiler.h"
 
 #include "systems/camera_system.h"
 #include "systems/transform_system.h"
@@ -984,24 +985,6 @@ VkDescriptorPool FVulkanContext::CreateDescriptorPool(const std::map<VkDescripto
     V::SetName(LogicalDevice, DescriptorPool, debug_name);
 
     return DescriptorPool;
-}
-
-VkShaderModule FVulkanContext::CreateShaderFromFile(const std::string& FileName)
-{
-    auto ShaderCode = ReadFile(FileName);
-
-    VkShaderModuleCreateInfo CreateInfo{};
-    CreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    CreateInfo.codeSize = ShaderCode.size();
-    CreateInfo.pCode = reinterpret_cast<const uint32_t *>(ShaderCode.data());
-
-    VkShaderModule ShaderModule;
-    if (vkCreateShaderModule(GetContext().LogicalDevice, &CreateInfo, nullptr, &ShaderModule) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create shader module!");
-    }
-
-    return ShaderModule;
 }
 
 VkRenderPass FVulkanContext::CreateRenderpass(VkDevice LogicalDevice, FGraphicsPipelineOptions& GraphicsPipelineOptions)

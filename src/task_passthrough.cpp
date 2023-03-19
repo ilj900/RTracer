@@ -3,7 +3,7 @@
 #include "components/mesh_component.h"
 
 #include "vk_context.h"
-
+#include "vk_shader_compiler.h"
 #include "vk_debug.h"
 
 FPassthroughTask::FPassthroughTask(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
@@ -30,17 +30,14 @@ void FPassthroughTask::Init()
 
     Sampler = Context->CreateTextureSampler(Context->MipLevels);
 
-    auto VertexShader = Context->CreateShaderFromFile("../shaders/passthrough_vert.spv");
-    auto FragmentShader = Context->CreateShaderFromFile("../shaders/passthrough_frag.spv");
+    auto VertexShader = FShader("../shaders/passthrough.vert");
+    auto FragmentShader = FShader("../shaders/passthrough.frag");
 
     GraphicsPipelineOptions.RegisterColorAttachment(0, Outputs[0], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
     GraphicsPipelineOptions.SetPipelineLayout(DescriptorSetManager->GetPipelineLayout(Name));
 
-    Pipeline = Context->CreateGraphicsPipeline(VertexShader, FragmentShader, Width, Height, GraphicsPipelineOptions);
+    Pipeline = Context->CreateGraphicsPipeline(VertexShader(), FragmentShader(), Width, Height, GraphicsPipelineOptions);
     RenderPass = GraphicsPipelineOptions.RenderPass;
-
-    vkDestroyShaderModule(LogicalDevice, VertexShader, nullptr);
-    vkDestroyShaderModule(LogicalDevice, FragmentShader, nullptr);
 
     PassthroughFramebuffers.resize(NumberOfSimultaneousSubmits);
     for (std::size_t i = 0; i < PassthroughFramebuffers.size(); ++i)

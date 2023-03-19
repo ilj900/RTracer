@@ -1,7 +1,5 @@
 #include "vk_utils.h"
 
-#include <fstream>
-
 void FStringStorage::AddString(const std::string& String)
 {
     Strings.push_back(String);
@@ -170,7 +168,7 @@ void FVulkanContextOptions::BuildDevicePNextChain(BaseVulkanStructure* CreateInf
     DeviceOptions.ExtensionVector.BuildPNextChain(CreateInfo);
 }
 
-std::vector<char> ReadFile(const std::string& FileName)
+std::string ReadFileToString(const std::string& FileName)
 {
     std::ifstream File(FileName, std::ios::ate | std::ios::binary);
 
@@ -180,7 +178,8 @@ std::vector<char> ReadFile(const std::string& FileName)
     }
 
     std::size_t FileSize = (std::size_t)File.tellg();
-    std::vector<char> Buffer(FileSize);
+    std::string Buffer;
+    Buffer.resize(FileSize);
 
     File.seekg(0);
     File.read(Buffer.data(), FileSize);

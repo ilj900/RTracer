@@ -9,6 +9,7 @@
 #include "systems/camera_system.h"
 #include "systems/mesh_system.h"
 #include "systems/renderable_system.h"
+#include "vk_shader_compiler.h"
 
 #include "task_raytrace.h"
 
@@ -50,17 +51,13 @@ void FRaytraceTask::Init()
 {
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
-    auto RayGenerationShader = Context->CreateShaderFromFile("../shaders/ray_gen.spv");
-    auto RayClosestHitShader = Context->CreateShaderFromFile("../shaders/ray_closest_hit.spv");
-    auto RayMissShader = Context->CreateShaderFromFile("../shaders/ray_miss.spv");
+    auto RayGenerationShader = FShader("../shaders/raytrace.rgen");
+    auto RayClosestHitShader = FShader("../shaders/raytrace.rchit");
+    auto RayMissShader = FShader("../shaders/raytrace.rmiss");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
 
-    Pipeline = Context->CreateRayTracingPipeline(RayGenerationShader, RayMissShader, RayClosestHitShader, Width, Height, PipelineLayout);
-
-    vkDestroyShaderModule(LogicalDevice, RayClosestHitShader, nullptr);
-    vkDestroyShaderModule(LogicalDevice, RayGenerationShader, nullptr);
-    vkDestroyShaderModule(LogicalDevice, RayMissShader, nullptr);
+    Pipeline = Context->CreateRayTracingPipeline(RayGenerationShader(), RayMissShader(), RayClosestHitShader(), Width, Height, PipelineLayout);
 
     auto MeshSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>();
 

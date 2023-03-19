@@ -2,6 +2,7 @@
 
 #include "vulkan/vulkan.h"
 
+#include <fstream>
 #include <set>
 #include <stdexcept>
 #include <vector>
@@ -127,4 +128,18 @@ struct FVulkanContextOptions
     FDeviceOptions DeviceOptions;
 };
 
-std::vector<char> ReadFile(const std::string& FileName);
+std::string ReadFileToString(const std::string& FileName);
+
+template <typename T>
+void SaveFile(const std::string& FileName, std::vector<T> Data)
+{
+    std::ofstream File(FileName, std::ios::out | std::ios::binary);
+
+    if (!File.is_open())
+    {
+        throw std::runtime_error("Failed to open file!");
+    }
+
+    File.write(Data.data(), Data.size() * sizeof(T));
+    File.close();
+}

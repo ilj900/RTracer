@@ -1,17 +1,17 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.24)
 
 project(RTracer)
 
 set(CMAKE_CXX_STANDARD 17)
 
-find_package(Vulkan REQUIRED)
+find_package(Vulkan REQUIRED COMPONENTS shaderc_combined)
 
 add_subdirectory(glfw)
 
 include_directories(
         glfw/include
         vulkan_helpers
-        ${Vulkan}/Include
+        ${Vulkan_INCLUDE_DIRS}
         include
         math
         src
@@ -82,6 +82,7 @@ set(SOURCE
         vulkan_helpers/renderpass.cpp
         vulkan_helpers/descriptors.cpp
         vulkan_helpers/command_buffer_manager.cpp
+        vulkan_helpers/vk_shader_compiler.cpp
         math/maths.cpp
         include/miniz.c
         ${IMGUI_SOURCE})
@@ -104,6 +105,7 @@ set(INCLUDE
         vulkan_helpers/vk_debug.cpp
         vulkan_helpers/vk_functions.h
         vulkan_helpers/vk_functions.cpp
+        vulkan_helpers/vk_shader_compiler.h
         include/stb_image.h
         include/stb_image_write.h
         include/tiny_obj_loader.h
@@ -113,4 +115,7 @@ set(INCLUDE
 
 add_executable(RTracer ${SOURCE} ${INCLUDE})
 
-target_link_libraries(RTracer glfw ${GLFW_LIBRARIES} Vulkan::Vulkan)
+target_link_libraries(RTracer
+        Vulkan::Vulkan
+        Vulkan::shaderc_combined
+        glfw)

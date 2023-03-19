@@ -12,6 +12,7 @@
 
 #include "vk_context.h"
 #include "vk_debug.h"
+#include "vk_shader_compiler.h"
 
 FRenderTask::FRenderTask(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
@@ -53,8 +54,8 @@ void FRenderTask::Init()
 
     Sampler = Context->CreateTextureSampler(Context->MipLevels);
 
-    auto VertexShader = Context->CreateShaderFromFile("../shaders/triangle_vert.spv");
-    auto FragmentShader = Context->CreateShaderFromFile("../shaders/triangle_frag.spv");
+    auto VertexShader = FShader("../shaders/triangle.vert");
+    auto FragmentShader = FShader("../shaders/triangle.frag");
 
     auto AttributeDescriptions = FVertex::GetAttributeDescriptions();
     for (auto& Entry : AttributeDescriptions)
@@ -70,11 +71,8 @@ void FRenderTask::Init()
     GraphicsPipelineOptions.SetPipelineLayout(DescriptorSetManager->GetPipelineLayout(Name));
     GraphicsPipelineOptions.SetMSAA(Context->MSAASamples);
 
-    Pipeline = Context->CreateGraphicsPipeline(VertexShader, FragmentShader, Width, Height, GraphicsPipelineOptions);
+    Pipeline = Context->CreateGraphicsPipeline(VertexShader(), FragmentShader(), Width, Height, GraphicsPipelineOptions);
     RenderPass = GraphicsPipelineOptions.RenderPass;
-
-    vkDestroyShaderModule(LogicalDevice, VertexShader, nullptr);
-    vkDestroyShaderModule(LogicalDevice, FragmentShader, nullptr);
 
     RenderFramebuffers.resize(NumberOfSimultaneousSubmits);
 
