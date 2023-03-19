@@ -69,8 +69,6 @@ FApplication::FApplication()
     MeshSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FDeviceMeshComponent>());
     Coordinator.SetSystemSignature<ECS::SYSTEMS::FMeshSystem>(MeshSignature);
 
-    system("powershell.exe ..\\shaders\\compile.ps1");
-
     Controller = std::make_shared<FController>();
     Render = std::make_shared<FRender>();
 
