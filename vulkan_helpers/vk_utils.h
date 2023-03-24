@@ -2,6 +2,7 @@
 
 #include "vulkan/vulkan.h"
 
+#include <chrono>
 #include <fstream>
 #include <set>
 #include <stdexcept>
@@ -129,6 +130,17 @@ struct FVulkanContextOptions
 };
 
 std::string ReadFileToString(const std::string& FileName);
+
+class FTimer
+{
+public:
+    FTimer(const std::string& TextToPrint);
+    ~FTimer();
+
+private:
+    std::chrono::time_point<std::chrono::high_resolution_clock> StartTime;
+    std::string Text = "YOU FORGOT TO PASS THE TEXT: ";
+};
 
 template <typename T>
 void SaveFile(const std::string& FileName, std::vector<T> Data)

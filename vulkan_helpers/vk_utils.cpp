@@ -1,5 +1,7 @@
 #include "vk_utils.h"
 
+#include <iostream>
+
 void FStringStorage::AddString(const std::string& String)
 {
     Strings.push_back(String);
@@ -186,4 +188,43 @@ std::string ReadFileToString(const std::string& FileName)
     File.close();
 
     return Buffer;
+}
+
+FTimer::FTimer(const std::string &TextToPrint)
+{
+    StartTime = std::chrono::high_resolution_clock::now();
+    Text = TextToPrint;
+}
+
+FTimer::~FTimer()
+{
+    auto EndTime = std::chrono::high_resolution_clock::now();
+
+    auto Start = std::chrono::time_point_cast<std::chrono::microseconds>(StartTime).time_since_epoch().count();
+    auto End = std::chrono::time_point_cast<std::chrono::microseconds>(EndTime).time_since_epoch().count();
+
+    auto Duration = static_cast<double>(End - Start);
+
+    static std::vector<std::string> TimeUnits = {"μs", "ms", "s"};
+    int TimeUnitUsed = 0;
+
+    if (Duration > 1000)
+    {
+        Duration /= 1000;
+        TimeUnitUsed++;
+    }
+
+    if (Duration > 1000)
+    {
+        Duration /= 1000;
+        TimeUnitUsed++;
+    }
+
+    if (Duration > 1000)
+    {
+        Duration /= 1000;
+        TimeUnitUsed++;
+    }
+
+    std::cout << Text << Duration << TimeUnits[TimeUnitUsed] << std::endl;
 }

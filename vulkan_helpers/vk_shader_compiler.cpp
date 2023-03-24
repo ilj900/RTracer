@@ -79,8 +79,9 @@ std::vector<uint32_t> CompileShaderToSpirVData(const std::string &Path)
         {shaderc_shader_kind::shaderc_compute_shader, "comp"}
     };
 
-    shaderc::Compiler Compiler;
-    shaderc::CompileOptions CompileOptions;
+    FTimer Timer("Shader : " + Path + " compilation time: ");
+    static shaderc::Compiler Compiler;
+    static shaderc::CompileOptions CompileOptions;
     CompileOptions.SetTargetEnvironment(shaderc_target_env_vulkan, 460);
     CompileOptions.SetTargetSpirv(shaderc_spirv_version_1_6);
     shaderc::CompilationResult CompilationResult = Compiler.CompileGlslToSpv(ShaderCode.c_str(), ShaderType, ShaderTypeToExtensionMap[ShaderType].c_str(), CompileOptions);
