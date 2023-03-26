@@ -27,9 +27,9 @@ FRaytraceTask::FRaytraceTask(int WidthIn, int HeightIn, FVulkanContext* Context,
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, RT_FINAL_IMAGE_INDEX,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, RENDERABLE_BUFFER_INDEX,
-                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, IBL_IMAGE_INDEX,
-                                              {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+                                              {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_MISS_BIT_KHR});
 
     DescriptorSetManager->CreateDescriptorSetLayout(Name);
 
