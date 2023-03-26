@@ -48,9 +48,14 @@ namespace ECS
                 auto DeviceRenderableComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>();
 
                 Context.ResourceAllocator->LoadDataToBuffer(DeviceRenderableBuffer, DeviceRenderableComponentsSize, DeviceRenderableComponentsSize * IterationIndex, DeviceRenderableComponentsData);
+
+                std::vector<ECS::COMPONENTS::FDeviceRenderableComponent> Backed;
+                Backed.resize(8);
+
+                Context.ResourceAllocator->LoadDataFromBuffer(DeviceRenderableBuffer, DeviceRenderableComponentsSize, 0, Backed.data());
             }
 
-            bNeedsUpdate = false;
+            bNeedsUpdate--;
         }
 
         void FRenderableSystem::SetRenderableColor(FEntity Entity, float Red, float Green, float Blue)
@@ -58,7 +63,7 @@ namespace ECS
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
             RenderableComponent.RenderableColor = {Red, Green, Blue};
 
-            bNeedsUpdate = true;
+            bNeedsUpdate = 2;
         }
 
         void FRenderableSystem::SetSelected(FEntity Entity)
@@ -76,7 +81,7 @@ namespace ECS
                 }
             }
 
-            bNeedsUpdate = true;
+            bNeedsUpdate = 2;
         }
 
         void FRenderableSystem::SetSelectedByIndex(uint32_t Index)
@@ -94,7 +99,7 @@ namespace ECS
                 }
             }
 
-            bNeedsUpdate = true;
+            bNeedsUpdate = 2;
         }
 
         void FRenderableSystem::SetNotSelected(FEntity Entity)
@@ -105,12 +110,30 @@ namespace ECS
             bNeedsUpdate = true;
         }
 
+        void FRenderableSystem::SetIndexed(FEntity Entity)
+        {
+            auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
+            RenderableComponent.RenderablePropertyMask |= COMPONENTS::RENDERABLE_IS_INDEXED;
+
+            bNeedsUpdate = 2;
+        }
+
+        void FRenderableSystem::SetNotIndex(FEntity Entity)
+        {
+            auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
+            RenderableComponent.RenderablePropertyMask &= ~COMPONENTS::RENDERABLE_IS_INDEXED;
+
+            bNeedsUpdate = 2;
+        }
+
         void FRenderableSystem::SetRenderableDeviceAddress(FEntity Entity, VkDeviceAddress VertexDeviceAddress, VkDeviceAddress IndexDeviceAddress)
         {
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
 
             RenderableComponent.VertexBufferAddress = VertexDeviceAddress;
             RenderableComponent.IndexBufferAddress = IndexDeviceAddress;
+
+            bNeedsUpdate = 2;
         }
 
         std::set<FEntity>::iterator  FRenderableSystem::begin()

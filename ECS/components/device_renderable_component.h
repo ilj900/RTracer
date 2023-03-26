@@ -7,7 +7,9 @@ namespace ECS
     namespace COMPONENTS
     {
 
-const uint32_t RENDERABLE_SELECTED_BIT = 1 << 5;
+        const uint32_t RENDERABLE_SELECTED_BIT = 1 << 5;
+        const uint32_t RENDERABLE_HAS_TEXTURE = 1 << 6;
+        const uint32_t RENDERABLE_IS_INDEXED = 1 << 7;
 
         struct FDeviceRenderableComponent
         {

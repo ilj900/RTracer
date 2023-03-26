@@ -111,7 +111,10 @@ FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, VkDeviceSize Size,
         Size -= ChunkSize;
     }
 
-    Buffer.CurrentOffset += SizeCopy;
+    if (Offset + SizeCopy > Buffer.CurrentOffset)
+    {
+        Buffer.CurrentOffset = Offset + SizeCopy;
+    }
     return Buffer;
 }
 
