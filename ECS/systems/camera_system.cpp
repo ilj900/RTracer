@@ -36,20 +36,25 @@ namespace ECS
             {
                 Context.ResourceAllocator->LoadDataToBuffer(DeviceCameraBuffer, DeviceCameraComponentsSize, DeviceCameraComponentsSize * i, DeviceCameraComponentsData);
             }
+
+            BufferPartThatNeedsUpdate.resize(NumberOfSimultaneousSubmits);
         }
 
-        void FCameraSystem::Update(int IterationIndex)
+        void FCameraSystem::Update()
         {
-            if (bNeedsUpdate)
+            for (int i = 0; i < BufferPartThatNeedsUpdate.size(); ++i)
             {
-                auto& Coordinator = GetCoordinator();
-                auto& Context = GetContext();
-                auto DeviceCameraComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceCameraComponent>();
-                auto DeviceCameraComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>();
+                if (true == BufferPartThatNeedsUpdate[i])
+                {
+                    auto& Coordinator = GetCoordinator();
+                    auto& Context = GetContext();
+                    auto DeviceCameraComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceCameraComponent>();
+                    auto DeviceCameraComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>();
 
-                Context.ResourceAllocator->LoadDataToBuffer(DeviceCameraBuffer, DeviceCameraComponentsSize, DeviceCameraComponentsSize * IterationIndex, DeviceCameraComponentsData);
+                    Context.ResourceAllocator->LoadDataToBuffer(DeviceCameraBuffer, DeviceCameraComponentsSize, DeviceCameraComponentsSize * i, DeviceCameraComponentsData);
 
-                bNeedsUpdate--;
+                    BufferPartThatNeedsUpdate[i] = false;
+                }
             }
         }
 
@@ -65,7 +70,7 @@ namespace ECS
                 DeviceCameraComponent.ProjectionMatrix = GetPerspective(CameraComponent.FOV / 90.f, CameraComponent.Ratio, CameraComponent.ZNear, CameraComponent.ZFar);
             }
 
-            bNeedsUpdate--;
+            RequestAllUpdate();
         }
 
         void FCameraSystem::UpdateDeviceComponentData(FEntity CameraEntity)
@@ -75,7 +80,6 @@ namespace ECS
             auto& CameraComponent = Coordinator.GetComponent<COMPONENTS::FCameraComponent>(CameraEntity);
             DeviceCameraComponent.ViewMatrix = LookAt(CameraComponent.Position, CameraComponent.Position + CameraComponent.Direction, CameraComponent.Up);
             DeviceCameraComponent.ProjectionMatrix = GetPerspective(CameraComponent.FOV / 90.f, CameraComponent.Ratio, CameraComponent.ZNear, CameraComponent.ZFar);
-            bNeedsUpdate = 2;
         }
 
         void FCameraSystem::MoveCameraForward(FEntity CameraEntity, float Value)
@@ -123,11 +127,6 @@ namespace ECS
             CameraComponent.Ratio = AspectRatio;
         }
 
-        void FCameraSystem::RequestNumberOfSimultaniousUpdate(int Count)
-        {
-            bNeedsUpdate = Count;
-        }
-
         FMatrix4 FCameraSystem::GetProjectionMatrix(FEntity CameraEntity)
         {
             auto& CameraComponent = GetComponent<ECS::COMPONENTS::FCameraComponent>(CameraEntity);
@@ -147,6 +146,19 @@ namespace ECS
             CameraComponent.Up = CameraComponent.Up.GetNormalized();
             auto Right = CameraComponent.Direction * CameraComponent.Up;
             CameraComponent.Up = Right * CameraComponent.Direction;
+        }
+
+        void FCameraSystem::RequestAllUpdate()
+        {
+            for(int i = 0; i < NumberOfSimultaneousSubmits; ++i)
+            {
+                BufferPartThatNeedsUpdate[i] = true;
+            }
+        }
+
+        void FCameraSystem::RequestUpdate(int FrameIndex)
+        {
+            BufferPartThatNeedsUpdate[FrameIndex] = true;
         }
     }
 }

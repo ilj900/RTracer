@@ -17,7 +17,7 @@ namespace ECS
 
         public:
             void Init(int NumberOfSimultaneousSubmits);
-            void Update(int IterationIndex);
+            void Update();
             void UpdateAllDeviceComponentsData();
             void UpdateDeviceComponentData(FEntity CameraEntity);
             void MoveCameraForward(FEntity CameraEntity, float Value);
@@ -27,13 +27,15 @@ namespace ECS
             void LookRight(FEntity CameraEntity, float Value);
             void Roll(FEntity CameraEntity, float Value);
             void SetAspectRatio(FEntity CameraEntity, float AspectRatio);
-            void RequestNumberOfSimultaniousUpdate(int Count);
             FMatrix4 GetProjectionMatrix(FEntity CameraEntity);
             FMatrix4 GetViewMatrix(FEntity CameraEntity);
             void Orthogonize(FEntity CameraEntity);
 
+            void RequestAllUpdate();
+            void RequestUpdate(int FrameIndex);
+
         public:
-            int bNeedsUpdate = 0;
+            std::vector<bool> BufferPartThatNeedsUpdate;
             int NumberOfSimultaneousSubmits = 2;
 
             FBuffer DeviceCameraBuffer;

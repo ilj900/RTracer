@@ -19,7 +19,7 @@ namespace ECS
 
         public:
             void Init(int NumberOfSimultaneousSubmits);
-            void Update(int IterationIndex);
+            void Update();
             void UpdateAllDeviceComponentsData();
             void UpdateDeviceComponentData(FEntity Entity);
             void MoveForward(FEntity Entity, float Value);
@@ -31,10 +31,13 @@ namespace ECS
             void Pitch(FEntity Entity, float Value);
             void Yaw(FEntity Entity, float Value);
             FMatrix4 GetModelMatrix(FEntity Entity);
+            void RequestAllUpdate();
+            void RequestUpdate(int FrameIndex);
 
         public:
-            bool bNeedsUpdate = false;
+            std::vector<bool> BufferPartThatNeedsUpdate;
             int NumberOfSimultaneousSubmits = 2;
+            bool bIsDirty = false;
 
             FBuffer DeviceTransformBuffer;
         };

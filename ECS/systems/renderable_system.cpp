@@ -36,34 +36,32 @@ namespace ECS
             {
                 Context.ResourceAllocator->LoadDataToBuffer(DeviceRenderableBuffer, DeviceRenderableComponentsSize, DeviceRenderableComponentsSize * i, DeviceRenderableComponentsData);
             }
+
+            BufferPartThatNeedsUpdate.resize(NumberOfSimultaneousSubmits);
         }
 
-        void FRenderableSystem::Update(int IterationIndex)
+        void FRenderableSystem::Update()
         {
-            if (bNeedsUpdate)
+            for (int i = 0; i < BufferPartThatNeedsUpdate.size(); ++i)
             {
-                auto& Coordinator = GetCoordinator();
-                auto& Context = GetContext();
-                auto DeviceRenderableComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceRenderableComponent>();
-                auto DeviceRenderableComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>();
+                if (true == BufferPartThatNeedsUpdate[i])
+                {
+                    auto& Coordinator = GetCoordinator();
+                    auto& Context = GetContext();
+                    auto DeviceRenderableComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceRenderableComponent>();
+                    auto DeviceRenderableComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>();
 
-                Context.ResourceAllocator->LoadDataToBuffer(DeviceRenderableBuffer, DeviceRenderableComponentsSize, DeviceRenderableComponentsSize * IterationIndex, DeviceRenderableComponentsData);
+                    Context.ResourceAllocator->LoadDataToBuffer(DeviceRenderableBuffer, DeviceRenderableComponentsSize, DeviceRenderableComponentsSize * i, DeviceRenderableComponentsData);
 
-                std::vector<ECS::COMPONENTS::FDeviceRenderableComponent> Backed;
-                Backed.resize(8);
-
-                Context.ResourceAllocator->LoadDataFromBuffer(DeviceRenderableBuffer, DeviceRenderableComponentsSize, 0, Backed.data());
+                    BufferPartThatNeedsUpdate[i] = false;
+                }
             }
-
-            bNeedsUpdate--;
         }
 
         void FRenderableSystem::SetRenderableColor(FEntity Entity, float Red, float Green, float Blue)
         {
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
             RenderableComponent.RenderableColor = {Red, Green, Blue};
-
-            bNeedsUpdate = 2;
         }
 
         void FRenderableSystem::SetSelected(FEntity Entity)
@@ -80,8 +78,6 @@ namespace ECS
                     RenderableComponent.RenderablePropertyMask &= ~COMPONENTS::RENDERABLE_SELECTED_BIT;
                 }
             }
-
-            bNeedsUpdate = 2;
         }
 
         void FRenderableSystem::SetSelectedByIndex(uint32_t Index)
@@ -98,32 +94,24 @@ namespace ECS
                     RenderableComponent.RenderablePropertyMask &= ~COMPONENTS::RENDERABLE_SELECTED_BIT;
                 }
             }
-
-            bNeedsUpdate = 2;
         }
 
         void FRenderableSystem::SetNotSelected(FEntity Entity)
         {
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
             RenderableComponent.RenderablePropertyMask &= ~COMPONENTS::RENDERABLE_SELECTED_BIT;
-
-            bNeedsUpdate = true;
         }
 
         void FRenderableSystem::SetIndexed(FEntity Entity)
         {
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
             RenderableComponent.RenderablePropertyMask |= COMPONENTS::RENDERABLE_IS_INDEXED;
-
-            bNeedsUpdate = 2;
         }
 
         void FRenderableSystem::SetNotIndex(FEntity Entity)
         {
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
             RenderableComponent.RenderablePropertyMask &= ~COMPONENTS::RENDERABLE_IS_INDEXED;
-
-            bNeedsUpdate = 2;
         }
 
         void FRenderableSystem::SetRenderableDeviceAddress(FEntity Entity, VkDeviceAddress VertexDeviceAddress, VkDeviceAddress IndexDeviceAddress)
@@ -132,8 +120,6 @@ namespace ECS
 
             RenderableComponent.VertexBufferAddress = VertexDeviceAddress;
             RenderableComponent.IndexBufferAddress = IndexDeviceAddress;
-
-            bNeedsUpdate = 2;
         }
 
         std::set<FEntity>::iterator  FRenderableSystem::begin()
@@ -144,6 +130,19 @@ namespace ECS
         std::set<FEntity>::iterator  FRenderableSystem::end()
         {
             return Entities.end();
+        }
+
+        void FRenderableSystem::RequestAllUpdate()
+        {
+            for(int i = 0; i < NumberOfSimultaneousSubmits; ++i)
+            {
+                BufferPartThatNeedsUpdate[i] = true;
+            }
+        }
+
+        void FRenderableSystem::RequestUpdate(int FrameIndex)
+        {
+            BufferPartThatNeedsUpdate[FrameIndex] = true;
         }
     }
 }

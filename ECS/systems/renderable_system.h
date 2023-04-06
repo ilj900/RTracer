@@ -17,7 +17,7 @@ namespace ECS
 
         public:
             void Init(int NumberOfSimultaneousSubmits);
-            void Update(int IterationIndex);
+            void Update();
             void SetRenderableColor(FEntity Entity, float Red, float Green, float Blue);
             void SetSelected(FEntity Entity);
             void SetSelectedByIndex(uint32_t Index);
@@ -25,13 +25,17 @@ namespace ECS
             void SetIndexed(FEntity Entity);
             void SetNotIndex(FEntity Entity);
             void SetRenderableDeviceAddress(FEntity Entity, VkDeviceAddress VertexDeviceAddress, VkDeviceAddress IndexDeviceAddress);
+            void RequestAllUpdate();
+            void RequestUpdate(int FrameIndex);
+
 
             std::set<FEntity>::iterator begin();
             std::set<FEntity>::iterator end();
 
         public:
-            int bNeedsUpdate = 0;
+            std::vector<bool> BufferPartThatNeedsUpdate;
             int NumberOfSimultaneousSubmits = 2;
+            bool bIsDirty = false;
 
             FBuffer DeviceRenderableBuffer;
         };

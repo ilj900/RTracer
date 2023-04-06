@@ -201,6 +201,10 @@ int FRender::Init()
 
     RenderFrameIndex = 0;
 
+    CAMERA_SYSTEM()->RequestAllUpdate();
+    TRANSFORM_SYSTEM()->RequestAllUpdate();
+    RENDERABLE_SYSTEM()->RequestAllUpdate();
+
     return 0;
 }
 
@@ -259,6 +263,7 @@ int FRender::Render()
     {
         return 1;
     }
+
     auto& Context = GetContext();
 
     uint32_t CurrentFrame = RenderFrameIndex % MAX_FRAMES_IN_FLIGHT;
@@ -281,9 +286,9 @@ int FRender::Render()
         throw std::runtime_error("Failed to acquire swap chain image!");
     }
 
-    CAMERA_SYSTEM()->Update(CurrentFrame);
-    TRANSFORM_SYSTEM()->Update(CurrentFrame);
-    RENDERABLE_SYSTEM()->Update(CurrentFrame);
+    CAMERA_SYSTEM()->Update();
+    TRANSFORM_SYSTEM()->Update();
+    RENDERABLE_SYSTEM()->Update();
 
     auto RenderSignalSemaphore = RayTraceTask->Submit(Context.GetGraphicsQueue(), ImageAvailableSemaphores[CurrentFrame], ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
 

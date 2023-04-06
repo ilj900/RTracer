@@ -36,21 +36,28 @@ namespace ECS
             {
                 Context.ResourceAllocator->LoadDataToBuffer(DeviceTransformBuffer, DeviceTransformComponentsSize, DeviceTransformComponentsSize * i, DeviceTransformComponentsData);
             }
+
+            BufferPartThatNeedsUpdate.resize(NumberOfSimultaneousSubmits);
         }
 
-        void FTransformSystem::Update(int IterationIndex)
+        void FTransformSystem::Update()
         {
-            if (bNeedsUpdate)
+            for (int i = 0; i < BufferPartThatNeedsUpdate.size(); ++i)
             {
-                auto& Coordinator = GetCoordinator();
-                auto& Context = GetContext();
-                auto DeviceTransformComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceTransformComponent>();
-                auto DeviceTransformComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>();
+                if (true == BufferPartThatNeedsUpdate[i])
+                {
+                    auto& Coordinator = GetCoordinator();
+                    auto& Context = GetContext();
+                    auto DeviceTransformComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceTransformComponent>();
+                    auto DeviceTransformComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>();
 
-                Context.ResourceAllocator->LoadDataToBuffer(DeviceTransformBuffer, DeviceTransformComponentsSize, DeviceTransformComponentsSize * IterationIndex, DeviceTransformComponentsData);
+                    Context.ResourceAllocator->LoadDataToBuffer(DeviceTransformBuffer,
+                                                                DeviceTransformComponentsSize,
+                                                                DeviceTransformComponentsSize * i,
+                                                                DeviceTransformComponentsData);
+                    BufferPartThatNeedsUpdate[i] = false;
+                }
             }
-
-            bNeedsUpdate = false;
         }
 
         void FTransformSystem::UpdateAllDeviceComponentsData()
@@ -63,8 +70,6 @@ namespace ECS
                 auto& TransformComponent = Coordinator.GetComponent<COMPONENTS::FTransformComponent>(Entity);
                 DeviceTransformComponent.ModelMatrix = Transform(TransformComponent.Position, TransformComponent.Direction, TransformComponent.Up, TransformComponent.Scale);
             }
-
-            bNeedsUpdate = true;
         }
 
         void FTransformSystem::UpdateDeviceComponentData(FEntity Entity)
@@ -73,8 +78,6 @@ namespace ECS
             auto& DeviceTransformComponent = Coordinator.GetComponent<COMPONENTS::FDeviceTransformComponent>(Entity);
             auto& TransformComponent = Coordinator.GetComponent<COMPONENTS::FTransformComponent>(Entity);
             DeviceTransformComponent.ModelMatrix = Transform(TransformComponent.Position, TransformComponent.Direction, TransformComponent.Up, TransformComponent.Scale);
-
-            bNeedsUpdate = true;
         }
 
         void FTransformSystem::MoveForward(FEntity Entity, float Value)
@@ -133,6 +136,19 @@ namespace ECS
         {
             auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
             return Transform(TransformComponent.Position, TransformComponent.Direction, TransformComponent.Up, TransformComponent.Scale);
+        }
+
+        void FTransformSystem::RequestAllUpdate()
+        {
+            for(int i = 0; i < NumberOfSimultaneousSubmits; ++i)
+            {
+                BufferPartThatNeedsUpdate[i] = true;
+            }
+        }
+
+        void FTransformSystem::RequestUpdate(int FrameIndex)
+        {
+            BufferPartThatNeedsUpdate[FrameIndex] = true;
         }
 
     }
