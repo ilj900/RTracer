@@ -1,1 +1,48 @@
-#version 460#extension GL_EXT_ray_tracing : requirestruct HitPayload{    vec3 Color;    vec2 IBLCoordinates;};layout (location = 0) rayPayloadEXT HitPayload PRD;layout (set = 0, binding = 0) uniform accelerationStructureEXT TopLevelAS;layout (set = 0, binding = 1) uniform CameraBufferObject{    mat4 ViewMatrix;    mat4 ProjectionMatrix;} CameraBuffer;layout (set = 0, binding = 2, rgba32f) uniform image2D Image;void main(){    const vec2 PixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5f);    const vec2 InUV = PixelCenter/vec2(gl_LaunchSizeEXT.xy);    vec2 D = InUV * 2.0f - 1.f;    vec4 Origin = inverse(CameraBuffer.ViewMatrix) * vec4(0.f, 0.f, 0.f, 1.f);    vec4 Target = inverse(CameraBuffer.ProjectionMatrix) * vec4(D.x, D.y, 1.f, 1.f);    vec4 Direction = inverse(CameraBuffer.ViewMatrix) * vec4(normalize(Target.xyz), 0.f);    vec3 NormalizedDirection = normalize(Direction.xyz);    float Tmp = atan(NormalizedDirection.z, NormalizedDirection.x);    float Phi = Tmp < 0.f ? (Tmp + (2 * 3.14159265357)) : Tmp;    float Theta = acos(NormalizedDirection.y);    Phi /= 2.f * 3.14159265357;    Theta /= 3.14159265357;    uint RayFlags = gl_RayFlagsOpaqueEXT;    float tMin = 0.001f;    float tMax = 10000.f;    PRD.IBLCoordinates = vec2(Phi, Theta);    traceRayEXT(TopLevelAS, RayFlags, 0xFF, 0, 0, 0, Origin.xyz, tMin, Direction.xyz, tMax, 0);    imageStore(Image, ivec2(gl_LaunchIDEXT.xy), vec4(PRD.Color, 1.f));}
+#version 460
+
+#extension GL_EXT_ray_tracing : require
+
+struct HitPayload
+{
+    vec3 Color;
+    vec2 IBLCoordinates;
+};
+
+layout (location = 0) rayPayloadEXT HitPayload PRD;
+
+layout (set = 0, binding = 0) uniform accelerationStructureEXT TopLevelAS;
+layout (set = 0, binding = 1) uniform CameraBufferObject
+{
+    mat4 ViewMatrix;
+    mat4 ProjectionMatrix;
+} CameraBuffer;
+
+layout (set = 0, binding = 2, rgba32f) uniform image2D Image;
+
+void main()
+{
+    const vec2 PixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5f);
+    const vec2 InUV = PixelCenter/vec2(gl_LaunchSizeEXT.xy);
+    vec2 D = InUV * 2.0f - 1.f;
+
+    vec4 Origin = inverse(CameraBuffer.ViewMatrix) * vec4(0.f, 0.f, 0.f, 1.f);
+    vec4 Target = inverse(CameraBuffer.ProjectionMatrix) * vec4(D.x, D.y, 1.f, 1.f);
+    vec4 Direction = inverse(CameraBuffer.ViewMatrix) * vec4(normalize(Target.xyz), 0.f);
+
+    vec3 NormalizedDirection = normalize(Direction.xyz);
+    float Tmp = atan(NormalizedDirection.z, NormalizedDirection.x);
+    float Phi = Tmp < 0.f ? (Tmp + (2 * 3.14159265357)) : Tmp;
+    float Theta = acos(NormalizedDirection.y);
+    Phi /= 2.f * 3.14159265357;
+    Theta /= 3.14159265357;
+
+    uint RayFlags = gl_RayFlagsOpaqueEXT;
+    float tMin = 0.001f;
+    float tMax = 10000.f;
+
+    PRD.IBLCoordinates = vec2(Phi, Theta);
+
+    traceRayEXT(TopLevelAS, RayFlags, 0xFF, 0, 0, 0, Origin.xyz, tMin, Direction.xyz, tMax, 0);
+
+    imageStore(Image, ivec2(gl_LaunchIDEXT.xy), vec4(PRD.Color, 1.f));
+}
