@@ -332,11 +332,12 @@ int FRender::LoadScene(const std::string& Path)
     const uint32_t RENDERABLE_HAS_TEXTURE = 1 << 6;
     const uint32_t RENDERABLE_IS_INDEXED = 1 << 7;
 
-    AddMesh({0.9f, 0.6f, 0.0f}, {-3.f, 0.f, -2.f}, Tetrahedron, std::string(), 0);
     AddMesh({0.0f, 0.9f, 0.6f}, {1.f, 0.f, -2.f}, Hexahedron, std::string(), 0);
-    AddMesh({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, Icosahedron, std::string(), 0);
 
     AddMesh({0.9f, 0.0f, 0.6f}, {-1.f, 0.f, -2.f}, Model, "../models/viking_room/viking_room.obj", RENDERABLE_HAS_TEXTURE | RENDERABLE_IS_INDEXED);
+
+    AddMesh({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, Icosahedron, std::string(), 0);
+    AddMesh({0.9f, 0.6f, 0.0f}, {-3.f, 0.f, -2.f}, Tetrahedron, std::string(), 0);
 
     return 0;
 }
@@ -377,9 +378,9 @@ int FRender::AddMesh(const FVector3& Color, const FVector3& Position, MeshType T
     Models.push_back(Coordinator.CreateEntity());
     Coordinator.AddComponent<ECS::COMPONENTS::FMeshComponent>(Models.back(), {});
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Models.back(), {});
-    static uint32_t Index = 0;
+    static int32_t Index = 0;
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceRenderableComponent>
-            (Models.back(), {FVector3{1.f, 1.f, 1.f}, Index++, RenderableMask});
+            (Models.back(), {FVector3{1.f, 1.f, 1.f}, 0.f,Index++, RenderableMask});
     Coordinator.AddComponent<ECS::COMPONENTS::FTransformComponent>(Models.back(), {});
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Models.back(), {});
     switch(Type)

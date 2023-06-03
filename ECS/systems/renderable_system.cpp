@@ -144,5 +144,11 @@ namespace ECS
         {
             BufferPartThatNeedsUpdate[FrameIndex] = true;
         }
+
+        int FRenderableSystem::GetTotalSize()
+        {
+            auto& Coordinator = GetCoordinator();
+            return Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>();
+        }
     }
 }

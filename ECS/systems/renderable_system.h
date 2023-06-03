@@ -28,6 +28,8 @@ namespace ECS
             void RequestAllUpdate();
             void RequestUpdate(int FrameIndex);
 
+            int GetTotalSize();
+
 
             std::set<FEntity>::iterator begin();
             std::set<FEntity>::iterator end();

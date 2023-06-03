@@ -96,6 +96,17 @@ public:
     FMemoryPtr PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data) const;
     void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset) const;
     void DestroyBuffer(FBuffer& Buffer) const;
+    template <typename T, int Size, int Offset>
+    std::vector<T> DebugGetDataFromBuffer(FBuffer SrcBuffer)
+    {
+        std::vector<T> Result;
+        Result.resize(Size);
+
+        CopyBuffer(SrcBuffer, ResourceAllocator->StagingBuffer, Size * sizeof(T), Offset, 0);
+        ResourceAllocator->LoadDataFromStaginBuffer(Size * sizeof(T), Result.data());
+
+        return Result;
+    };
 
     FAccelerationStructure CreateAccelerationStructure(VkDeviceSize Size, VkAccelerationStructureTypeKHR Type, const std::string& DebugName = "");
     void DestroyAccelerationStructure(FAccelerationStructure &AccelerationStructure);

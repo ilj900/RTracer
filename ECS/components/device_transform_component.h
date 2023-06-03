@@ -11,6 +11,7 @@ namespace ECS
             FDeviceTransformComponent() = default;
             FDeviceTransformComponent(FMatrix4& ModelMatrix) :
                 ModelMatrix(ModelMatrix) {};
+
             FMatrix4 ModelMatrix;
         };
     }

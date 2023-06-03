@@ -164,8 +164,6 @@ namespace ECS
         {
             auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
 
-            FVector3 Color{0.6627f, 0.451f, 0.3647f};
-
             float A = 1.f / 3.f;
             float B = std::sqrt(8.f / 9.f);
             float C = std::sqrt(2.f / 9.f);

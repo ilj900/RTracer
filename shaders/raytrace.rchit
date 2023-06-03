@@ -40,8 +40,13 @@ layout(buffer_reference, scalar) buffer Indices
 struct FRenderable
 {
     vec3 RenderableColor;
+    float dummy_1;
+
     int RenderableIndex;
     uint RenderablePropertyMask;
+    uint dummy_2;
+    uint dummy_3;
+
     uint64_t VertexBufferAddress;
     uint64_t IndexBufferAddress;
 };
@@ -71,8 +76,8 @@ bool IsIndexed(FRenderable Renderable)
 void main()
 {
     FRenderable Renderable = RenderableBuffer.Renderables[nonuniformEXT(gl_InstanceCustomIndexEXT)];
-    Indices Inds = Indices(Renderable.IndexBufferAddress);
     Vertices Verts = Vertices(Renderable.VertexBufferAddress);
+    Indices Inds = Indices(Renderable.IndexBufferAddress);
 
     vec3 Normal = vec3(1.f, 1.f, 1.f);
 
@@ -99,12 +104,11 @@ void main()
     else
     {
         int Index = gl_PrimitiveID * 3;
-        FVertex V0 = Verts.V[0];
-        FVertex V1 = Verts.V[0];
-        FVertex V2 = Verts.V[0];
+        FVertex V0 = Verts.V[Index];
+        FVertex V1 = Verts.V[Index + 1];
+        FVertex V2 = Verts.V[Index + 2];
 
         Normal = normalize(cross((V1.Position - V0.Position), (V2.Position - V0.Position)));
     }
-
     Hit.Color = Normal;
 }

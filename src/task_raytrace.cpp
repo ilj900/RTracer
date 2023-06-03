@@ -6,6 +6,7 @@
 #include "components/device_mesh_component.h"
 #include "components/device_transform_component.h"
 #include "components/device_camera_component.h"
+#include "components/device_renderable_component.h"
 #include "systems/camera_system.h"
 #include "systems/mesh_system.h"
 #include "systems/renderable_system.h"
@@ -170,7 +171,7 @@ void FRaytraceTask::UpdateDescriptorSets()
         VkDescriptorBufferInfo RenderableBufferInfo{};
         RenderableBufferInfo.buffer = RENDERABLE_SYSTEM()->DeviceRenderableBuffer.Buffer;
         RenderableBufferInfo.offset = 0;
-        RenderableBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
+        RenderableBufferInfo.range = RENDERABLE_SYSTEM()->GetTotalSize();
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, RENDERABLE_BUFFER_INDEX, i, RenderableBufferInfo);
 
         VkDescriptorImageInfo ImageBufferInfo{};
