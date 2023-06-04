@@ -19,6 +19,7 @@ struct HitPayload
 hitAttributeEXT vec2 Attributes;
 
 layout(location = 0) rayPayloadInEXT HitPayload Hit;
+hitAttributeEXT vec2 HitAttributes;
 
 struct FVertex
 {
@@ -51,6 +52,13 @@ struct FRenderable
     uint64_t IndexBufferAddress;
 };
 
+struct FLight
+{
+    vec3 Position;
+    vec3 Color;
+    float Intensity;
+};
+
 layout (set = 0, binding = 3) buffer RenderableBufferObject
 {
     FRenderable Renderables[];
@@ -81,6 +89,10 @@ void main()
 
     vec3 Normal = vec3(1.f, 1.f, 1.f);
 
+    FVertex V0;
+    FVertex V1;
+    FVertex V2;
+
     if (IsIndexed(Renderable))
     {
         int I0 = 0;
@@ -92,9 +104,9 @@ void main()
         I1 = I.y;
         I2 = I.z;
 
-        FVertex V0 = Verts.V[I0];
-        FVertex V1 = Verts.V[I1];
-        FVertex V2 = Verts.V[I2];
+        V0 = Verts.V[I0];
+        V1 = Verts.V[I1];
+        V2 = Verts.V[I2];
         vec3 V10 = V1.Position - V0.Position;
         vec3 V20 = V2.Position - V0.Position;
         vec3 Cross = normalize(cross(V10, V20));
@@ -104,11 +116,23 @@ void main()
     else
     {
         int Index = gl_PrimitiveID * 3;
-        FVertex V0 = Verts.V[Index];
-        FVertex V1 = Verts.V[Index + 1];
-        FVertex V2 = Verts.V[Index + 2];
+        V0 = Verts.V[Index];
+        V1 = Verts.V[Index + 1];
+        V2 = Verts.V[Index + 2];
 
         Normal = normalize(cross((V1.Position - V0.Position), (V2.Position - V0.Position)));
     }
-    Hit.Color = Normal;
+
+    const vec3 Barycentrics = vec3(1.0 - HitAttributes.x - HitAttributes.y, HitAttributes.x, HitAttributes.y);
+
+    vec3 PointOfIntersectionInLocalSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
+    vec3 PointOfIntersectionInWorldSpace = vec3(gl_ObjectToWorldEXT * vec4(PointOfIntersectionInLocalSpace, 1.f));
+
+    FLight Light = FLight(vec3(5.f, 5.f, 5.f), vec3(1.f, 1.f, 1.f), 5.f);
+    vec3 PointOfIntersectioToLightDirection = Light.Position - PointOfIntersectionInWorldSpace;
+    float CosNormalToLightAngle = dot(normalize(PointOfIntersectioToLightDirection), Normal);
+    float Distance2 = dot(PointOfIntersectioToLightDirection, PointOfIntersectioToLightDirection);
+    float Luminance = Light.Intensity * CosNormalToLightAngle / Distance2;
+
+    Hit.Color = Renderable.RenderableColor * Luminance;
 }
