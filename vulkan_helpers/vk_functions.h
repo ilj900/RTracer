@@ -19,5 +19,4 @@ namespace V
     extern PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR;
     extern PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR;
     extern PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR;
-    extern PFN_vkDebugMarkerSetObjectNameEXT vkDebugMarkerSetObjectNameEXT;
 }

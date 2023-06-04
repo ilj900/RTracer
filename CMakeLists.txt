@@ -15,6 +15,7 @@ include_directories(
         include
         math
         src
+        utils
         ECS
         imgui
         imgui/backends
@@ -86,6 +87,8 @@ set(SOURCE
         vulkan_helpers/command_buffer_manager.cpp
         vulkan_helpers/vk_shader_compiler.cpp
         math/maths.cpp
+        utils/logging.h
+        utils/logging.cpp
         include/miniz.c
         ${IMGUI_SOURCE})
 

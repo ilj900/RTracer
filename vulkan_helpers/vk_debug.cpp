@@ -6,6 +6,7 @@
 namespace V
 {
     void SetName(VkDevice Device, uint64_t Object, VkObjectType ObjectType, const std::string& Name) {
+#ifndef NDEBUG
         VkDebugUtilsObjectNameInfoEXT DebugUtilsObjectNameInfo{};
         DebugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
         DebugUtilsObjectNameInfo.objectType = ObjectType;
@@ -14,6 +15,7 @@ namespace V
 
         VkResult Result = vkSetDebugUtilsObjectNameEXT(Device, &DebugUtilsObjectNameInfo);
         assert((Result == VK_SUCCESS) && "Failed to give a name to a vulkan object!");
+#endif
     }
 
     void SetName(VkDevice Device, VkBuffer Buffer, const std::string& Name) { SetName(Device, uint64_t(Buffer), VK_OBJECT_TYPE_BUFFER, Name); }

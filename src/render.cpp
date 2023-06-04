@@ -87,7 +87,6 @@ FRender::FRender()
     VkDebugUtilsMessengerEXT DebugUtilsMessengerEXT = Context.CreateDebugMessenger(VulkanContextOptions);
     Context.SetDebugUtilsMessengerEXT(DebugUtilsMessengerEXT);
 #endif
-
     /// Create Surface
     Surface = Context.CreateSurface(Window);
     Context.SetSurface(Surface);
@@ -103,7 +102,6 @@ FRender::FRender()
     Context.GetDeviceQueues(Surface);
 
     Context.InitManagerResources();
-
     CAMERA_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     TRANSFORM_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     RENDERABLE_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);

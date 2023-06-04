@@ -30,9 +30,11 @@ T LoadDeviceFunction(const std::string& FunctionName, VkDevice Device)
 
 namespace V
 {
+#ifndef NDEBUB
     PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = nullptr;
     PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = nullptr;
     PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = nullptr;
+#endif
     PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR = nullptr;
     PFN_vkDestroyAccelerationStructureKHR vkDestroyAccelerationStructureKHR = nullptr;
     PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR = nullptr;
@@ -43,13 +45,14 @@ namespace V
     PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR = nullptr;
     PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR = nullptr;
     PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR = nullptr;
-    PFN_vkDebugMarkerSetObjectNameEXT vkDebugMarkerSetObjectNameEXT = nullptr;
 
     void LoadVkFunctions(VkInstance Instance)
     {
+#ifndef NDEBUG
         vkCreateDebugUtilsMessengerEXT = LoadInstanceFunction<PFN_vkCreateDebugUtilsMessengerEXT>("vkCreateDebugUtilsMessengerEXT", Instance);
         vkDestroyDebugUtilsMessengerEXT = LoadInstanceFunction<PFN_vkDestroyDebugUtilsMessengerEXT>("vkDestroyDebugUtilsMessengerEXT", Instance);
         vkSetDebugUtilsObjectNameEXT = LoadInstanceFunction<PFN_vkSetDebugUtilsObjectNameEXT>("vkSetDebugUtilsObjectNameEXT", Instance);
+#endif
         vkCreateAccelerationStructureKHR = LoadInstanceFunction<PFN_vkCreateAccelerationStructureKHR>("vkCreateAccelerationStructureKHR", Instance);
         vkDestroyAccelerationStructureKHR = LoadInstanceFunction<PFN_vkDestroyAccelerationStructureKHR>("vkDestroyAccelerationStructureKHR", Instance);
         vkGetAccelerationStructureBuildSizesKHR = LoadInstanceFunction<PFN_vkGetAccelerationStructureBuildSizesKHR>("vkGetAccelerationStructureBuildSizesKHR", Instance);
@@ -60,6 +63,5 @@ namespace V
         vkGetRayTracingShaderGroupHandlesKHR = LoadInstanceFunction<PFN_vkGetRayTracingShaderGroupHandlesKHR>("vkGetRayTracingShaderGroupHandlesKHR", Instance);
         vkCreateRayTracingPipelinesKHR = LoadInstanceFunction<PFN_vkCreateRayTracingPipelinesKHR>("vkCreateRayTracingPipelinesKHR", Instance);
         vkCmdTraceRaysKHR = LoadInstanceFunction<PFN_vkCmdTraceRaysKHR>("vkCmdTraceRaysKHR", Instance);
-        vkDebugMarkerSetObjectNameEXT = LoadInstanceFunction<PFN_vkDebugMarkerSetObjectNameEXT>("vkDebugMarkerSetObjectNameEXT", Instance);
     }
 }

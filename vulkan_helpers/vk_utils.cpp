@@ -205,7 +205,7 @@ FTimer::~FTimer()
 
     auto Duration = static_cast<double>(End - Start);
 
-    static std::vector<std::string> TimeUnits = {"μs", "ms", "s"};
+    static std::vector<std::string> TimeUnits = {"us", "ms", "s"};
     int TimeUnitUsed = 0;
 
     if (Duration > 1000)
