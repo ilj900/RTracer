@@ -83,16 +83,6 @@ namespace ECS
             }
         }
 
-        std::set<FEntity>::iterator  FMeshSystem::begin()
-        {
-            return Entities.begin();
-        }
-
-        std::set<FEntity>::iterator  FMeshSystem::end()
-        {
-            return Entities.end();
-        }
-
         uint32_t FMeshSystem::Size()
         {
             return Entities.size();

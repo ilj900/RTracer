@@ -122,16 +122,6 @@ namespace ECS
             RenderableComponent.IndexBufferAddress = IndexDeviceAddress;
         }
 
-        std::set<FEntity>::iterator  FRenderableSystem::begin()
-        {
-            return Entities.begin();
-        }
-
-        std::set<FEntity>::iterator  FRenderableSystem::end()
-        {
-            return Entities.end();
-        }
-
         void FRenderableSystem::RequestAllUpdate()
         {
             for(int i = 0; i < NumberOfSimultaneousSubmits; ++i)

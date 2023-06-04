@@ -72,6 +72,6 @@ namespace ECS
         }
     private:
         std::unordered_map<const char*, FSignature> Signatures{};
-        std::unordered_map<const char*, std::shared_ptr<FSystem>> Systems{};
+        std::unordered_map<const char*, std::shared_ptr<ECS::SYSTEMS::FSystem>> Systems{};
     };
 }

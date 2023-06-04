@@ -6,9 +6,17 @@
 
 namespace ECS
 {
-    class FSystem
+    namespace SYSTEMS
     {
-    public:
-        std::set<FEntity> Entities;
-    };
+        class FSystem
+        {
+        public:
+            FSystem() = default;
+            std::set<FEntity>::iterator begin();
+            std::set<FEntity>::iterator end();
+            
+        public:
+            std::set<FEntity> Entities;
+        };
+    }
 }

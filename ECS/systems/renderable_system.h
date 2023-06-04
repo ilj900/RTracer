@@ -30,10 +30,6 @@ namespace ECS
 
             int GetTotalSize();
 
-
-            std::set<FEntity>::iterator begin();
-            std::set<FEntity>::iterator end();
-
         public:
             std::vector<bool> BufferPartThatNeedsUpdate;
             int NumberOfSimultaneousSubmits = 2;
