@@ -11,10 +11,6 @@ namespace ECS
     {
         class FCameraSystem : public FSystem
         {
-        private:
-            template<typename T>
-            T& GetComponent(FEntity CameraEntity);
-
         public:
             void Init(int NumberOfSimultaneousSubmits);
             void Update();

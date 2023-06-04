@@ -13,10 +13,6 @@ namespace ECS
     {
         class FTransformSystem : public FSystem
         {
-        private:
-            template<typename T>
-            T& GetComponent(FEntity Entity);
-
         public:
             void Init(int NumberOfSimultaneousSubmits);
             void Update();

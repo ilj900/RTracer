@@ -91,4 +91,6 @@ namespace ECS
             return std::static_pointer_cast<TComponentArray<T>>(ComponentArrays[TypeName]);
         }
     };
+
+    FComponentManager* GetComponentManager();
 }

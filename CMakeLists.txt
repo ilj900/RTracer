@@ -35,6 +35,7 @@ set(ECS_SOURCE
         ECS/entity_manager.cpp
         ECS/component_array.h
         ECS/component_manager.h
+        ECS/component_manager.cpp
         ECS/system_manager.h
         ECS/entities/entity.h
         ECS/components/transform_component.h

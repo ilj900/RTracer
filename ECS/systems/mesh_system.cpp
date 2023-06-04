@@ -13,15 +13,6 @@ namespace ECS
 {
     namespace SYSTEMS
     {
-        template<typename T>
-        inline T& FMeshSystem::GetComponent(FEntity Entity)
-        {
-            assert(Entities.find(Entity) != Entities.end() && "Entity doesn't have camera component");
-            auto& Coordinator = GetCoordinator();
-            auto& RenderableComponent = Coordinator.GetComponent<T>(Entity);
-            return RenderableComponent;
-        }
-
         void FMeshSystem::Init(int NumberOfSimultaneousSubmits)
         {
             VertexBuffer = GetContext().CreateBuffer(VertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V::Vertex_Buffer");

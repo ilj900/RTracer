@@ -11,15 +11,6 @@ namespace ECS
 {
     namespace SYSTEMS
     {
-        template<typename T>
-        inline T& FTransformSystem::GetComponent(FEntity Entity)
-        {
-            assert(Entities.find(Entity) != Entities.end() && "Entity doesn't have camera component");
-            auto& Coordinator = GetCoordinator();
-            auto& TransformComponent = Coordinator.GetComponent<T>(Entity);
-            return TransformComponent;
-        }
-
         void FTransformSystem::Init(int NumberOfSimultaneousSubmits)
         {
             this->NumberOfSimultaneousSubmits = NumberOfSimultaneousSubmits;

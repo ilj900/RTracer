@@ -17,7 +17,7 @@ namespace ECS
 
         void Init()
         {
-            ComponentManager = std::make_unique<FComponentManager>();
+            ComponentManager = ECS::GetComponentManager();
             EntityManager = std::make_unique<FEntityManager>();
             SystemManager = std::make_unique<FSystemManager>();
         }
@@ -109,7 +109,7 @@ namespace ECS
         }
 
     private:
-        std::unique_ptr<FComponentManager> ComponentManager;
+        FComponentManager* ComponentManager;
         std::unique_ptr<FEntityManager> EntityManager;
         std::unique_ptr<FSystemManager> SystemManager;
     };
