@@ -39,6 +39,7 @@ set(ECS_SOURCE
         ECS/component_manager.cpp
         ECS/system_manager.h
         ECS/entities/entity.h
+
         ECS/components/transform_component.h
         ECS/components/camera_component.h
         ECS/components/device_camera_component.h
@@ -47,6 +48,8 @@ set(ECS_SOURCE
         ECS/components/mesh_component.h
         ECS/components/device_mesh_component.h
         ECS/components/mesh_component.cpp
+        ECS/components/light_component.h
+
         ECS/systems/system.h
         ECS/systems/system.cpp
         ECS/systems/camera_system.h
@@ -58,7 +61,9 @@ set(ECS_SOURCE
         ECS/systems/material_system.h
         ECS/systems/material_system.cpp
         ECS/systems/mesh_system.h
-        ECS/systems/mesh_system.cpp)
+        ECS/systems/mesh_system.cpp
+        ECS/systems/light_system.h
+        ECS/systems/light_system.cpp)
 
 set(SOURCE
         src/application.h

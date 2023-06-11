@@ -25,6 +25,9 @@
 #include "components/material_component.h"
 #include "systems/material_system.h"
 
+#include "components/light_component.h"
+#include "systems/light_system.h"
+
 #include "application.h"
 #include "render.h"
 
@@ -78,6 +81,14 @@ FApplication::FApplication()
     MeshSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FMeshComponent>());
     MeshSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FDeviceMeshComponent>());
     Coordinator.SetSystemSignature<ECS::SYSTEMS::FMeshSystem>(MeshSignature);
+
+    /// Register Light component and System
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FLightComponent>();
+    auto LightSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FLightSystem>();
+
+    ECS::FSignature LightSignature;
+    LightSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FLightComponent>());
+    Coordinator.SetSystemSignature<ECS::SYSTEMS::FLightSystem>(LightSignature);
 
     Controller = std::make_shared<FController>();
     Render = std::make_shared<FRender>();

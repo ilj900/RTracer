@@ -5,6 +5,9 @@
 #include <cmath>
 #include <cassert>
 
+
+struct FMatrix3;
+
 struct FQuaternion
 {
     /// Constructors
@@ -50,6 +53,7 @@ struct FVector3
     /// Functions
     FVector3 GetNormalized() const;
     FVector3 Rotate(float Angle, const FVector3& Axis);
+    FVector3& SelfRotateY(float Angle);
     float Length();
 
     /// Operators
@@ -60,6 +64,7 @@ struct FVector3
     friend FVector3& operator+=(FVector3& A, const FVector3& B);
     friend FVector3 operator-(const FVector3& A, const FVector3& B);
     friend FVector3 operator-(const FVector3& A);
+    friend FVector3 operator*(const FVector3& A, const FMatrix3& B);
 
     /// Data
     float X;
@@ -85,7 +90,11 @@ public:
 struct FMatrix3
 {
     /// Constructors
-    FMatrix3() : Data({FVector3{1.f, 0.f, 0.f}, FVector3{0.f, 1.f, 0.f}, FVector3{0.f, 0.f, 1.f}}){}
+    FMatrix3() : Data({FVector3{1.f, 0.f, 0.f}, FVector3{0.f, 1.f, 0.f}, FVector3{0.f, 0.f, 1.f}}){};
+    FMatrix3(float A00, float A01, float A02,
+             float A10, float A11, float A12,
+             float A20, float A21, float A22) :
+             Data({FVector3{A00, A01, A02}, FVector3{A10, A11, A12}, FVector3{A20, A21, A22}}) {};
 
     /// Data
     std::array<FVector3, 3> Data;
@@ -94,7 +103,7 @@ struct FMatrix3
 struct FMatrix4
 {
     /// Constructors
-    FMatrix4() : Data({FVector4{1.f, 0.f, 0.f, 0.f}, FVector4{0.f, 1.f, 0.f, 0.f}, FVector4{0.f, 0.f, 1.f, 0.f}, FVector4{0.f, 0.f, 0.f, 1.f}}){}
+    FMatrix4() : Data({FVector4{1.f, 0.f, 0.f, 0.f}, FVector4{0.f, 1.f, 0.f, 0.f}, FVector4{0.f, 0.f, 1.f, 0.f}, FVector4{0.f, 0.f, 0.f, 1.f}}){};
     FMatrix4(float A00, float A01, float A02, float A03,
              float A10, float A11, float A12, float A13,
              float A20, float A21, float A22, float A23,

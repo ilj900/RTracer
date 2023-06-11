@@ -4,17 +4,21 @@
 #include "systems/renderable_system.h"
 #include "systems/camera_system.h"
 #include "systems/material_system.h"
+#include "systems/light_system.h"
 #include "components/mesh_component.h"
 #include "components/device_mesh_component.h"
 #include "components/device_renderable_component.h"
 #include "components/transform_component.h"
 #include "components/device_transform_component.h"
 #include "components/material_component.h"
+#include "components/light_component.h"
 
 #include "vk_context.h"
 
 #include "vk_functions.h"
 #include "render.h"
+
+#include "logging.h"
 
 FRender::FRender()
 {
@@ -109,6 +113,7 @@ FRender::FRender()
     RENDERABLE_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     MESH_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     MATERIAL_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
+    LIGHT_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
 
     LoadDataToGPU();
 
@@ -206,6 +211,7 @@ int FRender::Init()
     TRANSFORM_SYSTEM()->RequestAllUpdate();
     RENDERABLE_SYSTEM()->RequestAllUpdate();
     MATERIAL_SYSTEM()->RequestAllUpdate();
+    LIGHT_SYSTEM()->RequestAllUpdate();
 
     return 0;
 }
@@ -292,6 +298,7 @@ int FRender::Render()
     TRANSFORM_SYSTEM()->Update();
     RENDERABLE_SYSTEM()->Update();
     MATERIAL_SYSTEM()->Update();
+    LIGHT_SYSTEM()->Update();
 
     auto RenderSignalSemaphore = RayTraceTask->Submit(Context.GetGraphicsQueue(), ImageAvailableSemaphores[CurrentFrame], ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
 
@@ -318,6 +325,12 @@ int FRender::Render()
 
 int FRender::Update()
 {
+    auto& Coordinator = ECS::GetCoordinator();
+    auto LightComponent = Coordinator.GetComponent<ECS::COMPONENTS::FLightComponent>(Lights.back());
+    LightComponent.Position.SelfRotateY(0.025f);
+    LIGHT_SYSTEM()->SetLightPosition(Lights.back(), LightComponent.Position.X, LightComponent.Position.Y, LightComponent.Position.Z);
+    LIGHT_SYSTEM()->RequestAllUpdate();
+
     if (bShouldRecreateSwapchain)
     {
         GetContext().WaitIdle();
@@ -341,6 +354,8 @@ int FRender::LoadScene(const std::string& Path)
 
     AddMesh({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, Icosahedron, std::string(), 0);
     AddMesh({0.9f, 0.6f, 0.0f}, {-3.f, 0.f, -2.f}, Tetrahedron, std::string(), 0);
+
+    AddLight({5, 5, 5});
 
     return 0;
 }
@@ -376,7 +391,6 @@ int FRender::LoadDataToGPU()
 int FRender::AddMesh(const FVector3& Color, const FVector3& Position, MeshType Type, const std::string& Path, uint32_t RenderableMask)
 {
     auto& Coordinator = ECS::GetCoordinator();
-    auto MeshSystem = Coordinator.GetSystem<ECS::SYSTEMS::FMeshSystem>();
 
     Models.push_back(Coordinator.CreateEntity());
     Coordinator.AddComponent<ECS::COMPONENTS::FMeshComponent>(Models.back(), {});
@@ -390,16 +404,16 @@ int FRender::AddMesh(const FVector3& Color, const FVector3& Position, MeshType T
     switch(Type)
     {
         case Tetrahedron:
-            MeshSystem->CreateTetrahedron(Models.back());
+            MESH_SYSTEM()->CreateTetrahedron(Models.back());
             break;
         case Hexahedron:
-            MeshSystem->CreateHexahedron(Models.back());
+            MESH_SYSTEM()->CreateHexahedron(Models.back());
             break;
         case Icosahedron:
-            MeshSystem->CreateIcosahedron(Models.back(), 10);
+            MESH_SYSTEM()->CreateIcosahedron(Models.back(), 10);
             break;
         case Model:
-            MeshSystem->LoadMesh(Models.back(), Path);
+            MESH_SYSTEM()->LoadMesh(Models.back(), Path);
             break;
     }
     TRANSFORM_SYSTEM()->SetTransform(Models.back(), Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
@@ -408,3 +422,16 @@ int FRender::AddMesh(const FVector3& Color, const FVector3& Position, MeshType T
 
     return 0;
 }
+
+int FRender::AddLight(const FVector3& Position)
+{
+    auto& Coordinator = ECS::GetCoordinator();
+    auto LightSystem = Coordinator.GetSystem<ECS::SYSTEMS::FLightSystem>();
+
+    Lights.push_back(Coordinator.CreateEntity());
+    Coordinator.AddComponent<ECS::COMPONENTS::FLightComponent>(Lights.back(), {});
+    LIGHT_SYSTEM()->SetLightPosition(Lights.back(), Position.X, Position.Y, Position.Z);
+
+    return 0;
+}
+

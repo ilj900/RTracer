@@ -7,6 +7,8 @@
 #include "systems/transform_system.h"
 #include "systems/renderable_system.h"
 #include "systems/mesh_system.h"
+#include "systems/material_system.h"
+#include "systems/light_system.h"
 #include "coordinator.h"
 
 #include <stdexcept>
@@ -1433,6 +1435,9 @@ void FVulkanContext::CleanUp()
     DestroyBuffer(RENDERABLE_SYSTEM()->DeviceRenderableBuffer);
     DestroyBuffer(MESH_SYSTEM()->VertexBuffer);
     DestroyBuffer(MESH_SYSTEM()->IndexBuffer);
+    DestroyBuffer(MATERIAL_SYSTEM()->DeviceMaterialBuffer);
+    DestroyBuffer(LIGHT_SYSTEM()->DeviceLightBuffer);
+
 
     TextureImage = nullptr;
 

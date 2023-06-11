@@ -68,6 +68,16 @@ FVector3 operator-(const FVector3& A)
     return FVector3(-A.X, -A.Y, -A.Z);
 }
 
+FVector3 operator*(const FVector3& A, const FMatrix3& B)
+{
+    FVector3 Result;
+    Result.X = A.X * B.Data[0].X + A.Y * B.Data[1].X + A.Z * B.Data[2].X;
+    Result.Y = A.X * B.Data[0].Y + A.Y * B.Data[1].Y + A.Z * B.Data[2].Y;
+    Result.Z = A.X * B.Data[0].Z + A.Y * B.Data[1].Z + A.Z * B.Data[2].Z;
+
+    return Result;
+}
+
 float Dot(const FVector3& L, const FVector3& R)
 {
     return L.X * R.X + L.Y * R.Y + L.Z * R.Z;
@@ -126,6 +136,15 @@ FVector3 operator*(const FMatrix4& A, const FVector3& B)
     return FVector3{A.Data[0].X * B.X + A.Data[0].Y * B.Y + A.Data[0].Z * B.Z,
                     A.Data[1].X * B.X + A.Data[1].Y * B.Y + A.Data[1].Z * B.Z,
                     A.Data[2].X * B.X + A.Data[2].Y * B.Y + A.Data[2].Z * B.Z};
+}
+
+FVector3& FVector3::SelfRotateY(float Angle)
+{
+    float CosAngle = std::cos(Angle);
+    float SinAngle = std::sin(Angle);
+    auto RotationMatrix = FMatrix3(CosAngle, 0, SinAngle, 0, 1, 0, -SinAngle, 0, CosAngle);
+    *this = *this * RotationMatrix;
+    return *this;
 }
 
 FVector3 FVector3::Rotate(float Angle, const FVector3& Axis)

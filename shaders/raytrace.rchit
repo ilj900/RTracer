@@ -56,10 +56,13 @@ struct FMaterial
 {
     vec3 BaseAlbedo;
     float ReflectionRoughness;
+
     vec3 ReflectionAlbedo;
     float RefractionRoughness;
+
     vec3 CoatingAlbedo;
     float ReflectionIOR;
+
     vec3 RefractionAlbedo;
     float RefractionIOR;
 };
@@ -67,8 +70,18 @@ struct FMaterial
 struct FLight
 {
     vec3 Position;
-    vec3 Color;
     float Intensity;
+
+    vec3 Color;
+    uint Type;
+
+    vec3 Direction;
+    float OuterAngle;
+
+    float InnerAngle;
+    float dummy_1;
+    float dummy_2;
+    float dummy_3;
 };
 
 layout (set = 0, binding = 3) buffer RenderableBufferObject
@@ -81,6 +94,11 @@ layout (set = 0, binding = 4) buffer MaterialBufferObject
     FMaterial Materials[];
 } MaterialBuffer;
 
+layout (set = 0, binding = 5) buffer LightBufferObject
+{
+    FLight Lights[];
+} LightBUffer;
+
 FRenderable FetchRenderable()
 {
     return RenderableBuffer.Renderables[nonuniformEXT(gl_InstanceCustomIndexEXT)];
@@ -89,6 +107,11 @@ FRenderable FetchRenderable()
 FMaterial FetchMaterial()
 {
     return MaterialBuffer.Materials[nonuniformEXT(gl_InstanceCustomIndexEXT)];
+}
+
+FLight FetchLight(int LightIndex)
+{
+    return LightBUffer.Lights[nonuniformEXT(LightIndex)];
 }
 
 bool CheckFlag(uint Mask, uint Field)
@@ -156,11 +179,11 @@ void main()
     vec3 PointOfIntersectionInLocalSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
     vec3 PointOfIntersectionInWorldSpace = vec3(gl_ObjectToWorldEXT * vec4(PointOfIntersectionInLocalSpace, 1.f));
 
-    FLight Light = FLight(vec3(5.f, 5.f, 5.f), vec3(1.f, 1.f, 1.f), 5.f);
+    FLight Light = FetchLight(0);
     vec3 PointOfIntersectioToLightDirection = Light.Position - PointOfIntersectionInWorldSpace;
     float CosNormalToLightAngle = dot(normalize(PointOfIntersectioToLightDirection), Normal);
     float Distance2 = dot(PointOfIntersectioToLightDirection, PointOfIntersectioToLightDirection);
     float Luminance = Light.Intensity * CosNormalToLightAngle / Distance2;
 
-    Hit.Color = Material.BaseAlbedo;
+    Hit.Color = Material.BaseAlbedo * Luminance;
 }

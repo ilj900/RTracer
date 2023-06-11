@@ -34,6 +34,7 @@ public:
 
     int LoadScene(const std::string& Path);
     int AddMesh(const FVector3& Color, const FVector3& Position, MeshType Type, const std::string& Path, uint32_t RenderableMask);
+    int AddLight(const FVector3& Position);
     int SetIBL(const std::string& Path);
     int LoadDataToGPU();
 
@@ -57,6 +58,7 @@ public:
     ImagePtr UtilityImageR8G8B8A8_SRGB = nullptr;
 
     std::vector<ECS::FEntity> Models;
+    std::vector<ECS::FEntity> Lights;
 
     //std::shared_ptr<FRenderTask> RenderTask = nullptr;
     std::shared_ptr<FRaytraceTask> RayTraceTask = nullptr;
