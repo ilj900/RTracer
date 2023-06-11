@@ -6,7 +6,7 @@
 #include "components/device_mesh_component.h"
 #include "components/device_transform_component.h"
 #include "components/device_camera_component.h"
-#include "components/device_renderable_component.h"
+#include "systems/material_system.h"
 #include "systems/camera_system.h"
 #include "systems/mesh_system.h"
 #include "systems/renderable_system.h"
@@ -28,6 +28,8 @@ FRaytraceTask::FRaytraceTask(int WidthIn, int HeightIn, FVulkanContext* Context,
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, RT_FINAL_IMAGE_INDEX,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, RENDERABLE_BUFFER_INDEX,
+                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
+    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, MATERIAL_BUFFER_INDEX,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, IBL_IMAGE_INDEX,
                                               {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_MISS_BIT_KHR});
@@ -173,6 +175,12 @@ void FRaytraceTask::UpdateDescriptorSets()
         RenderableBufferInfo.offset = 0;
         RenderableBufferInfo.range = RENDERABLE_SYSTEM()->GetTotalSize();
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, RENDERABLE_BUFFER_INDEX, i, RenderableBufferInfo);
+
+        VkDescriptorBufferInfo MaterialBufferInfo{};
+        MaterialBufferInfo.buffer = MATERIAL_SYSTEM()->DeviceMaterialBuffer.Buffer;
+        MaterialBufferInfo.offset = 0;
+        MaterialBufferInfo.range = MATERIAL_SYSTEM()->GetTotalSize();
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, MATERIAL_BUFFER_INDEX, i, MaterialBufferInfo);
 
         VkDescriptorImageInfo ImageBufferInfo{};
         ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

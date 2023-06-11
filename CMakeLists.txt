@@ -43,6 +43,7 @@ set(ECS_SOURCE
         ECS/components/camera_component.h
         ECS/components/device_camera_component.h
         ECS/components/device_renderable_component.h
+        ECS/components/material_component.h
         ECS/components/mesh_component.h
         ECS/components/device_mesh_component.h
         ECS/components/mesh_component.cpp
@@ -54,6 +55,8 @@ set(ECS_SOURCE
         ECS/systems/transform_system.cpp
         ECS/systems/renderable_system.h
         ECS/systems/renderable_system.cpp
+        ECS/systems/material_system.h
+        ECS/systems/material_system.cpp
         ECS/systems/mesh_system.h
         ECS/systems/mesh_system.cpp)
 

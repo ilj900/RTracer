@@ -3,11 +3,13 @@
 #include "systems/transform_system.h"
 #include "systems/renderable_system.h"
 #include "systems/camera_system.h"
+#include "systems/material_system.h"
 #include "components/mesh_component.h"
 #include "components/device_mesh_component.h"
 #include "components/device_renderable_component.h"
 #include "components/transform_component.h"
 #include "components/device_transform_component.h"
+#include "components/material_component.h"
 
 #include "vk_context.h"
 
@@ -106,6 +108,7 @@ FRender::FRender()
     TRANSFORM_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     RENDERABLE_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     MESH_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
+    MATERIAL_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
 
     LoadDataToGPU();
 
@@ -202,6 +205,7 @@ int FRender::Init()
     CAMERA_SYSTEM()->RequestAllUpdate();
     TRANSFORM_SYSTEM()->RequestAllUpdate();
     RENDERABLE_SYSTEM()->RequestAllUpdate();
+    MATERIAL_SYSTEM()->RequestAllUpdate();
 
     return 0;
 }
@@ -287,6 +291,7 @@ int FRender::Render()
     CAMERA_SYSTEM()->Update();
     TRANSFORM_SYSTEM()->Update();
     RENDERABLE_SYSTEM()->Update();
+    MATERIAL_SYSTEM()->Update();
 
     auto RenderSignalSemaphore = RayTraceTask->Submit(Context.GetGraphicsQueue(), ImageAvailableSemaphores[CurrentFrame], ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
 
@@ -381,6 +386,7 @@ int FRender::AddMesh(const FVector3& Color, const FVector3& Position, MeshType T
             (Models.back(), {FVector3{1.f, 1.f, 1.f}, 0.f,Index++, RenderableMask});
     Coordinator.AddComponent<ECS::COMPONENTS::FTransformComponent>(Models.back(), {});
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Models.back(), {});
+    Coordinator.AddComponent<ECS::COMPONENTS::FMaterialComponent>(Models.back(), {});
     switch(Type)
     {
         case Tetrahedron:

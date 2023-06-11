@@ -23,7 +23,7 @@ namespace ECS
             assert(Entities.find(Entity) != Entities.end() && "Entity doesn't have camera component");
             T& Component = GetComponentManager()->GetComponent<T>(Entity);
             return Component;
-        }
+        };
         public:
             std::set<FEntity> Entities;
         };

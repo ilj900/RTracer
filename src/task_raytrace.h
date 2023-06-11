@@ -36,5 +36,6 @@ public:
     const uint32_t CAMERA_LAYOUT_INDEX = 1;
     const uint32_t RT_FINAL_IMAGE_INDEX = 2;
     const uint32_t RENDERABLE_BUFFER_INDEX = 3;
-    const uint32_t IBL_IMAGE_INDEX = 4;
+    const uint32_t MATERIAL_BUFFER_INDEX = 4;
+    const uint32_t IBL_IMAGE_INDEX = 5;
 };

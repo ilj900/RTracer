@@ -52,6 +52,18 @@ struct FRenderable
     uint64_t IndexBufferAddress;
 };
 
+struct FMaterial
+{
+    vec3 BaseAlbedo;
+    float ReflectionRoughness;
+    vec3 ReflectionAlbedo;
+    float RefractionRoughness;
+    vec3 CoatingAlbedo;
+    float ReflectionIOR;
+    vec3 RefractionAlbedo;
+    float RefractionIOR;
+};
+
 struct FLight
 {
     vec3 Position;
@@ -63,6 +75,21 @@ layout (set = 0, binding = 3) buffer RenderableBufferObject
 {
     FRenderable Renderables[];
 } RenderableBuffer;
+
+layout (set = 0, binding = 4) buffer MaterialBufferObject
+{
+    FMaterial Materials[];
+} MaterialBuffer;
+
+FRenderable FetchRenderable()
+{
+    return RenderableBuffer.Renderables[nonuniformEXT(gl_InstanceCustomIndexEXT)];
+}
+
+FMaterial FetchMaterial()
+{
+    return MaterialBuffer.Materials[nonuniformEXT(gl_InstanceCustomIndexEXT)];
+}
 
 bool CheckFlag(uint Mask, uint Field)
 {
@@ -83,7 +110,8 @@ bool IsIndexed(FRenderable Renderable)
 
 void main()
 {
-    FRenderable Renderable = RenderableBuffer.Renderables[nonuniformEXT(gl_InstanceCustomIndexEXT)];
+    FRenderable Renderable = FetchRenderable();
+    FMaterial Material = FetchMaterial();
     Vertices Verts = Vertices(Renderable.VertexBufferAddress);
     Indices Inds = Indices(Renderable.IndexBufferAddress);
 
@@ -134,5 +162,5 @@ void main()
     float Distance2 = dot(PointOfIntersectioToLightDirection, PointOfIntersectioToLightDirection);
     float Luminance = Light.Intensity * CosNormalToLightAngle / Distance2;
 
-    Hit.Color = Renderable.RenderableColor * Luminance;
+    Hit.Color = Material.BaseAlbedo;
 }

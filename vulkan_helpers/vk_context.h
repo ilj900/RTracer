@@ -96,13 +96,13 @@ public:
     FMemoryPtr PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data) const;
     void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset) const;
     void DestroyBuffer(FBuffer& Buffer) const;
-    template <typename T, int Size, int Offset>
-    std::vector<T> DebugGetDataFromBuffer(FBuffer SrcBuffer)
+    template <typename T>
+    std::vector<T> DebugGetDataFromBuffer(FBuffer SrcBuffer, int Size, int Offset)
     {
         std::vector<T> Result;
-        Result.resize(Size);
+        Result.resize(Size / sizeof(T));
 
-        CopyBuffer(SrcBuffer, ResourceAllocator->StagingBuffer, Size * sizeof(T), Offset, 0);
+        CopyBuffer(SrcBuffer, ResourceAllocator->StagingBuffer, Size, Offset, 0);
         ResourceAllocator->LoadDataFromStaginBuffer(Size * sizeof(T), Result.data());
 
         return Result;

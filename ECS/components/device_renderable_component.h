@@ -14,16 +14,16 @@ namespace ECS
         struct FDeviceRenderableComponent
         {
 
-            FVector3 RenderableColor = {0.3f, 0.1f, 0.2f};
-            float dummy_1;
+            FVector3    RenderableColor = {0.3f, 0.1f, 0.2f};
+            float       dummy_1;
 
-            int32_t RenderableIndex = 0;
-            uint32_t RenderablePropertyMask = 0;
-            uint32_t dummy_2;
-            uint32_t dummy_3;
+            int32_t     RenderableIndex = 0;
+            uint32_t    RenderablePropertyMask = 0;
+            uint32_t    dummy_2;
+            uint32_t    dummy_3;
 
-            uint64_t VertexBufferAddress;
-            uint64_t IndexBufferAddress;
+            uint64_t    VertexBufferAddress;
+            uint64_t    IndexBufferAddress;
         };
     }
 }
