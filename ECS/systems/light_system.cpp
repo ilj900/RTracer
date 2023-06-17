@@ -59,6 +59,81 @@ namespace ECS
             return *this;
         }
 
+        FLightSystem& FLightSystem::SetLightPosition(FEntity LightEntity, const FVector3& Position)
+        {
+            auto& Coordinator = GetCoordinator();
+            auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(LightEntity);
+            LightComponent.Position = Position;
+
+            return *this;
+        }
+
+        FLightSystem& FLightSystem::SetLightDirection(FEntity LightEntity, const FVector3& Direction)
+        {
+            auto& Coordinator = GetCoordinator();
+            auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(LightEntity);
+            LightComponent.Direction = Direction;
+
+            return *this;
+        }
+
+        FLightSystem& FLightSystem::SetLightColor(FEntity LightEntity, const FVector3& Color)
+        {
+            auto& Coordinator = GetCoordinator();
+            auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(LightEntity);
+            LightComponent.Color = Color;
+
+            return *this;
+        }
+
+        FEntity FLightSystem::CreatePointLight(const FVector3& Position, const FVector3& Color, float Intensity)
+        {
+            auto& Coordinator = GetCoordinator();
+            auto Light = Coordinator.CreateEntity();
+            Coordinator.AddComponent<ECS::COMPONENTS::FLightComponent>(Light, {});
+
+            auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(Light);
+            LightComponent.Type = LIGHT_TYPE::POINT_LIGHT;
+            LightComponent.Position = Position;
+            LightComponent.Color = Color;
+            LightComponent.Intensity = Intensity;
+
+            return Light;
+        }
+
+        FEntity FLightSystem::CreateDirectionalLight(const FVector3& Direction, const FVector3& Color, float Intensity)
+        {
+            auto& Coordinator = GetCoordinator();
+            auto Light = Coordinator.CreateEntity();
+            Coordinator.AddComponent<ECS::COMPONENTS::FLightComponent>(Light, {});
+
+            auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(Light);
+            LightComponent.Type = LIGHT_TYPE::DIRECTIONAL_LIGHT;
+            LightComponent.Direction = Direction;
+            LightComponent.Color = Color;
+            LightComponent.Intensity = Intensity;
+
+            return Light;
+        }
+
+        FEntity FLightSystem::CreateSpotLight(const FVector3& Position, const FVector3& Color, float Intensity, float OuterAngle, float InnerAngle)
+        {
+            auto& Coordinator = GetCoordinator();
+            auto Light = Coordinator.CreateEntity();
+            Coordinator.AddComponent<ECS::COMPONENTS::FLightComponent>(Light, {});
+
+            auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(Light);
+            LightComponent.Type = LIGHT_TYPE::SPOT_LIGHT;
+            LightComponent.Position = Position;
+            LightComponent.Color = Color;
+            LightComponent.Intensity = Intensity;
+            LightComponent.OuterAngle = OuterAngle;
+            LightComponent.InnerAngle = InnerAngle;
+
+            return Light;
+        }
+
+
         void FLightSystem::RequestAllUpdate()
         {
             for(int i = 0; i < NumberOfSimultaneousSubmits; ++i)

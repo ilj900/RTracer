@@ -16,7 +16,15 @@ namespace ECS
         public:
             void Init(int NumberOfSimultaneousSubmits);
             void Update();
+            FLightSystem& SetLightPosition(FEntity LightEntity, const FVector3& Position);
             FLightSystem& SetLightPosition(FEntity LightEntity, float X, float Y, float Z);
+            FLightSystem& SetLightDirection(FEntity LightEntity, const FVector3& Direction);
+            FLightSystem& SetLightColor(FEntity LightEntity, const FVector3& Color);
+            FLightSystem& SetLightIntensity(FEntity LightEntity, float Intensity);
+
+            FEntity CreatePointLight(const FVector3& Position, const FVector3& Color, float Intensity);
+            FEntity CreateDirectionalLight(const FVector3& Direction, const FVector3& Color, float Intensity);
+            FEntity CreateSpotLight(const FVector3& Position, const FVector3& Color, float Intensity, float OuterAngle, float InnerAngle);
 
             void RequestAllUpdate();
             void RequestUpdate(int FrameIndex);
