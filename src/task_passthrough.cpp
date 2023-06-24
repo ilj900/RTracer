@@ -75,23 +75,6 @@ void FPassthroughTask::RecordCommands()
     {
         CommandBuffers[i] = Context->CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
-//            VkImageMemoryBarrier Barrier{};
-//            Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-//            Barrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
-//            Barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-//            Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-//            Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-//            Barrier.image = Inputs[0]->Image;
-//            Barrier.subresourceRange.baseMipLevel = 0;
-//            Barrier.subresourceRange.levelCount = 1;
-//            Barrier.subresourceRange.baseArrayLayer = 0;
-//            Barrier.subresourceRange.layerCount = 1;
-//            Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-//            Barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-//            Barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-//
-//            vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
-
             VkRenderPassBeginInfo RenderPassInfo{};
             RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
             RenderPassInfo.renderPass = RenderPass;

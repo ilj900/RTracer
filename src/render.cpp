@@ -77,6 +77,11 @@ FRender::FRender()
     PhysicalDeviceHostQueryResetFeatures.hostQueryReset = VK_TRUE;
     VulkanContextOptions.AddDeviceExtension(VK_KHR_RAY_QUERY_EXTENSION_NAME, &PhysicalDeviceHostQueryResetFeatures, sizeof(VkPhysicalDeviceHostQueryResetFeatures));
 
+    VkPhysicalDeviceMaintenance4Features PhysicalDeviceMaintenance4Features{};
+    PhysicalDeviceMaintenance4Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES;
+    PhysicalDeviceMaintenance4Features.maintenance4 = VK_TRUE;
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME, &PhysicalDeviceMaintenance4Features, sizeof(PhysicalDeviceMaintenance4Features));
+
     VulkanContextOptions.AddDeviceExtension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
     VulkanContextOptions.AddDeviceExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
     VulkanContextOptions.AddDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
@@ -166,19 +171,19 @@ int FRender::Init()
                                                     VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_ResolvedColorImage");
 
     auto RTColorImage = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
-                                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                               VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_RayTracingColorImage");
     RTColorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-//    RenderTask = std::make_shared<FRenderTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
-//    RenderTask->RegisterOutput(0, ColorImage);
-//    RenderTask->RegisterOutput(1, NormalsImage);
-//    RenderTask->RegisterOutput(2, RenderableIndexImage);
-//    RenderTask->RegisterOutput(3, ResolvedColorImage);
-//
-//    RenderTask->Init();
-//    RenderTask->UpdateDescriptorSets();
-//    RenderTask->RecordCommands();
+    auto AccumulatorImage = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+                                                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                  VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_AccumulatorImage");
+    AccumulatorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+    auto EstimatedImage = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+                                                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                  VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_EstimatedImage");
+    EstimatedImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
     RayTraceTask = std::make_shared<FRaytraceTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     RayTraceTask->RegisterOutput(0, RTColorImage);
@@ -188,8 +193,17 @@ int FRender::Init()
     RayTraceTask->UpdateDescriptorSets();
     RayTraceTask->RecordCommands();
 
+    AccumulateTask = std::make_shared<FAccumulateTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    AccumulateTask->RegisterInput(0, RTColorImage);
+    AccumulateTask->RegisterOutput(0, AccumulatorImage);
+    AccumulateTask->RegisterOutput(1, EstimatedImage);
+
+    AccumulateTask->Init();
+    AccumulateTask->UpdateDescriptorSets();
+    AccumulateTask->RecordCommands();
+
     PassthroughTask = std::make_shared<FPassthroughTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
-    PassthroughTask->RegisterInput(0, RayTraceTask->GetOutput(0));
+    PassthroughTask->RegisterInput(0, EstimatedImage);
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
         PassthroughTask->RegisterOutput(i, Swapchain->Images[i]);
@@ -225,6 +239,8 @@ int FRender::Cleanup()
 //    RenderTask = nullptr;
     RayTraceTask->Cleanup();
     RayTraceTask = nullptr;
+    AccumulateTask->Cleanup();
+    AccumulateTask = nullptr;
     PassthroughTask->Cleanup();
     PassthroughTask = nullptr;
     ImguiTask->Cleanup();
@@ -302,7 +318,9 @@ int FRender::Render()
 
     auto RenderSignalSemaphore = RayTraceTask->Submit(Context.GetGraphicsQueue(), ImageAvailableSemaphores[CurrentFrame], ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
 
-    auto PassthroughSignalSemaphore = PassthroughTask->Submit(Context.GetGraphicsQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto AccumulateSignalSemaphore = AccumulateTask->Submit(Context.GetComputeQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+
+    auto PassthroughSignalSemaphore = PassthroughTask->Submit(Context.GetGraphicsQueue(), AccumulateSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
     auto ImguiFinishedSemaphore = ImguiTask->Submit(Context.GetGraphicsQueue(), PassthroughSignalSemaphore, VK_NULL_HANDLE, ImagesInFlight[ImageIndex], CurrentFrame);
 

@@ -1274,6 +1274,29 @@ VkPipeline FVulkanContext::CreateRayTracingPipeline(VkShaderModule RayGenShader,
     return Pipeline;
 }
 
+VkPipeline FVulkanContext::CreateComputePipeline(VkShaderModule ComputeShader, VkPipelineLayout PipelineLayout)
+{
+    VkPipelineShaderStageCreateInfo PipelineShaderStageCreateinfo{};
+    PipelineShaderStageCreateinfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    PipelineShaderStageCreateinfo.module = ComputeShader;
+    PipelineShaderStageCreateinfo.pName = "main";
+    PipelineShaderStageCreateinfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+
+    VkComputePipelineCreateInfo ComputePipelineCreateInfo{};
+    ComputePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+    ComputePipelineCreateInfo.layout = PipelineLayout;
+    ComputePipelineCreateInfo.stage = PipelineShaderStageCreateinfo;
+
+    VkPipeline Pipeline = VK_NULL_HANDLE;
+
+    if (vkCreateComputePipelines(LogicalDevice, nullptr, 1, &ComputePipelineCreateInfo, nullptr, &Pipeline) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create compute pipeline!");
+    }
+
+    return Pipeline;
+}
+
 VkSemaphore FVulkanContext::CreateSemaphore() const
 {
     VkSemaphoreCreateInfo SemaphoreInfo{};

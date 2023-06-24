@@ -1,0 +1,21 @@
+#version 460
+
+layout (set = 0, binding = 0, rgba32f) uniform image2D IncomingImage;
+layout (set = 0, binding = 1, rgba32f) uniform image2D AccumulatorImage;
+layout (set = 0, binding = 2, rgba32f) uniform image2D EstimatedImage;
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+void main()
+{
+    ivec2 UV = ivec2(gl_GlobalInvocationID.xy);
+
+    vec4 AccumulatedValue = imageLoad(AccumulatorImage, UV);
+    vec4 IncomingValue = imageLoad(IncomingImage, UV);
+
+    AccumulatedValue += vec4(IncomingValue.xyz, 1.f);
+    vec3 EstimatedValue = AccumulatedValue.xyz / AccumulatedValue.w;
+
+    imageStore(AccumulatorImage, UV, AccumulatedValue);
+    imageStore(EstimatedImage, UV, vec4(EstimatedValue, 0.f));
+}

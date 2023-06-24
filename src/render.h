@@ -9,8 +9,8 @@
 
 #include "entities/entity.h"
 
-#include "task_render.h"
 #include "task_raytrace.h"
+#include "task_accumulate.h"
 #include "task_passthrough.h"
 #include "task_imgui.h"
 
@@ -60,8 +60,8 @@ public:
     std::vector<ECS::FEntity> Models;
     std::vector<ECS::FEntity> Lights;
 
-    //std::shared_ptr<FRenderTask> RenderTask = nullptr;
     std::shared_ptr<FRaytraceTask> RayTraceTask = nullptr;
+    std::shared_ptr<FAccumulateTask> AccumulateTask = nullptr;
     std::shared_ptr<FPassthroughTask> PassthroughTask = nullptr;
     std::shared_ptr<FImguiTask> ImguiTask = nullptr;
 
