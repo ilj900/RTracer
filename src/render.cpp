@@ -202,6 +202,13 @@ int FRender::Init()
     AccumulateTask->UpdateDescriptorSets();
     AccumulateTask->RecordCommands();
 
+    ClearImageTask = std::make_shared<FClearImageTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    ClearImageTask->RegisterOutput(0, AccumulatorImage);
+
+    ClearImageTask->Init();
+    ClearImageTask->UpdateDescriptorSets();
+    ClearImageTask->RecordCommands();
+
     PassthroughTask = std::make_shared<FPassthroughTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     PassthroughTask->RegisterInput(0, EstimatedImage);
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
@@ -241,6 +248,8 @@ int FRender::Cleanup()
     RayTraceTask = nullptr;
     AccumulateTask->Cleanup();
     AccumulateTask = nullptr;
+    ClearImageTask->Cleanup();
+    ClearImageTask = nullptr;
     PassthroughTask->Cleanup();
     PassthroughTask = nullptr;
     ImguiTask->Cleanup();
@@ -310,15 +319,26 @@ int FRender::Render()
         throw std::runtime_error("Failed to acquire swap chain image!");
     }
 
+    bool NeedUpdate = false;
     CAMERA_SYSTEM()->Update();
     TRANSFORM_SYSTEM()->Update();
     RENDERABLE_SYSTEM()->Update();
     MATERIAL_SYSTEM()->Update();
-    LIGHT_SYSTEM()->Update();
+    NeedUpdate |= LIGHT_SYSTEM()->Update();
 
     auto RenderSignalSemaphore = RayTraceTask->Submit(Context.GetGraphicsQueue(), ImageAvailableSemaphores[CurrentFrame], ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
 
-    auto AccumulateSignalSemaphore = AccumulateTask->Submit(Context.GetComputeQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    VkSemaphore AccumulateSignalSemaphore = VK_NULL_HANDLE;
+
+    if (NeedUpdate)
+    {
+        auto ClearAccumulatorSemaphore = ClearImageTask->Submit(Context.GetComputeQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+        AccumulateSignalSemaphore = AccumulateTask->Submit(Context.GetComputeQueue(), ClearAccumulatorSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    }
+    else
+    {
+        AccumulateSignalSemaphore = AccumulateTask->Submit(Context.GetComputeQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    }
 
     auto PassthroughSignalSemaphore = PassthroughTask->Submit(Context.GetGraphicsQueue(), AccumulateSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 

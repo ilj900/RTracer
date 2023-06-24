@@ -30,8 +30,10 @@ namespace ECS
             BufferPartThatNeedsUpdate.resize(NumberOfSimultaneousSubmits);
         }
 
-        void FLightSystem::Update()
+        bool FLightSystem::Update()
         {
+            bool AnythingChanged = false;
+
             for (int i = 0; i < BufferPartThatNeedsUpdate.size(); ++i)
             {
                 if (true == BufferPartThatNeedsUpdate[i])
@@ -46,8 +48,12 @@ namespace ECS
                                                                 LightComponentsSize * i,
                                                                 LightComponentsData);
                     BufferPartThatNeedsUpdate[i] = false;
+
+                    AnythingChanged = true;
                 }
             }
+
+            return AnythingChanged;
         }
 
         FLightSystem& FLightSystem::SetLightPosition(FEntity LightEntity, float X, float Y, float Z)

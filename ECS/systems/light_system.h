@@ -15,7 +15,7 @@ namespace ECS
         {
         public:
             void Init(int NumberOfSimultaneousSubmits);
-            void Update();
+            bool Update();
             FLightSystem& SetLightPosition(FEntity LightEntity, const FVector3& Position);
             FLightSystem& SetLightPosition(FEntity LightEntity, float X, float Y, float Z);
             FLightSystem& SetLightDirection(FEntity LightEntity, const FVector3& Direction);

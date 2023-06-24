@@ -13,6 +13,7 @@
 #include "task_accumulate.h"
 #include "task_passthrough.h"
 #include "task_imgui.h"
+#include "task_clear_image.h"
 
 #include <string>
 #include <vector>
@@ -64,6 +65,7 @@ public:
     std::shared_ptr<FAccumulateTask> AccumulateTask = nullptr;
     std::shared_ptr<FPassthroughTask> PassthroughTask = nullptr;
     std::shared_ptr<FImguiTask> ImguiTask = nullptr;
+    std::shared_ptr<FClearImageTask> ClearImageTask = nullptr;
 
     std::vector<VkSemaphore> ImageAvailableSemaphores;
     std::vector<VkSemaphore> ImGuiFinishedSemaphores;

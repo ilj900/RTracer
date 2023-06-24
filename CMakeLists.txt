@@ -84,6 +84,8 @@ set(SOURCE
         src/task_raytrace.cpp
         src/task_accumulate.h
         src/task_accumulate.cpp
+        src/task_clear_image.h
+        src/task_clear_image.cpp
         src/tinyexr.cpp
         vulkan_helpers/vk_acceleration_structure.h
         vulkan_helpers/vk_context.h
