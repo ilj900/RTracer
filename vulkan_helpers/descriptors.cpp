@@ -157,7 +157,7 @@ void FPipelineDescriptorSetLayout::AllocateAllDescriptorSets(VkDevice LogicalDev
 
         for (int i = 0; i < VkDescriptorSets[SetIndex].size(); ++i)
         {
-            V::SetName(LogicalDevice, VkDescriptorSets[SetIndex][i], "Descriptor_Set_" + std::to_string(SetIndex) + "_Number_" + std::to_string(i++));
+            V::SetName(LogicalDevice, VkDescriptorSets[SetIndex][i], "Descriptor_Set_" + std::to_string(SetIndex) + "_Number_" + std::to_string(i));
         }
     }
 }

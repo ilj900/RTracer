@@ -8,14 +8,14 @@ void CheckNotNullptr(void* FunctionPointer, const std::string& FunctionName)
     {
         throw std::runtime_error("Failed to load function: " + FunctionName + "\n");
     }
-};
+}
 
 /// Load an instance function
 template <class T>
 T LoadInstanceFunction(const std::string& FunctionName, VkInstance Instance)
 {
     T Function = (T) vkGetInstanceProcAddr(Instance, FunctionName.c_str());
-    CheckNotNullptr(Function, FunctionName);
+    CheckNotNullptr((void*)Function, FunctionName);
     return Function;
 }
 
