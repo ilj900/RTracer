@@ -7,6 +7,7 @@
 
 
 struct FMatrix3;
+struct FMatrix4;
 
 struct FQuaternion
 {
@@ -36,6 +37,13 @@ struct FVector4
 
     /// Operators
     friend bool operator==(const FVector4& A, const FVector4& B);
+    friend FVector4 operator*(const FVector4& A, const FVector4& B);
+    friend FVector4 operator+(const FVector4& A, const FVector4& B);
+    friend FVector4 operator*(const FVector4& A, float Val);
+    friend FVector4& operator+=(FVector4& A, const FVector4& B);
+    friend FVector4 operator-(const FVector4& A, const FVector4& B);
+    friend FVector4 operator-(const FVector4& A);
+    friend FVector4 operator*(const FMatrix4& B, const FVector4& A);
 
     /// Data
     float X = 0.f;
@@ -145,7 +153,7 @@ struct std::hash<FVector3>
     }
 };
 
-/// Some math functions
+FVector3 Cross(const FVector3& A, const FVector3& B);
 FMatrix4 GetRotationMatrix(FVector3 OriginalDirection, FVector3 FinalDirection);
 FMatrix4 GetRotationMatrixX(float Angle);
 FMatrix4 GetRotationMatrixY(float Angle);

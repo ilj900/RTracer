@@ -1,5 +1,64 @@
 #include "maths.h"
 
+///The selected coordinate system is right handed
+///X positive direction goes to the right
+///Y positive direction goes to the top
+///Z poditive
+
+///****************************************************************
+///FVector4 and it's operations
+///****************************************************************
+
+FVector4 operator*(const FVector4& A, const FVector4& B)
+{
+    return FVector4(A.X * B.X, A.Y * B.Y, A.Z * B.Z, A.W * B.W);
+}
+
+FVector4 operator+(const FVector4& A, const FVector4& B)
+{
+    return FVector4(A.X + B.X, A.Y + B.Y, A.Z + B.Z, A.W + B.W);
+}
+
+FVector4 operator*(const FVector4& A, float Val)
+{
+    return FVector4(A.X * Val, A.Y * Val, A.Z * Val, A.W * Val);
+}
+
+FVector4& operator+=(FVector4& A, const FVector4& B)
+{
+    A.X += B.X;
+    A.Y += B.Y;
+    A.Z += B.Z;
+    A.W += B.W;
+
+    return A;
+}
+
+FVector4 operator-(const FVector4& A, const FVector4& B)
+{
+    return FVector4(A.X - B.X, A.Y - B.Y, A.Z - B.Z, A.W - B.W);
+}
+
+FVector4 operator-(const FVector4& A)
+{
+    return FVector4(-A.X, -A.Y, -A.Z, -A.W);
+}
+
+FVector4 operator*(const FMatrix4& B, const FVector4& A)
+{
+    FVector4 Result;
+    Result.X = A.X * B.Data[0].X + A.Y * B.Data[1].X + A.Z * B.Data[2].X + A.W * B.Data[3].X;
+    Result.Y = A.X * B.Data[0].Y + A.Y * B.Data[1].Y + A.Z * B.Data[2].Y + A.W * B.Data[3].Y;
+    Result.Z = A.X * B.Data[0].Z + A.Y * B.Data[1].Z + A.Z * B.Data[2].Z + A.W * B.Data[3].Z;
+    Result.W = A.X * B.Data[0].Z + A.Y * B.Data[1].Z + A.Z * B.Data[2].Z + A.W * B.Data[3].W;
+
+    return Result;
+}
+
+///****************************************************************
+///FQuaternion and it's operations
+///****************************************************************
+
 FQuaternion FQuaternion::GetInverse()
 {
     FQuaternion Result = GetConjugation();
@@ -16,6 +75,10 @@ FQuaternion FQuaternion::GetConjugation()
 {
     return {W, -X, -Y, -Z};
 };
+
+///****************************************************************
+///FVector3 and it's operations
+///****************************************************************
 
 FVector3 FVector3::GetNormalized() const
 {
@@ -158,6 +221,12 @@ FVector3 FVector3::Rotate(float Angle, const FVector3& Axis)
     FQuaternion Tmp2 = Tmp1 * InvertedRotationQuaternion;
     return FVector3(Tmp2.X, Tmp2.Y, Tmp2.Z);
 }
+
+FVector3 Cross(const FVector3& A, const FVector3& B)
+{
+    FVector3(A.Y * B.Z - B.Y * A.Z, A.Z * B.X - B.Z * A.X, A.X * B.Y - B.X * A.Y);
+}
+
 
 /// Suppose incoming vectors are normalized
 /// Return matrix that rotate OriginalDirection to FinalDirection around axis perpendicular to them
