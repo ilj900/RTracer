@@ -80,7 +80,7 @@ namespace ECS
         void FTransformSystem::MoveRight(FEntity Entity, float Value)
         {
             auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
-            TransformComponent.Position += TransformComponent.Direction * TransformComponent.Up * Value;
+            TransformComponent.Position += Cross(TransformComponent.Direction, TransformComponent.Up) * Value;
         }
 
         void FTransformSystem::SetTransform(FEntity Entity, const FVector3& Position, const FVector3& Direction, const FVector3& Up)
@@ -112,7 +112,7 @@ namespace ECS
         void FTransformSystem::Pitch(FEntity Entity, float Value)
         {
             auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
-            auto Axis = TransformComponent.Direction * TransformComponent.Up;
+            auto Axis = Cross(TransformComponent.Direction, TransformComponent.Up);
             TransformComponent.Direction = TransformComponent.Direction.Rotate(Value, Axis);
             TransformComponent.Up = TransformComponent.Up.Rotate(Value, Axis);
         }

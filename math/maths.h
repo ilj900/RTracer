@@ -5,6 +5,12 @@
 #include <cmath>
 #include <cassert>
 
+///The selected coordinate system is right handed
+///X positive direction goes to the right
+///Y positive direction goes to the top
+///Z positive direction goes "from the screen"
+///Vector multiplication works as in glsl - componentwise
+
 
 struct FMatrix3;
 struct FMatrix4;
@@ -19,15 +25,14 @@ struct FQuaternion
     FQuaternion GetConjugation();
     FQuaternion GetInverse();
 
-    /// Operators
-    friend FQuaternion operator*(const FQuaternion& A, const FQuaternion& B);
-
     /// Data
     float X = 0.f;
     float Y = 0.f;
     float Z = 0.f;
     float W = 0.f;
 };
+
+FQuaternion operator*(const FQuaternion& A, const FQuaternion& B);
 
 struct FVector4
 {
@@ -35,15 +40,8 @@ struct FVector4
     FVector4() = default;
     FVector4(float X, float Y, float Z, float W) : X(X), Y(Y), Z(Z), W(W) {}
 
-    /// Operators
-    friend bool operator==(const FVector4& A, const FVector4& B);
-    friend FVector4 operator*(const FVector4& A, const FVector4& B);
-    friend FVector4 operator+(const FVector4& A, const FVector4& B);
-    friend FVector4 operator*(const FVector4& A, float Val);
-    friend FVector4& operator+=(FVector4& A, const FVector4& B);
-    friend FVector4 operator-(const FVector4& A, const FVector4& B);
-    friend FVector4 operator-(const FVector4& A);
-    friend FVector4 operator*(const FMatrix4& B, const FVector4& A);
+    float Length();
+    float Length2();
 
     /// Data
     float X = 0.f;
@@ -51,6 +49,20 @@ struct FVector4
     float Z = 0.f;
     float W = 0.f;
 };
+
+bool operator==(const FVector4& A, const FVector4& B);
+FVector4 operator*(const FVector4& A, const FVector4& B);
+FVector4 operator+(const FVector4& A, const FVector4& B);
+FVector4 operator-(const FVector4& A, const FVector4& B);
+FVector4 operator*(const FVector4& A, float Val);
+FVector4 operator/(const FVector4& A, float Val);
+FVector4& operator*=(FVector4& A, const FVector4& B);
+FVector4& operator+=(FVector4& A, const FVector4& B);
+FVector4& operator-=(FVector4& A, const FVector4& B);
+FVector4& operator*=(FVector4& A, float Val);
+FVector4& operator/=(FVector4& A, float Val);
+FVector4 operator-(const FVector4& A);
+FVector4 operator*(const FMatrix4& B, const FVector4& A);
 
 struct FVector3
 {
@@ -60,25 +72,31 @@ struct FVector3
 
     /// Functions
     FVector3 GetNormalized() const;
+    FVector3& Normalize();
     FVector3 Rotate(float Angle, const FVector3& Axis);
     FVector3& SelfRotateY(float Angle);
     float Length();
-
-    /// Operators
-    friend bool operator==(const FVector3& A, const FVector3& B);
-    friend FVector3 operator*(const FVector3& A, const FVector3& B);
-    friend FVector3 operator+(const FVector3& A, const FVector3& B);
-    friend FVector3 operator*(const FVector3& A, float Val);
-    friend FVector3& operator+=(FVector3& A, const FVector3& B);
-    friend FVector3 operator-(const FVector3& A, const FVector3& B);
-    friend FVector3 operator-(const FVector3& A);
-    friend FVector3 operator*(const FVector3& A, const FMatrix3& B);
+    float Length2();
 
     /// Data
     float X;
     float Y;
     float Z;
 };
+
+bool operator==(const FVector3& A, const FVector3& B);
+FVector3 operator*(const FVector3& A, const FVector3& B);
+FVector3 operator+(const FVector3& A, const FVector3& B);
+FVector3 operator-(const FVector3& A, const FVector3& B);
+FVector3 operator*(const FVector3& A, float Val);
+FVector3 operator/(const FVector3& A, float Val);
+FVector3& operator*=(FVector3& A, const FVector3& B);
+FVector3& operator+=(FVector3& A, const FVector3& B);
+FVector3& operator-=(FVector3& A, const FVector3& B);
+FVector3& operator*=(FVector3& A, float Val);
+FVector3& operator/=(FVector3& A, float Val);
+FVector3 operator-(const FVector3& A);
+FVector3 operator*(const FVector3& A, const FMatrix3& B);
 
 struct FVector2
 {
@@ -87,13 +105,12 @@ public:
     FVector2() = default;
     FVector2(float X, float Y) : X(X), Y(Y) {};
 
-    /// Operators
-    friend bool operator==(const FVector2& A, const FVector2& B);
-
     /// Data
     float X;
     float Y;
 };
+
+bool operator==(const FVector2& A, const FVector2& B);
 
 struct FMatrix3
 {
@@ -120,15 +137,25 @@ struct FMatrix4
     FMatrix4(FVector4& Vec1, FVector4& Vec2, FVector4& Vec3, FVector4& Vec4) :
              Data({Vec1, Vec2, Vec3, Vec4}) {};
 
-    /// Operations
-    friend FMatrix4 operator*(const FMatrix4& A, const FMatrix4& B);
-    friend FVector3 operator*(const FMatrix4& A, const FVector3& B);
-
     /// Data
     std::array<FVector4, 4> Data;
 };
 
-/// Template specializations
+FMatrix4 operator*(const FMatrix4& A, const FMatrix4& B);
+FVector3 operator*(const FMatrix4& A, const FVector3& B);
+
+///Other functions
+float Dot(const FVector3& L, const FVector3& R);
+FVector3 Cross(const FVector3& A, const FVector3& B);
+FMatrix4 GetRotationMatrix(FVector3 OriginalDirection, FVector3 FinalDirection);
+FMatrix4 GetRotationMatrixX(float Angle);
+FMatrix4 GetRotationMatrixY(float Angle);
+FMatrix4 GetRotationMatrixZ(float Angle);
+FMatrix4 Transform(const FVector3& Position, const FVector3& Direction, const FVector3& Up, const FVector3& Scale);
+FMatrix4 LookAt(const FVector3& Eye, const FVector3& Point, const FVector3& Up);
+FMatrix4 GetPerspective(float FOV, float AspectRatio, float NearDistance, float FarDistance);
+
+/// Template specializations for hashing functions
 template<>
 struct std::hash<FVector2>
 {
@@ -152,12 +179,3 @@ struct std::hash<FVector3>
         return hash;
     }
 };
-
-FVector3 Cross(const FVector3& A, const FVector3& B);
-FMatrix4 GetRotationMatrix(FVector3 OriginalDirection, FVector3 FinalDirection);
-FMatrix4 GetRotationMatrixX(float Angle);
-FMatrix4 GetRotationMatrixY(float Angle);
-FMatrix4 GetRotationMatrixZ(float Angle);
-FMatrix4 Transform(const FVector3& Position, const FVector3& Direction, const FVector3& Up, const FVector3& Scale);
-FMatrix4 LookAt(const FVector3& Eye, const FVector3& Point, const FVector3& Up);
-FMatrix4 GetPerspective(float FOV, float AspectRatio, float NearDistance, float FarDistance);

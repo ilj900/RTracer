@@ -165,7 +165,7 @@ namespace ECS
             {
                 auto V1 = Positions[Indices[i+1]] - Positions[Indices[i]];
                 auto V2 = Positions[Indices[i+2]] - Positions[Indices[i]];
-                auto Normal = (V1 * V2).GetNormalized();
+                auto Normal = Cross(V1, V2).GetNormalized();
                 MeshComponent.Vertices.emplace_back(Positions[Indices[i]].X,    Positions[Indices[i]].Y,    Positions[Indices[i]].Z,
                                                 Normal.X,                   Normal.Y,                   Normal.Z,
                                                 0.f, 0.f);
@@ -207,7 +207,7 @@ namespace ECS
             {
                 auto V1 = Positions[Indices[i+1]] - Positions[Indices[i]];
                 auto V2 = Positions[Indices[i+2]] - Positions[Indices[i]];
-                auto Normal = (V1 * V2).GetNormalized();
+                auto Normal = Cross(V1, V2).GetNormalized();
                 MeshComponent.Vertices.emplace_back(Positions[Indices[i]].X,    Positions[Indices[i]].Y,    Positions[Indices[i]].Z,
                                                Normal.X,                   Normal.Y,                   Normal.Z,
                                                0.f, 0.f);
@@ -287,7 +287,7 @@ namespace ECS
             {
                 auto V1 = Positions[i+1] - Positions[i];
                 auto V2 = Positions[i+2] - Positions[i];
-                auto Normal = (V1 * V2).GetNormalized();
+                auto Normal = Cross(V1, V2).GetNormalized();
                 MeshComponent.Vertices.emplace_back(Positions[i].X,    Positions[i].Y,    Positions[i].Z,
                                                 Normal.X,           Normal.Y,                   Normal.Z,
                                                 0.f, 0.f);

@@ -83,7 +83,7 @@ namespace ECS
         void FCameraSystem::MoveCameraRight(FEntity CameraEntity, float Value)
         {
             auto& CameraComponent = GetComponent<ECS::COMPONENTS::FCameraComponent>(CameraEntity);
-            CameraComponent.Position += CameraComponent.Direction * CameraComponent.Up * Value;
+            CameraComponent.Position += Cross(CameraComponent.Direction, CameraComponent.Up) * Value;
         }
 
         void FCameraSystem::MoveCameraUpward(FEntity CameraEntity, float Value)
@@ -95,7 +95,7 @@ namespace ECS
         void FCameraSystem::LookUp(FEntity CameraEntity, float Value)
         {
             auto& CameraComponent = GetComponent<ECS::COMPONENTS::FCameraComponent>(CameraEntity);
-            auto RotationAxis = CameraComponent.Direction * CameraComponent.Up;
+            auto RotationAxis = Cross(CameraComponent.Direction, CameraComponent.Up);
             CameraComponent.Direction = CameraComponent.Direction.Rotate(Value, RotationAxis);
             CameraComponent.Up = CameraComponent.Up.Rotate(Value, RotationAxis);
         }
@@ -135,8 +135,8 @@ namespace ECS
             auto& CameraComponent = GetComponent<ECS::COMPONENTS::FCameraComponent>(CameraEntity);
             CameraComponent.Direction = CameraComponent.Direction.GetNormalized();
             CameraComponent.Up = CameraComponent.Up.GetNormalized();
-            auto Right = CameraComponent.Direction * CameraComponent.Up;
-            CameraComponent.Up = Right * CameraComponent.Direction;
+            auto Right = Cross(CameraComponent.Direction, CameraComponent.Up);
+            CameraComponent.Up = Cross(Right, CameraComponent.Direction);
         }
 
         void FCameraSystem::RequestAllUpdate()

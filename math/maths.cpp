@@ -1,60 +1,5 @@
 #include "maths.h"
 
-///The selected coordinate system is right handed
-///X positive direction goes to the right
-///Y positive direction goes to the top
-///Z poditive
-
-///****************************************************************
-///FVector4 and it's operations
-///****************************************************************
-
-FVector4 operator*(const FVector4& A, const FVector4& B)
-{
-    return FVector4(A.X * B.X, A.Y * B.Y, A.Z * B.Z, A.W * B.W);
-}
-
-FVector4 operator+(const FVector4& A, const FVector4& B)
-{
-    return FVector4(A.X + B.X, A.Y + B.Y, A.Z + B.Z, A.W + B.W);
-}
-
-FVector4 operator*(const FVector4& A, float Val)
-{
-    return FVector4(A.X * Val, A.Y * Val, A.Z * Val, A.W * Val);
-}
-
-FVector4& operator+=(FVector4& A, const FVector4& B)
-{
-    A.X += B.X;
-    A.Y += B.Y;
-    A.Z += B.Z;
-    A.W += B.W;
-
-    return A;
-}
-
-FVector4 operator-(const FVector4& A, const FVector4& B)
-{
-    return FVector4(A.X - B.X, A.Y - B.Y, A.Z - B.Z, A.W - B.W);
-}
-
-FVector4 operator-(const FVector4& A)
-{
-    return FVector4(-A.X, -A.Y, -A.Z, -A.W);
-}
-
-FVector4 operator*(const FMatrix4& B, const FVector4& A)
-{
-    FVector4 Result;
-    Result.X = A.X * B.Data[0].X + A.Y * B.Data[1].X + A.Z * B.Data[2].X + A.W * B.Data[3].X;
-    Result.Y = A.X * B.Data[0].Y + A.Y * B.Data[1].Y + A.Z * B.Data[2].Y + A.W * B.Data[3].Y;
-    Result.Z = A.X * B.Data[0].Z + A.Y * B.Data[1].Z + A.Z * B.Data[2].Z + A.W * B.Data[3].Z;
-    Result.W = A.X * B.Data[0].Z + A.Y * B.Data[1].Z + A.Z * B.Data[2].Z + A.W * B.Data[3].W;
-
-    return Result;
-}
-
 ///****************************************************************
 ///FQuaternion and it's operations
 ///****************************************************************
@@ -76,6 +21,126 @@ FQuaternion FQuaternion::GetConjugation()
     return {W, -X, -Y, -Z};
 };
 
+FQuaternion operator*(const FQuaternion& A, const FQuaternion& B)
+{
+    FQuaternion Result;
+    Result.W = A.W * B.W - A.X * B.X - A.Y * B.Y - A.Z * B.Z;
+    Result.X = A.W * B.X + A.X * B.W + A.Y * B.Z - A.Z * B.Y;
+    Result.Y = A.W * B.Y - A.X * B.Z + A.Y * B.W + A.Z * B.X;
+    Result.Z = A.W * B.Z + A.X * B.Y - A.Y * B.X + A.Z * B.W;
+    return Result;
+}
+
+///****************************************************************
+///FVector4 and it's operations
+///****************************************************************
+
+float FVector4::Length()
+{
+    return sqrt(X * X + Y * Y + Z * Z + W + W);
+}
+
+float FVector4::Length2()
+{
+    return X * X + Y * Y + Z * Z + W + W;
+}
+
+bool operator==(const FVector4& A, const FVector4& B)
+{
+    return (A.X == B.X && A.Y == B.Y && A.Z == B.Z && A.W == B.W);
+}
+
+FVector4 operator*(const FVector4& A, const FVector4& B)
+{
+    return FVector4(A.X * B.X, A.Y * B.Y, A.Z * B.Z, A.W * B.W);
+}
+
+FVector4 operator+(const FVector4& A, const FVector4& B)
+{
+    return FVector4(A.X + B.X, A.Y + B.Y, A.Z + B.Z, A.W + B.W);
+}
+
+FVector4 operator-(const FVector4& A, const FVector4& B)
+{
+    return FVector4(A.X - B.X, A.Y - B.Y, A.Z - B.Z, A.W - B.W);
+}
+
+FVector4 operator*(const FVector4& A, float Val)
+{
+    return FVector4(A.X * Val, A.Y * Val, A.Z * Val, A.W * Val);
+}
+
+FVector4 operator/(const FVector4& A, float Val)
+{
+    return FVector4(A.X / Val, A.Y / Val, A.Z / Val, A.W / Val);
+}
+
+FVector4& operator*=(FVector4& A, const FVector4& B)
+{
+    A.X *= B.X;
+    A.Y *= B.Y;
+    A.Z *= B.Z;
+    A.W *= B.W;
+
+    return A;
+}
+
+FVector4& operator+=(FVector4& A, const FVector4& B)
+{
+    A.X += B.X;
+    A.Y += B.Y;
+    A.Z += B.Z;
+    A.W += B.W;
+
+    return A;
+}
+
+FVector4& operator-=(FVector4& A, const FVector4& B)
+{
+    A.X -= B.X;
+    A.Y -= B.Y;
+    A.Z -= B.Z;
+    A.W -= B.W;
+
+    return A;
+}
+
+FVector4& operator*=(FVector4& A, float Val)
+{
+    A.X *= Val;
+    A.Y *= Val;
+    A.Z *= Val;
+    A.W *= Val;
+
+    return A;
+}
+
+FVector4& operator/=(FVector4& A, float Val)
+{
+    A.X /= Val;
+    A.Y /= Val;
+    A.Z /= Val;
+    A.W /= Val;
+
+    return A;
+}
+
+FVector4 operator-(const FVector4& A)
+{
+    return FVector4(-A.X, -A.Y, -A.Z, -A.W);
+}
+
+FVector4 operator*(const FMatrix4& B, const FVector4& A)
+{
+    FVector4 Result;
+    Result.X = A.X * B.Data[0].X + A.Y * B.Data[1].X + A.Z * B.Data[2].X + A.W * B.Data[3].X;
+    Result.Y = A.X * B.Data[0].Y + A.Y * B.Data[1].Y + A.Z * B.Data[2].Y + A.W * B.Data[3].Y;
+    Result.Z = A.X * B.Data[0].Z + A.Y * B.Data[1].Z + A.Z * B.Data[2].Z + A.W * B.Data[3].Z;
+    Result.W = A.X * B.Data[0].Z + A.Y * B.Data[1].Z + A.Z * B.Data[2].Z + A.W * B.Data[3].W;
+
+    return Result;
+}
+
 ///****************************************************************
 ///FVector3 and it's operations
 ///****************************************************************
@@ -92,14 +157,65 @@ FVector3 FVector3::GetNormalized() const
     return FVector3(X / L, Y / L, Z / L);
 }
 
+FVector3& FVector3::Normalize()
+{
+    auto L = Length();
+    X /= L;
+    Y /= L;
+    Z /= L;
+
+    return *this;
+}
+
+FVector3 FVector3::Rotate(float Angle, const FVector3& Axis)
+{
+    float HalfAngle = Angle * 0.5f;
+    float SinHalfAngle = std::sin(HalfAngle);
+    FQuaternion RotationQuaternion(std::cos(HalfAngle), Axis.X * SinHalfAngle, Axis.Y * SinHalfAngle, Axis.Z * SinHalfAngle);
+    FQuaternion InvertedRotationQuaternion = RotationQuaternion.GetInverse();
+    FQuaternion Vector(0.f, X, Y, Z);
+    FQuaternion Tmp1 = RotationQuaternion * Vector;
+    FQuaternion Tmp2 = Tmp1 * InvertedRotationQuaternion;
+    return FVector3(Tmp2.X, Tmp2.Y, Tmp2.Z);
+}
+
+FVector3& FVector3::SelfRotateY(float Angle)
+{
+    float CosAngle = std::cos(Angle);
+    float SinAngle = std::sin(Angle);
+    auto RotationMatrix = FMatrix3(CosAngle, 0, SinAngle, 0, 1, 0, -SinAngle, 0, CosAngle);
+    *this = *this * RotationMatrix;
+    return *this;
+}
+
 float FVector3::Length()
+{
+    return sqrt(X * X + Y * Y + Z * Z);
+}
+
+float FVector3::Length2()
 {
     return X * X + Y * Y + Z * Z;
 }
 
+bool operator==(const FVector3& A, const FVector3& B)
+{
+    return (A.X == B.X && A.Y == B.Y && A.Z == B.Z);
+}
+
 FVector3 operator*(const FVector3& A, const FVector3& B)
 {
-    return FVector3(A.Y * B.Z - B.Y * A.Z, A.Z * B.X - B.Z * A.X, A.X * B.Y - B.X * A.Y);
+    return FVector3(A.Y * B.X, A.Y * B.Y, A.Z * B.Z);
+}
+
+FVector3 operator+(const FVector3& A, const FVector3& B)
+{
+    return FVector3(A.X + B.X, A.Y + B.Y, A.Z + B.Z);
+}
+
+FVector3 operator-(const FVector3& A, const FVector3& B)
+{
+    return FVector3(A.X - B.X, A.Y - B.Y, A.Z - B.Z);
 }
 
 FVector3 operator*(const FVector3& A, float Val)
@@ -107,9 +223,18 @@ FVector3 operator*(const FVector3& A, float Val)
     return FVector3(A.X * Val, A.Y * Val, A.Z * Val);
 }
 
-FVector3 operator+(const FVector3& A, const FVector3& B)
+FVector3 operator/(const FVector3& A, float Val)
 {
-    return FVector3(A.X + B.X, A.Y + B.Y, A.Z + B.Z);
+    return FVector3(A.X / Val, A.Y / Val, A.Z / Val);
+}
+
+FVector3& operator*=(FVector3& A, const FVector3& B)
+{
+    A.X *= B.X;
+    A.Y *= B.Y;
+    A.Z *= B.Z;
+
+    return A;
 }
 
 FVector3& operator+=(FVector3& A, const FVector3& B)
@@ -121,9 +246,31 @@ FVector3& operator+=(FVector3& A, const FVector3& B)
     return A;
 }
 
-FVector3 operator-(const FVector3& A, const FVector3& B)
+FVector3& operator-=(FVector3& A, const FVector3& B)
 {
-    return FVector3(A.X - B.X, A.Y - B.Y, A.Z - B.Z);
+    A.X -= B.X;
+    A.Y -= B.Y;
+    A.Z -= B.Z;
+
+    return A;
+}
+
+FVector3& operator*=(FVector3& A, float Val)
+{
+    A.X *= Val;
+    A.Y *= Val;
+    A.Z *= Val;
+
+    return A;
+}
+
+FVector3& operator/=(FVector3& A, float Val)
+{
+    A.X /= Val;
+    A.Y /= Val;
+    A.Z /= Val;
+
+    return A;
 }
 
 FVector3 operator-(const FVector3& A)
@@ -141,35 +288,18 @@ FVector3 operator*(const FVector3& A, const FMatrix3& B)
     return Result;
 }
 
-float Dot(const FVector3& L, const FVector3& R)
-{
-    return L.X * R.X + L.Y * R.Y + L.Z * R.Z;
-}
-
-bool operator==(const FVector4& A, const FVector4& B)
-{
-    return (A.X == B.X && A.Y == B.Y && A.Z == B.Z && A.W == B.W);
-}
-
-bool operator==(const FVector3& A, const FVector3& B)
-{
-    return (A.X == B.X && A.Y == B.Y && A.Z == B.Z);
-}
+///****************************************************************
+///FVector2 and it's operations
+///****************************************************************
 
 bool operator==(const FVector2& A, const FVector2& B)
 {
     return (A.X == B.X && A.Y == B.Y);
 }
 
-FQuaternion operator*(const FQuaternion& A, const FQuaternion& B)
-{
-    FQuaternion Result;
-    Result.W = A.W * B.W - A.X * B.X - A.Y * B.Y - A.Z * B.Z;
-    Result.X = A.W * B.X + A.X * B.W + A.Y * B.Z - A.Z * B.Y;
-    Result.Y = A.W * B.Y - A.X * B.Z + A.Y * B.W + A.Z * B.X;
-    Result.Z = A.W * B.Z + A.X * B.Y - A.Y * B.X + A.Z * B.W;
-    return Result;
-}
+///****************************************************************
+///FMatrix4 and it's operations
+///****************************************************************
 
 FMatrix4 operator*(const FMatrix4& A, const FMatrix4& B)
 {
@@ -201,32 +331,15 @@ FVector3 operator*(const FMatrix4& A, const FVector3& B)
                     A.Data[2].X * B.X + A.Data[2].Y * B.Y + A.Data[2].Z * B.Z};
 }
 
-FVector3& FVector3::SelfRotateY(float Angle)
+float Dot(const FVector3& L, const FVector3& R)
 {
-    float CosAngle = std::cos(Angle);
-    float SinAngle = std::sin(Angle);
-    auto RotationMatrix = FMatrix3(CosAngle, 0, SinAngle, 0, 1, 0, -SinAngle, 0, CosAngle);
-    *this = *this * RotationMatrix;
-    return *this;
-}
-
-FVector3 FVector3::Rotate(float Angle, const FVector3& Axis)
-{
-    float HalfAngle = Angle * 0.5f;
-    float SinHalfAngle = std::sin(HalfAngle);
-    FQuaternion RotationQuaternion(std::cos(HalfAngle), Axis.X * SinHalfAngle, Axis.Y * SinHalfAngle, Axis.Z * SinHalfAngle);
-    FQuaternion InvertedRotationQuaternion = RotationQuaternion.GetInverse();
-    FQuaternion Vector(0.f, X, Y, Z);
-    FQuaternion Tmp1 = RotationQuaternion * Vector;
-    FQuaternion Tmp2 = Tmp1 * InvertedRotationQuaternion;
-    return FVector3(Tmp2.X, Tmp2.Y, Tmp2.Z);
+    return L.X * R.X + L.Y * R.Y + L.Z * R.Z;
 }
 
 FVector3 Cross(const FVector3& A, const FVector3& B)
 {
-    FVector3(A.Y * B.Z - B.Y * A.Z, A.Z * B.X - B.Z * A.X, A.X * B.Y - B.X * A.Y);
+    return FVector3(A.Y * B.Z - B.Y * A.Z, A.Z * B.X - B.Z * A.X, A.X * B.Y - B.X * A.Y);
 }
-
 
 /// Suppose incoming vectors are normalized
 /// Return matrix that rotate OriginalDirection to FinalDirection around axis perpendicular to them
@@ -305,8 +418,8 @@ FMatrix4 Transform(const FVector3& Position, const FVector3& Direction, const FV
 FMatrix4 LookAt(const FVector3& Eye, const FVector3& Point, const FVector3& Up)
 {
     FVector3 F = (Point - Eye).GetNormalized();
-    FVector3 R = (F * Up).GetNormalized();
-    FVector3 U = (R * F).GetNormalized();
+    FVector3 R = Cross(F, Up).GetNormalized();
+    FVector3 U = Cross(R, F).GetNormalized();
 
     return FMatrix4{R.X,            U.X,            -F.X,           0.f,
                     R.Y,            U.Y,            -F.Y,           0.f,
