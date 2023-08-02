@@ -7,18 +7,18 @@
 FQuaternion FQuaternion::GetInverse()
 {
     FQuaternion Result = GetConjugation();
-    float QQ = W * W + X * X + Y * Y + Z * Z;
-    assert(QQ > 0.000001f && "Quaternion length failed assertion.");
-    Result.X /= QQ;
-    Result.Y /= QQ;
-    Result.Z /= QQ;
-    Result.W /= QQ;
+    float Q2 = W * W + X * X + Y * Y + Z * Z;
+    assert(Q2 > 0.000001f && "Quaternion length failed assertion.");
+    Result.X /= Q2;
+    Result.Y /= Q2;
+    Result.Z /= Q2;
+    Result.W /= Q2;
     return Result;
 };
 
 FQuaternion FQuaternion::GetConjugation()
 {
-    return {W, -X, -Y, -Z};
+    return {W, X == 0.f ? X : -X, Y == 0.f ? Y : -Y, Z == 0.f ? Z : -Z};
 };
 
 FQuaternion operator*(const FQuaternion& A, const FQuaternion& B)
@@ -345,7 +345,7 @@ FVector3 Cross(const FVector3& A, const FVector3& B)
 /// Return matrix that rotate OriginalDirection to FinalDirection around axis perpendicular to them
 FMatrix4 GetRotationMatrix(FVector3 OriginalDirection, FVector3 FinalDirection)
 {
-    auto A = OriginalDirection * FinalDirection;
+    auto A = Cross(OriginalDirection, FinalDirection);
     auto C = Dot(OriginalDirection, FinalDirection);
     auto S = std::sin(std::acos(C));
     auto O = 1 - C;
