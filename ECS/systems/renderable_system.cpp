@@ -99,6 +99,12 @@ namespace ECS
             RenderableComponent.RenderablePropertyMask |= COMPONENTS::RENDERABLE_IS_INDEXED;
         }
 
+        void FRenderableSystem::SetRenderableHasTexture(FEntity Entity)
+        {
+            auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
+            RenderableComponent.RenderablePropertyMask |= COMPONENTS::RENDERABLE_HAS_TEXTURE;
+        }
+
         void FRenderableSystem::SetNotIndex(FEntity Entity)
         {
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);

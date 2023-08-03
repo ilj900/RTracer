@@ -20,6 +20,8 @@
 
 #include "logging.h"
 
+int32_t FRender::Index = 0;
+
 FRender::FRender()
 {
     /// Create GLFW Window
@@ -383,16 +385,10 @@ int FRender::Update()
 
 int FRender::LoadScene(const std::string& Path)
 {
-    const uint32_t RENDERABLE_SELECTED_BIT = 1 << 5;
-    const uint32_t RENDERABLE_HAS_TEXTURE = 1 << 6;
-    const uint32_t RENDERABLE_IS_INDEXED = 1 << 7;
-
-    AddMesh({0.0f, 0.9f, 0.6f}, {1.f, 0.f, -2.f}, Hexahedron, std::string(), 0);
-
-    AddMesh({0.9f, 0.0f, 0.6f}, {-1.f, 0.f, -2.f}, Model, "../models/viking_room/viking_room.obj", RENDERABLE_HAS_TEXTURE | RENDERABLE_IS_INDEXED);
-
-    AddMesh({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, Icosahedron, std::string(), 0);
-    AddMesh({0.9f, 0.6f, 0.0f}, {-3.f, 0.f, -2.f}, Tetrahedron, std::string(), 0);
+    Models.push_back(AddCube({0.0f, 0.9f, 0.6f}, {1.f, 0.f, -2.f}));
+    Models.push_back(AddModel({0.9f, 0.0f, 0.6f}, {-1.f, 0.f, -2.f}, "../models/viking_room/viking_room.obj"));
+    Models.push_back(AddSphere({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, 10));
+    Models.push_back(AddPyramid({0.9f, 0.6f, 0.0f}, {-3.f, 0.f, -2.f}));
 
     AddLight({5, 5, 5});
 
@@ -427,39 +423,54 @@ int FRender::LoadDataToGPU()
     return 0;
 }
 
-int FRender::AddMesh(const FVector3& Color, const FVector3& Position, MeshType Type, const std::string& Path, uint32_t RenderableMask)
+ECS::FEntity FRender::AddCube(const FVector3& Color, const FVector3& Position)
 {
-    auto& Coordinator = ECS::GetCoordinator();
+    auto NewModel = CreateEmptyModel();
 
-    Models.push_back(Coordinator.CreateEntity());
-    Coordinator.AddComponent<ECS::COMPONENTS::FMeshComponent>(Models.back(), {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Models.back(), {});
-    static int32_t Index = 0;
-    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceRenderableComponent>
-            (Models.back(), {FVector3{1.f, 1.f, 1.f}, 0.f,Index++, RenderableMask});
-    Coordinator.AddComponent<ECS::COMPONENTS::FTransformComponent>(Models.back(), {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Models.back(), {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FMaterialComponent>(Models.back(), {});
-    switch(Type)
-    {
-        case Tetrahedron:
-            MESH_SYSTEM()->CreateTetrahedron(Models.back());
-            break;
-        case Hexahedron:
-            MESH_SYSTEM()->CreateHexahedron(Models.back());
-            break;
-        case Icosahedron:
-            MESH_SYSTEM()->CreateIcosahedron(Models.back(), 10);
-            break;
-        case Model:
-            MESH_SYSTEM()->LoadMesh(Models.back(), Path);
-            break;
-    }
-    TRANSFORM_SYSTEM()->SetTransform(Models.back(), Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-    RENDERABLE_SYSTEM()->SetRenderableColor(Models.back(), Color.X, Color.Y, Color.Z);
-    TRANSFORM_SYSTEM()->UpdateDeviceComponentData(Models.back());
+    MESH_SYSTEM()->CreateHexahedron(NewModel);
+    TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
+    RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
+    TRANSFORM_SYSTEM()->UpdateDeviceComponentData(NewModel);
 
-    return 0;
+    return NewModel;
+}
+
+ECS::FEntity FRender::AddSphere(const FVector3& Color, const FVector3& Position, int LevelOfComplexity)
+{
+    auto NewModel = CreateEmptyModel();
+
+    MESH_SYSTEM()->CreateIcosahedron(NewModel, LevelOfComplexity);
+    TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
+    RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
+    TRANSFORM_SYSTEM()->UpdateDeviceComponentData(NewModel);
+
+    return NewModel;
+}
+
+ECS::FEntity FRender::AddModel(const FVector3& Color, const FVector3& Position, const std::string& Path)
+{
+    auto NewModel = CreateEmptyModel();
+
+    MESH_SYSTEM()->LoadMesh(NewModel, Path);
+    TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
+    RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
+    RENDERABLE_SYSTEM()->SetIndexed(NewModel);
+    RENDERABLE_SYSTEM()->SetRenderableHasTexture(NewModel);
+    TRANSFORM_SYSTEM()->UpdateDeviceComponentData(NewModel);
+
+    return NewModel;
+}
+
+ECS::FEntity FRender::AddPyramid(const FVector3& Color, const FVector3& Position)
+{
+    auto NewModel = CreateEmptyModel();
+
+    MESH_SYSTEM()->CreateTetrahedron(NewModel);
+    TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
+    RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
+    TRANSFORM_SYSTEM()->UpdateDeviceComponentData(NewModel);
+
+    return NewModel;
 }
 
 int FRender::AddLight(const FVector3& Position)
@@ -474,3 +485,17 @@ int FRender::AddLight(const FVector3& Position)
     return 0;
 }
 
+ECS::FEntity FRender::CreateEmptyModel()
+{
+    auto& Coordinator = ECS::GetCoordinator();
+
+    ECS::FEntity EmptyModel = Coordinator.CreateEntity();
+    Coordinator.AddComponent<ECS::COMPONENTS::FMeshComponent>(EmptyModel, {});
+    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceMeshComponent>(EmptyModel, {});
+    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceRenderableComponent> (EmptyModel, {FVector3{1.f, 1.f, 1.f}, 0.f,Index++, 0});
+    Coordinator.AddComponent<ECS::COMPONENTS::FTransformComponent>(EmptyModel, {});
+    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(EmptyModel, {});
+    Coordinator.AddComponent<ECS::COMPONENTS::FMaterialComponent>(EmptyModel, {});
+
+    return EmptyModel;
+}

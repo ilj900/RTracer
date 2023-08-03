@@ -34,7 +34,10 @@ public:
     int Update();
 
     int LoadScene(const std::string& Path);
-    int AddMesh(const FVector3& Color, const FVector3& Position, MeshType Type, const std::string& Path, uint32_t RenderableMask);
+    ECS::FEntity AddPyramid(const FVector3& Color, const FVector3& Position);
+    ECS::FEntity AddCube(const FVector3& Color, const FVector3& Position);
+    ECS::FEntity AddSphere(const FVector3& Color, const FVector3& Position, int LevelOfComplexity);
+    ECS::FEntity AddModel(const FVector3& Color, const FVector3& Position, const std::string& Path);
     int AddLight(const FVector3& Position);
     int SetIBL(const std::string& Path);
     int LoadDataToGPU();
@@ -70,4 +73,9 @@ public:
     std::vector<VkSemaphore> ImageAvailableSemaphores;
     std::vector<VkSemaphore> ImGuiFinishedSemaphores;
     std::vector<VkFence> ImagesInFlight;
+
+private:
+    static int32_t Index;
+
+    ECS::FEntity CreateEmptyModel();
 };

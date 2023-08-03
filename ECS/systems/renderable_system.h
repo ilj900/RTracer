@@ -19,6 +19,7 @@ namespace ECS
             void SetSelectedByIndex(uint32_t Index);
             void SetNotSelected(FEntity Entity);
             void SetIndexed(FEntity Entity);
+            void SetRenderableHasTexture(FEntity Entity);
             void SetNotIndex(FEntity Entity);
             void SetRenderableDeviceAddress(FEntity Entity, VkDeviceAddress VertexDeviceAddress, VkDeviceAddress IndexDeviceAddress);
             void RequestAllUpdate();
