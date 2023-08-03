@@ -26,6 +26,7 @@ namespace ECS
             void Roll(FEntity Entity, float Value);
             void Pitch(FEntity Entity, float Value);
             void Yaw(FEntity Entity, float Value);
+            void Translate(FEntity Entity, float X, float Y, float Z);
             FMatrix4 GetModelMatrix(FEntity Entity);
             void RequestAllUpdate();
             void RequestUpdate(int FrameIndex);

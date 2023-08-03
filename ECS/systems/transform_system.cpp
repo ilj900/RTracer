@@ -123,6 +123,12 @@ namespace ECS
             TransformComponent.Direction = TransformComponent.Direction.Rotate(Value, TransformComponent.Up);
         }
 
+        void FTransformSystem::Translate(FEntity Entity, float X, float Y, float Z)
+        {
+            auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
+            TransformComponent.Position += {X, Y, Z};
+        }
+
         FMatrix4 FTransformSystem::GetModelMatrix(FEntity Entity)
         {
             auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);

@@ -5,6 +5,18 @@
 #include <cmath>
 #include <cassert>
 
+#ifndef M_PI
+#define M_PI 3.14159265359f
+#endif
+
+#ifndef M_PI_2
+#define M_PI_2 M_PI / 2.f
+#endif
+
+#ifndef M_PI_4
+#define M_PI_4 M_PI / 4.f
+#endif
+
 ///The selected coordinate system is right handed
 ///X positive direction goes to the right
 ///Y positive direction goes to the top
