@@ -13,7 +13,7 @@ class FVulkanContext;
 class FCommandBufferManager
 {
 public:
-    FCommandBufferManager(VkDevice Device, FVulkanContext* Context, VkQueue Queue, uint32_t QueueIndex);
+    FCommandBufferManager(VkDevice Device, VkQueue Queue, uint32_t QueueIndex);
 
     VkCommandBuffer AllocateCommandBuffer();
     void FreeCommandBuffer(VkCommandBuffer& CommandBuffer);

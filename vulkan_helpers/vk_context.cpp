@@ -183,7 +183,7 @@ void FVulkanContext::InitManagerResources()
 
     DescriptorSetManager = std::make_shared<FDescriptorSetManager>(LogicalDevice);
 
-    CommandBufferManager = std::make_shared<FCommandBufferManager>(LogicalDevice, this, GetQueue(VK_QUEUE_GRAPHICS_BIT),
+    CommandBufferManager = std::make_shared<FCommandBufferManager>(LogicalDevice, GetQueue(VK_QUEUE_GRAPHICS_BIT),
                                                                    GetQueueIndex(VK_QUEUE_GRAPHICS_BIT));
 }
 

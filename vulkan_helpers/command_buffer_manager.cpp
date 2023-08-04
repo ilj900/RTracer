@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-FCommandBufferManager::FCommandBufferManager(VkDevice Device, FVulkanContext* Context, VkQueue Queue, uint32_t QueueIndex) :
+FCommandBufferManager::FCommandBufferManager(VkDevice Device, VkQueue Queue, uint32_t QueueIndex) :
     Device(Device), Context(Context), Queue(Queue), QueueIndex(QueueIndex)
 {
     CreateCommandPool();
