@@ -322,12 +322,12 @@ int FRender::Render()
         throw std::runtime_error("Failed to acquire swap chain image!");
     }
 
-    bool NeedUpdate = false;
+    bool NeedUpdate = true;
     CAMERA_SYSTEM()->Update();
     TRANSFORM_SYSTEM()->Update();
     RENDERABLE_SYSTEM()->Update();
     MATERIAL_SYSTEM()->Update();
-    NeedUpdate |= LIGHT_SYSTEM()->Update();
+    LIGHT_SYSTEM()->Update();
 
     auto RenderSignalSemaphore = RayTraceTask->Submit(Context.GetGraphicsQueue(), ImageAvailableSemaphores[CurrentFrame], ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
 

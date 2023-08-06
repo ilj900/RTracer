@@ -1459,7 +1459,7 @@ void FVulkanContext::CleanUp()
     DestroyBuffer(MESH_SYSTEM()->VertexBuffer);
     DestroyBuffer(MESH_SYSTEM()->IndexBuffer);
     DestroyBuffer(MATERIAL_SYSTEM()->DeviceMaterialBuffer);
-    DestroyBuffer(LIGHT_SYSTEM()->DeviceLightBuffer);
+    DestroyBuffer(LIGHT_SYSTEM()->DeviceBuffer);
 
 
     TextureImage = nullptr;

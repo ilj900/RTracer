@@ -77,7 +77,7 @@ VkCommandBuffer FCommandBufferManager::BeginSingleTimeCommand()
 void FCommandBufferManager::EndCommand(VkCommandBuffer &CommandBuffer)
 {
     vkEndCommandBuffer(CommandBuffer);
-    }
+}
 
 void FCommandBufferManager::SubmitCommandBuffer(VkCommandBuffer &CommandBuffer)
 {

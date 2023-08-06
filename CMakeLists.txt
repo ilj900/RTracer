@@ -63,7 +63,9 @@ set(ECS_SOURCE
         ECS/systems/mesh_system.h
         ECS/systems/mesh_system.cpp
         ECS/systems/light_system.h
-        ECS/systems/light_system.cpp)
+        ECS/systems/light_system.cpp
+        ECS/systems/gpu_bufferable_system.h
+        ECS/systems/gpu_bufferable_system.cpp)
 
 set(SOURCE
         src/application.h

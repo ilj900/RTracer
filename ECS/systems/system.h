@@ -24,6 +24,7 @@ namespace ECS
             T& Component = GetComponentManager()->GetComponent<T>(Entity);
             return Component;
         };
+
         public:
             std::set<FEntity> Entities;
         };

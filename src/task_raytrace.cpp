@@ -186,7 +186,7 @@ void FRaytraceTask::UpdateDescriptorSets()
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, MATERIAL_BUFFER_INDEX, i, MaterialBufferInfo);
 
         VkDescriptorBufferInfo LightBufferInfo{};
-        LightBufferInfo.buffer = LIGHT_SYSTEM()->DeviceLightBuffer.Buffer;
+        LightBufferInfo.buffer = LIGHT_SYSTEM()->DeviceBuffer.Buffer;
         LightBufferInfo.offset = 0;
         LightBufferInfo.range = LIGHT_SYSTEM()->GetTotalSize();
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, LIGHT_BUFFER_INDEX, i, LightBufferInfo);
