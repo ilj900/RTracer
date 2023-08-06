@@ -103,7 +103,7 @@ public:
         Result.resize(Size / sizeof(T));
 
         CopyBuffer(SrcBuffer, ResourceAllocator->StagingBuffer, Size, Offset, 0);
-        ResourceAllocator->LoadDataFromStaginBuffer(Size * sizeof(T), Result.data());
+        ResourceAllocator->LoadDataFromStagingBuffer(Size * sizeof(T), Result.data());
 
         return Result;
     };

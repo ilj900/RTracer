@@ -20,7 +20,7 @@ namespace ECS
         template<typename T>
         T& GetComponent(FEntity Entity)
         {
-            assert(Entities.find(Entity) != Entities.end() && "Entity doesn't have camera component");
+            assert(Entities.find(Entity) != Entities.end() && "Entity doesn't have required component");
             T& Component = GetComponentManager()->GetComponent<T>(Entity);
             return Component;
         };

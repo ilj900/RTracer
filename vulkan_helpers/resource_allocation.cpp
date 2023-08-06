@@ -124,7 +124,7 @@ void FResourceAllocator::LoadDataFromBuffer(FBuffer& Buffer, VkDeviceSize Size, 
     {
         VkDeviceSize ChunkSize = (Size > StagingBufferSize) ? StagingBufferSize : Size;
         CopyBuffer(Buffer, StagingBuffer, ChunkSize, Offset + (StagingBufferSize * i), 0);
-        LoadDataFromStaginBuffer(Size, ((char*)Data + (StagingBufferSize * i)));
+        LoadDataFromStagingBuffer(Size, ((char*)Data + (StagingBufferSize * i)));
         Size -= ChunkSize;
     }
 }
@@ -140,7 +140,7 @@ void FResourceAllocator::LoadDataToStagingBuffer(VkDeviceSize Size, void* Data)
     }
 }
 
-void FResourceAllocator::LoadDataFromStaginBuffer(VkDeviceSize Size, void* Data)
+void FResourceAllocator::LoadDataFromStagingBuffer(VkDeviceSize Size, void* Data)
 {
     if (Size <= StagingBufferSize)
     {
@@ -230,7 +230,7 @@ void FResourceAllocator::CopyImageToBuffer(const FImage& SrcImage, FBuffer& DstB
 void FResourceAllocator::GetImageData(FImage& SrcImage, void* Data)
 {
     CopyImageToBuffer(SrcImage, StagingBuffer);
-    LoadDataFromStaginBuffer(SrcImage.Size, Data);
+    LoadDataFromStagingBuffer(SrcImage.Size, Data);
 }
 
 void FResourceAllocator::DestroyBuffer(FBuffer& Buffer)

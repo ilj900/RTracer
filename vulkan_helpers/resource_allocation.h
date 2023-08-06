@@ -20,7 +20,7 @@ public:
     FBuffer LoadDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, VkDeviceSize Offset, void* Data);
     void LoadDataFromBuffer(FBuffer& Buffer, VkDeviceSize Size, VkDeviceSize Offset, void* Data);
     void LoadDataToStagingBuffer(VkDeviceSize Size, void* Data);
-    void LoadDataFromStaginBuffer(VkDeviceSize Size, void* Data);
+    void LoadDataFromStagingBuffer(VkDeviceSize Size, void* Data);
     void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset);
     void* Map(FBuffer& Buffer);
     void Unmap(FBuffer& Buffer);
