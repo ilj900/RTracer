@@ -35,7 +35,7 @@ public:
 
     uint32_t FindMemoryType(uint32_t TypeFilter, VkMemoryPropertyFlags Properties);
 
-    VkDeviceSize StagingBufferSize = uint64_t(256) * 1024 * 1024;
+    VkDeviceSize StagingBufferSize = uint64_t(1024);
     FBuffer StagingBuffer;
 
     VkDevice Device = VK_NULL_HANDLE;
