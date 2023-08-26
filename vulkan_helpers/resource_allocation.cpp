@@ -107,7 +107,7 @@ FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, VkDeviceSize Size,
     {
         VkDeviceSize ChunkSize = (Size > StagingBufferSize) ? StagingBufferSize : Size;
         LoadDataToStagingBuffer(ChunkSize, ((char*)Data + (StagingBufferSize * i)), 0);
-        CopyBuffer(StagingBuffer, Buffer, ChunkSize, 0, Offset + (StagingBufferSize * i));
+        CopyBuffer(StagingBuffer, Buffer, {ChunkSize}, {0}, {Offset + (StagingBufferSize * i)});
         Size -= ChunkSize;
     }
 
@@ -130,15 +130,23 @@ FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDevi
 
     std::vector<std::vector<CopySizeOffsetDataPtr>> PreparedData;
     int i = 0;
+    /// When some data is separated into multiple load calls
+    VkDeviceSize AlreadyPushedPart = 0;
+
+    /// Calculate total size to be pushed
+    VkDeviceSize TotalSizeToPush = 0;
+
+    for (auto Entry : Sizes)
+    {
+        TotalSizeToPush += Entry;
+    }
 
     while(true)
     {
         std::vector<CopySizeOffsetDataPtr> PreparedDataEntry;
         VkDeviceSize RemainingSpaceInStagingBuffer = StagingBufferSize;
-        /// When some data is separated into multiple load calls
-        VkDeviceSize AlreadyPushedPart = 0;
 
-        while (i < Sizes.size() || RemainingSpaceInStagingBuffer > 0)
+        while (i < Sizes.size() && RemainingSpaceInStagingBuffer > 0)
         {
             VkDeviceSize HowMuchToPush = Sizes[i] - AlreadyPushedPart;
 
@@ -151,29 +159,51 @@ FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDevi
                 PreparedDataEntry.push_back(DataToPush);
 
                 RemainingSpaceInStagingBuffer -= HowMuchToPush;
+                TotalSizeToPush -= HowMuchToPush;
                 AlreadyPushedPart = 0;
                 ++i;
 
                 continue;
             }
 
-            CopySizeOffsetDataPtr DataToPush;
-            DataToPush.Size = RemainingSpaceInStagingBuffer;
-            DataToPush.Offset = Offsets[i] + AlreadyPushedPart;
-            DataToPush.Data = (char*)Datas[i] + AlreadyPushedPart;
-            PreparedDataEntry.push_back(DataToPush);
+            CopySizeOffsetDataPtr LastDataToPush;
+            LastDataToPush.Size = RemainingSpaceInStagingBuffer;
+            LastDataToPush.Offset = Offsets[i] + AlreadyPushedPart;
+            LastDataToPush.Data = (char*)Datas[i] + AlreadyPushedPart;
+            PreparedDataEntry.push_back(LastDataToPush);
 
             AlreadyPushedPart += RemainingSpaceInStagingBuffer;
+            TotalSizeToPush -= RemainingSpaceInStagingBuffer;
             RemainingSpaceInStagingBuffer = 0;
         }
 
         PreparedData.push_back(PreparedDataEntry);
-        break;
+
+        if (TotalSizeToPush == 0)
+        {
+            break;
+        }
     }
 
     for (auto &Entry : PreparedData)
     {
+        std::vector<VkDeviceSize> Sizes;
+        std::vector<VkDeviceSize> SourceOffsets;
+        std::vector<VkDeviceSize> DestinationOffsets;
+        std::vector<void*> Datas;
+        VkDeviceSize Offset = 0;
 
+        for (auto &MiniEntry : Entry)
+        {
+            Sizes.push_back(MiniEntry.Size);
+            SourceOffsets.push_back(Offset);
+            DestinationOffsets.push_back(MiniEntry.Offset);
+            Datas.push_back(MiniEntry.Data);
+            Offset += MiniEntry.Size;
+        }
+
+        LoadDataToStagingBuffer(Sizes, Datas);
+        CopyBuffer(StagingBuffer, Buffer, Sizes, SourceOffsets, DestinationOffsets);
     }
 
     return Buffer;
@@ -184,7 +214,7 @@ void FResourceAllocator::LoadDataFromBuffer(FBuffer& Buffer, VkDeviceSize Size, 
     for (int i = 0; Size > 0; ++i)
     {
         VkDeviceSize ChunkSize = (Size > StagingBufferSize) ? StagingBufferSize : Size;
-        CopyBuffer(Buffer, StagingBuffer, ChunkSize, Offset + (StagingBufferSize * i), 0);
+        CopyBuffer(Buffer, StagingBuffer, {ChunkSize}, {Offset + (StagingBufferSize * i)}, {0});
         LoadDataFromStagingBuffer(Size, ((char*)Data + (StagingBufferSize * i)), 0);
         Size -= ChunkSize;
     }
@@ -203,6 +233,33 @@ void FResourceAllocator::LoadDataToStagingBuffer(VkDeviceSize Size, void* Data, 
     }
 
     assert("Not enough memory in staging buffer");
+}
+
+void FResourceAllocator::LoadDataToStagingBuffer(std::vector<VkDeviceSize> Sizes, std::vector<void*> Datas)
+{
+    VkDeviceSize TotalSize = 0;
+
+    for (int i = 0; i < Sizes.size(); ++i)
+    {
+        TotalSize += Sizes[i];
+    }
+
+    if (TotalSize > StagingBufferSize)
+    {
+        assert("Not enough memory in staging buffer");
+    }
+
+    void *StagingData;
+    vkMapMemory(Device, StagingBuffer.MemoryRegion.Memory, 0, VK_WHOLE_SIZE, 0, &StagingData);
+
+    VkDeviceSize CurrentOffset = 0;
+    for (int i = 0; i < Sizes.size(); ++i)
+    {
+        memcpy((void*)((char*)StagingData + (std::size_t)CurrentOffset), Datas[i] , (std::size_t) Sizes[i]);
+        CurrentOffset += Sizes[i];
+    }
+
+    vkUnmapMemory(Device, StagingBuffer.MemoryRegion.Memory);
 }
 
 void FResourceAllocator::LoadDataFromStagingBuffer(VkDeviceSize Size, void* Data, VkDeviceSize Offset)
@@ -229,15 +286,20 @@ FMemoryRegion FResourceAllocator::LoadDataToImage(FImage& Image, VkDeviceSize Si
     return Image.MemoryRegion;
 }
 
-void FResourceAllocator::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset)
+void FResourceAllocator::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, std::vector<VkDeviceSize> Sizes, std::vector<VkDeviceSize> SourceOffsets, std::vector<VkDeviceSize> DestinationOffsets)
 {
     Context->CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
     {
-        VkBufferCopy CopyRegion{};
-        CopyRegion.size = Size;
-        CopyRegion.srcOffset = SourceOffset;
-        CopyRegion.dstOffset = DestinationOffset;
-        vkCmdCopyBuffer(CommandBuffer, SrcBuffer.Buffer, DstBuffer.Buffer, 1, &CopyRegion);
+        std::vector<VkBufferCopy> CopyRegions(Sizes.size());
+
+        for (int i = 0; i < Sizes.size(); ++i)
+        {
+            CopyRegions[i].size = Sizes[i];
+            CopyRegions[i].srcOffset = SourceOffsets[i];
+            CopyRegions[i].dstOffset = DestinationOffsets[i];
+        }
+
+        vkCmdCopyBuffer(CommandBuffer, SrcBuffer.Buffer, DstBuffer.Buffer, CopyRegions.size(), CopyRegions.data());
     });
 }
 

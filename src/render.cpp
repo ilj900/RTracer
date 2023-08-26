@@ -20,6 +20,8 @@
 
 #include "logging.h"
 
+#include <algorithm>
+
 int32_t FRender::Index = 0;
 
 FRender::FRender()
@@ -190,7 +192,7 @@ int FRender::Init()
 
     RayTraceTask = std::make_shared<FRaytraceTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     RayTraceTask->RegisterOutput(0, RTColorImage);
-    SetIBL("../resources/brown_photostudio_02_4k.exr");
+    SetIBL("../resources/test_image.exr");
 
     RayTraceTask->Init();
     RayTraceTask->UpdateDescriptorSets();
@@ -250,6 +252,44 @@ int FRender::Init()
 
     /// Load that buffer to GPU
     Context.PushDataToBuffer(TestBuffer, TestData.size() * 4, TestData.data());
+
+    std::vector<std::vector<uint32_t>> Datas;
+    std::vector<void*> DataPtrs;
+    std::vector<VkDeviceSize> Sizes;
+    std::vector<VkDeviceSize> Offsets;
+    {
+        Datas.push_back({5,5,5,5,5,5,5,5,5,5,5,5,5,5,5});
+        Datas.push_back({10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,});
+        std::vector<uint32_t> TheBigOne(700);
+
+        for (int i = 0; i < TheBigOne.size(); ++i)
+        {
+            TheBigOne[i] = 700 - i;
+        }
+
+        Datas.push_back(TheBigOne);
+
+        Offsets.push_back(10 * 4);
+        Offsets.push_back(40* 4);
+        Offsets.push_back(240* 4);
+        Sizes.push_back(Datas[0].size()* 4);
+        Sizes.push_back(Datas[1].size()* 4);
+        Sizes.push_back(Datas[2].size()* 4);
+        DataPtrs.push_back(Datas[0].data());
+        DataPtrs.push_back(Datas[1].data());
+        DataPtrs.push_back(Datas[2].data());
+
+
+
+        for (int k = 0; k < Datas.size(); ++k)
+        {
+            std::copy(Datas[k].begin(), Datas[k].end(), TestData.begin() + (Offsets[k] / 4));
+        }
+    }
+
+
+
+    Context.ResourceAllocator->LoadDataToBuffer(TestBuffer, Sizes, Offsets, DataPtrs);
 
     /// Create another buffer that will be filled with GPU data
     std::vector<uint32_t> CopiedBackTestData(1024);

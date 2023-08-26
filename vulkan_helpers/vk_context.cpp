@@ -460,7 +460,7 @@ FMemoryPtr FVulkanContext::PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, 
 
 void FVulkanContext::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset) const
 {
-    return ResourceAllocator->CopyBuffer(SrcBuffer, DstBuffer, Size, SourceOffset, DestinationOffset);
+    return ResourceAllocator->CopyBuffer(SrcBuffer, DstBuffer, {Size}, {SourceOffset}, {DestinationOffset});
 }
 
 void FVulkanContext::DestroyBuffer(FBuffer& Buffer) const
