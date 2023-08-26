@@ -237,6 +237,52 @@ int FRender::Init()
     MATERIAL_SYSTEM()->RequestAllUpdate();
     LIGHT_SYSTEM()->RequestAllUpdate();
 
+    /// Create a GPU buffer for 4kb of data
+    FBuffer TestBuffer = Context.CreateBuffer(4 * 1024,  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Test_Buffer");
+    /// Create a CPU buffer that will be loaded to GPU
+    std::vector<uint32_t> TestData(1024);
+
+    /// Initialize if with some values
+    for (int i = 0; i < TestData.size(); ++i)
+    {
+        TestData[i] = i;
+    }
+
+    /// Load that buffer to GPU
+    Context.PushDataToBuffer(TestBuffer, TestData.size() * 4, TestData.data());
+
+    /// Create another buffer that will be filled with GPU data
+    std::vector<uint32_t> CopiedBackTestData(1024);
+
+    /// Load data in 4 chunks
+    for (int i = 0; i < 4; ++i)
+    {
+        auto Data = Context.DebugGetDataFromBuffer<uint32_t>(TestBuffer, 1024, i * 1024);
+
+        for (int j = 0; j < 256; ++j)
+        {
+            CopiedBackTestData[i * 256 + j] = Data[j];
+        }
+    }
+
+    /// Compare what has been loaded and what has been loaded back
+    for (int i = 0; i < TestData.size(); ++i)
+    {
+        static int t = 0;
+
+        if (TestData[i] != CopiedBackTestData[i])
+        {
+            ++t;
+        }
+
+        if (t == 1)
+        {
+            break;
+        }
+    }
+
+
+
     return 0;
 }
 
@@ -386,8 +432,8 @@ int FRender::Update()
 int FRender::LoadScene(const std::string& Path)
 {
     Models.push_back(AddCube({0.0f, 0.9f, 0.6f}, {1.f, 0.f, -2.f}));
-    Models.push_back(AddModel({0.9f, 0.0f, 0.6f}, {-1.f, 0.f, -2.f}, "../models/viking_room/viking_room.obj"));
-    Models.push_back(AddSphere({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, 10));
+    //Models.push_back(AddModel({0.9f, 0.0f, 0.6f}, {-1.f, 0.f, -2.f}, "../models/viking_room/viking_room.obj"));
+    //Models.push_back(AddSphere({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, 10));
     Models.push_back(AddPyramid({0.9f, 0.6f, 0.0f}, {-3.f, 0.f, -2.f}));
 
     AddLight({5, 5, 5});

@@ -12,7 +12,7 @@ FResourceAllocator::FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice
     vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &MemProperties);
 
     /// Create staging buffer
-    StagingBuffer = CreateBuffer(StagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Staging_Buffer");
+    StagingBuffer = CreateBuffer(StagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Staging_Buffer");
 }
 
 FResourceAllocator::~FResourceAllocator()
@@ -106,7 +106,7 @@ FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, VkDeviceSize Size,
     for (int i = 0; Size > 0; ++i)
     {
         VkDeviceSize ChunkSize = (Size > StagingBufferSize) ? StagingBufferSize : Size;
-        LoadDataToStagingBuffer(ChunkSize, ((char*)Data + (StagingBufferSize * i)));
+        LoadDataToStagingBuffer(ChunkSize, ((char*)Data + (StagingBufferSize * i)), 0);
         CopyBuffer(StagingBuffer, Buffer, ChunkSize, 0, Offset + (StagingBufferSize * i));
         Size -= ChunkSize;
     }
@@ -115,6 +115,67 @@ FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, VkDeviceSize Size,
     {
         Buffer.CurrentOffset = Offset + SizeCopy;
     }
+
+    return Buffer;
+}
+
+FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDeviceSize> Sizes, std::vector<VkDeviceSize> Offsets, std::vector<void*> Datas)
+{
+    struct CopySizeOffsetDataPtr
+    {
+        VkDeviceSize Size;
+        VkDeviceSize Offset;
+        void* Data;
+    };
+
+    std::vector<std::vector<CopySizeOffsetDataPtr>> PreparedData;
+    int i = 0;
+
+    while(true)
+    {
+        std::vector<CopySizeOffsetDataPtr> PreparedDataEntry;
+        VkDeviceSize RemainingSpaceInStagingBuffer = StagingBufferSize;
+        /// When some data is separated into multiple load calls
+        VkDeviceSize AlreadyPushedPart = 0;
+
+        while (i < Sizes.size() || RemainingSpaceInStagingBuffer > 0)
+        {
+            VkDeviceSize HowMuchToPush = Sizes[i] - AlreadyPushedPart;
+
+            if (HowMuchToPush <= RemainingSpaceInStagingBuffer)
+            {
+                CopySizeOffsetDataPtr DataToPush;
+                DataToPush.Size = HowMuchToPush;
+                DataToPush.Offset = Offsets[i] + AlreadyPushedPart;
+                DataToPush.Data = (char*)Datas[i] + AlreadyPushedPart;
+                PreparedDataEntry.push_back(DataToPush);
+
+                RemainingSpaceInStagingBuffer -= HowMuchToPush;
+                AlreadyPushedPart = 0;
+                ++i;
+
+                continue;
+            }
+
+            CopySizeOffsetDataPtr DataToPush;
+            DataToPush.Size = RemainingSpaceInStagingBuffer;
+            DataToPush.Offset = Offsets[i] + AlreadyPushedPart;
+            DataToPush.Data = (char*)Datas[i] + AlreadyPushedPart;
+            PreparedDataEntry.push_back(DataToPush);
+
+            AlreadyPushedPart += RemainingSpaceInStagingBuffer;
+            RemainingSpaceInStagingBuffer = 0;
+        }
+
+        PreparedData.push_back(PreparedDataEntry);
+        break;
+    }
+
+    for (auto &Entry : PreparedData)
+    {
+
+    }
+
     return Buffer;
 }
 
@@ -124,36 +185,44 @@ void FResourceAllocator::LoadDataFromBuffer(FBuffer& Buffer, VkDeviceSize Size, 
     {
         VkDeviceSize ChunkSize = (Size > StagingBufferSize) ? StagingBufferSize : Size;
         CopyBuffer(Buffer, StagingBuffer, ChunkSize, Offset + (StagingBufferSize * i), 0);
-        LoadDataFromStagingBuffer(Size, ((char*)Data + (StagingBufferSize * i)));
+        LoadDataFromStagingBuffer(Size, ((char*)Data + (StagingBufferSize * i)), 0);
         Size -= ChunkSize;
     }
 }
 
-void FResourceAllocator::LoadDataToStagingBuffer(VkDeviceSize Size, void* Data)
+void FResourceAllocator::LoadDataToStagingBuffer(VkDeviceSize Size, void* Data, VkDeviceSize Offset)
 {
-    if (Size <= StagingBufferSize)
+    if (Offset + Size <= StagingBufferSize)
     {
         void *StagingData;
-        vkMapMemory(Device, StagingBuffer.MemoryRegion.Memory, 0, Size, 0, &StagingData);
+        vkMapMemory(Device, StagingBuffer.MemoryRegion.Memory, Offset, Size, 0, &StagingData);
         memcpy(StagingData, Data, (std::size_t) Size);
         vkUnmapMemory(Device, StagingBuffer.MemoryRegion.Memory);
+
+        return;
     }
+
+    assert("Not enough memory in staging buffer");
 }
 
-void FResourceAllocator::LoadDataFromStagingBuffer(VkDeviceSize Size, void* Data)
+void FResourceAllocator::LoadDataFromStagingBuffer(VkDeviceSize Size, void* Data, VkDeviceSize Offset)
 {
-    if (Size <= StagingBufferSize)
+    if (Offset + Size <= StagingBufferSize)
     {
         void *StagingData;
-        vkMapMemory(Device, StagingBuffer.MemoryRegion.Memory, 0, Size, 0, &StagingData);
+        vkMapMemory(Device, StagingBuffer.MemoryRegion.Memory, Offset, Size, 0, &StagingData);
         memcpy(Data, StagingData, (std::size_t) Size);
         vkUnmapMemory(Device, StagingBuffer.MemoryRegion.Memory);
+
+        return;
     }
+
+    assert("Not enough memory in staging buffer");
 }
 
 FMemoryRegion FResourceAllocator::LoadDataToImage(FImage& Image, VkDeviceSize Size, void* Data)
 {
-    LoadDataToStagingBuffer(Size, Data);
+    LoadDataToStagingBuffer(Size, Data, 0);
 
     CopyBufferToImage(StagingBuffer, Image);
 
@@ -230,7 +299,7 @@ void FResourceAllocator::CopyImageToBuffer(const FImage& SrcImage, FBuffer& DstB
 void FResourceAllocator::GetImageData(FImage& SrcImage, void* Data)
 {
     CopyImageToBuffer(SrcImage, StagingBuffer);
-    LoadDataFromStagingBuffer(SrcImage.Size, Data);
+    LoadDataFromStagingBuffer(SrcImage.Size, Data, 0);
 }
 
 void FResourceAllocator::DestroyBuffer(FBuffer& Buffer)

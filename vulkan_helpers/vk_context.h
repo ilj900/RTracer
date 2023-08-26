@@ -97,13 +97,13 @@ public:
     void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset) const;
     void DestroyBuffer(FBuffer& Buffer) const;
     template <typename T>
-    std::vector<T> DebugGetDataFromBuffer(FBuffer SrcBuffer, int Size, int Offset)
+    std::vector<T> DebugGetDataFromBuffer(FBuffer& SrcBuffer, int Size, int Offset)
     {
         std::vector<T> Result;
         Result.resize(Size / sizeof(T));
 
         CopyBuffer(SrcBuffer, ResourceAllocator->StagingBuffer, Size, Offset, 0);
-        ResourceAllocator->LoadDataFromStagingBuffer(Size * sizeof(T), Result.data());
+        ResourceAllocator->LoadDataFromStagingBuffer(Size, Result.data(), 0);
 
         return Result;
     };
