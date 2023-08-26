@@ -20,8 +20,6 @@
 
 #include "logging.h"
 
-#include <algorithm>
-
 int32_t FRender::Index = 0;
 
 FRender::FRender()
@@ -192,7 +190,7 @@ int FRender::Init()
 
     RayTraceTask = std::make_shared<FRaytraceTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     RayTraceTask->RegisterOutput(0, RTColorImage);
-    SetIBL("../resources/test_image.exr");
+    SetIBL("../resources/brown_photostudio_02_4k.exr");
 
     RayTraceTask->Init();
     RayTraceTask->UpdateDescriptorSets();
@@ -238,90 +236,6 @@ int FRender::Init()
     RENDERABLE_SYSTEM()->RequestAllUpdate();
     MATERIAL_SYSTEM()->RequestAllUpdate();
     LIGHT_SYSTEM()->RequestAllUpdate();
-
-    /// Create a GPU buffer for 4kb of data
-    FBuffer TestBuffer = Context.CreateBuffer(4 * 1024,  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Test_Buffer");
-    /// Create a CPU buffer that will be loaded to GPU
-    std::vector<uint32_t> TestData(1024);
-
-    /// Initialize if with some values
-    for (int i = 0; i < TestData.size(); ++i)
-    {
-        TestData[i] = i;
-    }
-
-    /// Load that buffer to GPU
-    Context.PushDataToBuffer(TestBuffer, TestData.size() * 4, TestData.data());
-
-    std::vector<std::vector<uint32_t>> Datas;
-    std::vector<void*> DataPtrs;
-    std::vector<VkDeviceSize> Sizes;
-    std::vector<VkDeviceSize> Offsets;
-    {
-        Datas.push_back({5,5,5,5,5,5,5,5,5,5,5,5,5,5,5});
-        Datas.push_back({10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,});
-        std::vector<uint32_t> TheBigOne(700);
-
-        for (int i = 0; i < TheBigOne.size(); ++i)
-        {
-            TheBigOne[i] = 700 - i;
-        }
-
-        Datas.push_back(TheBigOne);
-
-        Offsets.push_back(10 * 4);
-        Offsets.push_back(40* 4);
-        Offsets.push_back(240* 4);
-        Sizes.push_back(Datas[0].size()* 4);
-        Sizes.push_back(Datas[1].size()* 4);
-        Sizes.push_back(Datas[2].size()* 4);
-        DataPtrs.push_back(Datas[0].data());
-        DataPtrs.push_back(Datas[1].data());
-        DataPtrs.push_back(Datas[2].data());
-
-
-
-        for (int k = 0; k < Datas.size(); ++k)
-        {
-            std::copy(Datas[k].begin(), Datas[k].end(), TestData.begin() + (Offsets[k] / 4));
-        }
-    }
-
-
-
-    Context.ResourceAllocator->LoadDataToBuffer(TestBuffer, Sizes, Offsets, DataPtrs);
-
-    /// Create another buffer that will be filled with GPU data
-    std::vector<uint32_t> CopiedBackTestData(1024);
-
-    /// Load data in 4 chunks
-    for (int i = 0; i < 4; ++i)
-    {
-        auto Data = Context.DebugGetDataFromBuffer<uint32_t>(TestBuffer, 1024, i * 1024);
-
-        for (int j = 0; j < 256; ++j)
-        {
-            CopiedBackTestData[i * 256 + j] = Data[j];
-        }
-    }
-
-    /// Compare what has been loaded and what has been loaded back
-    for (int i = 0; i < TestData.size(); ++i)
-    {
-        static int t = 0;
-
-        if (TestData[i] != CopiedBackTestData[i])
-        {
-            ++t;
-        }
-
-        if (t == 1)
-        {
-            break;
-        }
-    }
-
-
 
     return 0;
 }
@@ -472,8 +386,8 @@ int FRender::Update()
 int FRender::LoadScene(const std::string& Path)
 {
     Models.push_back(AddCube({0.0f, 0.9f, 0.6f}, {1.f, 0.f, -2.f}));
-    //Models.push_back(AddModel({0.9f, 0.0f, 0.6f}, {-1.f, 0.f, -2.f}, "../models/viking_room/viking_room.obj"));
-    //Models.push_back(AddSphere({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, 10));
+    Models.push_back(AddModel({0.9f, 0.0f, 0.6f}, {-1.f, 0.f, -2.f}, "../models/viking_room/viking_room.obj"));
+    Models.push_back(AddSphere({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, 10));
     Models.push_back(AddPyramid({0.9f, 0.6f, 0.0f}, {-3.f, 0.f, -2.f}));
 
     AddLight({5, 5, 5});
