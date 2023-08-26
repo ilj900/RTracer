@@ -52,7 +52,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL FVulkanContext::DebugCallback(
 
 void FVulkanContext::Init(int Width, int Height)
 {
-    ///TextureImage = LoadImageFromFile(TexturePath, "V_TextureImage");
+    TextureImage = LoadImageFromFile(TexturePath, "V_TextureImage");
 }
 
 #ifndef NDEBUG
