@@ -93,7 +93,6 @@ public:
     GLFWwindow* GetWindow() const;
 
     FBuffer CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, const std::string& DebugName = "") const;
-    FMemoryPtr PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data) const;
     void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset) const;
     void DestroyBuffer(FBuffer& Buffer) const;
     template <typename T>

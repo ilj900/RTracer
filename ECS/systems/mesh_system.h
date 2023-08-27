@@ -31,6 +31,9 @@ namespace ECS
 
             FBuffer VertexBuffer;
             FBuffer IndexBuffer;
+
+            FMemoryRegion FreeVertexBufferMemoryBlocks;
+            FMemoryRegion FreeIndexBufferMemoryBlocks;
         };
     }
 }

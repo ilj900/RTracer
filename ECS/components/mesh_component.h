@@ -39,6 +39,8 @@ namespace ECS
             std::vector<FVertex> Vertices{};
             std::vector<uint32_t> Indices{};
             bool Indexed = false;
+            uint32_t DeviceVertexBufferOffset = 0;
+            uint32_t DeviceIndexBufferOffset = 0;
         };
     }
 }

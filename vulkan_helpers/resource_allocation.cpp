@@ -82,23 +82,6 @@ FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags U
     return Buffer;
 }
 
-FMemoryPtr FResourceAllocator::PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data)
-{
-    auto RemainingSize = Buffer.BufferSize - Buffer.CurrentOffset;
-    if (Size <= RemainingSize)
-    {
-        FMemoryPtr FMemoryPtr;
-        FMemoryPtr.Size = Size;
-        FMemoryPtr.Offset = Buffer.CurrentOffset;
-        LoadDataToBuffer(Buffer, {Size}, {Buffer.CurrentOffset}, {Data});
-        Buffer.MemoryRegion.MemoryPtrs.push_back(FMemoryPtr);
-        return FMemoryPtr;
-    }
-    /// TODO: Try to compact the data in buffer
-    assert(false && "Not enough space in Buffer");
-    return FMemoryPtr();
-}
-
 FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDeviceSize> Sizes, std::vector<VkDeviceSize> Offsets, std::vector<void*> Datas)
 {
     struct CopySizeOffsetDataPtr
