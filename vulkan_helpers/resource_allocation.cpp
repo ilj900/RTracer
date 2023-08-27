@@ -90,33 +90,13 @@ FMemoryPtr FResourceAllocator::PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Si
         FMemoryPtr FMemoryPtr;
         FMemoryPtr.Size = Size;
         FMemoryPtr.Offset = Buffer.CurrentOffset;
-        LoadDataToBuffer(Buffer, Size, Buffer.CurrentOffset, Data);
+        LoadDataToBuffer(Buffer, {Size}, {Buffer.CurrentOffset}, {Data});
         Buffer.MemoryRegion.MemoryPtrs.push_back(FMemoryPtr);
         return FMemoryPtr;
     }
     /// TODO: Try to compact the data in buffer
     assert(false && "Not enough space in Buffer");
     return FMemoryPtr();
-}
-
-FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, VkDeviceSize Offset, void* Data)
-{
-    auto SizeCopy = Size;
-
-    for (int i = 0; Size > 0; ++i)
-    {
-        VkDeviceSize ChunkSize = (Size > StagingBufferSize) ? StagingBufferSize : Size;
-        LoadDataToStagingBuffer(ChunkSize, ((char*)Data + (StagingBufferSize * i)), 0);
-        CopyBuffer(StagingBuffer, Buffer, {ChunkSize}, {0}, {Offset + (StagingBufferSize * i)});
-        Size -= ChunkSize;
-    }
-
-    if (Offset + SizeCopy > Buffer.CurrentOffset)
-    {
-        Buffer.CurrentOffset = Offset + SizeCopy;
-    }
-
-    return Buffer;
 }
 
 FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDeviceSize> Sizes, std::vector<VkDeviceSize> Offsets, std::vector<void*> Datas)
@@ -200,6 +180,11 @@ FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDevi
             DestinationOffsets.push_back(MiniEntry.Offset);
             Datas.push_back(MiniEntry.Data);
             Offset += MiniEntry.Size;
+
+            if(MiniEntry.Offset + MiniEntry.Size > Buffer.CurrentOffset)
+            {
+                Buffer.CurrentOffset = MiniEntry.Offset + MiniEntry.Size;
+            }
         }
 
         LoadDataToStagingBuffer(Sizes, Datas);

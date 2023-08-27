@@ -25,7 +25,7 @@ namespace ECS
 
             for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
             {
-                Context.ResourceAllocator->LoadDataToBuffer(DeviceTransformBuffer, DeviceTransformComponentsSize, DeviceTransformComponentsSize * i, DeviceTransformComponentsData);
+                Context.ResourceAllocator->LoadDataToBuffer(DeviceTransformBuffer, {DeviceTransformComponentsSize}, {DeviceTransformComponentsSize * i}, {DeviceTransformComponentsData});
             }
 
             BufferPartThatNeedsUpdate.resize(NumberOfSimultaneousSubmits);
@@ -43,9 +43,9 @@ namespace ECS
                     auto DeviceTransformComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>();
 
                     Context.ResourceAllocator->LoadDataToBuffer(DeviceTransformBuffer,
-                                                                DeviceTransformComponentsSize,
-                                                                DeviceTransformComponentsSize * i,
-                                                                DeviceTransformComponentsData);
+                                                                {DeviceTransformComponentsSize},
+                                                                {DeviceTransformComponentsSize * i},
+                                                                {DeviceTransformComponentsData});
                     BufferPartThatNeedsUpdate[i] = false;
                 }
             }

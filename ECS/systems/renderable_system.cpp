@@ -25,7 +25,7 @@ namespace ECS
 
             for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
             {
-                Context.ResourceAllocator->LoadDataToBuffer(DeviceRenderableBuffer, DeviceRenderableComponentsSize, DeviceRenderableComponentsSize * i, DeviceRenderableComponentsData);
+                Context.ResourceAllocator->LoadDataToBuffer(DeviceRenderableBuffer, {DeviceRenderableComponentsSize}, {DeviceRenderableComponentsSize * i}, {DeviceRenderableComponentsData});
             }
 
             BufferPartThatNeedsUpdate.resize(NumberOfSimultaneousSubmits);
@@ -42,7 +42,7 @@ namespace ECS
                     auto DeviceRenderableComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceRenderableComponent>();
                     auto DeviceRenderableComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>();
 
-                    Context.ResourceAllocator->LoadDataToBuffer(DeviceRenderableBuffer, DeviceRenderableComponentsSize, DeviceRenderableComponentsSize * i, DeviceRenderableComponentsData);
+                    Context.ResourceAllocator->LoadDataToBuffer(DeviceRenderableBuffer, {DeviceRenderableComponentsSize}, {DeviceRenderableComponentsSize * i}, {DeviceRenderableComponentsData});
 
                     BufferPartThatNeedsUpdate[i] = false;
                 }

@@ -5,6 +5,8 @@
 
 #include "buffer.h"
 
+#include "vk_context.h"
+
 #include "maths.h"
 
 namespace ECS
@@ -33,7 +35,7 @@ namespace ECS
                         auto DeviceComponentsData = Coordinator.Data<T>();
                         auto DeviceComponentsSize = Coordinator.Size<T>();
 
-                        Context.ResourceAllocator->LoadDataToBuffer(DeviceBuffer, DeviceComponentsSize, DeviceComponentsSize * i, DeviceComponentsData);
+                        Context.ResourceAllocator->LoadDataToBuffer(DeviceBuffer, {DeviceComponentsSize}, {DeviceComponentsSize * i}, {DeviceComponentsData});
 
                         BufferPartThatNeedsUpdate[i] = false;
                     }
@@ -50,7 +52,7 @@ namespace ECS
                     auto DeviceComponentsData = Coordinator.Data<T>();
                     auto DeviceComponentsSize = Coordinator.Size<T>();
 
-                    Context.ResourceAllocator->LoadDataToBuffer(DeviceBuffer, DeviceComponentsSize, DeviceComponentsSize * Index, DeviceComponentsData);
+                    Context.ResourceAllocator->LoadDataToBuffer(DeviceBuffer, {DeviceComponentsSize}, {DeviceComponentsSize * Index}, {DeviceComponentsData});
 
                     BufferPartThatNeedsUpdate[Index] = false;
                 }

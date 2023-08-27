@@ -24,7 +24,7 @@ namespace ECS
 
             for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
             {
-                Context.ResourceAllocator->LoadDataToBuffer(DeviceMaterialBuffer, MaterialComponentsSize, MaterialComponentsSize * i, MaterialComponentsData);
+                Context.ResourceAllocator->LoadDataToBuffer(DeviceMaterialBuffer, {MaterialComponentsSize}, {MaterialComponentsSize * i}, {MaterialComponentsData});
             }
 
             BufferPartThatNeedsUpdate.resize(NumberOfSimultaneousSubmits);
@@ -41,7 +41,7 @@ namespace ECS
                     auto MaterialComponentsData = Coordinator.Data<ECS::COMPONENTS::FMaterialComponent>();
                     auto MaterialComponentsSize = Coordinator.Size<ECS::COMPONENTS::FMaterialComponent>();
 
-                    Context.ResourceAllocator->LoadDataToBuffer(DeviceMaterialBuffer, MaterialComponentsSize, MaterialComponentsSize * i, MaterialComponentsData);
+                    Context.ResourceAllocator->LoadDataToBuffer(DeviceMaterialBuffer, {MaterialComponentsSize}, {MaterialComponentsSize * i}, {MaterialComponentsData});
 
                     BufferPartThatNeedsUpdate[i] = false;
                 }

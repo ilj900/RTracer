@@ -25,7 +25,7 @@ namespace ECS
 
             for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
             {
-                Context.ResourceAllocator->LoadDataToBuffer(DeviceCameraBuffer, DeviceCameraComponentsSize, DeviceCameraComponentsSize * i, DeviceCameraComponentsData);
+                Context.ResourceAllocator->LoadDataToBuffer(DeviceCameraBuffer, {DeviceCameraComponentsSize}, {DeviceCameraComponentsSize * i}, {DeviceCameraComponentsData});
             }
 
             BufferPartThatNeedsUpdate.resize(NumberOfSimultaneousSubmits);
@@ -42,7 +42,7 @@ namespace ECS
                     auto DeviceCameraComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceCameraComponent>();
                     auto DeviceCameraComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>();
 
-                    Context.ResourceAllocator->LoadDataToBuffer(DeviceCameraBuffer, DeviceCameraComponentsSize, DeviceCameraComponentsSize * i, DeviceCameraComponentsData);
+                    Context.ResourceAllocator->LoadDataToBuffer(DeviceCameraBuffer, {DeviceCameraComponentsSize}, {DeviceCameraComponentsSize * i}, {DeviceCameraComponentsData});
 
                     BufferPartThatNeedsUpdate[i] = false;
                 }
