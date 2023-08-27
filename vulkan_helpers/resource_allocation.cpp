@@ -44,6 +44,8 @@ FMemoryRegion FResourceAllocator::AllocateMemory(VkDeviceSize Size, VkMemoryRequ
         throw std::runtime_error("Failed to allocate buffer memory!");
     }
 
+    MemoryRegion.MemoryPtrs = {{0, Size}};
+
     return MemoryRegion;
 }
 

@@ -17,11 +17,6 @@ namespace ECS
         {
             VertexBuffer = GetContext().CreateBuffer(VertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V::Vertex_Buffer");
             IndexBuffer = GetContext().CreateBuffer(IndexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V::Index_Buffer");
-
-            FreeVertexBufferMemoryBlocks.Memory = VertexBuffer.MemoryRegion.Memory;
-            FreeVertexBufferMemoryBlocks.MemoryPtrs = {{0, VertexBufferSize}};
-            FreeIndexBufferMemoryBlocks.Memory = IndexBuffer.MemoryRegion.Memory;
-            FreeIndexBufferMemoryBlocks.MemoryPtrs = {{0, IndexBufferSize}};
         }
 
         void FMeshSystem::Draw(FEntity Entity, VkCommandBuffer CommandBuffer)
@@ -74,62 +69,25 @@ namespace ECS
             uint32_t VertexBufferRequiredSize = MeshComponent.Vertices.size() * sizeof(FVertex);
             uint32_t IndexBufferRequiredSize = MeshComponent.Indices.size() * sizeof(uint32_t);
 
-            int VertexBufferBlockToChop = 0;
-            bool bNoSpaceInVertexBufferLeft = true;
+            FMemoryPtr VertexBufferChunk = VertexBuffer.CheckAvailableMemory(VertexBufferRequiredSize);
+            VertexBuffer.ReserveMemory(VertexBufferChunk);
 
-            for (int i = 0; i < FreeVertexBufferMemoryBlocks.MemoryPtrs.size(); ++i)
-            {
-                if (FreeVertexBufferMemoryBlocks.MemoryPtrs[i].Size > VertexBufferRequiredSize)
-                {
-                    bNoSpaceInVertexBufferLeft = false;
-                    VertexBufferBlockToChop = i;
-                    break;
-                }
-            }
-
-            if (bNoSpaceInVertexBufferLeft)
-            {
-                assert("Failed to find big enough memory block for mesh vertices");
-                return;
-            }
-
-            int IndexBufferBlockToChop = 0;
-            bool bNoSpaceInIndexBuffer = true;
+            FMemoryPtr IndexBufferChunk{};
 
             if (MeshComponent.Indexed)
             {
-                for (int i = 0; i < FreeIndexBufferMemoryBlocks.MemoryPtrs.size(); ++i)
-                {
-                    if (FreeIndexBufferMemoryBlocks.MemoryPtrs[i].Size > IndexBufferRequiredSize)
-                    {
-                        bNoSpaceInIndexBuffer = false;
-                        IndexBufferBlockToChop = i;
-                        break;
-                    }
-                }
-            }
-
-            if (bNoSpaceInIndexBuffer && MeshComponent.Indexed)
-            {
-                assert("Failed to find big enough memory block for mesh indices");
-                return;
+                IndexBufferChunk = IndexBuffer.CheckAvailableMemory(IndexBufferRequiredSize);
+                IndexBuffer.ReserveMemory(IndexBufferChunk);
             }
 
             auto& Context = GetContext();
-            DeviceMeshComponent.VertexPtr.Size = VertexBufferRequiredSize;
-            DeviceMeshComponent.VertexPtr.Offset = FreeVertexBufferMemoryBlocks.MemoryPtrs[VertexBufferBlockToChop].Offset;
-            FreeVertexBufferMemoryBlocks.MemoryPtrs[VertexBufferBlockToChop].Size -= VertexBufferRequiredSize;
-            FreeVertexBufferMemoryBlocks.MemoryPtrs[VertexBufferBlockToChop].Offset += VertexBufferRequiredSize;
+            DeviceMeshComponent.VertexPtr = VertexBufferChunk;
 
             Context.ResourceAllocator->LoadDataToBuffer(VertexBuffer, {DeviceMeshComponent.VertexPtr.Size}, {DeviceMeshComponent.VertexPtr.Offset}, {MeshComponent.Vertices.data()});
 
             if (MeshComponent.Indexed)
             {
-                DeviceMeshComponent.IndexPtr.Size = IndexBufferRequiredSize;
-                DeviceMeshComponent.IndexPtr.Offset = FreeIndexBufferMemoryBlocks.MemoryPtrs[IndexBufferBlockToChop].Offset;
-                FreeIndexBufferMemoryBlocks.MemoryPtrs[IndexBufferBlockToChop].Size -= IndexBufferRequiredSize;
-                FreeIndexBufferMemoryBlocks.MemoryPtrs[IndexBufferBlockToChop].Offset += IndexBufferRequiredSize;
-
+                DeviceMeshComponent.IndexPtr = IndexBufferChunk;
                 Context.ResourceAllocator->LoadDataToBuffer(IndexBuffer, {DeviceMeshComponent.IndexPtr.Size}, {DeviceMeshComponent.IndexPtr.Offset}, {MeshComponent.Indices.data()});
             }
         }

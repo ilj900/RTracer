@@ -116,6 +116,7 @@ set(INCLUDE
         vulkan_helpers/swapchain.h
         vulkan_helpers/renderpass.h
         vulkan_helpers/buffer.h
+        vulkan_helpers/buffer.cpp
         vulkan_helpers/descriptors.h
         vulkan_helpers/command_buffer_manager.h
         vulkan_helpers/vk_pipeline.h

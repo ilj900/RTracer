@@ -2,7 +2,7 @@
 
 #include "vulkan/vulkan.h"
 
-#include <vector>
+#include <unordered_set>
 
 struct FBuffer;
 
@@ -12,10 +12,18 @@ struct FMemoryPtr
     VkDeviceSize Size = 0;
 };
 
+bool operator==(const FMemoryPtr& A, const FMemoryPtr& B);
+
+template<>
+struct std::hash<FMemoryPtr>
+{
+    size_t operator()(FMemoryPtr const& MemoryPtr) const;
+};
+
 struct FMemoryRegion
 {
     VkDeviceMemory Memory = VK_NULL_HANDLE;
-    std::vector<FMemoryPtr> MemoryPtrs;
+    std::unordered_set<FMemoryPtr> MemoryPtrs;
 };
 
 struct FBuffer
@@ -24,4 +32,7 @@ struct FBuffer
     VkDeviceSize BufferSize = 0;
     VkDeviceSize CurrentOffset = 0;
     FMemoryRegion MemoryRegion;
+
+    FMemoryPtr CheckAvailableMemory(VkDeviceSize Size);
+    FMemoryPtr ReserveMemory(FMemoryPtr MemoryChunk);
 };

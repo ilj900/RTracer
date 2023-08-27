@@ -453,11 +453,6 @@ FBuffer FVulkanContext::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage
     return ResourceAllocator->CreateBuffer(Size, Usage, Properties, DebugName);
 }
 
-FMemoryPtr FVulkanContext::PushDataToBuffer(FBuffer& Buffer, VkDeviceSize Size, void* Data) const
-{
-    return ResourceAllocator->PushDataToBuffer(Buffer, Size, Data);
-}
-
 void FVulkanContext::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset) const
 {
     return ResourceAllocator->CopyBuffer(SrcBuffer, DstBuffer, {Size}, {SourceOffset}, {DestinationOffset});
@@ -662,7 +657,7 @@ FAccelerationStructure FVulkanContext::GenerateTlas(std::vector<FAccelerationStr
 
     auto BlasInstanceBuffer = ResourceAllocator->CreateBuffer(AccelerationStructureInstanceVector.size() * sizeof(VkAccelerationStructureInstanceKHR),
                                                                        VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V_BLAS_Instance_Buffer");
-    ResourceAllocator->PushDataToBuffer(BlasInstanceBuffer, AccelerationStructureInstanceVector.size() * sizeof(VkAccelerationStructureInstanceKHR), AccelerationStructureInstanceVector.data());
+    ResourceAllocator->LoadDataToBuffer(BlasInstanceBuffer, {AccelerationStructureInstanceVector.size() * sizeof(VkAccelerationStructureInstanceKHR)}, {0}, {AccelerationStructureInstanceVector.data()});
 
     auto BlasInstanceBufferAddress = GetBufferDeviceAddressInfo(BlasInstanceBuffer);
 
