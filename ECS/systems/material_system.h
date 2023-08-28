@@ -2,18 +2,20 @@
 
 #include "buffer.h"
 
-#include "system.h"
+#include "gpu_bufferable_system.h"
 #include "coordinator.h"
 
 namespace ECS
 {
     namespace SYSTEMS
     {
-        class FMaterialSystem : public FSystem
+        class FMaterialSystem : public FGPUBufferableSystem
         {
         public:
-            void Init(int NumberOfSimultaneousSubmits);
-            void Update();
+            void Init(int NumberOfSimultaneousSubmits) override;
+            void Update() override;
+            void Update(int Index) override;
+
             FMaterialSystem& SetBaseAlbedo(FEntity MaterialEntity, float Red, float Green, float Blue);
 
             void RequestAllUpdate();
@@ -21,12 +23,7 @@ namespace ECS
 
             int GetTotalSize();
 
-
-        public:
-            std::vector<bool> BufferPartThatNeedsUpdate;
-            int NumberOfSimultaneousSubmits = 2;
-
-            FBuffer DeviceMaterialBuffer;
+            const uint32_t MAX_MATERIALS = 100;
         };
     }
 }

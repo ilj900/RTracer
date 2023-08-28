@@ -180,7 +180,7 @@ void FRaytraceTask::UpdateDescriptorSets()
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, RENDERABLE_BUFFER_INDEX, i, RenderableBufferInfo);
 
         VkDescriptorBufferInfo MaterialBufferInfo{};
-        MaterialBufferInfo.buffer = MATERIAL_SYSTEM()->DeviceMaterialBuffer.Buffer;
+        MaterialBufferInfo.buffer = MATERIAL_SYSTEM()->DeviceBuffer.Buffer;
         MaterialBufferInfo.offset = 0;
         MaterialBufferInfo.range = MATERIAL_SYSTEM()->GetTotalSize();
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, MATERIAL_BUFFER_INDEX, i, MaterialBufferInfo);

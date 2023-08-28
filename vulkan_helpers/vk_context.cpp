@@ -1453,7 +1453,7 @@ void FVulkanContext::CleanUp()
     DestroyBuffer(RENDERABLE_SYSTEM()->DeviceRenderableBuffer);
     DestroyBuffer(MESH_SYSTEM()->VertexBuffer);
     DestroyBuffer(MESH_SYSTEM()->IndexBuffer);
-    DestroyBuffer(MATERIAL_SYSTEM()->DeviceMaterialBuffer);
+    DestroyBuffer(MATERIAL_SYSTEM()->DeviceBuffer);
     DestroyBuffer(LIGHT_SYSTEM()->DeviceBuffer);
 
 

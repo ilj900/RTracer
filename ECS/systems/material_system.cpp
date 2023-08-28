@@ -12,40 +12,18 @@ namespace ECS
     {
         void FMaterialSystem::Init(int NumberOfSimultaneousSubmits)
         {
-            this->NumberOfSimultaneousSubmits = NumberOfSimultaneousSubmits;
-            auto& Coordinator = GetCoordinator();
-            auto& Context = GetContext();
-            auto MaterialComponentsData = Coordinator.Data<ECS::COMPONENTS::FMaterialComponent>();
-            auto MaterialComponentsSize = Coordinator.Size<ECS::COMPONENTS::FMaterialComponent>();
-
-            VkDeviceSize DeviceMaterialBufferSize = MaterialComponentsSize * NumberOfSimultaneousSubmits;
-
-            DeviceMaterialBuffer = GetContext().CreateBuffer(DeviceMaterialBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Material_Buffer");
-
-            for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
-            {
-                Context.ResourceAllocator->LoadDataToBuffer(DeviceMaterialBuffer, {MaterialComponentsSize}, {MaterialComponentsSize * i}, {MaterialComponentsData});
-            }
-
-            BufferPartThatNeedsUpdate.resize(NumberOfSimultaneousSubmits);
+            FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(ECS::COMPONENTS::FMaterialComponent) * MAX_MATERIALS,
+                                       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Material_Buffer");
         }
 
         void FMaterialSystem::Update()
         {
-            for (int i = 0; i < BufferPartThatNeedsUpdate.size(); ++i)
-            {
-                if (true == BufferPartThatNeedsUpdate[i])
-                {
-                    auto& Coordinator = GetCoordinator();
-                    auto& Context = GetContext();
-                    auto MaterialComponentsData = Coordinator.Data<ECS::COMPONENTS::FMaterialComponent>();
-                    auto MaterialComponentsSize = Coordinator.Size<ECS::COMPONENTS::FMaterialComponent>();
+            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FMaterialComponent>();
+        }
 
-                    Context.ResourceAllocator->LoadDataToBuffer(DeviceMaterialBuffer, {MaterialComponentsSize}, {MaterialComponentsSize * i}, {MaterialComponentsData});
-
-                    BufferPartThatNeedsUpdate[i] = false;
-                }
-            }
+        void FMaterialSystem::Update(int Index)
+        {
+            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FMaterialComponent>(Index);
         }
 
         FMaterialSystem& FMaterialSystem::SetBaseAlbedo(FEntity MaterialEntity, float Red, float Green, float Blue)
@@ -54,7 +32,6 @@ namespace ECS
             MaterialComponent.BaseAlbedo = FVector3(Red, Green, Blue);
             return *this;
         }
-
 
         void FMaterialSystem::RequestAllUpdate()
         {
