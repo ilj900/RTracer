@@ -168,7 +168,7 @@ void FRaytraceTask::UpdateDescriptorSets()
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, RT_FINAL_IMAGE_INDEX, i, RTImageBufferInfo);
 
         VkDescriptorBufferInfo CameraBufferInfo{};
-        CameraBufferInfo.buffer = CAMERA_SYSTEM()->DeviceCameraBuffer.Buffer;
+        CameraBufferInfo.buffer = CAMERA_SYSTEM()->DeviceBuffer.Buffer;
         CameraBufferInfo.offset = 0;
         CameraBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, CAMERA_LAYOUT_INDEX, i, CameraBufferInfo);

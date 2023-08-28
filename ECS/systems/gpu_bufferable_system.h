@@ -59,7 +59,7 @@ namespace ECS
             }
 
         public:
-            void Init(int NumberOfSimultaneousSubmits, uint32_t Size, const std::string& Name);
+            void Init(int NumberOfSimultaneousSubmits, uint32_t Size, VkBufferUsageFlags BufferFlags, const std::string& Name);
 
             std::vector<bool> BufferPartThatNeedsUpdate;
             int NumberOfSimultaneousSubmits = 2;

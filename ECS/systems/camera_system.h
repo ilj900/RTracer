@@ -2,19 +2,20 @@
 
 #include "buffer.h"
 
-#include "system.h"
+#include "gpu_bufferable_system.h"
 #include "coordinator.h"
 
 namespace ECS
 {
     namespace SYSTEMS
     {
-        class FCameraSystem : public FSystem
+        class FCameraSystem : public FGPUBufferableSystem
         {
         public:
-            void Init(int NumberOfSimultaneousSubmits);
-            void Update();
-            void UpdateAllDeviceComponentsData();
+            void Init(int NumberOfSimultaneousSubmits) override;
+            void Update() override;
+            void Update(int Index) override;
+
             void UpdateDeviceComponentData(FEntity CameraEntity);
             void MoveCameraForward(FEntity CameraEntity, float Value);
             void MoveCameraRight(FEntity CameraEntity, float Value);
@@ -27,14 +28,7 @@ namespace ECS
             FMatrix4 GetViewMatrix(FEntity CameraEntity);
             void Orthogonize(FEntity CameraEntity);
 
-            void RequestAllUpdate();
-            void RequestUpdate(int FrameIndex);
-
-        public:
-            std::vector<bool> BufferPartThatNeedsUpdate;
-            int NumberOfSimultaneousSubmits = 2;
-
-            FBuffer DeviceCameraBuffer;
+            const uint32_t MAX_CAMERAS = 10;
         };
     }
 }

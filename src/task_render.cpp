@@ -124,7 +124,7 @@ void FRenderTask::UpdateDescriptorSets()
     {
 
         VkDescriptorBufferInfo CameraBufferInfo{};
-        CameraBufferInfo.buffer = CAMERA_SYSTEM()->DeviceCameraBuffer.Buffer;
+        CameraBufferInfo.buffer = CAMERA_SYSTEM()->DeviceBuffer.Buffer;
         CameraBufferInfo.offset = CameraBufferSize * i;
         CameraBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RENDER_PER_FRAME_LAYOUT_INDEX, CAMERA_LAYOUT_INDEX, i, CameraBufferInfo);

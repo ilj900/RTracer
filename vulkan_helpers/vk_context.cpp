@@ -1449,7 +1449,7 @@ void FVulkanContext::CleanUp()
 {
     /// Free all device buffers
     DestroyBuffer(TRANSFORM_SYSTEM()->DeviceTransformBuffer);
-    DestroyBuffer(CAMERA_SYSTEM()->DeviceCameraBuffer);
+    DestroyBuffer(CAMERA_SYSTEM()->DeviceBuffer);
     DestroyBuffer(RENDERABLE_SYSTEM()->DeviceRenderableBuffer);
     DestroyBuffer(MESH_SYSTEM()->VertexBuffer);
     DestroyBuffer(MESH_SYSTEM()->IndexBuffer);

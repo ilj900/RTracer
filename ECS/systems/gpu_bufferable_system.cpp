@@ -10,11 +10,11 @@ namespace ECS
 {
     namespace SYSTEMS
     {
-        void FGPUBufferableSystem::Init(int NumberOfSimultaneousSubmits, uint32_t Size, const std::string& Name)
+        void FGPUBufferableSystem::Init(int NumberOfSimultaneousSubmits, uint32_t Size, VkBufferUsageFlags BufferFlags, const std::string& Name)
         {
             this->NumberOfSimultaneousSubmits = NumberOfSimultaneousSubmits;
 
-            DeviceBuffer = GetContext().CreateBuffer(Size * NumberOfSimultaneousSubmits, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Buffer");
+            DeviceBuffer = GetContext().CreateBuffer(Size * NumberOfSimultaneousSubmits, BufferFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Buffer");
             BufferPartThatNeedsUpdate.resize(NumberOfSimultaneousSubmits);
         }
 

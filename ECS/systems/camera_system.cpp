@@ -13,55 +13,18 @@ namespace ECS
     {
         void FCameraSystem::Init(int NumberOfSimultaneousSubmits)
         {
-            this->NumberOfSimultaneousSubmits = NumberOfSimultaneousSubmits;
-            auto& Coordinator = GetCoordinator();
-            auto& Context = GetContext();
-            auto DeviceCameraComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceCameraComponent>();
-            auto DeviceCameraComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>();
-
-            VkDeviceSize CameraBufferSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>() * NumberOfSimultaneousSubmits;
-
-            DeviceCameraBuffer = GetContext().CreateBuffer(CameraBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Camera_Buffer");
-
-            for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
-            {
-                Context.ResourceAllocator->LoadDataToBuffer(DeviceCameraBuffer, {DeviceCameraComponentsSize}, {DeviceCameraComponentsSize * i}, {DeviceCameraComponentsData});
-            }
-
-            BufferPartThatNeedsUpdate.resize(NumberOfSimultaneousSubmits);
+            FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(ECS::COMPONENTS::FDeviceCameraComponent) * MAX_CAMERAS,
+                                       VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Camera_Buffer");
         }
 
         void FCameraSystem::Update()
         {
-            for (int i = 0; i < BufferPartThatNeedsUpdate.size(); ++i)
-            {
-                if (true == BufferPartThatNeedsUpdate[i])
-                {
-                    auto& Coordinator = GetCoordinator();
-                    auto& Context = GetContext();
-                    auto DeviceCameraComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceCameraComponent>();
-                    auto DeviceCameraComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceCameraComponent>();
-
-                    Context.ResourceAllocator->LoadDataToBuffer(DeviceCameraBuffer, {DeviceCameraComponentsSize}, {DeviceCameraComponentsSize * i}, {DeviceCameraComponentsData});
-
-                    BufferPartThatNeedsUpdate[i] = false;
-                }
-            }
+            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceCameraComponent>();
         }
 
-        void FCameraSystem::UpdateAllDeviceComponentsData()
+        void FCameraSystem::Update(int Index)
         {
-            auto& Coordinator = GetCoordinator();
-
-            for (auto Entity : Entities)
-            {
-                auto& DeviceCameraComponent = Coordinator.GetComponent<COMPONENTS::FDeviceCameraComponent>(Entity);
-                auto& CameraComponent = Coordinator.GetComponent<COMPONENTS::FCameraComponent>(Entity);
-                DeviceCameraComponent.ViewMatrix = LookAt(CameraComponent.Position, CameraComponent.Position + CameraComponent.Direction, CameraComponent.Up);
-                DeviceCameraComponent.ProjectionMatrix = GetPerspective(CameraComponent.FOV / 90.f, CameraComponent.Ratio, CameraComponent.ZNear, CameraComponent.ZFar);
-            }
-
-            RequestAllUpdate();
+            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceCameraComponent>(Index);
         }
 
         void FCameraSystem::UpdateDeviceComponentData(FEntity CameraEntity)
@@ -137,19 +100,6 @@ namespace ECS
             CameraComponent.Up = CameraComponent.Up.GetNormalized();
             auto Right = Cross(CameraComponent.Direction, CameraComponent.Up);
             CameraComponent.Up = Cross(Right, CameraComponent.Direction);
-        }
-
-        void FCameraSystem::RequestAllUpdate()
-        {
-            for(int i = 0; i < NumberOfSimultaneousSubmits; ++i)
-            {
-                BufferPartThatNeedsUpdate[i] = true;
-            }
-        }
-
-        void FCameraSystem::RequestUpdate(int FrameIndex)
-        {
-            BufferPartThatNeedsUpdate[FrameIndex] = true;
         }
     }
 }
