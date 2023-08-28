@@ -1,6 +1,6 @@
 #pragma once
 
-#include "system.h"
+#include "gpu_bufferable_system.h"
 #include "coordinator.h"
 
 #include "buffer.h"
@@ -11,11 +11,13 @@ namespace ECS
 {
     namespace SYSTEMS
     {
-        class FTransformSystem : public FSystem
+        class FTransformSystem : public FGPUBufferableSystem
         {
         public:
-            void Init(int NumberOfSimultaneousSubmits);
-            void Update();
+            void Init(int NumberOfSimultaneousSubmits) override;
+            void Update() override;
+            void Update(int Index) override;
+
             void UpdateAllDeviceComponentsData();
             void UpdateDeviceComponentData(FEntity Entity);
             void MoveForward(FEntity Entity, float Value);
@@ -28,15 +30,8 @@ namespace ECS
             void Yaw(FEntity Entity, float Value);
             void Translate(FEntity Entity, float X, float Y, float Z);
             FMatrix4 GetModelMatrix(FEntity Entity);
-            void RequestAllUpdate();
-            void RequestUpdate(int FrameIndex);
 
-        public:
-            std::vector<bool> BufferPartThatNeedsUpdate;
-            int NumberOfSimultaneousSubmits = 2;
-            bool bIsDirty = false;
-
-            FBuffer DeviceTransformBuffer;
+            const uint32_t MAX_TRANSFORMS = 8192;
         };
     }
 }

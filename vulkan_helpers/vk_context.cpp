@@ -1448,7 +1448,7 @@ void FVulkanContext::DestroyDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT& Deb
 void FVulkanContext::CleanUp()
 {
     /// Free all device buffers
-    DestroyBuffer(TRANSFORM_SYSTEM()->DeviceTransformBuffer);
+    DestroyBuffer(TRANSFORM_SYSTEM()->DeviceBuffer);
     DestroyBuffer(CAMERA_SYSTEM()->DeviceBuffer);
     DestroyBuffer(RENDERABLE_SYSTEM()->DeviceBuffer);
     DestroyBuffer(MESH_SYSTEM()->VertexBuffer);

@@ -13,42 +13,18 @@ namespace ECS
     {
         void FTransformSystem::Init(int NumberOfSimultaneousSubmits)
         {
-            this->NumberOfSimultaneousSubmits = NumberOfSimultaneousSubmits;
-            auto& Coordinator = GetCoordinator();
-            auto& Context = GetContext();
-            auto DeviceTransformComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceTransformComponent>();
-            auto DeviceTransformComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>();
-
-            VkDeviceSize TransformBufferSize = DeviceTransformComponentsSize * NumberOfSimultaneousSubmits;
-
-            DeviceTransformBuffer = GetContext().CreateBuffer(TransformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Transform_Buffer");
-
-            for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
-            {
-                Context.ResourceAllocator->LoadDataToBuffer(DeviceTransformBuffer, {DeviceTransformComponentsSize}, {DeviceTransformComponentsSize * i}, {DeviceTransformComponentsData});
-            }
-
-            BufferPartThatNeedsUpdate.resize(NumberOfSimultaneousSubmits);
+            FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(ECS::COMPONENTS::FTransformComponent) * MAX_TRANSFORMS,
+                                       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Light_Buffer");
         }
 
         void FTransformSystem::Update()
         {
-            for (int i = 0; i < BufferPartThatNeedsUpdate.size(); ++i)
-            {
-                if (true == BufferPartThatNeedsUpdate[i])
-                {
-                    auto& Coordinator = GetCoordinator();
-                    auto& Context = GetContext();
-                    auto DeviceTransformComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceTransformComponent>();
-                    auto DeviceTransformComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceTransformComponent>();
+            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FTransformComponent>();
+        }
 
-                    Context.ResourceAllocator->LoadDataToBuffer(DeviceTransformBuffer,
-                                                                {DeviceTransformComponentsSize},
-                                                                {DeviceTransformComponentsSize * i},
-                                                                {DeviceTransformComponentsData});
-                    BufferPartThatNeedsUpdate[i] = false;
-                }
-            }
+        void FTransformSystem::Update(int Index)
+        {
+            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FTransformComponent>(Index);
         }
 
         void FTransformSystem::UpdateAllDeviceComponentsData()
@@ -134,19 +110,5 @@ namespace ECS
             auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
             return Transform(TransformComponent.Position, TransformComponent.Direction, TransformComponent.Up, TransformComponent.Scale);
         }
-
-        void FTransformSystem::RequestAllUpdate()
-        {
-            for(int i = 0; i < NumberOfSimultaneousSubmits; ++i)
-            {
-                BufferPartThatNeedsUpdate[i] = true;
-            }
-        }
-
-        void FTransformSystem::RequestUpdate(int FrameIndex)
-        {
-            BufferPartThatNeedsUpdate[FrameIndex] = true;
-        }
-
     }
 }
