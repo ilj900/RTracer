@@ -174,7 +174,7 @@ void FRaytraceTask::UpdateDescriptorSets()
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, CAMERA_LAYOUT_INDEX, i, CameraBufferInfo);
 
         VkDescriptorBufferInfo RenderableBufferInfo{};
-        RenderableBufferInfo.buffer = RENDERABLE_SYSTEM()->DeviceRenderableBuffer.Buffer;
+        RenderableBufferInfo.buffer = RENDERABLE_SYSTEM()->DeviceBuffer.Buffer;
         RenderableBufferInfo.offset = 0;
         RenderableBufferInfo.range = RENDERABLE_SYSTEM()->GetTotalSize();
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, RENDERABLE_BUFFER_INDEX, i, RenderableBufferInfo);

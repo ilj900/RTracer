@@ -23,7 +23,7 @@ namespace ECS
 
             int GetTotalSize();
 
-            const uint32_t MAX_MATERIALS = 100;
+            const uint32_t MAX_MATERIALS = 256;
         };
     }
 }

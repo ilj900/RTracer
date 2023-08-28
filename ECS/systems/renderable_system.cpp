@@ -13,40 +13,18 @@ namespace ECS
     {
         void FRenderableSystem::Init(int NumberOfSimultaneousSubmits)
         {
-            this->NumberOfSimultaneousSubmits = NumberOfSimultaneousSubmits;
-            auto& Coordinator = GetCoordinator();
-            auto& Context = GetContext();
-            auto DeviceRenderableComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceRenderableComponent>();
-            auto DeviceRenderableComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>();
-
-            VkDeviceSize RenderableBufferSize = DeviceRenderableComponentsSize * NumberOfSimultaneousSubmits;
-
-            DeviceRenderableBuffer = GetContext().CreateBuffer(RenderableBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Renderable_Buffer");
-
-            for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
-            {
-                Context.ResourceAllocator->LoadDataToBuffer(DeviceRenderableBuffer, {DeviceRenderableComponentsSize}, {DeviceRenderableComponentsSize * i}, {DeviceRenderableComponentsData});
-            }
-
-            BufferPartThatNeedsUpdate.resize(NumberOfSimultaneousSubmits);
+            FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(ECS::COMPONENTS::FDeviceRenderableComponent) * MAX_RENDERABLES,
+                                       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Light_Buffer");
         }
 
         void FRenderableSystem::Update()
         {
-            for (int i = 0; i < BufferPartThatNeedsUpdate.size(); ++i)
-            {
-                if (true == BufferPartThatNeedsUpdate[i])
-                {
-                    auto& Coordinator = GetCoordinator();
-                    auto& Context = GetContext();
-                    auto DeviceRenderableComponentsData = Coordinator.Data<ECS::COMPONENTS::FDeviceRenderableComponent>();
-                    auto DeviceRenderableComponentsSize = Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>();
+            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceRenderableComponent>();
+        }
 
-                    Context.ResourceAllocator->LoadDataToBuffer(DeviceRenderableBuffer, {DeviceRenderableComponentsSize}, {DeviceRenderableComponentsSize * i}, {DeviceRenderableComponentsData});
-
-                    BufferPartThatNeedsUpdate[i] = false;
-                }
-            }
+        void FRenderableSystem::Update(int Index)
+        {
+            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceRenderableComponent>(Index);
         }
 
         void FRenderableSystem::SetRenderableColor(FEntity Entity, float Red, float Green, float Blue)
@@ -117,25 +95,6 @@ namespace ECS
 
             RenderableComponent.VertexBufferAddress = VertexDeviceAddress;
             RenderableComponent.IndexBufferAddress = IndexDeviceAddress;
-        }
-
-        void FRenderableSystem::RequestAllUpdate()
-        {
-            for(int i = 0; i < NumberOfSimultaneousSubmits; ++i)
-            {
-                BufferPartThatNeedsUpdate[i] = true;
-            }
-        }
-
-        void FRenderableSystem::RequestUpdate(int FrameIndex)
-        {
-            BufferPartThatNeedsUpdate[FrameIndex] = true;
-        }
-
-        int FRenderableSystem::GetTotalSize()
-        {
-            auto& Coordinator = GetCoordinator();
-            return Coordinator.Size<ECS::COMPONENTS::FDeviceRenderableComponent>();
         }
     }
 }

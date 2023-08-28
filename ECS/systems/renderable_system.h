@@ -1,6 +1,6 @@
 #pragma once
 
-#include "system.h"
+#include "gpu_bufferable_system.h"
 #include "coordinator.h"
 
 #include "buffer.h"
@@ -9,11 +9,13 @@ namespace ECS
 {
     namespace SYSTEMS
     {
-        class FRenderableSystem : public FSystem
+        class FRenderableSystem : public FGPUBufferableSystem
         {
         public:
-            void Init(int NumberOfSimultaneousSubmits);
-            void Update();
+            void Init(int NumberOfSimultaneousSubmits) override;
+            void Update() override;
+            void Update(int Index) override;
+
             void SetRenderableColor(FEntity Entity, float Red, float Green, float Blue);
             void SetSelected(FEntity Entity);
             void SetSelectedByIndex(uint32_t Index);
@@ -22,17 +24,8 @@ namespace ECS
             void SetRenderableHasTexture(FEntity Entity);
             void SetNotIndex(FEntity Entity);
             void SetRenderableDeviceAddress(FEntity Entity, VkDeviceAddress VertexDeviceAddress, VkDeviceAddress IndexDeviceAddress);
-            void RequestAllUpdate();
-            void RequestUpdate(int FrameIndex);
 
-            int GetTotalSize();
-
-        public:
-            std::vector<bool> BufferPartThatNeedsUpdate;
-            int NumberOfSimultaneousSubmits = 2;
-            bool bIsDirty = false;
-
-            FBuffer DeviceRenderableBuffer;
+            const uint32_t MAX_RENDERABLES = 8192;
         };
     }
 }

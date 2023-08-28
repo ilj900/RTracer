@@ -28,7 +28,7 @@ namespace ECS
             FMatrix4 GetViewMatrix(FEntity CameraEntity);
             void Orthogonize(FEntity CameraEntity);
 
-            const uint32_t MAX_CAMERAS = 10;
+            const uint32_t MAX_CAMERAS = 8;
         };
     }
 }
