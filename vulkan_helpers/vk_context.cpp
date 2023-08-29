@@ -1446,7 +1446,6 @@ void FVulkanContext::CleanUp()
     GetResourceAllocator()->DestroyBuffer(MATERIAL_SYSTEM()->DeviceBuffer);
     GetResourceAllocator()->DestroyBuffer(LIGHT_SYSTEM()->DeviceBuffer);
 
-
     TextureImage = nullptr;
 
     DescriptorSetManager = nullptr;
