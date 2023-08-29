@@ -235,7 +235,7 @@ void FRaytraceTask::Cleanup()
 
     Context->DescriptorSetManager->Reset(Name);
 
-    Context->DestroyBuffer(SBTBuffer);
+    GetResourceAllocator()->DestroyBuffer(SBTBuffer);
 };
 
 VkSemaphore FRaytraceTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)

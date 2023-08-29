@@ -14,7 +14,7 @@ namespace ECS
         {
             this->NumberOfSimultaneousSubmits = NumberOfSimultaneousSubmits;
 
-            DeviceBuffer = GetContext().CreateBuffer(Size * NumberOfSimultaneousSubmits, BufferFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Buffer");
+            DeviceBuffer = GetResourceAllocator()->CreateBuffer(Size * NumberOfSimultaneousSubmits, BufferFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Device_Buffer");
             BufferPartThatNeedsUpdate.resize(NumberOfSimultaneousSubmits);
         }
 

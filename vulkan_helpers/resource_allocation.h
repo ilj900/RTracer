@@ -13,16 +13,26 @@ public:
     FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice Device, FVulkanContext* Context);
     ~FResourceAllocator();
 
-    FMemoryRegion AllocateMemory(VkDeviceSize Size, VkMemoryRequirements MemRequirements, VkMemoryPropertyFlags Properties, bool bDeviceAddressRequired = false);
-
     FBuffer CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, const std::string& DebugName = "");
     void DestroyBuffer(FBuffer& Buffer);
-    
+    FMemoryRegion AllocateMemory(VkDeviceSize Size, VkMemoryRequirements MemRequirements, VkMemoryPropertyFlags Properties, bool bDeviceAddressRequired = false);
+
     FBuffer LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDeviceSize> Sizes, std::vector<VkDeviceSize> Offsets, std::vector<void*> Datas);
     void LoadDataFromBuffer(FBuffer& Buffer, VkDeviceSize Size, VkDeviceSize Offset, void* Data);
     void LoadDataToStagingBuffer(std::vector<VkDeviceSize> Sizes, std::vector<void*> Datas);
     void LoadDataFromStagingBuffer(VkDeviceSize Size, void* Data, VkDeviceSize Offset);
     void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, std::vector<VkDeviceSize> Sizes, std::vector<VkDeviceSize> SourceOffsets, std::vector<VkDeviceSize> DestinationOffsets);
+    template <typename T>
+    std::vector<T> DebugGetDataFromBuffer(FBuffer& SrcBuffer, int Size, int Offset)
+    {
+        std::vector<T> Result;
+        Result.resize(Size / sizeof(T));
+
+        CopyBuffer(SrcBuffer, StagingBuffer, {(VkDeviceSize)Size}, {(VkDeviceSize)Offset}, {0});
+        LoadDataFromStagingBuffer(Size, Result.data(), 0);
+
+        return Result;
+    };
 
     void* Map(FBuffer& Buffer);
     void Unmap(FBuffer& Buffer);

@@ -92,21 +92,6 @@ public:
     void SetWindow(GLFWwindow* WindowIn);
     GLFWwindow* GetWindow() const;
 
-    FBuffer CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, const std::string& DebugName = "") const;
-    void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset) const;
-    void DestroyBuffer(FBuffer& Buffer) const;
-    template <typename T>
-    std::vector<T> DebugGetDataFromBuffer(FBuffer& SrcBuffer, int Size, int Offset)
-    {
-        std::vector<T> Result;
-        Result.resize(Size / sizeof(T));
-
-        CopyBuffer(SrcBuffer, ResourceAllocator->StagingBuffer, Size, Offset, 0);
-        ResourceAllocator->LoadDataFromStagingBuffer(Size, Result.data(), 0);
-
-        return Result;
-    };
-
     FAccelerationStructure CreateAccelerationStructure(VkDeviceSize Size, VkAccelerationStructureTypeKHR Type, const std::string& DebugName = "");
     void DestroyAccelerationStructure(FAccelerationStructure &AccelerationStructure);
     VkDeviceAddress GetBufferDeviceAddressInfo(FBuffer& Buffer);
@@ -191,3 +176,4 @@ public:
 };
 
 FVulkanContext& GetContext();
+std::shared_ptr<FResourceAllocator> GetResourceAllocator();

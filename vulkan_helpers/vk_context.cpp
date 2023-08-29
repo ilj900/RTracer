@@ -31,6 +31,11 @@ FVulkanContext& GetContext()
     return Context;
 }
 
+std::shared_ptr<FResourceAllocator> GetResourceAllocator()
+{
+    return Context.ResourceAllocator;
+}
+
 VKAPI_ATTR VkBool32 VKAPI_CALL FVulkanContext::DebugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT MessageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT MessageType,
@@ -448,21 +453,6 @@ uint32_t FVulkanContext::GetPresentIndex() const
     return PresentQueue.QueueIndex;
 }
 
-FBuffer FVulkanContext::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, const std::string& DebugName) const
-{
-    return ResourceAllocator->CreateBuffer(Size, Usage, Properties, DebugName);
-}
-
-void FVulkanContext::CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, VkDeviceSize Size, VkDeviceSize SourceOffset, VkDeviceSize DestinationOffset) const
-{
-    return ResourceAllocator->CopyBuffer(SrcBuffer, DstBuffer, {Size}, {SourceOffset}, {DestinationOffset});
-}
-
-void FVulkanContext::DestroyBuffer(FBuffer& Buffer) const
-{
-    ResourceAllocator->DestroyBuffer(Buffer);
-}
-
 FAccelerationStructure FVulkanContext::CreateAccelerationStructure(VkDeviceSize Size, VkAccelerationStructureTypeKHR Type, const std::string& DebugName)
 {
     FAccelerationStructure AccelerationStructure;
@@ -624,7 +614,7 @@ FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuff
     });
 
     DestroyAccelerationStructure(NotCompactedBLAS);
-    DestroyBuffer(ScratchBuffer);
+    GetResourceAllocator()->DestroyBuffer(ScratchBuffer);
 
     std::cout << "Delta in size: " << AccelerationStructureBuildSizesInfo.accelerationStructureSize - CompactedSize
               << ", not compacted size is: "<< AccelerationStructureBuildSizesInfo.accelerationStructureSize<< ", compacted: " << CompactedSize << "." << std::endl;
@@ -832,7 +822,7 @@ void FVulkanContext::FetchImageData(const FImage& Image, std::vector<T>& Data)
 
     auto& Context = GetContext();
     uint32_t Size = Image.Height * Image.Width * NumberOfComponents * sizeof(T);
-    FBuffer Buffer = Context.CreateBuffer(Size, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Tmp_Save_Image_Buffer");
+    FBuffer Buffer = GetResourceAllocator()->CreateBuffer(Size, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Tmp_Save_Image_Buffer");
     Context.ResourceAllocator->CopyImageToBuffer(Image, Buffer);
 
     Data.resize(Size);
@@ -842,7 +832,7 @@ void FVulkanContext::FetchImageData(const FImage& Image, std::vector<T>& Data)
     memcpy(Data.data(), BufferData, (std::size_t)Buffer.BufferSize);
     vkUnmapMemory(Context.LogicalDevice, Buffer.MemoryRegion.Memory);
 
-    Context.DestroyBuffer(Buffer);
+    GetResourceAllocator()->DestroyBuffer(Buffer);
 }
 
 template void FVulkanContext::FetchImageData<uint32_t>(const FImage& Image, std::vector<uint32_t>& Data);
@@ -1448,13 +1438,13 @@ void FVulkanContext::DestroyDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT& Deb
 void FVulkanContext::CleanUp()
 {
     /// Free all device buffers
-    DestroyBuffer(TRANSFORM_SYSTEM()->DeviceBuffer);
-    DestroyBuffer(CAMERA_SYSTEM()->DeviceBuffer);
-    DestroyBuffer(RENDERABLE_SYSTEM()->DeviceBuffer);
-    DestroyBuffer(MESH_SYSTEM()->VertexBuffer);
-    DestroyBuffer(MESH_SYSTEM()->IndexBuffer);
-    DestroyBuffer(MATERIAL_SYSTEM()->DeviceBuffer);
-    DestroyBuffer(LIGHT_SYSTEM()->DeviceBuffer);
+    GetResourceAllocator()->DestroyBuffer(TRANSFORM_SYSTEM()->DeviceBuffer);
+    GetResourceAllocator()->DestroyBuffer(CAMERA_SYSTEM()->DeviceBuffer);
+    GetResourceAllocator()->DestroyBuffer(RENDERABLE_SYSTEM()->DeviceBuffer);
+    GetResourceAllocator()->DestroyBuffer(MESH_SYSTEM()->VertexBuffer);
+    GetResourceAllocator()->DestroyBuffer(MESH_SYSTEM()->IndexBuffer);
+    GetResourceAllocator()->DestroyBuffer(MATERIAL_SYSTEM()->DeviceBuffer);
+    GetResourceAllocator()->DestroyBuffer(LIGHT_SYSTEM()->DeviceBuffer);
 
 
     TextureImage = nullptr;
