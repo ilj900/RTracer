@@ -93,7 +93,7 @@ namespace ECS
             return LookAt(CameraComponent.Position, CameraComponent.Position + CameraComponent.Direction, CameraComponent.Up);
         }
 
-        void FCameraSystem::Orthogonize(FEntity CameraEntity)
+        void FCameraSystem::Orthogonalize(FEntity CameraEntity)
         {
             auto& CameraComponent = GetComponent<ECS::COMPONENTS::FCameraComponent>(CameraEntity);
             CameraComponent.Direction = CameraComponent.Direction.GetNormalized();

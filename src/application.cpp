@@ -1,8 +1,5 @@
 #pragma once
 
-#include "GLFW/glfw3.h"
-#include "vk_context.h"
-
 #include <chrono>
 
 #include "coordinator.h"
@@ -66,7 +63,7 @@ FApplication::FApplication()
 
     /// Register Material components and system
     Coordinator.RegisterComponent<ECS::COMPONENTS::FMaterialComponent>();
-    auto MateriaSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FMaterialSystem>();
+    auto MaterialSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FMaterialSystem>();
 
     ECS::FSignature MaterialSignature;
     MaterialSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FMaterialComponent>());
@@ -116,7 +113,7 @@ int FApplication::Run()
 
         Controller->Update(Time);
         i = Render->Update();
-        i = Render->Render();
+        i += Render->Render();
     }
 
     return 0;

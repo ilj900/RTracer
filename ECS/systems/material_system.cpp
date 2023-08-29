@@ -32,24 +32,5 @@ namespace ECS
             MaterialComponent.BaseAlbedo = FVector3(Red, Green, Blue);
             return *this;
         }
-
-        void FMaterialSystem::RequestAllUpdate()
-        {
-            for(int i = 0; i < NumberOfSimultaneousSubmits; ++i)
-            {
-                BufferPartThatNeedsUpdate[i] = true;
-            }
-        }
-
-        void FMaterialSystem::RequestUpdate(int FrameIndex)
-        {
-            BufferPartThatNeedsUpdate[FrameIndex] = true;
-        }
-
-        int FMaterialSystem::GetTotalSize()
-        {
-            auto& Coordinator = GetCoordinator();
-            return Coordinator.Size<ECS::COMPONENTS::FMaterialComponent>();
-        }
     }
 }

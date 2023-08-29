@@ -18,11 +18,6 @@ namespace ECS
 
             FMaterialSystem& SetBaseAlbedo(FEntity MaterialEntity, float Red, float Green, float Blue);
 
-            void RequestAllUpdate();
-            void RequestUpdate(int FrameIndex);
-
-            int GetTotalSize();
-
             const uint32_t MAX_MATERIALS = 256;
         };
     }
