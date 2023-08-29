@@ -190,21 +190,6 @@ void FResourceAllocator::LoadDataFromBuffer(FBuffer& Buffer, VkDeviceSize Size, 
     }
 }
 
-void FResourceAllocator::LoadDataToStagingBuffer(VkDeviceSize Size, void* Data, VkDeviceSize Offset)
-{
-    if (Offset + Size <= StagingBufferSize)
-    {
-        void *StagingData;
-        vkMapMemory(Device, StagingBuffer.MemoryRegion.Memory, Offset, Size, 0, &StagingData);
-        memcpy(StagingData, Data, (std::size_t) Size);
-        vkUnmapMemory(Device, StagingBuffer.MemoryRegion.Memory);
-
-        return;
-    }
-
-    assert("Not enough memory in staging buffer");
-}
-
 void FResourceAllocator::LoadDataToStagingBuffer(std::vector<VkDeviceSize> Sizes, std::vector<void*> Datas)
 {
     VkDeviceSize TotalSize = 0;
@@ -249,7 +234,7 @@ void FResourceAllocator::LoadDataFromStagingBuffer(VkDeviceSize Size, void* Data
 
 FMemoryRegion FResourceAllocator::LoadDataToImage(FImage& Image, VkDeviceSize Size, void* Data)
 {
-    LoadDataToStagingBuffer(Size, Data, 0);
+    LoadDataToStagingBuffer({Size}, {Data});
 
     CopyBufferToImage(StagingBuffer, Image);
 

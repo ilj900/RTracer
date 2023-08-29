@@ -16,12 +16,14 @@ public:
     FMemoryRegion AllocateMemory(VkDeviceSize Size, VkMemoryRequirements MemRequirements, VkMemoryPropertyFlags Properties, bool bDeviceAddressRequired = false);
 
     FBuffer CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, const std::string& DebugName = "");
+    void DestroyBuffer(FBuffer& Buffer);
+    
     FBuffer LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDeviceSize> Sizes, std::vector<VkDeviceSize> Offsets, std::vector<void*> Datas);
     void LoadDataFromBuffer(FBuffer& Buffer, VkDeviceSize Size, VkDeviceSize Offset, void* Data);
-    void LoadDataToStagingBuffer(VkDeviceSize Size, void* Data, VkDeviceSize Offset);
     void LoadDataToStagingBuffer(std::vector<VkDeviceSize> Sizes, std::vector<void*> Datas);
     void LoadDataFromStagingBuffer(VkDeviceSize Size, void* Data, VkDeviceSize Offset);
     void CopyBuffer(FBuffer &SrcBuffer, FBuffer &DstBuffer, std::vector<VkDeviceSize> Sizes, std::vector<VkDeviceSize> SourceOffsets, std::vector<VkDeviceSize> DestinationOffsets);
+
     void* Map(FBuffer& Buffer);
     void Unmap(FBuffer& Buffer);
 
@@ -29,7 +31,6 @@ public:
     void CopyBufferToImage(FBuffer& SrcBuffer, FImage& DstImage);
     void CopyImageToBuffer(const FImage& SrcImage, FBuffer& DstBuffer);
     void GetImageData(FImage& SrcImage, void* Data);
-    void DestroyBuffer(FBuffer& Buffer);
 
     uint32_t FindMemoryType(uint32_t TypeFilter, VkMemoryPropertyFlags Properties);
 
