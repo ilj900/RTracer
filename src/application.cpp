@@ -87,8 +87,8 @@ FApplication::FApplication()
     LightSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FLightComponent>());
     Coordinator.SetSystemSignature<ECS::SYSTEMS::FLightSystem>(LightSignature);
 
-    Controller = std::make_shared<FController>();
     Render = std::make_shared<FRender>();
+    Controller = std::make_shared<FController>();
 
     Controller->SetWindow(Render->Window);
     Controller->SetRender(Render);

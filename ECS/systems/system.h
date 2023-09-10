@@ -17,13 +17,16 @@ namespace ECS
             std::set<FEntity>::iterator begin();
             std::set<FEntity>::iterator end();
 
-        template<typename T>
-        T& GetComponent(FEntity Entity)
-        {
-            assert(Entities.find(Entity) != Entities.end() && "Entity doesn't have required component");
-            T& Component = GetComponentManager()->GetComponent<T>(Entity);
-            return Component;
-        };
+            virtual void RegisterEntity(FEntity Entity);
+            virtual void UnregisterEntity(FEntity Entity);
+
+            template<typename T>
+            T& GetComponent(FEntity Entity)
+            {
+                assert(Entities.find(Entity) != Entities.end() && "Entity doesn't have required component");
+                T& Component = GetComponentManager()->GetComponent<T>(Entity);
+                return Component;
+            };
 
         public:
             std::set<FEntity> Entities;

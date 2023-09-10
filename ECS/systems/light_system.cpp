@@ -32,6 +32,11 @@ namespace ECS
             auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(LightEntity);
             LightComponent.Position = FVector3(X, Y, Z);
 
+            for (auto& Entry : EntitiesToUpdate)
+            {
+                Entry.insert(LightEntity);
+            }
+
             return *this;
         }
 

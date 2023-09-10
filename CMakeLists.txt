@@ -76,8 +76,6 @@ set(SOURCE
         src/controller.cpp
         src/executable_task.h
         src/executable_task.cpp
-        src/task_render.h
-        src/task_render.cpp
         src/task_passthrough.h
         src/task_passthrough.cpp
         src/task_imgui.h

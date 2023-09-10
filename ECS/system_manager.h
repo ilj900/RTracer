@@ -48,7 +48,7 @@ namespace ECS
             for (auto const& Pair : Systems)
             {
                 auto const& System = Pair.second;
-                System->Entities.erase(Entity);
+                System->UnregisterEntity(Entity);
             }
         }
 
@@ -62,11 +62,11 @@ namespace ECS
 
                 if ((EntitySignature & SystemSignature) == SystemSignature)
                 {
-                    System->Entities.insert(Entity);
+                    System->RegisterEntity(Entity);
                 }
                 else
                 {
-                    System->Entities.erase(Entity);
+                    System->UnregisterEntity(Entity);
                 }
             }
         }

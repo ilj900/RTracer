@@ -32,8 +32,6 @@ FRender::FRender()
     glfwSetWindowPos(Window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
     glfwSetCursorPos(Window, 0.f, 0.f);
 
-    LoadScene("");
-
     auto& Context = GetContext();
 
     Context.SetWindow(Window);
@@ -119,12 +117,12 @@ FRender::FRender()
 
     Context.InitManagerResources();
     CAMERA_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
-    TRANSFORM_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     RENDERABLE_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     MESH_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     MATERIAL_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     LIGHT_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
 
+    LoadScene("");
     LoadDataToGPU();
 
     ImGuiFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -231,11 +229,7 @@ int FRender::Init()
 
     RenderFrameIndex = 0;
 
-    CAMERA_SYSTEM()->RequestAllUpdate();
-    TRANSFORM_SYSTEM()->RequestAllUpdate();
-    RENDERABLE_SYSTEM()->RequestAllUpdate();
-    MATERIAL_SYSTEM()->RequestAllUpdate();
-    LIGHT_SYSTEM()->RequestAllUpdate();
+    TRANSFORM_SYSTEM()->Update();
 
     return 0;
 }
@@ -370,7 +364,6 @@ int FRender::Update()
     auto LightComponent = Coordinator.GetComponent<ECS::COMPONENTS::FLightComponent>(Lights.back());
     LightComponent.Position.SelfRotateY(0.025f);
     LIGHT_SYSTEM()->SetLightPosition(Lights.back(), LightComponent.Position.X, LightComponent.Position.Y, LightComponent.Position.Z);
-    LIGHT_SYSTEM()->RequestAllUpdate();
 
     if (bShouldRecreateSwapchain)
     {
@@ -430,7 +423,7 @@ ECS::FEntity FRender::AddCube(const FVector3& Color, const FVector3& Position)
     MESH_SYSTEM()->CreateHexahedron(NewModel);
     TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
     RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
-    TRANSFORM_SYSTEM()->UpdateDeviceComponentData(NewModel);
+    TRANSFORM_SYSTEM()->Update(NewModel);
 
     return NewModel;
 }
@@ -442,7 +435,7 @@ ECS::FEntity FRender::AddSphere(const FVector3& Color, const FVector3& Position,
     MESH_SYSTEM()->CreateIcosahedron(NewModel, LevelOfComplexity);
     TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
     RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
-    TRANSFORM_SYSTEM()->UpdateDeviceComponentData(NewModel);
+    TRANSFORM_SYSTEM()->Update(NewModel);
 
     return NewModel;
 }
@@ -456,7 +449,7 @@ ECS::FEntity FRender::AddModel(const FVector3& Color, const FVector3& Position, 
     RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
     RENDERABLE_SYSTEM()->SetIndexed(NewModel);
     RENDERABLE_SYSTEM()->SetRenderableHasTexture(NewModel);
-    TRANSFORM_SYSTEM()->UpdateDeviceComponentData(NewModel);
+    TRANSFORM_SYSTEM()->Update(NewModel);
 
     return NewModel;
 }
@@ -468,7 +461,7 @@ ECS::FEntity FRender::AddPyramid(const FVector3& Color, const FVector3& Position
     MESH_SYSTEM()->CreateTetrahedron(NewModel);
     TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
     RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
-    TRANSFORM_SYSTEM()->UpdateDeviceComponentData(NewModel);
+    TRANSFORM_SYSTEM()->Update(NewModel);
 
     return NewModel;
 }

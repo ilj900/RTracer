@@ -14,7 +14,7 @@ namespace ECS
         void FRenderableSystem::Init(int NumberOfSimultaneousSubmits)
         {
             FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(ECS::COMPONENTS::FDeviceRenderableComponent) * MAX_RENDERABLES,
-                                       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Light_Buffer");
+                                       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Renderable_Buffer");
         }
 
         void FRenderableSystem::Update()

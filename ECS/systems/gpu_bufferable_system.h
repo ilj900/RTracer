@@ -23,6 +23,9 @@ namespace ECS
             virtual void Update() = 0;
             virtual void Update(int Index) = 0;
 
+            virtual void RegisterEntity(FEntity Entity) override;
+            virtual void UnregisterEntity(FEntity Entity) override;
+
             template<typename T>
             void UpdateTemplate()
             {
@@ -30,15 +33,27 @@ namespace ECS
                 {
                     if (BufferPartThatNeedsUpdate[i])
                     {
+                        std::vector<VkDeviceSize> Sizes;
+                        std::vector<VkDeviceSize> Offsets;
+                        std::vector<void*> Data;
+
                         auto& Coordinator = GetCoordinator();
-                        auto& Context = GetContext();
-                        auto DeviceComponentsData = Coordinator.Data<T>();
                         auto DeviceComponentsSize = Coordinator.Size<T>();
 
-                        Context.ResourceAllocator->LoadDataToBuffer(DeviceBuffer, {DeviceComponentsSize}, {DeviceComponentsSize * i}, {DeviceComponentsData});
+                        for (auto Entity : EntitiesToUpdate[i])
+                        {
+                            Sizes.push_back(sizeof(T));
+                            Offsets.push_back(Coordinator.GetOffset<T>(Entity) + (DeviceComponentsSize * i));
+                            Data.push_back(Coordinator.Data<T>(Entity));
+                        }
+
+                        auto& Context = GetContext();
+                        Context.ResourceAllocator->LoadDataToBuffer(DeviceBuffer, Sizes, Offsets, Data);
 
                         BufferPartThatNeedsUpdate[i] = false;
                     }
+
+                    EntitiesToUpdate[i].clear();
                 }
             }
 
@@ -47,15 +62,27 @@ namespace ECS
             {
                 if (BufferPartThatNeedsUpdate[Index])
                 {
+                    std::vector<VkDeviceSize> Sizes;
+                    std::vector<VkDeviceSize> Offsets;
+                    std::vector<void*> Data;
+
                     auto& Coordinator = GetCoordinator();
-                    auto& Context = GetContext();
-                    auto DeviceComponentsData = Coordinator.Data<T>();
                     auto DeviceComponentsSize = Coordinator.Size<T>();
 
-                    Context.ResourceAllocator->LoadDataToBuffer(DeviceBuffer, {DeviceComponentsSize}, {DeviceComponentsSize * Index}, {DeviceComponentsData});
+                    for (auto Entity : EntitiesToUpdate[Index])
+                    {
+                        Sizes.push_back(sizeof(T));
+                        Offsets.push_back(Coordinator.GetOffset<T>(Entity) + (DeviceComponentsSize * Index));
+                        Data.push_back(Coordinator.Data<T>(Entity));
+                    }
+
+                    auto& Context = GetContext();
+                    Context.ResourceAllocator->LoadDataToBuffer(DeviceBuffer, Sizes, Offsets, Data);
 
                     BufferPartThatNeedsUpdate[Index] = false;
                 }
+
+                EntitiesToUpdate[Index].clear();
             }
 
         public:
@@ -66,7 +93,7 @@ namespace ECS
             bool bIsDirty = false;
 
             FBuffer DeviceBuffer;
-            std::vector<FEntity> EntitiesToUpdate;
+            std::vector<std::unordered_set<FEntity>> EntitiesToUpdate;
         };
     }
 }

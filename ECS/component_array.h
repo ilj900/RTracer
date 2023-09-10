@@ -45,15 +45,29 @@ namespace ECS {
         }
 
         /// Get data of a single entity
-        T& GetData(FEntity Entity) {
+        T& GetData(FEntity Entity)
+        {
             assert(EntityToIndexMap.find(Entity) != EntityToIndexMap.end() && "Entity doesn't have such component!");
 
             return ComponentArray[EntityToIndexMap[Entity]];
         }
 
+        /// Get the offset for the stored entity's component.
+        uint32_t GetOffset(FEntity Entity)
+        {
+            assert(EntityToIndexMap.find(Entity) != EntityToIndexMap.end() && "Entity doesn't have such component!");
+
+            return EntityToIndexMap[Entity] * sizeof(T);
+        }
+
         /// Get all data from the component array (Needed when we upload this data to GPU)
         T* Data() {
             return ComponentArray.data();
+        }
+
+        void* Data(FEntity Entity)
+        {
+            return ComponentArray.data() + EntityToIndexMap[Entity] * sizeof(T);
         }
 
         /// Get the total size of component's array

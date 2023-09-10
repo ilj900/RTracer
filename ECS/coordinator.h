@@ -70,6 +70,12 @@ namespace ECS
         }
 
         template<typename T>
+        uint32_t GetOffset(FEntity Entity)
+        {
+            return ComponentManager->GetOffset<T>(Entity);
+        }
+
+        template<typename T>
         FComponentType GetComponentType()
         {
             return ComponentManager->GetComponentType<T>();
@@ -99,6 +105,12 @@ namespace ECS
         T* Data()
         {
             return ComponentManager->Data<T>();
+        }
+
+        template<typename T>
+        void* Data(FEntity Entity)
+        {
+            return ComponentManager->Data<T>(Entity);
         }
 
         /// Returns a size of a ComponentArray's data

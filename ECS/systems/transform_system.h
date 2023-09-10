@@ -7,19 +7,18 @@
 
 #include "maths.h"
 
+#include <unordered_set>
+
 namespace ECS
 {
     namespace SYSTEMS
     {
-        class FTransformSystem : public FGPUBufferableSystem
+        class FTransformSystem : public FSystem
         {
         public:
-            void Init(int NumberOfSimultaneousSubmits) override;
-            void Update() override;
-            void Update(int Index) override;
+            void Update();
+            void Update(FEntity Entity);
 
-            void UpdateAllDeviceComponentsData();
-            void UpdateDeviceComponentData(FEntity Entity);
             void MoveForward(FEntity Entity, float Value);
             void MoveRight(FEntity Entity, float Value);
             void SetTransform(FEntity Entity, const FVector3& Position, const FVector3& Direction, const FVector3& Up);
@@ -32,6 +31,7 @@ namespace ECS
             FMatrix4 GetModelMatrix(FEntity Entity);
 
             const uint32_t MAX_TRANSFORMS = 8192;
+            std::unordered_set<FEntity> EntitiesToUpdate;
         };
     }
 }
