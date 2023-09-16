@@ -16,7 +16,6 @@ namespace ECS
             void Update() override;
             void Update(int Index) override;
 
-            void UpdateDeviceComponentData(FEntity CameraEntity);
             void MoveCameraForward(FEntity CameraEntity, float Value);
             void MoveCameraRight(FEntity CameraEntity, float Value);
             void MoveCameraUpward(FEntity CameraEntity, float Value);

@@ -19,27 +19,43 @@ namespace ECS
 
         void FCameraSystem::Update()
         {
+            for (auto& Entry : EntitiesToUpdate)
+            {
+                for (auto Entity : Entry)
+                {
+                    auto& Coordinator = GetCoordinator();
+                    auto& DeviceCameraComponent = Coordinator.GetComponent<COMPONENTS::FDeviceCameraComponent>(Entity);
+                    auto& CameraComponent = Coordinator.GetComponent<COMPONENTS::FCameraComponent>(Entity);
+                    DeviceCameraComponent.ViewMatrix = LookAt(CameraComponent.Position, CameraComponent.Position + CameraComponent.Direction, CameraComponent.Up);
+                    DeviceCameraComponent.ProjectionMatrix = GetPerspective(CameraComponent.FOV / 90.f, CameraComponent.Ratio, CameraComponent.ZNear, CameraComponent.ZFar);
+                }
+            }
+
             FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceCameraComponent>();
         }
 
         void FCameraSystem::Update(int Index)
         {
-            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceCameraComponent>(Index);
-        }
+            for (auto& Entry : EntitiesToUpdate)
+            {
+                for (auto Entity : Entry)
+                {
+                    auto& Coordinator = GetCoordinator();
+                    auto& DeviceCameraComponent = Coordinator.GetComponent<COMPONENTS::FDeviceCameraComponent>(Entity);
+                    auto& CameraComponent = Coordinator.GetComponent<COMPONENTS::FCameraComponent>(Entity);
+                    DeviceCameraComponent.ViewMatrix = LookAt(CameraComponent.Position, CameraComponent.Position + CameraComponent.Direction, CameraComponent.Up);
+                    DeviceCameraComponent.ProjectionMatrix = GetPerspective(CameraComponent.FOV / 90.f, CameraComponent.Ratio, CameraComponent.ZNear, CameraComponent.ZFar);
+                }
+            }
 
-        void FCameraSystem::UpdateDeviceComponentData(FEntity CameraEntity)
-        {
-            auto& Coordinator = GetCoordinator();
-            auto& DeviceCameraComponent = Coordinator.GetComponent<COMPONENTS::FDeviceCameraComponent>(CameraEntity);
-            auto& CameraComponent = Coordinator.GetComponent<COMPONENTS::FCameraComponent>(CameraEntity);
-            DeviceCameraComponent.ViewMatrix = LookAt(CameraComponent.Position, CameraComponent.Position + CameraComponent.Direction, CameraComponent.Up);
-            DeviceCameraComponent.ProjectionMatrix = GetPerspective(CameraComponent.FOV / 90.f, CameraComponent.Ratio, CameraComponent.ZNear, CameraComponent.ZFar);
+            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceCameraComponent>(Index);
         }
 
         void FCameraSystem::MoveCameraForward(FEntity CameraEntity, float Value)
         {
             auto& CameraComponent = GetComponent<ECS::COMPONENTS::FCameraComponent>(CameraEntity);
             CameraComponent.Position += CameraComponent.Direction * Value;
+            MarkDirty(CameraEntity);
         }
 
 
@@ -47,12 +63,14 @@ namespace ECS
         {
             auto& CameraComponent = GetComponent<ECS::COMPONENTS::FCameraComponent>(CameraEntity);
             CameraComponent.Position += Cross(CameraComponent.Direction, CameraComponent.Up) * Value;
+            MarkDirty(CameraEntity);
         }
 
         void FCameraSystem::MoveCameraUpward(FEntity CameraEntity, float Value)
         {
             auto& CameraComponent = GetComponent<ECS::COMPONENTS::FCameraComponent>(CameraEntity);
             CameraComponent.Position += CameraComponent.Up * Value;
+            MarkDirty(CameraEntity);
         }
 
         void FCameraSystem::LookUp(FEntity CameraEntity, float Value)
@@ -61,24 +79,28 @@ namespace ECS
             auto RotationAxis = Cross(CameraComponent.Direction, CameraComponent.Up);
             CameraComponent.Direction = CameraComponent.Direction.Rotate(Value, RotationAxis);
             CameraComponent.Up = CameraComponent.Up.Rotate(Value, RotationAxis);
+            MarkDirty(CameraEntity);
         }
 
         void FCameraSystem::LookRight(FEntity CameraEntity, float Value)
         {
             auto& CameraComponent = GetComponent<ECS::COMPONENTS::FCameraComponent>(CameraEntity);
             CameraComponent.Direction = CameraComponent.Direction.Rotate(Value, CameraComponent.Up);
+            MarkDirty(CameraEntity);
         }
 
         void FCameraSystem::Roll(FEntity CameraEntity, float Value)
         {
             auto& CameraComponent = GetComponent<ECS::COMPONENTS::FCameraComponent>(CameraEntity);
             CameraComponent.Up = CameraComponent.Up.Rotate(Value, CameraComponent.Direction);
+            MarkDirty(CameraEntity);
         }
 
         void FCameraSystem::SetAspectRatio(FEntity CameraEntity, float AspectRatio)
         {
             auto& CameraComponent = GetComponent<ECS::COMPONENTS::FCameraComponent>(CameraEntity);
             CameraComponent.Ratio = AspectRatio;
+            MarkDirty(CameraEntity);
         }
 
         FMatrix4 FCameraSystem::GetProjectionMatrix(FEntity CameraEntity)
@@ -100,6 +122,7 @@ namespace ECS
             CameraComponent.Up = CameraComponent.Up.GetNormalized();
             auto Right = Cross(CameraComponent.Direction, CameraComponent.Up);
             CameraComponent.Up = Cross(Right, CameraComponent.Direction);
+            MarkDirty(CameraEntity);
         }
     }
 }

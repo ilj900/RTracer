@@ -229,8 +229,6 @@ int FRender::Init()
 
     RenderFrameIndex = 0;
 
-    TRANSFORM_SYSTEM()->Update();
-
     return 0;
 }
 

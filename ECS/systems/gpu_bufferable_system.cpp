@@ -34,17 +34,12 @@ namespace ECS
             EntitiesToUpdate.resize(NumberOfSimultaneousSubmits);
         }
 
-        void FGPUBufferableSystem::RequestAllUpdate()
+        void FGPUBufferableSystem::MarkDirty(FEntity Entity)
         {
-            for(int i = 0; i < NumberOfSimultaneousSubmits; ++i)
+            for (auto& Entry : EntitiesToUpdate)
             {
-                BufferPartThatNeedsUpdate[i] = true;
+                Entry.insert(Entity);
             }
-        }
-
-        void FGPUBufferableSystem::RequestUpdate(int FrameIndex)
-        {
-            BufferPartThatNeedsUpdate[FrameIndex] = true;
         }
 
         int FGPUBufferableSystem::GetTotalSize()

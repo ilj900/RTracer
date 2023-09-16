@@ -17,8 +17,7 @@ namespace ECS
         {
         public:
             virtual void Init(int NumberOfSimultaneousSubmits) = 0;
-            void RequestAllUpdate();
-            void RequestUpdate(int FrameIndex);
+            void MarkDirty(FEntity Entity);
             int GetTotalSize();
             virtual void Update() = 0;
             virtual void Update(int Index) = 0;

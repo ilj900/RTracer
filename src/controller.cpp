@@ -16,7 +16,6 @@ FController::FController()
     Camera = Coordinator.CreateEntity();
     Coordinator.AddComponent<ECS::COMPONENTS::FCameraComponent>(Camera, ECS::COMPONENTS::FCameraComponent());
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera, {});
-    CAMERA_SYSTEM()->UpdateDeviceComponentData(Camera);
 }
 
 void FController::SetWindow(GLFWwindow* Window)
@@ -33,8 +32,6 @@ void FramebufferResizeCallback(GLFWwindow* Window, int Width, int Height) {
     auto Controller = static_cast<FController*>(glfwGetWindowUserPointer(Window));
     Controller->Render->SetSize(Width, Height);
     CAMERA_SYSTEM()->SetAspectRatio(Controller->Camera, float(Width) / float(Height));
-    CAMERA_SYSTEM()->UpdateDeviceComponentData(Controller->Camera);
-    CAMERA_SYSTEM()->RequestAllUpdate();
 }
 
 void FController::UpdateCallbacks()
@@ -186,6 +183,4 @@ void FController::Update(float Time)
             CAMERA_SYSTEM()->LookUp(Camera, float(-YDelta * Sensitivity));
         }
     }
-    CAMERA_SYSTEM()->UpdateDeviceComponentData(Camera);
-    CAMERA_SYSTEM()->RequestAllUpdate();
 }

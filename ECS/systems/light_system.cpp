@@ -31,11 +31,7 @@ namespace ECS
             auto& Coordinator = GetCoordinator();
             auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(LightEntity);
             LightComponent.Position = FVector3(X, Y, Z);
-
-            for (auto& Entry : EntitiesToUpdate)
-            {
-                Entry.insert(LightEntity);
-            }
+            MarkDirty(LightEntity);
 
             return *this;
         }
@@ -45,6 +41,7 @@ namespace ECS
             auto& Coordinator = GetCoordinator();
             auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(LightEntity);
             LightComponent.Position = Position;
+            MarkDirty(LightEntity);
 
             return *this;
         }
@@ -54,6 +51,7 @@ namespace ECS
             auto& Coordinator = GetCoordinator();
             auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(LightEntity);
             LightComponent.Direction = Direction;
+            MarkDirty(LightEntity);
 
             return *this;
         }
@@ -63,6 +61,7 @@ namespace ECS
             auto& Coordinator = GetCoordinator();
             auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(LightEntity);
             LightComponent.Color = Color;
+            MarkDirty(LightEntity);
 
             return *this;
         }
@@ -72,6 +71,7 @@ namespace ECS
             auto& Coordinator = GetCoordinator();
             auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(LightEntity);
             LightComponent.Intensity = Intensity;
+            MarkDirty(LightEntity);
 
             return *this;
         }
@@ -87,6 +87,7 @@ namespace ECS
             LightComponent.Position = Position;
             LightComponent.Color = Color;
             LightComponent.Intensity = Intensity;
+            MarkDirty(Light);
 
             return Light;
         }
@@ -102,6 +103,7 @@ namespace ECS
             LightComponent.Direction = Direction;
             LightComponent.Color = Color;
             LightComponent.Intensity = Intensity;
+            MarkDirty(Light);
 
             return Light;
         }
@@ -119,6 +121,7 @@ namespace ECS
             LightComponent.Intensity = Intensity;
             LightComponent.OuterAngle = OuterAngle;
             LightComponent.InnerAngle = InnerAngle;
+            MarkDirty(Light);
 
             return Light;
         }
