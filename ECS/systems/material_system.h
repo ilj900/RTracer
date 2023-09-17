@@ -17,8 +17,9 @@ namespace ECS
             void Update(int Index) override;
 
             FMaterialSystem& SetBaseAlbedo(FEntity MaterialEntity, float Red, float Green, float Blue);
+            FMaterialSystem& SetRefractionIOR(FEntity MaterialEntity, float IOR);
 
-            const uint32_t MAX_MATERIALS = 256;
+            const uint32_t MAX_MATERIALS = 32;
         };
     }
 }

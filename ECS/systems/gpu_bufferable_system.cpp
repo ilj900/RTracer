@@ -29,16 +29,17 @@ namespace ECS
         {
             this->NumberOfSimultaneousSubmits = NumberOfSimultaneousSubmits;
 
-            DeviceBuffer = GetResourceAllocator()->CreateBuffer(Size * NumberOfSimultaneousSubmits, BufferFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, Name);
+            DeviceBuffer = GetResourceAllocator()->CreateBuffer(Size * NumberOfSimultaneousSubmits, BufferFlags | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, Name);
             BufferPartThatNeedsUpdate.resize(NumberOfSimultaneousSubmits);
             EntitiesToUpdate.resize(NumberOfSimultaneousSubmits);
         }
 
         void FGPUBufferableSystem::MarkDirty(FEntity Entity)
         {
-            for (auto& Entry : EntitiesToUpdate)
+            for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
             {
-                Entry.insert(Entity);
+                EntitiesToUpdate[i].insert(Entity);
+                BufferPartThatNeedsUpdate[i] = true;
             }
         }
 

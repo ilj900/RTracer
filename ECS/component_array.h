@@ -67,7 +67,7 @@ namespace ECS {
 
         void* Data(FEntity Entity)
         {
-            return ComponentArray.data() + EntityToIndexMap[Entity] * sizeof(T);
+            return ComponentArray.data() + EntityToIndexMap[Entity];
         }
 
         /// Get the total size of component's array

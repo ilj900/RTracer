@@ -30,6 +30,15 @@ namespace ECS
         {
             auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
             MaterialComponent.BaseAlbedo = FVector3(Red, Green, Blue);
+            MarkDirty(MaterialEntity);
+            return *this;
+        }
+
+        FMaterialSystem& FMaterialSystem::SetRefractionIOR(FEntity MaterialEntity, float IOR)
+        {
+            auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+            MaterialComponent.RefractionIOR = IOR;
+            MarkDirty(MaterialEntity);
             return *this;
         }
     }

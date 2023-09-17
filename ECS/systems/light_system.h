@@ -28,7 +28,7 @@ namespace ECS
             FEntity CreateDirectionalLight(const FVector3& Direction, const FVector3& Color, float Intensity);
             FEntity CreateSpotLight(const FVector3& Position, const FVector3& Color, float Intensity, float OuterAngle, float InnerAngle);
 
-            const uint32_t MAX_LIGHTS = 256;
+            const uint32_t MAX_LIGHTS = 32;
         };
     }
 }

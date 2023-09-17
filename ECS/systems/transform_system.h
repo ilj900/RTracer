@@ -30,7 +30,7 @@ namespace ECS
             void Translate(FEntity Entity, float X, float Y, float Z);
             FMatrix4 GetModelMatrix(FEntity Entity);
 
-            const uint32_t MAX_TRANSFORMS = 8192;
+            const uint32_t MAX_TRANSFORMS = 32;
             std::unordered_set<FEntity> EntitiesToUpdate;
         };
     }
