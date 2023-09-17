@@ -13,10 +13,7 @@ namespace ECS
         void FGPUBufferableSystem::RegisterEntity(FEntity Entity)
         {
             FSystem::RegisterEntity(Entity);
-            for (auto& Entry : EntitiesToUpdate)
-            {
-                Entry.insert(Entity);
-            }
+            MarkDirty(Entity);
         }
 
         void FGPUBufferableSystem::UnregisterEntity(FEntity Entity)

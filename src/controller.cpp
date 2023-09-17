@@ -16,7 +16,6 @@ FController::FController()
     Camera = Coordinator.CreateEntity();
     Coordinator.AddComponent<ECS::COMPONENTS::FCameraComponent>(Camera, ECS::COMPONENTS::FCameraComponent());
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera, {});
-    CAMERA_SYSTEM()->MarkDirty(Camera);
 }
 
 void FController::SetWindow(GLFWwindow* Window)
