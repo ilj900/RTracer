@@ -30,7 +30,7 @@ namespace ECS
             {
                 for (int i = 0; i < BufferPartThatNeedsUpdate.size(); ++i)
                 {
-                    VkDeviceSize BaseOffset = i * GetTotalSize() / NumberOfSimultaneousSubmits;
+                    VkDeviceSize DeviceBufferBaseOffset = i * GetTotalSize() / NumberOfSimultaneousSubmits;
 
                     if (BufferPartThatNeedsUpdate[i])
                     {
@@ -39,12 +39,11 @@ namespace ECS
                         std::vector<void*> Data;
 
                         auto& Coordinator = GetCoordinator();
-                        auto DeviceComponentsSize = Coordinator.Size<T>();
 
                         for (auto Entity : EntitiesToUpdate[i])
                         {
                             Sizes.push_back(sizeof(T));
-                            Offsets.push_back(Coordinator.GetOffset<T>(Entity) + (BaseOffset));
+                            Offsets.push_back(Coordinator.GetOffset<T>(Entity) + DeviceBufferBaseOffset);
                             Data.push_back(Coordinator.Data<T>(Entity));
                         }
 
