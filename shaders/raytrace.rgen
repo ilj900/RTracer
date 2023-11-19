@@ -5,10 +5,10 @@
 struct HitPayload
 {
     vec3 Color;
-    vec2 IBLCoordinates;
+    vec3 Direction;
 };
 
-layout (location = 0) rayPayloadEXT HitPayload PRD;
+layout (location = 0) rayPayloadEXT HitPayload Hit;
 
 layout (set = 0, binding = 0) uniform accelerationStructureEXT TopLevelAS;
 layout (set = 0, binding = 1) uniform CameraBufferObject
@@ -29,20 +29,13 @@ void main()
     vec4 Target = inverse(CameraBuffer.ProjectionMatrix) * vec4(D.x, D.y, 1.f, 1.f);
     vec4 Direction = inverse(CameraBuffer.ViewMatrix) * vec4(normalize(Target.xyz), 0.f);
 
-    vec3 NormalizedDirection = normalize(Direction.xyz);
-    float Tmp = atan(NormalizedDirection.z, NormalizedDirection.x);
-    float Phi = Tmp < 0.f ? (Tmp + (2 * 3.14159265357)) : Tmp;
-    float Theta = acos(NormalizedDirection.y);
-    Phi /= 2.f * 3.14159265357;
-    Theta /= 3.14159265357;
-
     uint RayFlags = gl_RayFlagsOpaqueEXT;
     float tMin = 0.001f;
     float tMax = 10000.f;
 
-    PRD.IBLCoordinates = vec2(Phi, Theta);
+    Hit.Direction = Direction.xyz;
 
     traceRayEXT(TopLevelAS, RayFlags, 0xFF, 0, 0, 0, Origin.xyz, tMin, Direction.xyz, tMax, 0);
 
-    imageStore(Image, ivec2(gl_LaunchIDEXT.xy), vec4(PRD.Color, 1.f));
+    imageStore(Image, ivec2(gl_LaunchIDEXT.xy), vec4(Hit.Color, 1.f));
 }

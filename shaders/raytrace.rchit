@@ -13,7 +13,7 @@ const uint RENDERABLE_IS_INDEXED = 1 << 7;
 struct HitPayload
 {
     vec3 Color;
-    vec2 IBLCoordinates;
+    vec3 Direction;
 };
 
 hitAttributeEXT vec2 Attributes;
