@@ -84,17 +84,17 @@ struct FLight
     float dummy_3;
 };
 
-layout (set = 0, binding = 3) buffer RenderableBufferObject
+layout (set = 0, binding = 4) buffer RenderableBufferObject
 {
     FRenderable Renderables[];
 } RenderableBuffer;
 
-layout (set = 0, binding = 4) buffer MaterialBufferObject
+layout (set = 0, binding = 5) buffer MaterialBufferObject
 {
     FMaterial Materials[];
 } MaterialBuffer;
 
-layout (set = 0, binding = 5) buffer LightBufferObject
+layout (set = 0, binding = 6) buffer LightBufferObject
 {
     FLight Lights[];
 } LightBUffer;

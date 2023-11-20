@@ -9,6 +9,16 @@ struct HitPayload
     vec3 Direction;
 };
 
+struct FRayData
+{
+    vec4 Origin;
+    vec4 Direction;
+    uint RayFlags;
+    float TMin;
+    float TMax;
+    float Dummy;
+};
+
 layout (location = 0) rayPayloadEXT HitPayload Hit;
 
 layout (set = 0, binding = 0) uniform accelerationStructureEXT TopLevelAS;
@@ -19,34 +29,18 @@ layout (set = 0, binding = 1) uniform CameraBufferObject
 } CameraBuffer;
 
 layout (set = 0, binding = 2, rgba32f) uniform image2D Image;
+layout (set = 0, binding = 3) buffer RaysBufferObject
+{
+    FRayData RayData[];
+} RaysBuffer;
 
 void main()
 {
-    const vec2 PixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5f);
-    const vec2 InUV = PixelCenter/vec2(gl_LaunchSizeEXT.xy);
-    vec2 D = InUV * 2.0f - 1.f;
+    uint RayIndex = gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
 
-    vec4 Origin = inverse(CameraBuffer.ViewMatrix) * vec4(0.f, 0.f, 0.f, 1.f);
-    vec4 Target = inverse(CameraBuffer.ProjectionMatrix) * vec4(D.x, D.y, 1.f, 1.f);
-    vec4 Direction = inverse(CameraBuffer.ViewMatrix) * vec4(normalize(Target.xyz), 0.f);
+    FRayData RayData = RaysBuffer.RayData[RayIndex];
 
-    uint RayFlags = gl_RayFlagsOpaqueEXT;
-    float tMin = 0.001f;
-    float tMax = 10000.f;
-
-    Hit.Direction = Direction.xyz;
-
-    if (gl_LaunchIDEXT.x == 0 && gl_LaunchIDEXT.y == 0)
-    {
-        debugPrintfEXT("\n\nOrigin: %f %f %f %f\n", Origin.x, Origin.y, Origin.z, Origin.w);
-        debugPrintfEXT("Target: %f %f %f %f\n", Target.x, Target.y, Target.z, Target.w);
-        debugPrintfEXT("Direction: %f %f %f %f\n", Direction.x, Direction.y, Direction.z, Direction.w);
-        debugPrintfEXT("RayFlags: %i\n", RayFlags);
-        debugPrintfEXT("tMin: %f\n", tMin);
-        debugPrintfEXT("tMax: %f\n", tMax);
-    }
-
-    traceRayEXT(TopLevelAS, RayFlags, 0xFF, 0, 0, 0, Origin.xyz, tMin, Direction.xyz, tMax, 0);
+    traceRayEXT(TopLevelAS, RayData.RayFlags, 0xFF, 0, 0, 0, RayData.Origin.xyz, RayData.TMin, RayData.Direction.xyz, RayData.TMax, 0);
 
     imageStore(Image, ivec2(gl_LaunchIDEXT.xy), vec4(Hit.Color, 1.f));
 }

@@ -14,6 +14,7 @@
 #include "task_passthrough.h"
 #include "task_imgui.h"
 #include "task_clear_image.h"
+#include "task_generate_initial_rays.h"
 
 #include <string>
 #include <vector>
@@ -69,6 +70,7 @@ public:
     std::shared_ptr<FPassthroughTask> PassthroughTask = nullptr;
     std::shared_ptr<FImguiTask> ImguiTask = nullptr;
     std::shared_ptr<FClearImageTask> ClearImageTask = nullptr;
+    std::shared_ptr<FGenerateInitialRays> GenerateRaysTask = nullptr;
 
     std::vector<VkSemaphore> ImageAvailableSemaphores;
     std::vector<VkSemaphore> ImGuiFinishedSemaphores;

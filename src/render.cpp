@@ -9,6 +9,7 @@
 #include "components/device_mesh_component.h"
 #include "components/device_renderable_component.h"
 #include "components/transform_component.h"
+#include "components/device_camera_component.h"
 #include "components/device_transform_component.h"
 #include "components/material_component.h"
 #include "components/light_component.h"
@@ -186,6 +187,11 @@ int FRender::Init()
                                                   VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_EstimatedImage");
     EstimatedImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
+    GenerateRaysTask = std::make_shared<FGenerateInitialRays>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    GenerateRaysTask->Init();
+    GenerateRaysTask->UpdateDescriptorSets();
+    GenerateRaysTask->RecordCommands();
+
     RayTraceTask = std::make_shared<FRaytraceTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     RayTraceTask->RegisterOutput(0, RTColorImage);
     SetIBL("../resources/brown_photostudio_02_4k.exr");
@@ -321,11 +327,11 @@ int FRender::Render()
     MATERIAL_SYSTEM()->Update();
     LIGHT_SYSTEM()->Update();
 
-    std::vector<ECS::COMPONENTS::FDeviceRenderableComponent> Data1 = Context.ResourceAllocator->DebugGetDataFromBuffer<ECS::COMPONENTS::FDeviceRenderableComponent>(RENDERABLE_SYSTEM()->DeviceBuffer, RENDERABLE_SYSTEM()->GetTotalSize(), 0);
-    std::vector<ECS::COMPONENTS::FLightComponent> Data2 = Context.ResourceAllocator->DebugGetDataFromBuffer<ECS::COMPONENTS::FLightComponent>(LIGHT_SYSTEM()->DeviceBuffer, LIGHT_SYSTEM()->GetTotalSize(), 0);
-    std::vector<ECS::COMPONENTS::FMaterialComponent> Data3 = Context.ResourceAllocator->DebugGetDataFromBuffer<ECS::COMPONENTS::FMaterialComponent>(MATERIAL_SYSTEM()->DeviceBuffer, MATERIAL_SYSTEM()->GetTotalSize(), 0);
+    std::vector<ECS::COMPONENTS::FDeviceCameraComponent> Data2 = Context.ResourceAllocator->DebugGetDataFromBuffer<ECS::COMPONENTS::FDeviceCameraComponent>(CAMERA_SYSTEM()->DeviceBuffer, CAMERA_SYSTEM()->GetTotalSize(), 0);
 
-    auto RenderSignalSemaphore = RayTraceTask->Submit(Context.GetGraphicsQueue(), ImageAvailableSemaphores[CurrentFrame], ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
+    auto GenerateRaysSemaphore = GenerateRaysTask->Submit(Context.GetComputeQueue(), ImageAvailableSemaphores[CurrentFrame], ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
+
+    auto RenderSignalSemaphore = RayTraceTask->Submit(Context.GetGraphicsQueue(), GenerateRaysSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
     VkSemaphore AccumulateSignalSemaphore = VK_NULL_HANDLE;
 

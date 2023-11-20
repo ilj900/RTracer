@@ -1,0 +1,49 @@
+#version 450
+
+#extension GL_EXT_debug_printf : enable
+
+struct FRayData
+{
+    vec4 Origin;
+    vec4 Direction;
+    uint RayFlags;
+    float TMin;
+    float TMax;
+    float Dummy;
+};
+
+struct FCamera
+{
+    mat4 ViewMatrix;
+    mat4 ProjectionMatrix;
+};
+
+layout (set = 0, binding = 0) buffer RaysBufferObject
+{
+    FRayData RayData[];
+} RaysBuffer;
+
+layout (set = 0, binding = 1) uniform CameraBufferObject
+{
+    FCamera Camera;
+} CameraBuffer;
+
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    uvec2 PixelIndex = uvec2(gl_GlobalInvocationID.x % 1920, gl_GlobalInvocationID.x / 1080);
+
+    const vec2 PixelCenter = PixelIndex + vec2(0.5f);
+    const vec2 InUV = PixelCenter/vec2(1920, 1080);
+    vec2 D = InUV * 2.0f - 1.f;
+
+    vec4 Origin = inverse(CameraBuffer.Camera.ViewMatrix) * vec4(0.f, 0.f, 0.f, 1.f);
+    vec4 Target = inverse(CameraBuffer.Camera.ProjectionMatrix) * vec4(D.x, D.y, 1.f, 1.f);
+    vec4 Direction = inverse(CameraBuffer.Camera.ViewMatrix) * vec4(normalize(Target.xyz), 0.f);
+
+    float tMin = 0.001f;
+    float tMax = 10000.f;
+
+    RaysBuffer.RayData[gl_GlobalInvocationID.x] = FRayData(Origin, Direction, 1, tMin, tMax, 0.f);
+}

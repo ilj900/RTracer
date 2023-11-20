@@ -86,6 +86,8 @@ set(SOURCE
         src/task_accumulate.cpp
         src/task_clear_image.h
         src/task_clear_image.cpp
+        src/task_generate_initial_rays.h
+        src/task_generate_initial_rays.cpp
         src/tinyexr.cpp
         vulkan_helpers/vk_acceleration_structure.h
         vulkan_helpers/vk_context.h

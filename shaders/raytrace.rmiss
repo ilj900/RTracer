@@ -10,7 +10,7 @@ struct HitPayload
 
 layout(location = 0) rayPayloadInEXT HitPayload Hit;
 
-layout(set = 0, binding = 6) uniform sampler2D IBITextureSampelr;
+layout(set = 0, binding = 7) uniform sampler2D IBITextureSampelr;
 
 void main()
 {

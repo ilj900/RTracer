@@ -47,6 +47,8 @@ public:
     VkDeviceSize StagingBufferSize = uint64_t(256) * 1024 * 1024;
     FBuffer StagingBuffer;
 
+    FBuffer InitialRaysBuffer;
+
     VkDevice Device = VK_NULL_HANDLE;
     FVulkanContext *Context = nullptr;
 
