@@ -39,6 +39,7 @@ void main()
     uint RayIndex = gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
 
     FRayData RayData = RaysBuffer.RayData[RayIndex];
+    Hit.Direction = RayData.Direction.xyz;
 
     traceRayEXT(TopLevelAS, RayData.RayFlags, 0xFF, 0, 0, 0, RayData.Origin.xyz, RayData.TMin, RayData.Direction.xyz, RayData.TMax, 0);
 

@@ -18,6 +18,7 @@ FResourceAllocator::FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice
 FResourceAllocator::~FResourceAllocator()
 {
     DestroyBuffer(StagingBuffer);
+    DestroyBuffer(InitialRaysBuffer);
 }
 
 FMemoryRegion FResourceAllocator::AllocateMemory(VkDeviceSize Size, VkMemoryRequirements MemRequirements, VkMemoryPropertyFlags Properties, bool bDeviceAddressRequired)
