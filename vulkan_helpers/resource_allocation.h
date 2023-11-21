@@ -4,6 +4,7 @@
 #include "image.h"
 
 #include <memory>
+#include <map>
 
 class FVulkanContext;
 
@@ -16,6 +17,10 @@ public:
     FBuffer CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, const std::string& DebugName = "");
     void DestroyBuffer(FBuffer& Buffer);
     FMemoryRegion AllocateMemory(VkDeviceSize Size, VkMemoryRequirements MemRequirements, VkMemoryPropertyFlags Properties, bool bDeviceAddressRequired = false);
+
+    FBuffer RegisterBuffer(FBuffer Buffer, const std::string& Name);
+    FBuffer GetBuffer(const std::string& Name);
+    void UnregisterAndDestroyBuffer(const std::string& Name);
 
     FBuffer LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDeviceSize> Sizes, std::vector<VkDeviceSize> Offsets, std::vector<void*> Datas);
     void LoadDataFromBuffer(FBuffer& Buffer, VkDeviceSize Size, VkDeviceSize Offset, void* Data);
@@ -47,10 +52,11 @@ public:
     VkDeviceSize StagingBufferSize = uint64_t(256) * 1024 * 1024;
     FBuffer StagingBuffer;
 
-    FBuffer InitialRaysBuffer;
-
     VkDevice Device = VK_NULL_HANDLE;
     FVulkanContext *Context = nullptr;
 
     VkPhysicalDeviceMemoryProperties MemProperties{};
+
+private:
+    std::map<std::string, FBuffer> Buffers;
 };

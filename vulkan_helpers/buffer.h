@@ -3,6 +3,7 @@
 #include "vulkan/vulkan.h"
 
 #include <unordered_set>
+#include <memory>
 
 struct FBuffer;
 

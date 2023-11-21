@@ -33,7 +33,8 @@ FGenerateInitialRays::FGenerateInitialRays(int WidthIn, int HeightIn, FVulkanCon
 
     DescriptorSetManager->CreateDescriptorSetLayout(Name);
 
-    Context->ResourceAllocator->InitialRaysBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(FRayData) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Name);
+    FBuffer InitialRaysBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(FRayData) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Name);
+    Context->ResourceAllocator->RegisterBuffer(InitialRaysBuffer, "InitialRaysBuffer");
 
     CreateSyncObjects();
 }
@@ -41,6 +42,7 @@ FGenerateInitialRays::FGenerateInitialRays(int WidthIn, int HeightIn, FVulkanCon
 FGenerateInitialRays::~FGenerateInitialRays()
 {
     FreeSyncObjects();
+    Context->ResourceAllocator->UnregisterAndDestroyBuffer("InitialRaysBuffer");
 }
 
 void FGenerateInitialRays::Init()
@@ -65,10 +67,11 @@ void FGenerateInitialRays::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
+        auto InitialRaysBuffer = Context->ResourceAllocator->GetBuffer("InitialRaysBuffer");
         VkDescriptorBufferInfo InitialRaysBufferInfo{};
-        InitialRaysBufferInfo.buffer = Context->ResourceAllocator->InitialRaysBuffer.Buffer;
+        InitialRaysBufferInfo.buffer = InitialRaysBuffer.Buffer;
         InitialRaysBufferInfo.offset = 0;
-        InitialRaysBufferInfo.range = Context->ResourceAllocator->InitialRaysBuffer.BufferSize;
+        InitialRaysBufferInfo.range = InitialRaysBuffer.BufferSize;
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, GENERATE_RAYS_LAYOUT_INDEX, CAMERA_RAYS_BUFFER, i, InitialRaysBufferInfo);
 
         VkDescriptorBufferInfo CameraBufferInfo{};

@@ -18,7 +18,6 @@ FResourceAllocator::FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice
 FResourceAllocator::~FResourceAllocator()
 {
     DestroyBuffer(StagingBuffer);
-    DestroyBuffer(InitialRaysBuffer);
 }
 
 FMemoryRegion FResourceAllocator::AllocateMemory(VkDeviceSize Size, VkMemoryRequirements MemRequirements, VkMemoryPropertyFlags Properties, bool bDeviceAddressRequired)
@@ -48,6 +47,26 @@ FMemoryRegion FResourceAllocator::AllocateMemory(VkDeviceSize Size, VkMemoryRequ
     MemoryRegion.MemoryPtrs = {{0, Size}};
 
     return MemoryRegion;
+}
+
+FBuffer FResourceAllocator::RegisterBuffer(FBuffer Buffer, const std::string& Name)
+{
+    assert(Buffers.find(Name) == Buffers.end() && ("Buffer \"" + Name + "\" already registered!").c_str());
+    Buffers[Name] = Buffer;
+    return Buffer;
+}
+
+FBuffer FResourceAllocator::GetBuffer(const std::string& Name)
+{
+    assert(Buffers.find(Name) != Buffers.end() && ("Buffer \"" + Name + "\" can not be found!").c_str());
+    return Buffers[Name];
+}
+
+void FResourceAllocator::UnregisterAndDestroyBuffer(const std::string& Name)
+{
+    assert(Buffers.find(Name) != Buffers.end() && ("Buffer \"" + Name + "\" can not be found!").c_str());
+    DestroyBuffer(Buffers[Name]);
+    Buffers.erase(Name);
 }
 
 FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, const std::string& DebugName)

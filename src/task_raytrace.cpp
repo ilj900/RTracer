@@ -175,10 +175,11 @@ void FRaytraceTask::UpdateDescriptorSets()
         RTImageBufferInfo.imageView = Outputs[0]->View;
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, RT_FINAL_IMAGE_INDEX, i, RTImageBufferInfo);
 
+        auto InitialRaysBuffer = Context->ResourceAllocator->GetBuffer("InitialRaysBuffer");
         VkDescriptorBufferInfo RayDataBufferInfo{};
-        RayDataBufferInfo.buffer = Context->ResourceAllocator->InitialRaysBuffer.Buffer;
+        RayDataBufferInfo.buffer = InitialRaysBuffer.Buffer;
         RayDataBufferInfo.offset = 0;
-        RayDataBufferInfo.range = Context->ResourceAllocator->InitialRaysBuffer.BufferSize;
+        RayDataBufferInfo.range = InitialRaysBuffer.BufferSize;
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, RAYS_DATA_BUFFER, i, RayDataBufferInfo);
 
         VkDescriptorBufferInfo RenderableBufferInfo{};

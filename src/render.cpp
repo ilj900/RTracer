@@ -243,8 +243,8 @@ int FRender::Cleanup()
     UtilityImageR8G8B8A8_SRGB = nullptr;
     UtilityImageR32 = nullptr;
 
-//    RenderTask->Cleanup();
-//    RenderTask = nullptr;
+    GenerateRaysTask->Cleanup();
+    GenerateRaysTask = nullptr;
     RayTraceTask->Cleanup();
     RayTraceTask = nullptr;
     AccumulateTask->Cleanup();
