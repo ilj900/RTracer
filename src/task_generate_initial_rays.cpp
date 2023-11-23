@@ -8,16 +8,7 @@
 
 #include "components/device_camera_component.h"
 #include "systems/camera_system.h"
-
-struct FRayData
-{
-    FVector4 Origin;
-    FVector4 Direction;
-    uint32_t RayFlags;
-    float TMin;
-    float TMax;
-    float Dummy;
-};
+#include "common_structures.h"
 
 FGenerateInitialRays::FGenerateInitialRays(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)

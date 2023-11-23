@@ -2,6 +2,8 @@
 #include "vk_utils.h"
 #include "vk_context.h"
 
+#include "string_manipulation.h"
+
 #include "shaderc/shaderc.hpp"
 
 #include <cassert>
@@ -68,6 +70,16 @@ std::vector<uint32_t> CompileShaderToSpirVData(const std::string &Path)
 {
     auto ShaderType = GetShaderType(Path);
     auto ShaderCode = ReadFileToString(Path);
+    auto StartingIndex = FindString(ShaderCode, "#include \"");
+
+    while (StartingIndex != std::string::npos)
+    {
+        auto IncludedFile = GetIncludeFileName(ShaderCode, StartingIndex);
+        auto IncludeString = ReadFileToString("../shaders/" + IncludedFile);
+        auto FullString = GetStringTillTheEOL(ShaderCode, StartingIndex);
+        ReplaceString(ShaderCode, FullString, IncludeString, StartingIndex);
+        StartingIndex = FindString(ShaderCode, "#include \"", StartingIndex);
+    }
 
     std::map<shaderc_shader_kind, std::string> ShaderTypeToExtensionMap
     {

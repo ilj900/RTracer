@@ -1,14 +1,6 @@
 #version 450
 
-struct FRayData
-{
-    vec4 Origin;
-    vec4 Direction;
-    uint RayFlags;
-    float TMin;
-    float TMax;
-    float Dummy;
-};
+#include "common_structures.h"
 
 struct FCamera
 {

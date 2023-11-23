@@ -20,7 +20,8 @@ include_directories(
         imgui
         imgui/backends
         components
-        systems)
+        systems
+        shaders)
 
 set(IMGUI_SOURCE
         imgui/backends/imgui_impl_glfw.cpp
@@ -103,6 +104,8 @@ set(SOURCE
         math/maths.cpp
         utils/logging.h
         utils/logging.cpp
+        utils/string_manipulation.h
+        utils/string_manipulation.cpp
         include/miniz.c
         ${IMGUI_SOURCE})
 
@@ -131,6 +134,7 @@ set(INCLUDE
         include/tiny_obj_loader.h
         include/tinyexr.h
         include/miniz.c
+        shaders/common_structures.h
         math/maths.h)
 
 add_executable(RTracer ${SOURCE} ${INCLUDE})
