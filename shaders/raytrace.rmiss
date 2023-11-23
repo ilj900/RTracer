@@ -6,7 +6,7 @@
 
 layout(location = 0) rayPayloadInEXT HitPayload Hit;
 
-layout(set = 0, binding = 7) uniform sampler2D IBITextureSampelr;
+layout(set = 0, binding = 7) uniform sampler2D IBITextureSampler;
 
 void main()
 {
@@ -17,5 +17,5 @@ void main()
     Phi /= 2.f * 3.14159265357;
     Theta /= 3.14159265357;
 
-    Hit.Color = vec3(texture(IBITextureSampelr, vec2(Phi, Theta)));
+    Hit.Color = vec3(texture(IBITextureSampler, vec2(Phi, Theta)));
 }
