@@ -1,5 +1,7 @@
 #version 460
 
+#include "common_structures.h"
+
 #extension GL_EXT_ray_tracing : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 #extension GL_EXT_nonuniform_qualifier : enable
@@ -9,12 +11,6 @@
 const uint RENDERABLE_SELECTED_BIT = 1 << 5;
 const uint RENDERABLE_HAS_TEXTURE = 1 << 6;
 const uint RENDERABLE_IS_INDEXED = 1 << 7;
-
-struct HitPayload
-{
-    vec3 Color;
-    vec3 Direction;
-};
 
 hitAttributeEXT vec2 Attributes;
 

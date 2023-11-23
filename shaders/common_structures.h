@@ -2,8 +2,15 @@
 
 #ifndef __cplusplus
 #define FVector4 vec4
+#define FVector3 vec3
 #define uint32_t uint
 #endif
+
+struct HitPayload
+{
+    FVector3 Color;
+    FVector3 Direction;
+};
 
 struct FRayData
 {
