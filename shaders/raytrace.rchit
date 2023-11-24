@@ -48,21 +48,6 @@ struct FRenderable
     uint64_t IndexBufferAddress;
 };
 
-struct FMaterial
-{
-    vec3 BaseAlbedo;
-    float ReflectionRoughness;
-
-    vec3 ReflectionAlbedo;
-    float RefractionRoughness;
-
-    vec3 CoatingAlbedo;
-    float ReflectionIOR;
-
-    vec3 RefractionAlbedo;
-    float RefractionIOR;
-};
-
 layout (set = 0, binding = 3) buffer RenderableBufferObject
 {
     FRenderable Renderables[];

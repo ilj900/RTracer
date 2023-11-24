@@ -50,3 +50,18 @@ struct FLight
     float dummy_2;
     float dummy_3;
 };
+
+struct FMaterial
+{
+    FVector3 BaseAlbedo;
+    float ReflectionRoughness;
+
+    FVector3 ReflectionAlbedo;
+    float RefractionRoughness;
+
+    FVector3 CoatingAlbedo;
+    float ReflectionIOR;
+
+    FVector3 RefractionAlbedo;
+    float RefractionIOR;
+};
