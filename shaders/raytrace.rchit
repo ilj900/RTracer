@@ -63,23 +63,6 @@ struct FMaterial
     float RefractionIOR;
 };
 
-struct FLight
-{
-    vec3 Position;
-    float Intensity;
-
-    vec3 Color;
-    uint Type;
-
-    vec3 Direction;
-    float OuterAngle;
-
-    float InnerAngle;
-    float dummy_1;
-    float dummy_2;
-    float dummy_3;
-};
-
 layout (set = 0, binding = 3) buffer RenderableBufferObject
 {
     FRenderable Renderables[];

@@ -83,7 +83,7 @@ namespace ECS
             Coordinator.AddComponent<ECS::COMPONENTS::FLightComponent>(Light, {});
 
             auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(Light);
-            LightComponent.Type = LIGHT_TYPE::POINT_LIGHT;
+            LightComponent.Type = LIGHT_TYPE_POINT_LIGHT;
             LightComponent.Position = Position;
             LightComponent.Color = Color;
             LightComponent.Intensity = Intensity;
@@ -99,7 +99,7 @@ namespace ECS
             Coordinator.AddComponent<ECS::COMPONENTS::FLightComponent>(Light, {});
 
             auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(Light);
-            LightComponent.Type = LIGHT_TYPE::DIRECTIONAL_LIGHT;
+            LightComponent.Type = LIGHT_TYPE_DIRECTIONAL_LIGHT;
             LightComponent.Direction = Direction;
             LightComponent.Color = Color;
             LightComponent.Intensity = Intensity;
@@ -115,7 +115,7 @@ namespace ECS
             Coordinator.AddComponent<ECS::COMPONENTS::FLightComponent>(Light, {});
 
             auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(Light);
-            LightComponent.Type = LIGHT_TYPE::SPOT_LIGHT;
+            LightComponent.Type = LIGHT_TYPE_SPOT_LIGHT;
             LightComponent.Position = Position;
             LightComponent.Color = Color;
             LightComponent.Intensity = Intensity;
