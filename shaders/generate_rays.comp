@@ -2,12 +2,6 @@
 
 #include "common_structures.h"
 
-struct FCamera
-{
-    mat4 ViewMatrix;
-    mat4 ProjectionMatrix;
-};
-
 layout (set = 0, binding = 0) buffer RaysBufferObject
 {
     FRayData RayData[];

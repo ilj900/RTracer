@@ -3,6 +3,7 @@
 #ifndef __cplusplus
 #define FVector4 vec4
 #define FVector3 vec3
+#define FMatrix4 mat4
 #define uint32_t uint
 #endif
 
@@ -20,4 +21,10 @@ struct FRayData
     float TMin;
     float TMax;
     float Dummy;
+};
+
+struct FCamera
+{
+    FMatrix4 ViewMatrix;
+    FMatrix4 ProjectionMatrix;
 };

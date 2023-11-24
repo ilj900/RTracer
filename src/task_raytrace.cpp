@@ -24,8 +24,6 @@ FRaytraceTask::FRaytraceTask(int WidthIn, int HeightIn, FVulkanContext* Context,
 
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, TLAS_LAYOUT_INDEX,
                                               {VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,  VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
-    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, CAMERA_LAYOUT_INDEX,
-                                              {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, RT_FINAL_IMAGE_INDEX,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, RAYS_DATA_BUFFER,
@@ -163,12 +161,6 @@ void FRaytraceTask::UpdateDescriptorSets()
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, TLAS_LAYOUT_INDEX, i, TLAS.AccelerationStructure);
-
-        VkDescriptorBufferInfo CameraBufferInfo{};
-        CameraBufferInfo.buffer = CAMERA_SYSTEM()->DeviceBuffer.Buffer;
-        CameraBufferInfo.offset = 0;
-        CameraBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_PER_FRAME_LAYOUT_INDEX, CAMERA_LAYOUT_INDEX, i, CameraBufferInfo);
 
         VkDescriptorImageInfo RTImageBufferInfo{};
         RTImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;

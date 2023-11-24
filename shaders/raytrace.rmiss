@@ -6,7 +6,7 @@
 
 layout(location = 0) rayPayloadInEXT HitPayload Hit;
 
-layout(set = 0, binding = 7) uniform sampler2D IBITextureSampler;
+layout(set = 0, binding = 6) uniform sampler2D IBITextureSampler;
 
 void main()
 {
