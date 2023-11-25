@@ -13,13 +13,6 @@ hitAttributeEXT vec2 Attributes;
 layout(location = 0) rayPayloadInEXT HitPayload Hit;
 hitAttributeEXT vec2 HitAttributes;
 
-struct FVertex
-{
-    vec3 Position;
-    vec3 Normal;
-    vec2 TexCoord;
-};
-
 layout(buffer_reference, scalar) buffer Vertices
 {
     FVertex V[];

@@ -112,14 +112,14 @@ namespace ECS
                 throw std::runtime_error(Warn + Err);
             }
 
-            std::unordered_map<FVertex, uint32_t> UniqueVertices{};
+            std::unordered_map<ECS::COMPONENTS::FVertexComponent, uint32_t> UniqueVertices{};
 
 
             for (const auto& Shape : Shapes)
             {
                 for (const auto& Index : Shape.mesh.indices)
                 {
-                    FVertex Vert{};
+                    ECS::COMPONENTS::FVertexComponent Vert{};
 
                     Vert.Position = {
                             Attrib.vertices[3 * Index.vertex_index + 0],

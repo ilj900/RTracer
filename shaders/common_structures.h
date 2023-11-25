@@ -4,6 +4,7 @@
 #ifndef __cplusplus
 #define FVector4 vec4
 #define FVector3 vec3
+#define FVector2 vec2
 #define FMatrix4 mat4
 #define uint32_t uint
 #endif
@@ -83,6 +84,13 @@ struct FRenderable
 
     uint64_t VertexBufferAddress;
     uint64_t IndexBufferAddress;
+};
+
+struct FVertex
+{
+    FVector3 Position;
+    FVector3 Normal;
+    FVector2 TexCoord;
 };
 
 #endif // COMMON_STRUCTURES_H
