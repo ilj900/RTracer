@@ -499,7 +499,7 @@ ECS::FEntity FRender::CreateEmptyModel()
     ECS::FEntity EmptyModel = Coordinator.CreateEntity();
     Coordinator.AddComponent<ECS::COMPONENTS::FMeshComponent>(EmptyModel, {});
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceMeshComponent>(EmptyModel, {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceRenderableComponent> (EmptyModel, {FVector3{1.f, 1.f, 1.f}, 0.f,Index++, 0});
+    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceRenderableComponent> (EmptyModel, {FVector3{1.f, 1.f, 1.f},Index++, 0, 0, 0});
     Coordinator.AddComponent<ECS::COMPONENTS::FTransformComponent>(EmptyModel, {});
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(EmptyModel, {});
     Coordinator.AddComponent<ECS::COMPONENTS::FMaterialComponent>(EmptyModel, {});

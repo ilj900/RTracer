@@ -1,4 +1,5 @@
-#pragma once
+#ifndef COMMON_STRUCTURES_H
+#define COMMON_STRUCTURES_H
 
 #ifndef __cplusplus
 #define FVector4 vec4
@@ -65,3 +66,23 @@ struct FMaterial
     FVector3 RefractionAlbedo;
     float RefractionIOR;
 };
+
+const uint32_t RENDERABLE_SELECTED_BIT = 1 << 5;
+const uint32_t RENDERABLE_HAS_TEXTURE = 1 << 6;
+const uint32_t RENDERABLE_IS_INDEXED = 1 << 7;
+
+struct FRenderable
+{
+    FVector3 RenderableColor;
+    float dummy_1;
+
+    int RenderableIndex;
+    uint32_t RenderablePropertyMask;
+    uint32_t dummy_2;
+    uint32_t dummy_3;
+
+    uint64_t VertexBufferAddress;
+    uint64_t IndexBufferAddress;
+};
+
+#endif // COMMON_STRUCTURES_H

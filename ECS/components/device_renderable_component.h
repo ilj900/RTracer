@@ -1,29 +1,35 @@
 #pragma once
 
 #include "maths.h"
+#include "common_structures.h"
 
 namespace ECS
 {
     namespace COMPONENTS
     {
-
-        const uint32_t RENDERABLE_SELECTED_BIT = 1 << 5;
-        const uint32_t RENDERABLE_HAS_TEXTURE = 1 << 6;
-        const uint32_t RENDERABLE_IS_INDEXED = 1 << 7;
-
-        struct FDeviceRenderableComponent
+        struct FDeviceRenderableComponent : FRenderable
         {
+            FDeviceRenderableComponent()
+            {
+                RenderableColor = {0.3f, 0.1f, 0.2f};
 
-            FVector3    RenderableColor = {0.3f, 0.1f, 0.2f};
-            float       dummy_1;
+                RenderableIndex = 0;
+                RenderablePropertyMask = 0;
 
-            int32_t     RenderableIndex = 0;
-            uint32_t    RenderablePropertyMask = 0;
-            uint32_t    dummy_2;
-            uint32_t    dummy_3;
+                VertexBufferAddress = 0;
+                IndexBufferAddress = 0;
+            }
 
-            uint64_t    VertexBufferAddress;
-            uint64_t    IndexBufferAddress;
+            FDeviceRenderableComponent(const FVector3& RenderableColorIn, int32_t RenderableIndexIn, uint32_t RenderablePropertyMaskIn, uint64_t VertexBufferAddressIn, uint64_t IndexBufferAddressIn)
+            {
+                RenderableColor = RenderableColorIn;
+
+                RenderableIndex = RenderableIndexIn;
+                RenderablePropertyMask = RenderablePropertyMaskIn;
+
+                VertexBufferAddress = VertexBufferAddressIn;
+                IndexBufferAddress = IndexBufferAddressIn;
+            }
         };
     }
 }

@@ -8,10 +8,6 @@
 #extension GL_EXT_scalar_block_layout : enable
 #extension GL_EXT_buffer_reference2 : require
 
-const uint RENDERABLE_SELECTED_BIT = 1 << 5;
-const uint RENDERABLE_HAS_TEXTURE = 1 << 6;
-const uint RENDERABLE_IS_INDEXED = 1 << 7;
-
 hitAttributeEXT vec2 Attributes;
 
 layout(location = 0) rayPayloadInEXT HitPayload Hit;
@@ -32,20 +28,6 @@ layout(buffer_reference, scalar) buffer Vertices
 layout(buffer_reference, scalar) buffer Indices
 {
     ivec3 I[];
-};
-
-struct FRenderable
-{
-    vec3 RenderableColor;
-    float dummy_1;
-
-    int RenderableIndex;
-    uint RenderablePropertyMask;
-    uint dummy_2;
-    uint dummy_3;
-
-    uint64_t VertexBufferAddress;
-    uint64_t IndexBufferAddress;
 };
 
 layout (set = 0, binding = 3) buffer RenderableBufferObject

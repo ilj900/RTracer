@@ -42,11 +42,11 @@ namespace ECS
                 auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(E);
                 if (Entity == E)
                 {
-                    RenderableComponent.RenderablePropertyMask |= COMPONENTS::RENDERABLE_SELECTED_BIT;
+                    RenderableComponent.RenderablePropertyMask |= RENDERABLE_SELECTED_BIT;
                 }
                 else
                 {
-                    RenderableComponent.RenderablePropertyMask &= ~COMPONENTS::RENDERABLE_SELECTED_BIT;
+                    RenderableComponent.RenderablePropertyMask &= ~RENDERABLE_SELECTED_BIT;
                 }
             }
 
@@ -62,11 +62,11 @@ namespace ECS
                 if (RenderableComponent.RenderableIndex == Index)
                 {
                     Entity = EntityEntry;
-                    RenderableComponent.RenderablePropertyMask |= COMPONENTS::RENDERABLE_SELECTED_BIT;
+                    RenderableComponent.RenderablePropertyMask |= RENDERABLE_SELECTED_BIT;
                 }
                 else
                 {
-                    RenderableComponent.RenderablePropertyMask &= ~COMPONENTS::RENDERABLE_SELECTED_BIT;
+                    RenderableComponent.RenderablePropertyMask &= ~RENDERABLE_SELECTED_BIT;
                 }
             }
 
@@ -76,28 +76,28 @@ namespace ECS
         void FRenderableSystem::SetNotSelected(FEntity Entity)
         {
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
-            RenderableComponent.RenderablePropertyMask &= ~COMPONENTS::RENDERABLE_SELECTED_BIT;
+            RenderableComponent.RenderablePropertyMask &= ~RENDERABLE_SELECTED_BIT;
             MarkDirty(Entity);
         }
 
         void FRenderableSystem::SetIndexed(FEntity Entity)
         {
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
-            RenderableComponent.RenderablePropertyMask |= COMPONENTS::RENDERABLE_IS_INDEXED;
+            RenderableComponent.RenderablePropertyMask |= RENDERABLE_IS_INDEXED;
             MarkDirty(Entity);
         }
 
         void FRenderableSystem::SetRenderableHasTexture(FEntity Entity)
         {
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
-            RenderableComponent.RenderablePropertyMask |= COMPONENTS::RENDERABLE_HAS_TEXTURE;
+            RenderableComponent.RenderablePropertyMask |= RENDERABLE_HAS_TEXTURE;
             MarkDirty(Entity);
         }
 
         void FRenderableSystem::SetNotIndex(FEntity Entity)
         {
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
-            RenderableComponent.RenderablePropertyMask &= ~COMPONENTS::RENDERABLE_IS_INDEXED;
+            RenderableComponent.RenderablePropertyMask &= ~RENDERABLE_IS_INDEXED;
             MarkDirty(Entity);
         }
 
