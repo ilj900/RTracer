@@ -26,31 +26,31 @@ layout(buffer_reference, scalar) buffer Indices
 layout (set = 0, binding = 3) buffer RenderableBufferObject
 {
     FRenderable Renderables[];
-} RenderableBuffer;
+};
 
 layout (set = 0, binding = 4) buffer MaterialBufferObject
 {
     FMaterial Materials[];
-} MaterialBuffer;
+};
 
 layout (set = 0, binding = 5) buffer LightBufferObject
 {
     FLight Lights[];
-} LightBUffer;
+};
 
 FRenderable FetchRenderable()
 {
-    return RenderableBuffer.Renderables[nonuniformEXT(gl_InstanceCustomIndexEXT)];
+    return Renderables[nonuniformEXT(gl_InstanceCustomIndexEXT)];
 }
 
 FMaterial FetchMaterial()
 {
-    return MaterialBuffer.Materials[nonuniformEXT(gl_InstanceCustomIndexEXT)];
+    return Materials[nonuniformEXT(gl_InstanceCustomIndexEXT)];
 }
 
 FLight FetchLight(int LightIndex)
 {
-    return LightBUffer.Lights[nonuniformEXT(LightIndex)];
+    return Lights[nonuniformEXT(LightIndex)];
 }
 
 bool CheckFlag(uint Mask, uint Field)
