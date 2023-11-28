@@ -16,12 +16,4 @@ public:
 
     VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
     VkPipeline Pipeline = VK_NULL_HANDLE;
-
-    /// Task descriptor indices
-    const uint32_t ACCUMULATE_PER_FRAME_LAYOUT_INDEX = 0;
-
-    const uint32_t INCOMING_IMAGE_TO_SAMPLE = 0;
-    const uint32_t ACCUMULATE_IMAGE_INDEX = 1;
-    const uint32_t ESTIMATED_IMAGE_INDEX = 2;
-
 };

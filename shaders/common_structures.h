@@ -31,11 +31,6 @@ struct FCamera
     FMatrix4 ProjectionMatrix;
 };
 
-#define LIGHT_TYPE_NONE 0
-#define LIGHT_TYPE_POINT_LIGHT 1
-#define LIGHT_TYPE_DIRECTIONAL_LIGHT 2
-#define LIGHT_TYPE_SPOT_LIGHT 3
-
 struct FLight
 {
     FVector3 Position;

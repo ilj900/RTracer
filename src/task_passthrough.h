@@ -26,10 +26,4 @@ public:
     VkRenderPass RenderPass = VK_NULL_HANDLE;
 
     std::vector<VkFramebuffer> PassthroughFramebuffers;
-
-    /// Task set indices
-    const uint32_t PASSTHROUGH_PER_FRAME_LAYOUT_INDEX = 0;
-
-    /// Task descriptor indices
-    const uint32_t PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX = 0;
 };

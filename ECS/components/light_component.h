@@ -1,6 +1,7 @@
 #pragma once
 
 #include "maths.h"
+#include "common_defines.h"
 #include "common_structures.h"
 
 namespace ECS

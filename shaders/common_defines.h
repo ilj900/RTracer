@@ -1,0 +1,21 @@
+#ifndef COMMON_DEFINES_H
+#define COMMON_DEFINES_H
+
+#define LIGHT_TYPE_NONE 0
+#define LIGHT_TYPE_POINT_LIGHT 1
+#define LIGHT_TYPE_DIRECTIONAL_LIGHT 2
+#define LIGHT_TYPE_SPOT_LIGHT 3
+
+/// Task accumulate descriptor set layout defines
+#define ACCUMULATE_PER_FRAME_LAYOUT_INDEX 0
+
+#define INCOMING_IMAGE_TO_SAMPLE 0
+#define ACCUMULATE_IMAGE_INDEX 1
+#define ESTIMATED_IMAGE_INDEX 2
+
+/// Task passthrough descriptor set layout defines
+#define PASSTHROUGH_PER_FRAME_LAYOUT_INDEX 0
+
+#define PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX 0
+
+#endif // COMMON_DEFINES_H

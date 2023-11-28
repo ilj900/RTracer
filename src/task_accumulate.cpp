@@ -1,6 +1,7 @@
 #include "vk_context.h"
 #include "vk_debug.h"
 #include "vk_functions.h"
+#include "common_defines.h"
 
 #include "vk_shader_compiler.h"
 

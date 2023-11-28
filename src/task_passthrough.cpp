@@ -6,6 +6,8 @@
 #include "vk_shader_compiler.h"
 #include "vk_debug.h"
 
+#include "common_defines.h"
+
 FPassthroughTask::FPassthroughTask(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
