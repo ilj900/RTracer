@@ -74,3 +74,30 @@ size_t InsertString(std::string& StringToModify, size_t Index, const std::string
 
     return Index;
 }
+
+std::string ExtractFileName(const std::string& Path)
+{
+    std::string Result;
+    bool bDotFound = false;
+
+    for (int i = Path.size() - 1; i >=0; --i)
+    {
+        if (Path[i] == '.')
+        {
+            bDotFound = true;
+        }
+
+        if (Path[i] == '/' || Path[i] == '\\')
+        {
+            if (bDotFound)
+            {
+                std::reverse(Result.begin(), Result.end());
+                return Result;
+            }
+        }
+
+        Result.push_back(Path[i]);
+    }
+
+    return Result;
+}

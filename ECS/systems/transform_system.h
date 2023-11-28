@@ -1,10 +1,6 @@
 #pragma once
 
-#include "gpu_bufferable_system.h"
-#include "coordinator.h"
-
-#include "buffer.h"
-
+#include "system.h"
 #include "maths.h"
 
 #include <unordered_set>

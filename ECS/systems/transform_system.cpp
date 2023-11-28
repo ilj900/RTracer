@@ -3,10 +3,6 @@
 #include "systems/transform_system.h"
 #include "coordinator.h"
 
-#include "vk_context.h"
-
-#include <cassert>
-
 namespace ECS
 {
     namespace SYSTEMS
