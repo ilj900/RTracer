@@ -34,4 +34,10 @@
 
 #define IMAGE_TO_CLEAR 0u
 
+/// Task generate rays descriptor set layout defines
+#define GENERATE_RAYS_LAYOUT_INDEX 0
+
+#define CAMERA_RAYS_BUFFER 0
+#define CAMERA_POSITION_BUFFER 1
+
 #endif // COMMON_DEFINES_H

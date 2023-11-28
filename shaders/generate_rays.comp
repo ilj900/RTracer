@@ -2,14 +2,15 @@
 
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 
+#include "common_defines.h"
 #include "common_structures.h"
 
-layout (set = 0, binding = 0) buffer RaysBufferObject
+layout (set = GENERATE_RAYS_LAYOUT_INDEX, binding = CAMERA_RAYS_BUFFER) buffer RaysBufferObject
 {
     FRayData RayData[];
 };
 
-layout (set = 0, binding = 1) uniform CameraBufferObject
+layout (set = GENERATE_RAYS_LAYOUT_INDEX, binding = CAMERA_POSITION_BUFFER) uniform CameraBufferObject
 {
     FCamera Camera;
 };

@@ -3,11 +3,12 @@
 #extension GL_EXT_ray_tracing : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 
+#include "common_defines.h"
 #include "common_structures.h"
 
-layout(location = 0) rayPayloadInEXT HitPayload Hit;
+layout (location = 0) rayPayloadInEXT HitPayload Hit;
 
-layout(set = 0, binding = 6) uniform sampler2D IBITextureSampler;
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_IBL_IMAGE_INDEX) uniform sampler2D IBITextureSampler;
 
 void main()
 {

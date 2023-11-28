@@ -10,6 +10,8 @@
 #include "systems/camera_system.h"
 #include "common_structures.h"
 
+#include "common_defines.h"
+
 FGenerateInitialRays::FGenerateInitialRays(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {

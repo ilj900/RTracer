@@ -1,6 +1,8 @@
 #version 460
 
-layout (set = 0, binding = 0, rgba32f) uniform image2D ImageToClear;
+#include "common_defines.h"
+
+layout (set = CLEAR_IMAGE_LAYOUT_INDEX, binding = IMAGE_TO_CLEAR, rgba32f) uniform image2D ImageToClear;
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 

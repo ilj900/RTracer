@@ -6,34 +6,35 @@
 #extension GL_EXT_scalar_block_layout : enable
 #extension GL_EXT_buffer_reference2 : require
 
+#include "common_defines.h"
 #include "common_structures.h"
 
 hitAttributeEXT vec2 Attributes;
 
-layout(location = 0) rayPayloadInEXT HitPayload Hit;
+layout (location = 0) rayPayloadInEXT HitPayload Hit;
 hitAttributeEXT vec2 HitAttributes;
 
-layout(buffer_reference, scalar) buffer Vertices
+layout (buffer_reference, scalar) buffer Vertices
 {
     FVertex V[];
 };
 
-layout(buffer_reference, scalar) buffer Indices
+layout (buffer_reference, scalar) buffer Indices
 {
     ivec3 I[];
 };
 
-layout (set = 0, binding = 3) buffer RenderableBufferObject
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_RENDERABLE_BUFFER_INDEX) buffer RenderableBufferObject
 {
     FRenderable Renderables[];
 };
 
-layout (set = 0, binding = 4) buffer MaterialBufferObject
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_MATERIAL_BUFFER_INDEX) buffer MaterialBufferObject
 {
     FMaterial Materials[];
 };
 
-layout (set = 0, binding = 5) buffer LightBufferObject
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_LIGHT_BUFFER_INDEX) buffer LightBufferObject
 {
     FLight Lights[];
 };

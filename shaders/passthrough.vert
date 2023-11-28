@@ -1,6 +1,6 @@
 #version 450
 
-layout(location = 0) out vec2 OutUV;
+layout (location = 0) out vec2 OutUV;
 
 int Indices[] = {0, 2, 1};
 
