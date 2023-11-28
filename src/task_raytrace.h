@@ -28,15 +28,4 @@ public:
     VkStridedDeviceAddressRegionKHR RMissRegion{};
     VkStridedDeviceAddressRegionKHR RHitRegion{};
     VkStridedDeviceAddressRegionKHR RCallRegion{};
-
-    /// Task descriptor indices
-    const uint32_t RAYTRACE_PER_FRAME_LAYOUT_INDEX = 0;
-
-    const uint32_t TLAS_LAYOUT_INDEX = 0;
-    const uint32_t RT_FINAL_IMAGE_INDEX = 1;
-    const uint32_t RAYS_DATA_BUFFER = 2;
-    const uint32_t RENDERABLE_BUFFER_INDEX = 3;
-    const uint32_t MATERIAL_BUFFER_INDEX = 4;
-    const uint32_t LIGHT_BUFFER_INDEX = 5;
-    const uint32_t IBL_IMAGE_INDEX = 6;
 };
