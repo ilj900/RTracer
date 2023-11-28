@@ -16,10 +16,4 @@ public:
 
     VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
     VkPipeline Pipeline = VK_NULL_HANDLE;
-
-    /// Task descriptor indices
-    const uint32_t CLEAR_IMAGE_LAYOUT_INDEX = 0;
-
-    const uint32_t IMAGE_TO_CLEAR = 0;
-
 };

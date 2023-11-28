@@ -5,6 +5,7 @@
 #include "vk_shader_compiler.h"
 
 #include "task_clear_image.h"
+#include "common_defines.h"
 
 FClearImageTask::FClearImageTask(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
