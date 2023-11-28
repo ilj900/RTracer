@@ -135,6 +135,7 @@ set(INCLUDE
         include/tinyexr.h
         include/miniz.c
         shaders/common_structures.h
+        shaders/common_defines.h
         math/maths.h)
 
 add_executable(RTracer ${SOURCE} ${INCLUDE})
