@@ -18,6 +18,7 @@
 
 #include "vk_functions.h"
 #include "render.h"
+#include "texture_manager.h"
 
 #include "logging.h"
 

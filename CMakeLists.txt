@@ -101,6 +101,8 @@ set(SOURCE
         vulkan_helpers/descriptors.cpp
         vulkan_helpers/command_buffer_manager.cpp
         vulkan_helpers/vk_shader_compiler.cpp
+        vulkan_helpers/texture_manager.h
+        vulkan_helpers/texture_manager.cpp
         math/maths.cpp
         utils/logging.h
         utils/logging.cpp

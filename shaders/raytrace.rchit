@@ -39,6 +39,10 @@ layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_LIGHT_BUFFER_INDEX) buff
     FLight Lights[];
 };
 
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_TEXTURE_SAMPLER) uniform sampler Sampler;
+
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_TEXTURE_ARRAY) uniform texture2D Textures[MAX_TEXTURES];
+
 FRenderable FetchRenderable()
 {
     return Renderables[nonuniformEXT(gl_InstanceCustomIndexEXT)];

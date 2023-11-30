@@ -35,7 +35,7 @@ void FPipelineDescriptorSetLayout::CreateDescriptorSetLayout(VkDevice LogicalDev
             VkDescriptorSetLayoutBinding DescriptorSetLayoutBinding;
             DescriptorSetLayoutBinding.binding = Layout.first;
             DescriptorSetLayoutBinding.descriptorType = Layout.second.Type;
-            DescriptorSetLayoutBinding.descriptorCount = 1;
+            DescriptorSetLayoutBinding.descriptorCount = Layout.second.DescriptorCount;
             DescriptorSetLayoutBinding.stageFlags = Layout.second.StageFlags;
             DescriptorSetLayoutBinding.pImmutableSamplers = nullptr;
 
@@ -162,7 +162,7 @@ void FPipelineDescriptorSetLayout::AllocateAllDescriptorSets(VkDevice LogicalDev
     }
 }
 
-void FPipelineDescriptorSetLayout::UpdateDescriptorSetInfo(VkDevice LogicalDevice, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorBufferInfo& BufferInfo)
+void FPipelineDescriptorSetLayout::UpdateDescriptorSetInfo(VkDevice LogicalDevice, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorBufferInfo* BufferInfo)
 {
     auto& Descriptor = PipelineDescriptorSets[DescriptorSetLayoutIndex].DescriptorSets[DescriptorLayoutIndex];
 
@@ -173,12 +173,12 @@ void FPipelineDescriptorSetLayout::UpdateDescriptorSetInfo(VkDevice LogicalDevic
     DescriptorWrites.dstArrayElement = 0;
     DescriptorWrites.descriptorType = Descriptor.Type;
     DescriptorWrites.descriptorCount = 1;
-    DescriptorWrites.pBufferInfo = &BufferInfo;
+    DescriptorWrites.pBufferInfo = BufferInfo;
 
     vkUpdateDescriptorSets(LogicalDevice, 1, &DescriptorWrites, 0, nullptr);
 }
 
-void FPipelineDescriptorSetLayout::UpdateDescriptorSetInfo(VkDevice LogicalDevice, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorImageInfo& ImageInfo)
+void FPipelineDescriptorSetLayout::UpdateDescriptorSetInfo(VkDevice LogicalDevice, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorImageInfo* ImageInfo)
 {
     auto& Descriptor = PipelineDescriptorSets[DescriptorSetLayoutIndex].DescriptorSets[DescriptorLayoutIndex];
 
@@ -188,17 +188,17 @@ void FPipelineDescriptorSetLayout::UpdateDescriptorSetInfo(VkDevice LogicalDevic
     DescriptorWrites.dstBinding = DescriptorLayoutIndex;
     DescriptorWrites.dstArrayElement = 0;
     DescriptorWrites.descriptorType = Descriptor.Type;
-    DescriptorWrites.descriptorCount = 1;
-    DescriptorWrites.pImageInfo = &ImageInfo;
+    DescriptorWrites.descriptorCount = Descriptor.DescriptorCount;
+    DescriptorWrites.pImageInfo = ImageInfo;
 
     vkUpdateDescriptorSets(LogicalDevice, 1, &DescriptorWrites, 0, nullptr);
 }
 
-void FPipelineDescriptorSetLayout::UpdateDescriptorSetInfo(VkDevice LogicalDevice, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkAccelerationStructureKHR& ASInfo)
+void FPipelineDescriptorSetLayout::UpdateDescriptorSetInfo(VkDevice LogicalDevice, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkAccelerationStructureKHR* ASInfo)
 {
     VkWriteDescriptorSetAccelerationStructureKHR WriteDescriptorSetAccelerationStructureKHR{};
     WriteDescriptorSetAccelerationStructureKHR.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
-    WriteDescriptorSetAccelerationStructureKHR.pAccelerationStructures = &ASInfo;
+    WriteDescriptorSetAccelerationStructureKHR.pAccelerationStructures = ASInfo;
     WriteDescriptorSetAccelerationStructureKHR.accelerationStructureCount = 1;
 
     VkWriteDescriptorSet DescriptorWrites{};
@@ -295,17 +295,17 @@ void FDescriptorSetManager::AllocateAllDescriptorSets(const std::string& Pipelin
 }
 
 
-void FDescriptorSetManager::UpdateDescriptorSetInfo(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorBufferInfo& BufferInfo)
+void FDescriptorSetManager::UpdateDescriptorSetInfo(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorBufferInfo* BufferInfo)
 {
     PipelineDescriptorSetLayouts[PipelineName].UpdateDescriptorSetInfo(LogicalDevice, DescriptorSetLayoutIndex, DescriptorLayoutIndex, Index, BufferInfo);
 }
 
-void FDescriptorSetManager::UpdateDescriptorSetInfo(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorImageInfo& ImageInfo)
+void FDescriptorSetManager::UpdateDescriptorSetInfo(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorImageInfo* ImageInfo)
 {
     PipelineDescriptorSetLayouts[PipelineName].UpdateDescriptorSetInfo(LogicalDevice, DescriptorSetLayoutIndex, DescriptorLayoutIndex, Index, ImageInfo);
 }
 
-void FDescriptorSetManager::UpdateDescriptorSetInfo(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkAccelerationStructureKHR& ASInfo)
+void FDescriptorSetManager::UpdateDescriptorSetInfo(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkAccelerationStructureKHR* ASInfo)
 {
     PipelineDescriptorSetLayouts[PipelineName].UpdateDescriptorSetInfo(LogicalDevice, DescriptorSetLayoutIndex, DescriptorLayoutIndex, Index, ASInfo);
 }

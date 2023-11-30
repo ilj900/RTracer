@@ -52,7 +52,7 @@ void FClearImageTask::UpdateDescriptorSets()
         VkDescriptorImageInfo ClearImageImageInfo{};
         ClearImageImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
         ClearImageImageInfo.imageView = Outputs[0]->View;
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, CLEAR_IMAGE_LAYOUT_INDEX, IMAGE_TO_CLEAR, i, ClearImageImageInfo);
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, CLEAR_IMAGE_LAYOUT_INDEX, IMAGE_TO_CLEAR, i, &ClearImageImageInfo);
     }
 };
 

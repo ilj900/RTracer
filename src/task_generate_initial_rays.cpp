@@ -65,13 +65,13 @@ void FGenerateInitialRays::UpdateDescriptorSets()
         InitialRaysBufferInfo.buffer = InitialRaysBuffer.Buffer;
         InitialRaysBufferInfo.offset = 0;
         InitialRaysBufferInfo.range = InitialRaysBuffer.BufferSize;
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, GENERATE_RAYS_LAYOUT_INDEX, CAMERA_RAYS_BUFFER, i, InitialRaysBufferInfo);
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, GENERATE_RAYS_LAYOUT_INDEX, CAMERA_RAYS_BUFFER, i, &InitialRaysBufferInfo);
 
         VkDescriptorBufferInfo CameraBufferInfo{};
         CameraBufferInfo.buffer = CAMERA_SYSTEM()->DeviceBuffer.Buffer;
         CameraBufferInfo.offset = 0;
         CameraBufferInfo.range = sizeof(ECS::COMPONENTS::FDeviceCameraComponent);
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, GENERATE_RAYS_LAYOUT_INDEX, CAMERA_POSITION_BUFFER, i, CameraBufferInfo);
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, GENERATE_RAYS_LAYOUT_INDEX, CAMERA_POSITION_BUFFER, i, &CameraBufferInfo);
     }
 };
 

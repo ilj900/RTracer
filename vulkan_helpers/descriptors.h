@@ -10,6 +10,7 @@ struct FDescriptor
 {
     VkDescriptorType Type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     VkShaderStageFlags StageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    int DescriptorCount = 1;
 };
 
 struct FDescriptorSetLayout
@@ -28,9 +29,9 @@ struct FPipelineDescriptorSetLayout
     void ReserveDescriptorPool(VkDevice LogicalDevice);
     void AllocateAllDescriptorSets(VkDevice LogicalDevice);
 
-    void UpdateDescriptorSetInfo(VkDevice LogicalDevice, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorBufferInfo& BufferInfo);
-    void UpdateDescriptorSetInfo(VkDevice LogicalDevice, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorImageInfo& ImageInfo);
-    void UpdateDescriptorSetInfo(VkDevice LogicalDevice, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkAccelerationStructureKHR& ASInfo);
+    void UpdateDescriptorSetInfo(VkDevice LogicalDevice, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorBufferInfo* BufferInfo);
+    void UpdateDescriptorSetInfo(VkDevice LogicalDevice, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorImageInfo* ImageInfo);
+    void UpdateDescriptorSetInfo(VkDevice LogicalDevice, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkAccelerationStructureKHR* ASInfo);
     VkDescriptorSet GetSet(uint32_t SetIndex, uint32_t Index);
 
     void DestroyDescriptorSetLayout(VkDevice LogicalDevice, uint32_t DescriptorSetLayoutIndex);
@@ -66,9 +67,9 @@ public:
     void ReserveDescriptorPool(const std::string& PipelineName);
     void AllocateAllDescriptorSets(const std::string& PipelineName);
 
-    void UpdateDescriptorSetInfo(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorBufferInfo& BufferInfo);
-    void UpdateDescriptorSetInfo(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorImageInfo& ImageInfo);
-    void UpdateDescriptorSetInfo(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkAccelerationStructureKHR& ASInfo);
+    void UpdateDescriptorSetInfo(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorBufferInfo* BufferInfo);
+    void UpdateDescriptorSetInfo(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkDescriptorImageInfo* ImageInfo);
+    void UpdateDescriptorSetInfo(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, uint32_t Index, VkAccelerationStructureKHR* ASInfo);
     VkDescriptorSet GetSet(const std::string& PipelineName, uint32_t SetIndex, uint32_t Index);
 
     void DestroyDescriptorSetLayout(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex);
