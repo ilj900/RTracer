@@ -130,7 +130,7 @@ void main()
     float Distance2 = dot(PointOfIntersectioToLightDirection, PointOfIntersectioToLightDirection);
     float Luminance = Light.Intensity * CosNormalToLightAngle / Distance2;
 
-    int Index = 0;
+    int Index = 1;
     if (gl_InstanceCustomIndexEXT == 1)
     {
         Index = 0;

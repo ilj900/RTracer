@@ -18,6 +18,7 @@ namespace ECS
             void CreateTetrahedron(FEntity Entity);
             void CreateHexahedron(FEntity Entity);
             void CreateIcosahedron(FEntity Entity, uint32_t Depth);
+            void CreatePlane(FEntity Entity);
             uint32_t Size();
 
             void Draw(FEntity Entity, VkCommandBuffer CommandBuffer);

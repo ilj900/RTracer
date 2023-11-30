@@ -142,7 +142,7 @@ namespace ECS
                         1.f - Attrib.texcoords[2 * Index.texcoord_index + 1],
                         };
                     }
-                    
+
                     MeshComponent.Indices.push_back(static_cast<uint32_t>(MeshComponent.Vertices.size()));
                     MeshComponent.Vertices.push_back(Vert);
                 }
@@ -206,27 +206,41 @@ namespace ECS
             Positions[6] = { A,  A,  A};
             Positions[7] = {-A,  A,  A};
 
+            std::vector<FVector2> TextureCoordinates(4);
+            TextureCoordinates[0] = {0, 0};
+            TextureCoordinates[1] = {1, 0};
+            TextureCoordinates[2] = {1, 1};
+            TextureCoordinates[3] = {0, 1};
+
             std::vector<uint32_t> Indices = {3, 2, 1, 3, 1, 0,
                                              2, 6, 5, 2, 5, 1,
-                                             5, 6, 7, 5, 7, 4,
-                                             0, 4, 7, 0, 7, 3,
-                                             3, 7, 6, 3, 6, 2,
-                                             1, 5, 4, 1, 4, 0};
+                                             6, 7, 4, 6, 4, 5,
+                                             7, 3, 0, 7, 0, 4,
+                                             2, 3, 7, 2, 7, 6,
+                                             5, 4, 0, 5, 0, 1};
 
             for(uint32_t i = 0; i < Indices.size(); i += 3)
             {
+                std::vector<uint32_t> EvenTextureIndices = {2, 3, 0};
+                std::vector<uint32_t> OddTextureIndices = {2, 0, 1};
+                auto& TextureIndices = EvenTextureIndices;
+                if (i % 2 == 1)
+                {
+                    TextureIndices = OddTextureIndices;
+                }
+
                 auto V1 = Positions[Indices[i+1]] - Positions[Indices[i]];
                 auto V2 = Positions[Indices[i+2]] - Positions[Indices[i]];
                 auto Normal = Cross(V1, V2).GetNormalized();
-                MeshComponent.Vertices.emplace_back(Positions[Indices[i]].X,    Positions[Indices[i]].Y,    Positions[Indices[i]].Z,
-                                               Normal.X,                   Normal.Y,                   Normal.Z,
-                                               0.f, 0.f);
-                MeshComponent.Vertices.emplace_back(Positions[Indices[i+1]].X,    Positions[Indices[i+1]].Y,    Positions[Indices[i+1]].Z,
-                                               Normal.X,                   Normal.Y,                   Normal.Z,
-                                               0.f, 0.f);
-                MeshComponent.Vertices.emplace_back(Positions[Indices[i+2]].X,    Positions[Indices[i+2]].Y,    Positions[Indices[i+2]].Z,
-                                               Normal.X,                   Normal.Y,                   Normal.Z,
-                                               0.f, 0.f);
+                MeshComponent.Vertices.emplace_back(Positions[Indices[i]].X, Positions[Indices[i]].Y, Positions[Indices[i]].Z,
+                                                    Normal.X, Normal.Y, Normal.Z,
+                                                    TextureCoordinates[TextureIndices[i % 3]].X, TextureCoordinates[TextureIndices[i % 3]].Y);
+                MeshComponent.Vertices.emplace_back(Positions[Indices[i+1]].X, Positions[Indices[i+1]].Y, Positions[Indices[i+1]].Z,
+                                                    Normal.X, Normal.Y, Normal.Z,
+                                                    TextureCoordinates[TextureIndices[(i  + 1) % 3]].X, TextureCoordinates[TextureIndices[(i + 1) % 3]].Y);
+                MeshComponent.Vertices.emplace_back(Positions[Indices[i+2]].X, Positions[Indices[i+2]].Y, Positions[Indices[i+2]].Z,
+                                                    Normal.X, Normal.Y, Normal.Z,
+                                                    TextureCoordinates[TextureIndices[(i + 2) % 3]].X, TextureCoordinates[TextureIndices[(i + 2) % 3]].Y);
             }
         }
 
