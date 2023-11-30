@@ -59,9 +59,6 @@ public:
     int MAX_FRAMES_IN_FLIGHT = 2;
     uint32_t RenderFrameIndex = 0;
 
-    ImagePtr UtilityImageR32 = nullptr;
-    ImagePtr UtilityImageR8G8B8A8_SRGB = nullptr;
-
     std::vector<ECS::FEntity> Models;
     std::vector<ECS::FEntity> Lights;
 
