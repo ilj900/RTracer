@@ -119,6 +119,7 @@ void main()
     }
 
     const vec3 Barycentrics = vec3(1.0 - HitAttributes.x - HitAttributes.y, HitAttributes.x, HitAttributes.y);
+    vec2 TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
 
     vec3 PointOfIntersectionInLocalSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
     vec3 PointOfIntersectionInWorldSpace = vec3(gl_ObjectToWorldEXT * vec4(PointOfIntersectionInLocalSpace, 1.f));
@@ -129,5 +130,20 @@ void main()
     float Distance2 = dot(PointOfIntersectioToLightDirection, PointOfIntersectioToLightDirection);
     float Luminance = Light.Intensity * CosNormalToLightAngle / Distance2;
 
-    Hit.Color = Material.BaseAlbedo * Luminance;
+    int Index = 0;
+    if (gl_InstanceCustomIndexEXT == 1)
+    {
+        Index = 0;
+    }
+    if (gl_InstanceCustomIndexEXT == 2)
+    {
+        Index = 2;
+    }
+    if (gl_InstanceCustomIndexEXT == 3)
+    {
+        Index = 3;
+    }
+    vec3 ColorOut = texture(sampler2D(Textures[Index], Sampler), TextureCoords).rgb;
+
+    Hit.Color = ColorOut;
 }

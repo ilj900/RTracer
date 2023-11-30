@@ -41,7 +41,7 @@ FRaytraceTask::FRaytraceTask(int WidthIn, int HeightIn, FVulkanContext* Context,
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_TEXTURE_SAMPLER,
                                               {VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_TEXTURE_ARRAY,
-                                              {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
+                                              {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, MAX_TEXTURES});
 
     DescriptorSetManager->CreateDescriptorSetLayout(Name);
 
@@ -162,16 +162,18 @@ void FRaytraceTask::Init()
     Sampler = Context->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT);
     TextureSampler = Context->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT);
 
+    auto ModelTexture = Context->LoadImageFromFile("../models/viking_room/viking_room.png", "V_viking_room");
     auto WoodRoughnessTexture = Context->LoadImageFromFile("../resources/Wood/Wood_8K_Roughness.jpg", "V_Wood_8K_Roughness");
     auto WoodNormalTexture = Context->LoadImageFromFile("../resources/Wood/Wood_8K_Normal.jpg", "V_Wood_8K_Normal");
     auto WoodAlbedoTexture = Context->LoadImageFromFile("../resources/Wood/Wood_8K_Albedo.jpg", "V_Wood_8K_Albedo");
     auto WoodAOTexture = Context->LoadImageFromFile("../resources/Wood/Wood_8K_AO.jpg", "V_Wood_8K_AO");
 
     auto TextureManager = GetTextureManager();
-    TextureManager->RegiseterTexture(WoodRoughnessTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,TextureSampler);
-    TextureManager->RegiseterTexture(WoodNormalTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,TextureSampler);
-    TextureManager->RegiseterTexture(WoodAlbedoTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,TextureSampler);
-    TextureManager->RegiseterTexture(WoodAOTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,TextureSampler);
+    TextureManager->RegiseterTexture(ModelTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    TextureManager->RegiseterTexture(WoodRoughnessTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    TextureManager->RegiseterTexture(WoodNormalTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    TextureManager->RegiseterTexture(WoodAlbedoTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    TextureManager->RegiseterTexture(WoodAOTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 };
 
 void FRaytraceTask::UpdateDescriptorSets()
@@ -215,6 +217,10 @@ void FRaytraceTask::UpdateDescriptorSets()
         ImageBufferInfo.imageView = Inputs[0]->View;
         ImageBufferInfo.sampler = Sampler;
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_IBL_IMAGE_INDEX, i, &ImageBufferInfo);
+
+        VkDescriptorImageInfo TextureSamplerInfo{};
+        TextureSamplerInfo.sampler = TextureSampler;
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_TEXTURE_SAMPLER, i, &TextureSamplerInfo);
 
         auto TextureSampler = GetTextureManager()->GetDescriptorImageInfos();
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_TEXTURE_ARRAY, i, TextureSampler);

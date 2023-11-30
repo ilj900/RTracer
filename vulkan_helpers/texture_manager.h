@@ -11,14 +11,13 @@ public:
     FTextureManager();
     ~FTextureManager();
 
-    int RegiseterTexture(ImagePtr ImagePointer, VkImageLayout ImageLayout, VkSampler Sampler);
+    int RegiseterTexture(ImagePtr ImagePointer, VkImageLayout ImageLayout);
     VkDescriptorImageInfo* GetDescriptorImageInfos();
 
 private:
     std::vector<ImagePtr> Images;
     std::vector<VkDescriptorImageInfo> DescriptorImageInfos;
     ImagePtr DummyImage = nullptr;
-    VkSampler Sampler = VK_NULL_HANDLE;
 };
 
 FTextureManager* GetTextureManager();
