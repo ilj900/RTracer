@@ -112,9 +112,6 @@ namespace ECS
                 throw std::runtime_error(Warn + Err);
             }
 
-            std::unordered_map<ECS::COMPONENTS::FVertexComponent, uint32_t> UniqueVertices{};
-
-
             for (const auto& Shape : Shapes)
             {
                 for (const auto& Index : Shape.mesh.indices)
@@ -145,14 +142,9 @@ namespace ECS
                         1.f - Attrib.texcoords[2 * Index.texcoord_index + 1],
                         };
                     }
-
-                    if (UniqueVertices.find(Vert) == UniqueVertices.end())
-                    {
-                        UniqueVertices[Vert] = static_cast<uint32_t>(MeshComponent.Vertices.size());
-                        MeshComponent.Vertices.push_back(Vert);
-                    }
-
-                    MeshComponent.Indices.push_back(UniqueVertices[Vert]);
+                    
+                    MeshComponent.Indices.push_back(static_cast<uint32_t>(MeshComponent.Vertices.size()));
+                    MeshComponent.Vertices.push_back(Vert);
                 }
             }
 
