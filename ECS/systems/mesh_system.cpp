@@ -244,7 +244,7 @@ namespace ECS
             }
         }
 
-        void FMeshSystem::CreateIcosahedron(FEntity Entity, uint32_t Depth)
+        void FMeshSystem::CreateIcosahedron(FEntity Entity, uint32_t Depth, bool bGeometricNormals)
         {
             auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
 
@@ -309,19 +309,45 @@ namespace ECS
 
             for(uint32_t i = 0; i < Positions.size(); i += 3)
             {
-                auto V1 = Positions[i+1] - Positions[i];
-                auto V2 = Positions[i+2] - Positions[i];
-                auto Normal = Cross(V1, V2).GetNormalized();
+                FVector3 Normal;
+
+                if (bGeometricNormals)
+                {
+                    auto V1 = Positions[i + 1] - Positions[i];
+                    auto V2 = Positions[i + 2] - Positions[i];
+                    Normal = Cross(V1, V2).GetNormalized();
+                }
+                else
+                {
+                    Normal = Positions[i];
+                }
+
+                auto TransformXZ = [](float InX, float InZ)
+                {
+                    float Angle = ((asin(InX)) + 1.f) / 2.f;
+                    if (InZ > 0.f)
+                    {
+                        Angle += 1.f;
+                    }
+                    return Angle / 2.f;
+                };
+
+                auto TransformY = [](float In)
+                {
+                    return ((asin(In)) + 1.f) / 2.f;
+                };
+
                 MeshComponent.Vertices.emplace_back(Positions[i].X,    Positions[i].Y,    Positions[i].Z,
                                                 Normal.X,           Normal.Y,                   Normal.Z,
-                                                0.f, 0.f);
+                                                TransformXZ(Positions[i].Y, Positions[i].Z), TransformY(Positions[i].X));
                 MeshComponent.Vertices.emplace_back(Positions[i+1].X,    Positions[i+1].Y,    Positions[i+1].Z,
                                                 Normal.X,                   Normal.Y,                   Normal.Z,
-                                                0.f, 0.f);
+                                                    TransformXZ(Positions[i+1].Y, Positions[i+1].Z), TransformY(Positions[i+1].X));
                 MeshComponent.Vertices.emplace_back(Positions[i+2].X,    Positions[i+2].Y,    Positions[i+2].Z,
                                                 Normal.X,                   Normal.Y,                   Normal.Z,
-                                                0.f, 0.f);
+                                                    TransformXZ(Positions[i+2].Y, Positions[i+2].Z), TransformY(Positions[i+2].X));
             }
+            std::cout << std::endl;
         }
     }
 }

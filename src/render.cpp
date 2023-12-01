@@ -412,7 +412,7 @@ ECS::FEntity FRender::AddSphere(const FVector3& Color, const FVector3& Position,
 {
     auto NewModel = CreateEmptyModel();
 
-    MESH_SYSTEM()->CreateIcosahedron(NewModel, LevelOfComplexity);
+    MESH_SYSTEM()->CreateIcosahedron(NewModel, LevelOfComplexity, true);
     TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
     RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
     MATERIAL_SYSTEM()->SetBaseAlbedo(NewModel, 0, 1, 1);
