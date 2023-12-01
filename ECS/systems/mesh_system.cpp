@@ -347,7 +347,6 @@ namespace ECS
                                                 Normal.X,                   Normal.Y,                   Normal.Z,
                                                     TransformXZ(Positions[i+2].Y, Positions[i+2].Z), TransformY(Positions[i+2].X));
             }
-            std::cout << std::endl;
         }
     }
 }
