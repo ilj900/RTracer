@@ -26,18 +26,26 @@ namespace ECS
             FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FMaterialComponent>(Index);
         }
 
-        FMaterialSystem& FMaterialSystem::SetBaseAlbedo(FEntity MaterialEntity, float Red, float Green, float Blue)
+        FMaterialSystem& FMaterialSystem::SetBaseColor(FEntity MaterialEntity, float Red, float Green, float Blue)
         {
             auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
-            MaterialComponent.BaseAlbedo = FVector3(Red, Green, Blue);
+            MaterialComponent.BaseColor = FVector3(Red, Green, Blue);
             MarkDirty(MaterialEntity);
             return *this;
         }
 
-        FMaterialSystem& FMaterialSystem::SetRefractionIOR(FEntity MaterialEntity, float IOR)
+        FMaterialSystem& FMaterialSystem::SetDiffuseRoughness(FEntity MaterialEntity, float DiffuseRoughness)
         {
             auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
-            MaterialComponent.RefractionIOR = IOR;
+            MaterialComponent.DiffuseRoughness = DiffuseRoughness;
+            MarkDirty(MaterialEntity);
+            return *this;
+        }
+
+        FMaterialSystem& FMaterialSystem::SetSpecularIOR(FEntity MaterialEntity, float SpecularIOR)
+        {
+            auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+            MaterialComponent.SpecularIOR = SpecularIOR;
             MarkDirty(MaterialEntity);
             return *this;
         }

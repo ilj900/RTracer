@@ -405,8 +405,7 @@ ECS::FEntity FRender::AddPlane(const FVector3& Color, const FVector3& Position)
     TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
     RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
     RENDERABLE_SYSTEM()->SetIndexed(NewModel);
-    MATERIAL_SYSTEM()->SetBaseAlbedo(NewModel, 1, 0, 1);
-    MATERIAL_SYSTEM()->SetRefractionIOR(NewModel, 0.f);
+    MATERIAL_SYSTEM()->SetBaseColor(NewModel, 1, 0, 1);
 
     return NewModel;
 }
@@ -418,8 +417,7 @@ ECS::FEntity FRender::AddCube(const FVector3& Color, const FVector3& Position)
     MESH_SYSTEM()->CreateHexahedron(NewModel);
     TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
     RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
-    MATERIAL_SYSTEM()->SetBaseAlbedo(NewModel, 1, 0, 1);
-    MATERIAL_SYSTEM()->SetRefractionIOR(NewModel, 0.f);
+    MATERIAL_SYSTEM()->SetBaseColor(NewModel, 1, 0, 1);
 
     return NewModel;
 }
@@ -431,8 +429,7 @@ ECS::FEntity FRender::AddSphere(const FVector3& Color, const FVector3& Position,
     MESH_SYSTEM()->CreateIcosahedron(NewModel, LevelOfComplexity, true);
     TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
     RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
-    MATERIAL_SYSTEM()->SetBaseAlbedo(NewModel, 0, 1, 1);
-    MATERIAL_SYSTEM()->SetRefractionIOR(NewModel, 0.33f);
+    MATERIAL_SYSTEM()->SetBaseColor(NewModel, 0, 1, 1);
 
     return NewModel;
 }
@@ -446,8 +443,7 @@ ECS::FEntity FRender::AddModel(const FVector3& Color, const FVector3& Position, 
     RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
     RENDERABLE_SYSTEM()->SetIndexed(NewModel);
     RENDERABLE_SYSTEM()->SetRenderableHasTexture(NewModel);
-    MATERIAL_SYSTEM()->SetBaseAlbedo(NewModel, 1, 1, 1);
-    MATERIAL_SYSTEM()->SetRefractionIOR(NewModel, 0.66f);
+    MATERIAL_SYSTEM()->SetBaseColor(NewModel, 1, 1, 1);
 
     return NewModel;
 }
@@ -459,8 +455,7 @@ ECS::FEntity FRender::AddPyramid(const FVector3& Color, const FVector3& Position
     MESH_SYSTEM()->CreateTetrahedron(NewModel);
     TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
     RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
-    MATERIAL_SYSTEM()->SetBaseAlbedo(NewModel, 1, 1, 0);
-    MATERIAL_SYSTEM()->SetRefractionIOR(NewModel, 1);
+    MATERIAL_SYSTEM()->SetBaseColor(NewModel, 1, 1, 0);
 
     return NewModel;
 }

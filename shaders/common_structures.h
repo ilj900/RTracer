@@ -50,17 +50,56 @@ struct FLight
 
 struct FMaterial
 {
-    FVector3 BaseAlbedo;
-    float ReflectionRoughness;
+    float BaseWeight;
+    FVector3 BaseColor;
+    float DiffuseRoughness;
+    float Metalness;
+    FVector3 Normal;
 
-    FVector3 ReflectionAlbedo;
-    float RefractionRoughness;
+    float SpecularWeight;
+    FVector3 SpecularColor;
+    float SpecularRoughness;
+    float SpecularIOR;
+    float SpecularAnisotropy;
+    float SpecularRotation;
 
-    FVector3 CoatingAlbedo;
-    float ReflectionIOR;
+    float TransmissionWeight;
+    FVector3 TransmissionColor;
+    float TransmissionDepth;
+    FVector3 TransmissionScatter;
+    float TransmissionAnisotropy;
+    float TransmissionDispersion;
+    float TransmissionRoughness;
 
-    FVector3 RefractionAlbedo;
-    float RefractionIOR;
+    float SubsurfaceWeight;
+    FVector3 SubsurfaceColor;
+    FVector3 SubsurfaceRadius;
+    float SubsurfaceScale;
+    float SubsurfaceAnisotropy;
+
+    float SheenWeight;
+    FVector3 SheenColor;
+    float SheenRoughness;
+
+    float CoatWeight;
+    FVector3 CoatColor;
+    float CoatRoughness;
+    float CoatAnisotropy;
+    float CoatRotation;
+    float CoatIOR;
+    FVector3 CoatNormal;
+    float CoatAffectColor;
+    float CoatAffectRoughness;
+
+    float ThinFilmThickness;
+    float ThinFilmIOR;
+
+    float Emission;
+    FVector3 EmissionColor;
+
+    FVector3 Opacity;
+    uint32_t ThinWalled;
+
 };
 
 const uint32_t RENDERABLE_SELECTED_BIT = 1 << 5;
