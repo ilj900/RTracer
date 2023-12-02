@@ -348,5 +348,21 @@ namespace ECS
                                                     TransformXZ(Positions[i+2].Y, Positions[i+2].Z), TransformY(Positions[i+2].X));
             }
         }
+
+        void FMeshSystem::CreatePlane(FEntity Entity)
+        {
+            auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
+            float A = 0.5;
+
+            MeshComponent.Vertices.resize(4);
+            MeshComponent.Vertices[0] = {-A, -A, 0, 0, 0, 1, 0, 0};
+            MeshComponent.Vertices[1] = { A, -A, 0, 0, 0, 1, 1, 0};
+            MeshComponent.Vertices[2] = { A,  A, 0, 0, 0, 1, 1, 1};
+            MeshComponent.Vertices[3] = {-A,  A, 0, 0, 0, 1, 0, 1};
+
+            MeshComponent.Indexed = true;
+            MeshComponent.Indices.resize(6);
+            MeshComponent.Indices = {0, 3, 2, 0, 2, 1};
+        }
     }
 }

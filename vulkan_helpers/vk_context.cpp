@@ -504,6 +504,7 @@ VkAccelerationStructureGeometryTrianglesDataKHR FVulkanContext::GetAccelerationS
     AccelerationStructureGeometryTrianglesData.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
     AccelerationStructureGeometryTrianglesData.vertexData.deviceAddress = GetBufferDeviceAddressInfo(VertexBuffer) + VertexBufferPtr.Offset;
     AccelerationStructureGeometryTrianglesData.vertexStride = VertexStride;
+
     if (IndexBufferPtr.Size != 0)
     {
         AccelerationStructureGeometryTrianglesData.indexType = VK_INDEX_TYPE_UINT32;

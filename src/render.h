@@ -35,6 +35,7 @@ public:
     int Update();
 
     int LoadScene(const std::string& Path);
+    ECS::FEntity AddPlane(const FVector3& Color, const FVector3& Position);
     ECS::FEntity AddPyramid(const FVector3& Color, const FVector3& Position);
     ECS::FEntity AddCube(const FVector3& Color, const FVector3& Position);
     ECS::FEntity AddSphere(const FVector3& Color, const FVector3& Position, int LevelOfComplexity);

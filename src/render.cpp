@@ -359,6 +359,7 @@ int FRender::LoadScene(const std::string& Path)
     Models.push_back(AddModel({0.9f, 0.0f, 0.6f}, {-1.f, 0.f, -2.f}, "../models/viking_room/viking_room.obj"));
     Models.push_back(AddSphere({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, 10));
     Models.push_back(AddPyramid({0.9f, 0.6f, 0.0f}, {-3.f, 0.f, -2.f}));
+    Models.push_back(AddPlane({0.6f, 0.9f, 0.0f}, {-5.f, 0.f, -2.f}));
 
     AddLight({5, 5, 5});
 
@@ -393,6 +394,20 @@ int FRender::LoadDataToGPU()
     }
 
     return 0;
+}
+
+ECS::FEntity FRender::AddPlane(const FVector3& Color, const FVector3& Position)
+{
+    auto NewModel = CreateEmptyModel();
+
+    MESH_SYSTEM()->CreatePlane(NewModel);
+    TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
+    RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
+    RENDERABLE_SYSTEM()->SetIndexed(NewModel);
+    MATERIAL_SYSTEM()->SetBaseAlbedo(NewModel, 1, 0, 1);
+    MATERIAL_SYSTEM()->SetRefractionIOR(NewModel, 0.f);
+
+    return NewModel;
 }
 
 ECS::FEntity FRender::AddCube(const FVector3& Color, const FVector3& Position)
