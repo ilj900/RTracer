@@ -1,6 +1,6 @@
 #pragma once
 
-#include "system.h"
+#include "gpu_bufferable_system.h"
 #include "maths.h"
 
 #include <unordered_set>
@@ -9,11 +9,12 @@ namespace ECS
 {
     namespace SYSTEMS
     {
-        class FTransformSystem : public FSystem
+        class FTransformSystem : public FGPUBufferableSystem
         {
         public:
-            void Update();
-            void Update(FEntity Entity);
+            void Init(int NumberOfSimultaneousSubmits) override;
+            void Update() override;
+            void Update(int Index) override;
 
             void MoveForward(FEntity Entity, float Value);
             void MoveRight(FEntity Entity, float Value);
@@ -25,9 +26,6 @@ namespace ECS
             void Yaw(FEntity Entity, float Value);
             void Translate(FEntity Entity, float X, float Y, float Z);
             FMatrix4 GetModelMatrix(FEntity Entity);
-
-            const uint32_t MAX_TRANSFORMS = 32;
-            std::unordered_set<FEntity> EntitiesToUpdate;
         };
     }
 }

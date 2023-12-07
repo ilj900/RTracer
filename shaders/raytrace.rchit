@@ -29,6 +29,11 @@ layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_RENDERABLE_BUFFER_INDEX)
     FRenderable Renderables[];
 };
 
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_TRANSFORM_BUFFER) buffer TransformBufferObject
+{
+    FMatrix4 Transforms[];
+};
+
 layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_MATERIAL_BUFFER_INDEX) buffer MaterialBufferObject
 {
     FMaterial Materials[];
@@ -51,6 +56,11 @@ FRenderable FetchRenderable()
 FMaterial FetchMaterial()
 {
     return Materials[nonuniformEXT(gl_InstanceCustomIndexEXT)];
+}
+
+mat4 FetchTransform(uint RenderableIndex)
+{
+    return Transforms[nonuniformEXT(RenderableIndex)];
 }
 
 FLight FetchLight(int LightIndex)
@@ -81,6 +91,7 @@ void main()
     FMaterial Material = FetchMaterial();
     Vertices Verts = Vertices(Renderable.VertexBufferAddress);
     Indices Inds = Indices(Renderable.IndexBufferAddress);
+    mat4 Transform = FetchTransform(Renderable.TransformIndex);
 
     vec3 Normal = vec3(1.f, 1.f, 1.f);
 
@@ -122,7 +133,7 @@ void main()
     vec2 TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
 
     vec3 PointOfIntersectionInLocalSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
-    vec3 PointOfIntersectionInWorldSpace = vec3(gl_ObjectToWorldEXT * vec4(PointOfIntersectionInLocalSpace, 1.f));
+    vec3 PointOfIntersectionInWorldSpace = vec3(Transform * vec4(PointOfIntersectionInLocalSpace, 1.f));
 
     FLight Light = FetchLight(0);
     vec3 PointOfIntersectioToLightDirection = Light.Position - PointOfIntersectionInWorldSpace;

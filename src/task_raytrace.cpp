@@ -10,6 +10,7 @@
 #include "systems/mesh_system.h"
 #include "systems/renderable_system.h"
 #include "systems/light_system.h"
+#include "systems/transform_system.h"
 #include "vk_shader_compiler.h"
 
 #include "task_raytrace.h"
@@ -35,6 +36,8 @@ FRaytraceTask::FRaytraceTask(int WidthIn, int HeightIn, FVulkanContext* Context,
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_MATERIAL_BUFFER_INDEX,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_LIGHT_BUFFER_INDEX,
+                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
+    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_TRANSFORM_BUFFER,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_IBL_IMAGE_INDEX,
                                               {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_MISS_BIT_KHR});
@@ -211,6 +214,12 @@ void FRaytraceTask::UpdateDescriptorSets()
         LightBufferInfo.offset = 0;
         LightBufferInfo.range = LIGHT_SYSTEM()->GetTotalSize();
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_LIGHT_BUFFER_INDEX, i, &LightBufferInfo);
+
+        VkDescriptorBufferInfo TransformBufferInfo{};
+        TransformBufferInfo.buffer = TRANSFORM_SYSTEM()->DeviceBuffer.Buffer;
+        TransformBufferInfo.offset = 0;
+        TransformBufferInfo.range = TRANSFORM_SYSTEM()->GetTotalSize();
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_TRANSFORM_BUFFER, i, &TransformBufferInfo);
 
         VkDescriptorImageInfo ImageBufferInfo{};
         ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

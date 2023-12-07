@@ -76,6 +76,12 @@ namespace ECS
         }
 
         template<typename T>
+        size_t GetIndex(FEntity Entity)
+        {
+            return ComponentManager->GetIndex<T>(Entity);
+        }
+
+        template<typename T>
         FComponentType GetComponentType()
         {
             return ComponentManager->GetComponentType<T>();

@@ -7,38 +7,49 @@ namespace ECS
 {
     namespace SYSTEMS
     {
-        void FTransformSystem::Update()
+        void FTransformSystem::Init(int NumberOfSimultaneousSubmits)
         {
-            auto& Coordinator = GetCoordinator();
-
-            for (auto Entity : EntitiesToUpdate)
-            {
-                auto& DeviceTransformComponent = Coordinator.GetComponent<COMPONENTS::FDeviceTransformComponent>(Entity);
-                auto& TransformComponent = Coordinator.GetComponent<COMPONENTS::FTransformComponent>(Entity);
-                DeviceTransformComponent.ModelMatrix = Transform(TransformComponent.Position, TransformComponent.Direction, TransformComponent.Up, TransformComponent.Scale);
-            }
+            FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(ECS::COMPONENTS::FDeviceTransformComponent) * MAX_ENTITIES,
+                                       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "V_Device_Transform_Buffer");
         }
 
-        void FTransformSystem::Update(FEntity Entity)
+        void FTransformSystem::Update()
         {
-            auto& Coordinator = GetCoordinator();
-            auto& DeviceTransformComponent = Coordinator.GetComponent<COMPONENTS::FDeviceTransformComponent>(Entity);
-            auto& TransformComponent = Coordinator.GetComponent<COMPONENTS::FTransformComponent>(Entity);
-            DeviceTransformComponent.ModelMatrix = Transform(TransformComponent.Position, TransformComponent.Direction, TransformComponent.Up, TransformComponent.Scale);
+            for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
+            {
+                for (auto Entity: EntitiesToUpdate[i])
+                {
+                    auto DeviceTransformComponent = GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
+                    DeviceTransformComponent.ModelMatrix = GetModelMatrix(Entity);
+                }
+            }
+
+            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceTransformComponent>();
+        }
+
+        void FTransformSystem::Update(int Index)
+        {
+            for (auto Entity: EntitiesToUpdate[Index])
+            {
+                auto DeviceTransformComponent = GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
+                DeviceTransformComponent.ModelMatrix = GetModelMatrix(Entity);
+            }
+
+            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceTransformComponent>(Index);
         }
 
         void FTransformSystem::MoveForward(FEntity Entity, float Value)
         {
             auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
             TransformComponent.Position += TransformComponent.Direction * Value;
-            EntitiesToUpdate.insert(Entity);
+            MarkDirty(Entity);
         }
 
         void FTransformSystem::MoveRight(FEntity Entity, float Value)
         {
             auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
             TransformComponent.Position += Cross(TransformComponent.Direction, TransformComponent.Up) * Value;
-            EntitiesToUpdate.insert(Entity);
+            MarkDirty(Entity);
         }
 
         void FTransformSystem::SetTransform(FEntity Entity, const FVector3& Position, const FVector3& Direction, const FVector3& Up)
@@ -47,28 +58,28 @@ namespace ECS
             TransformComponent.Position = Position;
             TransformComponent.Direction = Direction;
             TransformComponent.Up = Up;
-            EntitiesToUpdate.insert(Entity);
+            MarkDirty(Entity);
         }
 
         void FTransformSystem::SetLookAt(FEntity Entity, const FVector3& PointOfInterest)
         {
             auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
             TransformComponent.Direction = (PointOfInterest - TransformComponent.Position).GetNormalized();
-            EntitiesToUpdate.insert(Entity);
+            MarkDirty(Entity);
         }
 
         void FTransformSystem::MoveUpward(FEntity Entity, float Value)
         {
             auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
             TransformComponent.Position += TransformComponent.Up * Value;
-            EntitiesToUpdate.insert(Entity);
+            MarkDirty(Entity);
         }
 
         void FTransformSystem::Roll(FEntity Entity, float Value)
         {
             auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
             TransformComponent.Up = TransformComponent.Up.Rotate(Value, TransformComponent.Direction);
-            EntitiesToUpdate.insert(Entity);
+            MarkDirty(Entity);
         }
 
         void FTransformSystem::Pitch(FEntity Entity, float Value)
@@ -77,21 +88,21 @@ namespace ECS
             auto Axis = Cross(TransformComponent.Direction, TransformComponent.Up);
             TransformComponent.Direction = TransformComponent.Direction.Rotate(Value, Axis);
             TransformComponent.Up = TransformComponent.Up.Rotate(Value, Axis);
-            EntitiesToUpdate.insert(Entity);
+            MarkDirty(Entity);
         }
 
         void FTransformSystem::Yaw(FEntity Entity, float Value)
         {
             auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
             TransformComponent.Direction = TransformComponent.Direction.Rotate(Value, TransformComponent.Up);
-            EntitiesToUpdate.insert(Entity);
+            MarkDirty(Entity);
         }
 
         void FTransformSystem::Translate(FEntity Entity, float X, float Y, float Z)
         {
             auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
             TransformComponent.Position += {X, Y, Z};
-            EntitiesToUpdate.insert(Entity);
+            MarkDirty(Entity);
         }
 
         FMatrix4 FTransformSystem::GetModelMatrix(FEntity Entity)

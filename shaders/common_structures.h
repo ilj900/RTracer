@@ -113,7 +113,7 @@ struct FRenderable
 
     int RenderableIndex;
     uint32_t RenderablePropertyMask;
-    uint32_t dummy_2;
+    uint32_t TransformIndex;
     uint32_t dummy_3;
 
     uint64_t VertexBufferAddress;

@@ -32,6 +32,7 @@
 #define RAYTRACE_IBL_IMAGE_INDEX 6u
 #define RAYTRACE_TEXTURE_SAMPLER 7u
 #define RAYTRACE_TEXTURE_ARRAY 8u
+#define RAYTRACE_TRANSFORM_BUFFER 9u
 
 /// Task clear image descriptor set layout defines
 #define CLEAR_IMAGE_LAYOUT_INDEX 0u

@@ -52,6 +52,14 @@ namespace ECS {
             return ComponentArray[EntityToIndexMap[Entity]];
         }
 
+        /// Get index of the stored entity's component.
+        uint32_t GetIndex(FEntity Entity)
+        {
+            assert(EntityToIndexMap.find(Entity) != EntityToIndexMap.end() && "Entity doesn't have such component!");
+
+            return EntityToIndexMap[Entity];
+        }
+
         /// Get the offset for the stored entity's component.
         uint32_t GetOffset(FEntity Entity)
         {

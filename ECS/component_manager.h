@@ -71,6 +71,12 @@ namespace ECS
             return GetComponentArray<T>()->GetOffset(Entity);
         }
 
+        template<typename T>
+        uint32_t GetIndex(FEntity Entity)
+        {
+            return GetComponentArray<T>()->GetIndex(Entity);
+        }
+
         /// It's here just to call ComponentArray's method and being called by Coordinator method.
         /// Making all private fields public could solve this problem. If it's a problem
         template<typename T>

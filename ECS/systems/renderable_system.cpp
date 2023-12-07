@@ -1,5 +1,7 @@
 #include "components/device_renderable_component.h"
+#include "components/device_transform_component.h"
 #include "systems/renderable_system.h"
+#include "systems/transform_system.h"
 #include "mesh_system.h"
 #include "coordinator.h"
 
@@ -84,6 +86,15 @@ namespace ECS
         {
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
             RenderableComponent.RenderablePropertyMask |= RENDERABLE_IS_INDEXED;
+            MarkDirty(Entity);
+        }
+
+        void FRenderableSystem::SyncTransform(FEntity Entity)
+        {
+            auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
+            auto& DeviceTransformComponent = GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
+            DeviceTransformComponent.ModelMatrix = TRANSFORM_SYSTEM()->GetModelMatrix(Entity);
+            RenderableComponent.TransformIndex = GetCoordinator().GetIndex<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
             MarkDirty(Entity);
         }
 
