@@ -1,4 +1,5 @@
 #include "command_buffer_manager.h"
+#include "vk_debug.h"
 
 #include <stdexcept>
 
@@ -61,9 +62,10 @@ VkCommandBuffer FCommandBufferManager::BeginCommand() {
     return CommandBuffer;
 }
 
-VkCommandBuffer FCommandBufferManager::BeginSingleTimeCommand()
+VkCommandBuffer FCommandBufferManager::BeginSingleTimeCommand(const std::string CommandDescription)
 {
     VkCommandBuffer CommandBuffer = AllocateCommandBuffer();
+    V::SetName(Device, CommandBuffer, CommandDescription + "_Command_Buffer");
 
     VkCommandBufferBeginInfo BeginInfo{};
     BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -100,9 +102,9 @@ VkCommandBuffer FCommandBufferManager::RecordCommand(const std::function<void(Vk
     return CommandBuffer;
 }
 
-void FCommandBufferManager::RunSingletimeCommand(const std::function<void(VkCommandBuffer&)> & Lambda)
+void FCommandBufferManager::RunSingletimeCommand(const std::function<void(VkCommandBuffer&)> & Lambda, const std::string CommandDescription)
 {
-    auto CommandBuffer = BeginSingleTimeCommand();
+    auto CommandBuffer = BeginSingleTimeCommand(CommandDescription);
     Lambda(CommandBuffer);
     EndCommand(CommandBuffer);
     SubmitCommandBuffer(CommandBuffer);

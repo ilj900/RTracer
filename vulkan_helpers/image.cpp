@@ -134,7 +134,7 @@ void FImage::Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout)
 
         vkCmdPipelineBarrier(CommandBuffer, SourceStage, DestinationStage, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
 
-    });
+    }, "Transitioning_Image_Layout");
 }
 
 void FImage::SwapData(FImage& Other)
@@ -258,8 +258,8 @@ void FImage::GenerateMipMaps()
         throw std::runtime_error("Texture image format does not support linear blitting!");
     }
 
-    Context.CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer& CommandBuffer) {
-
+    Context.CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer& CommandBuffer)
+    {
         VkImageMemoryBarrier Barrier{};
         Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         Barrier.image = Image;
@@ -326,7 +326,7 @@ void FImage::GenerateMipMaps()
         vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,
                              nullptr, 0, nullptr, 1, &Barrier);
 
-    });
+    }, "Generating_MipMaps");
 }
 
 void FImage::Resolve(FImage& ImageToResolveTo)
@@ -357,8 +357,7 @@ void FImage::Resolve(FImage& ImageToResolveTo)
 
         vkCmdResolveImage(CommandBuffer, Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, ImageToResolveTo.Image,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &ImageResolve);
-    }
-    );
+    }, "Resolving_Image");
 }
 
 size_t FImage::GetHash()

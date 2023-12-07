@@ -89,7 +89,7 @@ void FImguiTask::Init()
     ImGui_ImplVulkan_Init(&InitInfo, RenderPass);
 
     {
-        Context.CommandBufferManager->RunSingletimeCommand(ImGui_ImplVulkan_CreateFontsTexture);
+        Context.CommandBufferManager->RunSingletimeCommand(ImGui_ImplVulkan_CreateFontsTexture, "ImGui_ImplVulkan_CreateFontsTexture");
     }
 
     CreateSyncObjects();

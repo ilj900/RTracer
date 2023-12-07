@@ -3,6 +3,7 @@
 #include "vulkan/vulkan.h"
 
 #include <functional>
+#include <string>
 
 class FVulkanContext;
 
@@ -18,7 +19,7 @@ public:
     VkCommandBuffer AllocateCommandBuffer();
     void FreeCommandBuffer(VkCommandBuffer& CommandBuffer);
     VkCommandBuffer BeginCommand();
-    VkCommandBuffer BeginSingleTimeCommand();
+    VkCommandBuffer BeginSingleTimeCommand(const std::string CommandDescription = "DefaultCommandBufferDescription");
     void EndCommand(VkCommandBuffer &CommandBuffer);
     void SubmitCommandBuffer(VkCommandBuffer &CommandBuffer);
     /**
@@ -31,7 +32,7 @@ public:
      * Run a single time command buffer
      * @param Lambda - [&, this](VkCommandBuffer CommandBuffer){}; type lambda that will be executed after the command buffer allocated, created, begun and before it ended
      */
-    void RunSingletimeCommand(const std::function<void(VkCommandBuffer&)> & Lambda);
+    void RunSingletimeCommand(const std::function<void(VkCommandBuffer&)> & Lambda, const std::string CommandDescription = "DefaultCommandBufferDescription");
 
     ~FCommandBufferManager();
 private:
