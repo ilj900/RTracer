@@ -46,42 +46,5 @@ namespace ECS
             TexCoord.Y = Other.TexCoord.Y;
             return *this;
         }
-
-        VkVertexInputBindingDescription FVertexComponent::GetBindingDescription()
-        {
-            VkVertexInputBindingDescription BindingDescription{};
-            BindingDescription.binding = 0;
-            BindingDescription.stride = sizeof(FVertexComponent);
-            BindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-            return BindingDescription;
-        }
-
-        std::vector<VkVertexInputAttributeDescription> FVertexComponent::GetAttributeDescriptions()
-        {
-            std::vector<VkVertexInputAttributeDescription> AttributeDescription{};
-
-            VkVertexInputAttributeDescription VertexInputAttributeDescription;
-
-            VertexInputAttributeDescription.location = 0;
-            VertexInputAttributeDescription.binding = 0;
-            VertexInputAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-            VertexInputAttributeDescription.offset = offsetof(FVertexComponent, Position);
-            AttributeDescription.push_back(VertexInputAttributeDescription);
-
-            VertexInputAttributeDescription.location = 1;
-            VertexInputAttributeDescription.binding = 0;
-            VertexInputAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-            VertexInputAttributeDescription.offset = offsetof(FVertexComponent, Normal);
-            AttributeDescription.push_back(VertexInputAttributeDescription);
-
-            VertexInputAttributeDescription.location = 2;
-            VertexInputAttributeDescription.binding = 0;
-            VertexInputAttributeDescription.format = VK_FORMAT_R32G32_SFLOAT;
-            VertexInputAttributeDescription.offset = offsetof(FVertexComponent, TexCoord);
-            AttributeDescription.push_back(VertexInputAttributeDescription);
-
-            return AttributeDescription;
-        }
     }
 }

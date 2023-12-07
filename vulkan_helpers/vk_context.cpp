@@ -1,7 +1,6 @@
 #include "vk_context.h"
 #include "vk_debug.h"
 #include "vk_functions.h"
-#include "vk_shader_compiler.h"
 
 #include "systems/camera_system.h"
 #include "systems/transform_system.h"
@@ -10,6 +9,8 @@
 #include "systems/material_system.h"
 #include "systems/light_system.h"
 #include "coordinator.h"
+
+#include "texture_manager.h"
 
 #include <stdexcept>
 #include <iostream>
@@ -1438,6 +1439,8 @@ void FVulkanContext::DestroyDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT& Deb
 
 void FVulkanContext::CleanUp()
 {
+    FreeTextureManager();
+
     /// Free all device buffers
     GetResourceAllocator()->DestroyBuffer(CAMERA_SYSTEM()->DeviceBuffer);
     GetResourceAllocator()->DestroyBuffer(RENDERABLE_SYSTEM()->DeviceBuffer);
@@ -1445,6 +1448,7 @@ void FVulkanContext::CleanUp()
     GetResourceAllocator()->DestroyBuffer(MESH_SYSTEM()->IndexBuffer);
     GetResourceAllocator()->DestroyBuffer(MATERIAL_SYSTEM()->DeviceBuffer);
     GetResourceAllocator()->DestroyBuffer(LIGHT_SYSTEM()->DeviceBuffer);
+    GetResourceAllocator()->DestroyBuffer(TRANSFORM_SYSTEM()->DeviceBuffer);
 
     TextureImage = nullptr;
 

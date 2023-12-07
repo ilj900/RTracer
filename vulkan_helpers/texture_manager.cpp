@@ -14,6 +14,11 @@ FTextureManager* GetTextureManager()
     return TextureManager;
 }
 
+void FreeTextureManager()
+{
+    delete TextureManager;
+}
+
 FTextureManager::FTextureManager()
 {
     auto& Context = GetContext();
@@ -38,7 +43,7 @@ FTextureManager::FTextureManager()
 FTextureManager::~FTextureManager()
 {
     DummyImage = nullptr;
-    auto& Context = GetContext();
+    Images.clear();
 }
 
 int FTextureManager::RegiseterTexture(ImagePtr ImagePointer, VkImageLayout ImageLayout)

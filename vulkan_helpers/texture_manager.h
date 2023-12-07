@@ -21,3 +21,4 @@ private:
 };
 
 FTextureManager* GetTextureManager();
+void FreeTextureManager();

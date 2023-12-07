@@ -20,9 +20,6 @@ namespace ECS
 
             bool operator==(const FVertexComponent& Other) const;
             FVertexComponent& operator=(const FVertexComponent& Other);
-
-            static VkVertexInputBindingDescription GetBindingDescription();
-            static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions();
         };
 
         struct FMeshComponent
@@ -30,8 +27,6 @@ namespace ECS
             std::vector<FVertexComponent> Vertices{};
             std::vector<uint32_t> Indices{};
             bool Indexed = false;
-            uint32_t DeviceVertexBufferOffset = 0;
-            uint32_t DeviceIndexBufferOffset = 0;
         };
     }
 }
