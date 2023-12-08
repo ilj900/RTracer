@@ -22,10 +22,10 @@ layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_HITS_BUFFER_INDEX)
     FHit Hits[];
 };
 
-//layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_RAYS_BUFFER_INDEX) buffer RaysBufferObject
-//{
-//    FRayData RayData[];
-//};
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_RAYS_BUFFER_INDEX) buffer RaysBufferObject
+{
+    FRayData RayData[];
+};
 
 layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_IBL_IMAGE_INDEX) uniform sampler2D IBITextureSampler;
 
@@ -44,6 +44,11 @@ FHit FetchHit(uint HitIndex)
     return Hits[HitIndex];
 }
 
+FRayData FetchRayData(uint RayIndex)
+{
+    return RayData[RayIndex];
+}
+
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 void main()
@@ -56,15 +61,15 @@ void main()
 
     if (Hit.RenderableIndex == UINT_MAX)
     {
-        //vec3 NormalizedDirection = normalize(Hit.Direction);
-        //float Tmp = atan(NormalizedDirection.z, NormalizedDirection.x);
-        //float Phi = Tmp < 0.f ? (Tmp + (2 * 3.14159265357)) : Tmp;
-        //float Theta = acos(NormalizedDirection.y);
-        //Phi /= 2.f * 3.14159265357;
-        //Theta /= 3.14159265357;
-        //imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(vec3(texture(IBITextureSampler, vec2(Phi, Theta))), 1.f));
 
-        imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(0, 1, 1, 1));
+        vec3 NormalizedDirection = FetchRayData(PixelIndex).Direction.xyz;
+        float Tmp = atan(NormalizedDirection.z, NormalizedDirection.x);
+        float Phi = Tmp < 0.f ? (Tmp + (2 * 3.14159265357)) : Tmp;
+        float Theta = acos(NormalizedDirection.y);
+        Phi /= 2.f * 3.14159265357;
+        Theta /= 3.14159265357;
+
+        imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(vec3(texture(IBITextureSampler, vec2(Phi, Theta))), 1.f));
     }
     else
     {

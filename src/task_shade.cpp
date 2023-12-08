@@ -25,6 +25,8 @@ FShadeTask::FShadeTask(int WidthIn, int HeightIn, FVulkanContext* Context, int N
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_HITS_BUFFER_INDEX,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
+    DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_RAYS_BUFFER_INDEX,
+                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_IBL_IMAGE_INDEX,
                                               {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
@@ -87,6 +89,13 @@ void FShadeTask::UpdateDescriptorSets()
         HitsBufferInfo.offset = 0;
         HitsBufferInfo.range = HitsBuffer.BufferSize;
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_HITS_BUFFER_INDEX, i, &HitsBufferInfo);
+
+        auto RaysDataBuffer = Context->ResourceAllocator->GetBuffer("InitialRaysBuffer");
+        VkDescriptorBufferInfo RaysDataBufferInfo{};
+        RaysDataBufferInfo.buffer = RaysDataBuffer.Buffer;
+        RaysDataBufferInfo.offset = 0;
+        RaysDataBufferInfo.range = RaysDataBuffer.BufferSize;
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_RAYS_BUFFER_INDEX, i, &RaysDataBufferInfo);
 
         VkDescriptorImageInfo IBLSamplerImage{};
         IBLSamplerImage.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
