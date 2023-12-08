@@ -223,6 +223,8 @@ int FRender::Cleanup()
     GenerateRaysTask = nullptr;
     RayTraceTask->Cleanup();
     RayTraceTask = nullptr;
+    ShadeTask->Cleanup();
+    ShadeTask = nullptr;
     AccumulateTask->Cleanup();
     AccumulateTask = nullptr;
     ClearImageTask->Cleanup();
