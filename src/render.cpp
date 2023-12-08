@@ -173,6 +173,12 @@ int FRender::Init()
     RayTraceTask->UpdateDescriptorSets();
     RayTraceTask->RecordCommands();
 
+    ShadeTask = std::make_shared<FShadeTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    ShadeTask->RegisterInput(0, RTColorImage);
+    ShadeTask->Init();
+    ShadeTask->UpdateDescriptorSets();
+    ShadeTask->RecordCommands();
+
     AccumulateTask = std::make_shared<FAccumulateTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     AccumulateTask->RegisterInput(0, RTColorImage);
     AccumulateTask->RegisterOutput(0, AccumulatorImage);
@@ -303,16 +309,18 @@ int FRender::Render()
 
     auto RenderSignalSemaphore = RayTraceTask->Submit(Context.GetGraphicsQueue(), GenerateRaysSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
+    auto ShadeSignalSemaphore = ShadeTask->Submit(Context.GetComputeQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+
     VkSemaphore AccumulateSignalSemaphore = VK_NULL_HANDLE;
 
     if (NeedUpdate)
     {
-        auto ClearAccumulatorSemaphore = ClearImageTask->Submit(Context.GetComputeQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+        auto ClearAccumulatorSemaphore = ClearImageTask->Submit(Context.GetComputeQueue(), ShadeSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
         AccumulateSignalSemaphore = AccumulateTask->Submit(Context.GetComputeQueue(), ClearAccumulatorSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
     }
     else
     {
-        AccumulateSignalSemaphore = AccumulateTask->Submit(Context.GetComputeQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+        AccumulateSignalSemaphore = AccumulateTask->Submit(Context.GetComputeQueue(), ShadeSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
     }
 
     auto PassthroughSignalSemaphore = PassthroughTask->Submit(Context.GetGraphicsQueue(), AccumulateSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);

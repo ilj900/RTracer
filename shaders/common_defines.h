@@ -39,6 +39,11 @@
 
 #define IMAGE_TO_CLEAR 0u
 
+/// Task shade descriptor set layout defines
+#define COMPUTE_SHADE_LAYOUT_INDEX 0u
+
+#define COMPUTE_SHADE_OUTPUT_IMAGE_INDEX 0u
+
 /// Task generate rays descriptor set layout defines
 #define GENERATE_RAYS_LAYOUT_INDEX 0
 

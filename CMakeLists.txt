@@ -87,6 +87,8 @@ set(SOURCE
         src/task_accumulate.cpp
         src/task_clear_image.h
         src/task_clear_image.cpp
+        src/task_shade.h
+        src/task_shade.cpp
         src/task_generate_initial_rays.h
         src/task_generate_initial_rays.cpp
         src/tinyexr.cpp
