@@ -18,4 +18,5 @@ public:
     VkPipeline Pipeline = VK_NULL_HANDLE;
 
     VkSampler IBLImageSampler = VK_NULL_HANDLE;
+    VkSampler MaterialTextureSampler = VK_NULL_HANDLE;
 };

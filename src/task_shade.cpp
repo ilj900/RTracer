@@ -8,6 +8,8 @@
 
 #include "vk_shader_compiler.h"
 
+#include "texture_manager.h"
+
 #include "task_shade.h"
 
 FShadeTask::FShadeTask(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
@@ -29,6 +31,10 @@ FShadeTask::FShadeTask(int WidthIn, int HeightIn, FVulkanContext* Context, int N
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_IBL_IMAGE_INDEX,
                                               {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,  VK_SHADER_STAGE_COMPUTE_BIT});
+    DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_TEXTURE_SAMPLER,
+                                              {VK_DESCRIPTOR_TYPE_SAMPLER,  VK_SHADER_STAGE_COMPUTE_BIT});
+    DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_TEXTURE_ARRAY,
+                                              {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  VK_SHADER_STAGE_COMPUTE_BIT, MAX_TEXTURES});
 
     DescriptorSetManager->CreateDescriptorSetLayout(Name);
 
@@ -38,6 +44,7 @@ FShadeTask::FShadeTask(int WidthIn, int HeightIn, FVulkanContext* Context, int N
 FShadeTask::~FShadeTask()
 {
     vkDestroySampler(LogicalDevice, IBLImageSampler, nullptr);
+    vkDestroySampler(LogicalDevice, MaterialTextureSampler, nullptr);
 
     FreeSyncObjects();
 }
@@ -53,6 +60,7 @@ void FShadeTask::Init()
     Pipeline = Context->CreateComputePipeline(ShadeShader(), PipelineLayout);
 
     IBLImageSampler = Context->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT);
+    MaterialTextureSampler = Context->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
     DescriptorSetManager->ReserveDescriptorSet(Name, COMPUTE_SHADE_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
@@ -102,6 +110,13 @@ void FShadeTask::UpdateDescriptorSets()
         IBLSamplerImage.imageView = Inputs[1]->View;
         IBLSamplerImage.sampler = IBLImageSampler;
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_IBL_IMAGE_INDEX, i, &IBLSamplerImage);
+
+        VkDescriptorImageInfo MaterialTextureSamplerInfo{};
+        MaterialTextureSamplerInfo.sampler = MaterialTextureSampler;
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_TEXTURE_SAMPLER, i, &MaterialTextureSamplerInfo);
+
+        auto TextureSampler = GetTextureManager()->GetDescriptorImageInfos();
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_TEXTURE_ARRAY, i, TextureSampler);
     }
 };
 

@@ -61,7 +61,6 @@ void main()
 
     if (Hit.RenderableIndex == UINT_MAX)
     {
-
         vec3 NormalizedDirection = FetchRayData(PixelIndex).Direction.xyz;
         float Tmp = atan(NormalizedDirection.z, NormalizedDirection.x);
         float Phi = Tmp < 0.f ? (Tmp + (2 * 3.14159265357)) : Tmp;
@@ -70,9 +69,9 @@ void main()
         Theta /= 3.14159265357;
 
         imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(vec3(texture(IBITextureSampler, vec2(Phi, Theta))), 1.f));
+
+        return;
     }
-    else
-    {
-        imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(Renderable.RenderableColor, 1.f));
-    }
+
+    imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(Renderable.RenderableColor, 1.f));
 }
