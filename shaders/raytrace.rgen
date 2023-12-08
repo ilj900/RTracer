@@ -6,23 +6,26 @@
 #include "common_defines.h"
 #include "common_structures.h"
 
-layout (location = 0) rayPayloadEXT HitPayload Hit;
+layout (location = 0) rayPayloadEXT FHit Hit;
 
 layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_TLAS_LAYOUT_INDEX) uniform accelerationStructureEXT TopLevelAS;
-layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_FINAL_IMAGE_INDEX, rgba32f) uniform image2D Image;
+
 layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_RAYS_DATA_BUFFER) buffer RaysBufferObject
 {
     FRayData RayData[];
-} RaysBuffer;
+};
+
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_HIT_BUFFER) buffer HitBufferObject
+{
+    FHit HitData[];
+};
 
 void main()
 {
     uint RayIndex = gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
-
-    FRayData RayData = RaysBuffer.RayData[RayIndex];
-    Hit.Direction = RayData.Direction.xyz;
+    FRayData RayData = RayData[RayIndex];
 
     traceRayEXT(TopLevelAS, RayData.RayFlags, 0xFF, 0, 0, 0, RayData.Origin.xyz, RayData.TMin, RayData.Direction.xyz, RayData.TMax, 0);
 
-    imageStore(Image, ivec2(gl_LaunchIDEXT.xy), vec4(Hit.Color, 1.f));
+    HitData[RayIndex] = Hit;
 }

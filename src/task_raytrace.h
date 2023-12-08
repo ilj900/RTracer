@@ -22,9 +22,6 @@ public:
     VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
     VkPipeline Pipeline = VK_NULL_HANDLE;
 
-    VkSampler Sampler = VK_NULL_HANDLE;
-    VkSampler TextureSampler = VK_NULL_HANDLE;
-
     VkStridedDeviceAddressRegionKHR RGenRegion{};
     VkStridedDeviceAddressRegionKHR RMissRegion{};
     VkStridedDeviceAddressRegionKHR RHitRegion{};

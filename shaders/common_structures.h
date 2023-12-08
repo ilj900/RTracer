@@ -9,10 +9,11 @@
 #define uint32_t uint
 #endif
 
-struct HitPayload
+struct FHit
 {
-    FVector3 Color;
-    FVector3 Direction;
+    uint32_t RenderableIndex;
+    uint32_t PrimitiveIndex;
+    FVector2 HitUV;
 };
 
 struct FRayData

@@ -27,24 +27,16 @@ FRaytraceTask::FRaytraceTask(int WidthIn, int HeightIn, FVulkanContext* Context,
 
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_TLAS_LAYOUT_INDEX,
                                               {VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,  VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
-    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_FINAL_IMAGE_INDEX,
-                                              {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_RAYS_DATA_BUFFER,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_RENDERABLE_BUFFER_INDEX,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
-    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_MATERIAL_BUFFER_INDEX,
-                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
-    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_LIGHT_BUFFER_INDEX,
-                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
-    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_TRANSFORM_BUFFER,
-                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
-    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_IBL_IMAGE_INDEX,
-                                              {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_MISS_BIT_KHR});
-    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_TEXTURE_SAMPLER,
-                                              {VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
-    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_TEXTURE_ARRAY,
-                                              {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, MAX_TEXTURES});
+    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_HIT_BUFFER,
+                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+
+    FBuffer HitsBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(FHit) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Name);
+    Context->ResourceAllocator->RegisterBuffer(HitsBuffer, "HitsBuffer");
+
 
     DescriptorSetManager->CreateDescriptorSetLayout(Name);
 
@@ -54,6 +46,7 @@ FRaytraceTask::FRaytraceTask(int WidthIn, int HeightIn, FVulkanContext* Context,
 FRaytraceTask::~FRaytraceTask()
 {
     FreeSyncObjects();
+    Context->ResourceAllocator->UnregisterAndDestroyBuffer("HitsBuffer");
 
     Context->DestroyAccelerationStructure(TLAS);
     for (auto BLAS : BLASVector)
@@ -162,9 +155,6 @@ void FRaytraceTask::Init()
 
     Context->ResourceAllocator->Unmap(SBTBuffer);
 
-    Sampler = Context->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT);
-    TextureSampler = Context->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT);
-
     auto ModelTexture = Context->LoadImageFromFile("../models/viking_room/viking_room.png", "V_viking_room");
     auto WoodRoughnessTexture = Context->LoadImageFromFile("../resources/Wood/Wood_8K_Roughness.jpg", "V_Wood_8K_Roughness");
     auto WoodNormalTexture = Context->LoadImageFromFile("../resources/Wood/Wood_8K_Normal.jpg", "V_Wood_8K_Normal");
@@ -185,11 +175,6 @@ void FRaytraceTask::UpdateDescriptorSets()
     {
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_LAYOUT_INDEX, i, &TLAS.AccelerationStructure);
 
-        VkDescriptorImageInfo RTImageBufferInfo{};
-        RTImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-        RTImageBufferInfo.imageView = Outputs[0]->View;
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_FINAL_IMAGE_INDEX, i, &RTImageBufferInfo);
-
         auto InitialRaysBuffer = Context->ResourceAllocator->GetBuffer("InitialRaysBuffer");
         VkDescriptorBufferInfo RayDataBufferInfo{};
         RayDataBufferInfo.buffer = InitialRaysBuffer.Buffer;
@@ -203,36 +188,12 @@ void FRaytraceTask::UpdateDescriptorSets()
         RenderableBufferInfo.range = RENDERABLE_SYSTEM()->GetTotalSize();
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_RENDERABLE_BUFFER_INDEX, i, &RenderableBufferInfo);
 
-        VkDescriptorBufferInfo MaterialBufferInfo{};
-        MaterialBufferInfo.buffer = MATERIAL_SYSTEM()->DeviceBuffer.Buffer;
-        MaterialBufferInfo.offset = 0;
-        MaterialBufferInfo.range = MATERIAL_SYSTEM()->GetTotalSize();
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_MATERIAL_BUFFER_INDEX, i, &MaterialBufferInfo);
-
-        VkDescriptorBufferInfo LightBufferInfo{};
-        LightBufferInfo.buffer = LIGHT_SYSTEM()->DeviceBuffer.Buffer;
-        LightBufferInfo.offset = 0;
-        LightBufferInfo.range = LIGHT_SYSTEM()->GetTotalSize();
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_LIGHT_BUFFER_INDEX, i, &LightBufferInfo);
-
-        VkDescriptorBufferInfo TransformBufferInfo{};
-        TransformBufferInfo.buffer = TRANSFORM_SYSTEM()->DeviceBuffer.Buffer;
-        TransformBufferInfo.offset = 0;
-        TransformBufferInfo.range = TRANSFORM_SYSTEM()->GetTotalSize();
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_TRANSFORM_BUFFER, i, &TransformBufferInfo);
-
-        VkDescriptorImageInfo ImageBufferInfo{};
-        ImageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        ImageBufferInfo.imageView = Inputs[0]->View;
-        ImageBufferInfo.sampler = Sampler;
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_IBL_IMAGE_INDEX, i, &ImageBufferInfo);
-
-        VkDescriptorImageInfo TextureSamplerInfo{};
-        TextureSamplerInfo.sampler = TextureSampler;
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_TEXTURE_SAMPLER, i, &TextureSamplerInfo);
-
-        auto TextureSampler = GetTextureManager()->GetDescriptorImageInfos();
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_TEXTURE_ARRAY, i, TextureSampler);
+        auto HitsBuffer = Context->ResourceAllocator->GetBuffer("HitsBuffer");
+        VkDescriptorBufferInfo HitsBufferInfo{};
+        HitsBufferInfo.buffer = HitsBuffer.Buffer;
+        HitsBufferInfo.offset = 0;
+        HitsBufferInfo.range = HitsBuffer.BufferSize;
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_HIT_BUFFER, i, &HitsBufferInfo);
     }
 };
 
@@ -259,9 +220,6 @@ void FRaytraceTask::Cleanup()
 {
     Inputs.clear();
     Outputs.clear();
-
-    vkDestroySampler(LogicalDevice, Sampler, nullptr);
-    vkDestroySampler(LogicalDevice, TextureSampler, nullptr);
 
     for (auto& CommandBuffer : CommandBuffers)
     {

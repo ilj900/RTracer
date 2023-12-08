@@ -166,8 +166,7 @@ int FRender::Init()
     GenerateRaysTask->RecordCommands();
 
     RayTraceTask = std::make_shared<FRaytraceTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
-    RayTraceTask->RegisterOutput(0, RTColorImage);
-    SetIBL("../resources/brown_photostudio_02_4k.exr");
+    //SetIBL("../resources/brown_photostudio_02_4k.exr");
 
     RayTraceTask->Init();
     RayTraceTask->UpdateDescriptorSets();
