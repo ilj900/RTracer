@@ -3,6 +3,9 @@
 #include "vk_functions.h"
 #include "common_defines.h"
 
+#include "systems/material_system.h"
+#include "systems/renderable_system.h"
+
 #include "vk_shader_compiler.h"
 
 #include "task_shade.h"
@@ -16,6 +19,10 @@ FShadeTask::FShadeTask(int WidthIn, int HeightIn, FVulkanContext* Context, int N
 
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_OUTPUT_IMAGE_INDEX,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_COMPUTE_BIT});
+    DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_MATERIAL_BUFFER_INDEX,
+                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
+    DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_RENDERABLE_BUFFER_INDEX,
+                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
     DescriptorSetManager->CreateDescriptorSetLayout(Name);
 
@@ -53,6 +60,18 @@ void FShadeTask::UpdateDescriptorSets()
         InputImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
         InputImageInfo.imageView = Inputs[0]->View;
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_OUTPUT_IMAGE_INDEX, i, &InputImageInfo);
+
+        VkDescriptorBufferInfo MaterialDescriptorBufferInfo{};
+        MaterialDescriptorBufferInfo.buffer = MATERIAL_SYSTEM()->DeviceBuffer.Buffer;
+        MaterialDescriptorBufferInfo.offset = 0;
+        MaterialDescriptorBufferInfo.range = MATERIAL_SYSTEM()->GetTotalSize();
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_MATERIAL_BUFFER_INDEX, i, &MaterialDescriptorBufferInfo);
+
+        VkDescriptorBufferInfo RenderableDescriptorBufferInfo{};
+        RenderableDescriptorBufferInfo.buffer = RENDERABLE_SYSTEM()->DeviceBuffer.Buffer;
+        RenderableDescriptorBufferInfo.offset = 0;
+        RenderableDescriptorBufferInfo.range = RENDERABLE_SYSTEM()->GetTotalSize();
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_RENDERABLE_BUFFER_INDEX, i, &RenderableDescriptorBufferInfo);
     }
 };
 

@@ -110,7 +110,7 @@ const uint32_t RENDERABLE_IS_INDEXED = 1 << 7;
 struct FRenderable
 {
     FVector3 RenderableColor;
-    float dummy_1;
+    uint32_t MaterialIndex;
 
     int RenderableIndex;
     uint32_t RenderablePropertyMask;

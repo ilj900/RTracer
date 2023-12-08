@@ -1,12 +1,37 @@
 #version 460
 
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
 #include "common_defines.h"
+#include "common_structures.h"
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_OUTPUT_IMAGE_INDEX, rgba32f) uniform image2D OutcomingImage;
+
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_MATERIAL_BUFFER_INDEX) buffer MaterialsBufferObject
+{
+    FMaterial Materials[];
+};
+
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_RENDERABLE_BUFFER_INDEX) buffer FRenderablesBuffer
+{
+    FRenderable Renderables[];
+};
+
+FRenderable FetchRenderable(uint RenderableIndex)
+{
+    return Renderables[RenderableIndex];
+}
+
+FMaterial FetchMaterial(uint MaterialIndex)
+{
+    return Materials[MaterialIndex];
+}
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 void main()
 {
+    uint PixelIndex = gl_GlobalInvocationID.y * 1920 + gl_GlobalInvocationID.x;
+
     imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(0.f, 1.f, 1.f, 1.f));
 }
