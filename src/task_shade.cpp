@@ -25,6 +25,8 @@ FShadeTask::FShadeTask(int WidthIn, int HeightIn, FVulkanContext* Context, int N
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_HITS_BUFFER_INDEX,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
+    DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_IBL_IMAGE_INDEX,
+                                              {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
     DescriptorSetManager->CreateDescriptorSetLayout(Name);
 
@@ -33,6 +35,8 @@ FShadeTask::FShadeTask(int WidthIn, int HeightIn, FVulkanContext* Context, int N
 
 FShadeTask::~FShadeTask()
 {
+    vkDestroySampler(LogicalDevice, IBLImageSampler, nullptr);
+
     FreeSyncObjects();
 }
 
@@ -45,6 +49,8 @@ void FShadeTask::Init()
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
 
     Pipeline = Context->CreateComputePipeline(ShadeShader(), PipelineLayout);
+
+    IBLImageSampler = Context->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
     DescriptorSetManager->ReserveDescriptorSet(Name, COMPUTE_SHADE_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
@@ -81,6 +87,12 @@ void FShadeTask::UpdateDescriptorSets()
         HitsBufferInfo.offset = 0;
         HitsBufferInfo.range = HitsBuffer.BufferSize;
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_HITS_BUFFER_INDEX, i, &HitsBufferInfo);
+
+        VkDescriptorImageInfo IBLSamplerImage{};
+        IBLSamplerImage.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        IBLSamplerImage.imageView = Inputs[1]->View;
+        IBLSamplerImage.sampler = IBLImageSampler;
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_IBL_IMAGE_INDEX, i, &IBLSamplerImage);
     }
 };
 

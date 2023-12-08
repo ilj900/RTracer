@@ -22,6 +22,13 @@ layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_HITS_BUFFER_INDEX)
     FHit Hits[];
 };
 
+//layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_RAYS_BUFFER_INDEX) buffer RaysBufferObject
+//{
+//    FRayData RayData[];
+//};
+
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_IBL_IMAGE_INDEX) uniform sampler2D IBITextureSampler;
+
 FRenderable FetchRenderable(uint RenderableIndex)
 {
     return Renderables[RenderableIndex];
@@ -47,5 +54,20 @@ void main()
     FRenderable Renderable = FetchRenderable(Hit.RenderableIndex);
     FMaterial Material = FetchMaterial(Renderable.MaterialIndex);
 
-    imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(Renderable.RenderableColor, 1.f));
+    if (Hit.RenderableIndex == UINT_MAX)
+    {
+        //vec3 NormalizedDirection = normalize(Hit.Direction);
+        //float Tmp = atan(NormalizedDirection.z, NormalizedDirection.x);
+        //float Phi = Tmp < 0.f ? (Tmp + (2 * 3.14159265357)) : Tmp;
+        //float Theta = acos(NormalizedDirection.y);
+        //Phi /= 2.f * 3.14159265357;
+        //Theta /= 3.14159265357;
+        //imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(vec3(texture(IBITextureSampler, vec2(Phi, Theta))), 1.f));
+
+        imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(0, 1, 1, 1));
+    }
+    else
+    {
+        imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(Renderable.RenderableColor, 1.f));
+    }
 }

@@ -166,7 +166,6 @@ int FRender::Init()
     GenerateRaysTask->RecordCommands();
 
     RayTraceTask = std::make_shared<FRaytraceTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
-    //SetIBL("../resources/brown_photostudio_02_4k.exr");
 
     RayTraceTask->Init();
     RayTraceTask->UpdateDescriptorSets();
@@ -174,6 +173,7 @@ int FRender::Init()
 
     ShadeTask = std::make_shared<FShadeTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     ShadeTask->RegisterInput(0, RTColorImage);
+    SetIBL("../resources/brown_photostudio_02_4k.exr");
     ShadeTask->Init();
     ShadeTask->UpdateDescriptorSets();
     ShadeTask->RecordCommands();
@@ -383,7 +383,7 @@ int FRender::SetIBL(const std::string& Path)
 {
     ImagePtr IBLImage = GetContext().CreateEXRImageFromFile(Path, "V::IBL_Image");
     IBLImage->Transition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    RayTraceTask->RegisterInput(0, IBLImage);
+    ShadeTask->RegisterInput(1, IBLImage);
 
     return 0;
 }
