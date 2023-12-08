@@ -17,6 +17,11 @@ layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_RENDERABLE_BUFFER_
     FRenderable Renderables[];
 };
 
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_HITS_BUFFER_INDEX) buffer HitsBufferObject
+{
+    FHit Hits[];
+};
+
 FRenderable FetchRenderable(uint RenderableIndex)
 {
     return Renderables[RenderableIndex];
@@ -27,11 +32,20 @@ FMaterial FetchMaterial(uint MaterialIndex)
     return Materials[MaterialIndex];
 }
 
+FHit FetchHit(uint HitIndex)
+{
+    return Hits[HitIndex];
+}
+
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 void main()
 {
     uint PixelIndex = gl_GlobalInvocationID.y * 1920 + gl_GlobalInvocationID.x;
 
-    imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(0.f, 1.f, 1.f, 1.f));
+    FHit Hit = FetchHit(PixelIndex);
+    FRenderable Renderable = FetchRenderable(Hit.RenderableIndex);
+    FMaterial Material = FetchMaterial(Renderable.MaterialIndex);
+
+    imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(Renderable.RenderableColor, 1.f));
 }

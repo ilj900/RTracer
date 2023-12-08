@@ -23,6 +23,8 @@ FShadeTask::FShadeTask(int WidthIn, int HeightIn, FVulkanContext* Context, int N
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_RENDERABLE_BUFFER_INDEX,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
+    DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_HITS_BUFFER_INDEX,
+                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
     DescriptorSetManager->CreateDescriptorSetLayout(Name);
 
@@ -72,6 +74,13 @@ void FShadeTask::UpdateDescriptorSets()
         RenderableDescriptorBufferInfo.offset = 0;
         RenderableDescriptorBufferInfo.range = RENDERABLE_SYSTEM()->GetTotalSize();
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_RENDERABLE_BUFFER_INDEX, i, &RenderableDescriptorBufferInfo);
+
+        auto HitsBuffer = Context->ResourceAllocator->GetBuffer("HitsBuffer");
+        VkDescriptorBufferInfo HitsBufferInfo{};
+        HitsBufferInfo.buffer = HitsBuffer.Buffer;
+        HitsBufferInfo.offset = 0;
+        HitsBufferInfo.range = HitsBuffer.BufferSize;
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_HITS_BUFFER_INDEX, i, &HitsBufferInfo);
     }
 };
 
