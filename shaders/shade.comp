@@ -41,6 +41,11 @@ layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_TEXTURE_ARRAY) uni
 
 layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_IBL_IMAGE_INDEX) uniform sampler2D IBITextureSampler;
 
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_LIGHTS_BUFFER_INDEX) buffer LightsBufferObject
+{
+    FLight Lights[];
+};
+
 layout (buffer_reference, scalar) buffer Vertices
 {
     FVertex V[];
@@ -74,6 +79,11 @@ mat4 FetchTransform(uint TransformIndex)
 FRayData FetchRayData(uint RayIndex)
 {
     return RayData[RayIndex];
+}
+
+FLight FetchLightData(uint LightIndex)
+{
+    return Lights[LightIndex];
 }
 
 bool CheckFlag(uint Mask, uint Field)
@@ -160,6 +170,15 @@ void main()
     const vec3 Barycentrics = vec3(1.0 - Hit.HitUV.x - Hit.HitUV.y, Hit.HitUV.x, Hit.HitUV.y);
     vec2 TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
 
+    vec3 PointOfIntersectionInLocalSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
+    vec3 PointOfIntersectionInWorldSpace = vec3(Transform * vec4(PointOfIntersectionInLocalSpace, 1.f));
+    
+    FLight Light = FetchLightData(0);
+    vec3 PointOfIntersectioToLightDirection = Light.Position - PointOfIntersectionInWorldSpace;
+    float CosNormalToLightAngle = dot(normalize(PointOfIntersectioToLightDirection), Normal);
+    float Distance2 = dot(PointOfIntersectioToLightDirection, PointOfIntersectioToLightDirection);
+    float Luminance = Light.Intensity * CosNormalToLightAngle / Distance2;
+
     int Index = 1;
     if (Renderable.MaterialIndex == 1)
     {
@@ -176,5 +195,5 @@ void main()
     vec3 ColorOut = texture(sampler2D(Textures[Index], Sampler), TextureCoords).rgb;
 
 
-    imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(ColorOut, 1.f));
+    imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(Luminance, Luminance, Luminance, 1.f));
 }

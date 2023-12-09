@@ -49,6 +49,7 @@
 #define RAYTRACE_SHADE_IBL_IMAGE_INDEX 6u
 #define RAYTRACE_SHADE_TEXTURE_SAMPLER 7u
 #define RAYTRACE_SHADE_TEXTURE_ARRAY 8u
+#define RAYTRACE_SHADE_LIGHTS_BUFFER_INDEX 9u
 
 /// Task generate rays descriptor set layout defines
 #define GENERATE_RAYS_LAYOUT_INDEX 0

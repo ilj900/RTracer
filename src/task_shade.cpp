@@ -6,6 +6,7 @@
 #include "systems/material_system.h"
 #include "systems/renderable_system.h"
 #include "systems/transform_system.h"
+#include "systems/light_system.h"
 
 #include "vk_shader_compiler.h"
 
@@ -38,6 +39,8 @@ FShadeTask::FShadeTask(int WidthIn, int HeightIn, FVulkanContext* Context, int N
                                               {VK_DESCRIPTOR_TYPE_SAMPLER,  VK_SHADER_STAGE_COMPUTE_BIT});
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_TEXTURE_ARRAY,
                                               {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,  VK_SHADER_STAGE_COMPUTE_BIT, MAX_TEXTURES});
+    DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_LIGHTS_BUFFER_INDEX,
+                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
     DescriptorSetManager->CreateDescriptorSetLayout(Name);
 
@@ -126,6 +129,12 @@ void FShadeTask::UpdateDescriptorSets()
 
         auto TextureSampler = GetTextureManager()->GetDescriptorImageInfos();
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_TEXTURE_ARRAY, i, TextureSampler);
+
+        VkDescriptorBufferInfo LightsDescriptorBufferInfo{};
+        LightsDescriptorBufferInfo.buffer = LIGHT_SYSTEM()->DeviceBuffer.Buffer;
+        LightsDescriptorBufferInfo.offset = 0;
+        LightsDescriptorBufferInfo.range = LIGHT_SYSTEM()->GetTotalSize();
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_LIGHTS_BUFFER_INDEX, i, &LightsDescriptorBufferInfo);
     }
 };
 
