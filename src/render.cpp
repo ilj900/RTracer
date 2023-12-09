@@ -365,11 +365,11 @@ int FRender::Update()
 
 int FRender::LoadScene(const std::string& Path)
 {
-    Models.push_back(AddCube({0.0f, 0.9f, 0.6f}, {1.f, 0.f, -2.f}));
-    Models.push_back(AddModel({0.9f, 0.0f, 0.6f}, {-1.f, 0.f, -2.f}, "../models/viking_room/viking_room.obj"));
-    Models.push_back(AddSphere({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, 10));
-    Models.push_back(AddPyramid({0.9f, 0.6f, 0.0f}, {-3.f, 0.f, -2.f}));
     Models.push_back(AddPlane({0.6f, 0.9f, 0.0f}, {-5.f, 0.f, -2.f}));
+    Models.push_back(AddPyramid({0.9f, 0.6f, 0.0f}, {-3.f, 0.f, -2.f}));
+    Models.push_back(AddModel({0.9f, 0.0f, 0.6f}, {-1.f, 0.f, -2.f}, "../models/viking_room/viking_room.obj"));
+    Models.push_back(AddCube({0.0f, 0.9f, 0.6f}, {1.f, 0.f, -2.f}));
+    Models.push_back(AddSphere({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, 10));
     Models.push_back(AddModel({0.9f, 0.0f, 0.6f}, {5.f, -1.f, -2.f}, "../models/Shaderball.obj"));
 
     AddLight({5, 5, 5});

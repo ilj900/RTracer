@@ -155,18 +155,18 @@ void FRaytraceTask::Init()
 
     Context->ResourceAllocator->Unmap(SBTBuffer);
 
+    auto WoodAlbedoTexture = Context->LoadImageFromFile("../resources/Wood/Wood_8K_Albedo.jpg", "V_Wood_8K_Albedo");
+    auto WoodAOTexture = Context->LoadImageFromFile("../resources/Wood/Wood_8K_AO.jpg", "V_Wood_8K_AO");
     auto ModelTexture = Context->LoadImageFromFile("../models/viking_room/viking_room.png", "V_viking_room");
     auto WoodRoughnessTexture = Context->LoadImageFromFile("../resources/Wood/Wood_8K_Roughness.jpg", "V_Wood_8K_Roughness");
     auto WoodNormalTexture = Context->LoadImageFromFile("../resources/Wood/Wood_8K_Normal.jpg", "V_Wood_8K_Normal");
-    auto WoodAlbedoTexture = Context->LoadImageFromFile("../resources/Wood/Wood_8K_Albedo.jpg", "V_Wood_8K_Albedo");
-    auto WoodAOTexture = Context->LoadImageFromFile("../resources/Wood/Wood_8K_AO.jpg", "V_Wood_8K_AO");
 
     auto TextureManager = GetTextureManager();
+    TextureManager->RegiseterTexture(WoodAlbedoTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    TextureManager->RegiseterTexture(WoodAOTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     TextureManager->RegiseterTexture(ModelTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     TextureManager->RegiseterTexture(WoodRoughnessTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     TextureManager->RegiseterTexture(WoodNormalTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    TextureManager->RegiseterTexture(WoodAlbedoTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    TextureManager->RegiseterTexture(WoodAOTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 };
 
 void FRaytraceTask::UpdateDescriptorSets()

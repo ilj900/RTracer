@@ -179,21 +179,8 @@ void main()
     float Distance2 = dot(PointOfIntersectioToLightDirection, PointOfIntersectioToLightDirection);
     float Luminance = Light.Intensity * CosNormalToLightAngle / Distance2;
 
-    int Index = 1;
-    if (Renderable.MaterialIndex == 1)
-    {
-        Index = 0;
-    }
-    if (Renderable.MaterialIndex == 2)
-    {
-        Index = 2;
-    }
-    if (Renderable.MaterialIndex == 3)
-    {
-        Index = 3;
-    }
-    vec3 ColorOut = texture(sampler2D(Textures[Index], Sampler), TextureCoords).rgb;
+    vec3 ColorOut = texture(sampler2D(Textures[Renderable.MaterialIndex], Sampler), TextureCoords).rgb;
 
 
-    imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(Luminance, Luminance, Luminance, 1.f));
+    imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(ColorOut, 1.f));
 }
