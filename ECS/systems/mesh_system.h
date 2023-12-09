@@ -21,8 +21,6 @@ namespace ECS
             void CreatePlane(FEntity Entity);
             uint32_t Size();
 
-            void Draw(FEntity Entity, VkCommandBuffer CommandBuffer);
-            void Bind(FEntity Entity, VkCommandBuffer CommandBuffer);
             VkDeviceAddress GetVertexBufferAddress(FEntity Entity);
             VkDeviceAddress GetIndexBufferAddress(FEntity Entity);
             void LoadToGPU(FEntity Entity);

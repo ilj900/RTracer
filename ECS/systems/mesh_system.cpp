@@ -19,34 +19,6 @@ namespace ECS
             IndexBuffer = GetResourceAllocator()->CreateBuffer(IndexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V::Index_Buffer");
         }
 
-        void FMeshSystem::Draw(FEntity Entity, VkCommandBuffer CommandBuffer)
-        {
-            auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
-
-            if (MeshComponent.Indexed)
-            {
-                vkCmdDrawIndexed(CommandBuffer, static_cast<uint32_t>(MeshComponent.Indices.size()), 1, 0, 0, 0);
-            }
-            else
-            {
-                vkCmdDraw(CommandBuffer, static_cast<uint32_t>(MeshComponent.Vertices.size()), 1, 0, 0);
-            }
-        }
-
-        void FMeshSystem::Bind(FEntity Entity, VkCommandBuffer CommandBuffer)
-        {
-            auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
-            auto& DeviceMeshComponent = GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Entity);
-
-            VkBuffer Buffers[] = {VertexBuffer.Buffer};
-            VkDeviceSize Offsets[] = {DeviceMeshComponent.VertexPtr.Offset};
-            vkCmdBindVertexBuffers(CommandBuffer, 0, 1, Buffers, Offsets);
-            if (MeshComponent.Indexed)
-            {
-                vkCmdBindIndexBuffer(CommandBuffer, IndexBuffer.Buffer, DeviceMeshComponent.IndexPtr.Offset, VK_INDEX_TYPE_UINT32);
-            }
-        }
-
         VkDeviceAddress FMeshSystem::GetVertexBufferAddress(FEntity Entity)
         {
             auto& DeviceMeshComponent = GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Entity);
