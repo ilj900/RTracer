@@ -26,6 +26,14 @@ namespace ECS
             FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FMaterialComponent>(Index);
         }
 
+        FEntity FMaterialSystem::CreateMaterial()
+        {
+            auto& Coordinator = GetCoordinator();
+            FEntity Material = Coordinator.CreateEntity();
+            Coordinator.AddComponent<ECS::COMPONENTS::FMaterialComponent>(Material, {});
+            return Material;
+        }
+
         FMaterialSystem& FMaterialSystem::SetBaseColor(FEntity MaterialEntity, float Red, float Green, float Blue)
         {
             auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);

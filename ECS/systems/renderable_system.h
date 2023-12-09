@@ -20,6 +20,7 @@ namespace ECS
             void SetSelected(FEntity Entity);
             void SetSelectedByIndex(uint32_t Index);
             void SetNotSelected(FEntity Entity);
+            void SetMaterial(FEntity Renderable, FEntity Material);
             void SetIndexed(FEntity Entity);
             void SyncTransform(FEntity Entity);
             void SetRenderableHasTexture(FEntity Entity);

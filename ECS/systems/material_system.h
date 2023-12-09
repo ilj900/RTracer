@@ -16,6 +16,7 @@ namespace ECS
             void Update() override;
             void Update(int Index) override;
 
+            FEntity CreateMaterial();
             FMaterialSystem& SetBaseColor(FEntity MaterialEntity, float Red, float Green, float Blue);
             FMaterialSystem& SetDiffuseRoughness(FEntity MaterialEntity, float DiffuseRoughness);
             FMaterialSystem& SetSpecularIOR(FEntity MaterialEntity, float SpecularIOR);

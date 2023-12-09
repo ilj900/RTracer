@@ -416,7 +416,11 @@ ECS::FEntity FRender::AddPlane(const FVector3& Color, const FVector3& Position)
     RENDERABLE_SYSTEM()->SyncTransform(NewModel);
     RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
     RENDERABLE_SYSTEM()->SetIndexed(NewModel);
-    MATERIAL_SYSTEM()->SetBaseColor(NewModel, 1, 0, 1);
+
+    auto NewMaterial = MATERIAL_SYSTEM()->CreateMaterial();
+    MATERIAL_SYSTEM()->SetBaseColor(NewMaterial, 1, 0, 1);
+    RENDERABLE_SYSTEM()->SetMaterial(NewModel, NewMaterial);
+
 
     return NewModel;
 }
@@ -429,7 +433,10 @@ ECS::FEntity FRender::AddCube(const FVector3& Color, const FVector3& Position)
     TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
     RENDERABLE_SYSTEM()->SyncTransform(NewModel);
     RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
-    MATERIAL_SYSTEM()->SetBaseColor(NewModel, 1, 0, 1);
+
+    auto NewMaterial = MATERIAL_SYSTEM()->CreateMaterial();
+    MATERIAL_SYSTEM()->SetBaseColor(NewMaterial, 1, 0, 1);
+    RENDERABLE_SYSTEM()->SetMaterial(NewModel, NewMaterial);
 
     return NewModel;
 }
@@ -442,7 +449,10 @@ ECS::FEntity FRender::AddSphere(const FVector3& Color, const FVector3& Position,
     TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
     RENDERABLE_SYSTEM()->SyncTransform(NewModel);
     RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
-    MATERIAL_SYSTEM()->SetBaseColor(NewModel, 0, 1, 1);
+
+    auto NewMaterial = MATERIAL_SYSTEM()->CreateMaterial();
+    MATERIAL_SYSTEM()->SetBaseColor(NewMaterial, 0, 1, 1);
+    RENDERABLE_SYSTEM()->SetMaterial(NewModel, NewMaterial);
 
     return NewModel;
 }
@@ -457,7 +467,10 @@ ECS::FEntity FRender::AddModel(const FVector3& Color, const FVector3& Position, 
     RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
     RENDERABLE_SYSTEM()->SetIndexed(NewModel);
     RENDERABLE_SYSTEM()->SetRenderableHasTexture(NewModel);
-    MATERIAL_SYSTEM()->SetBaseColor(NewModel, 1, 1, 1);
+
+    auto NewMaterial = MATERIAL_SYSTEM()->CreateMaterial();
+    MATERIAL_SYSTEM()->SetBaseColor(NewMaterial, 1, 1, 1);
+    RENDERABLE_SYSTEM()->SetMaterial(NewModel, NewMaterial);
 
     return NewModel;
 }
@@ -470,7 +483,10 @@ ECS::FEntity FRender::AddPyramid(const FVector3& Color, const FVector3& Position
     TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
     RENDERABLE_SYSTEM()->SyncTransform(NewModel);
     RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
-    MATERIAL_SYSTEM()->SetBaseColor(NewModel, 1, 1, 0);
+
+    auto NewMaterial = MATERIAL_SYSTEM()->CreateMaterial();
+    MATERIAL_SYSTEM()->SetBaseColor(NewMaterial, 1, 1, 0);
+    RENDERABLE_SYSTEM()->SetMaterial(NewModel, NewMaterial);
 
     return NewModel;
 }
@@ -497,7 +513,6 @@ ECS::FEntity FRender::CreateEmptyModel()
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceRenderableComponent> (EmptyModel, {FVector3{1.f, 1.f, 1.f},Index++, 0, 0, 0});
     Coordinator.AddComponent<ECS::COMPONENTS::FTransformComponent>(EmptyModel, {});
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(EmptyModel, {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FMaterialComponent>(EmptyModel, {});
 
     return EmptyModel;
 }

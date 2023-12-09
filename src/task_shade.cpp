@@ -5,6 +5,7 @@
 
 #include "systems/material_system.h"
 #include "systems/renderable_system.h"
+#include "systems/transform_system.h"
 
 #include "vk_shader_compiler.h"
 
@@ -26,6 +27,8 @@ FShadeTask::FShadeTask(int WidthIn, int HeightIn, FVulkanContext* Context, int N
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_RENDERABLE_BUFFER_INDEX,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_HITS_BUFFER_INDEX,
+                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
+    DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_TRANSFORM_INDEX,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_RAYS_BUFFER_INDEX,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
@@ -97,6 +100,12 @@ void FShadeTask::UpdateDescriptorSets()
         HitsBufferInfo.offset = 0;
         HitsBufferInfo.range = HitsBuffer.BufferSize;
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_HITS_BUFFER_INDEX, i, &HitsBufferInfo);
+
+        VkDescriptorBufferInfo TransformDescriptorBufferInfo{};
+        TransformDescriptorBufferInfo.buffer = TRANSFORM_SYSTEM()->DeviceBuffer.Buffer;
+        TransformDescriptorBufferInfo.offset = 0;
+        TransformDescriptorBufferInfo.range = TRANSFORM_SYSTEM()->GetTotalSize();
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_TRANSFORM_INDEX, i, &TransformDescriptorBufferInfo);
 
         auto RaysDataBuffer = Context->ResourceAllocator->GetBuffer("InitialRaysBuffer");
         VkDescriptorBufferInfo RaysDataBufferInfo{};

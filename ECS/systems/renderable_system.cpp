@@ -1,5 +1,6 @@
 #include "components/device_renderable_component.h"
 #include "components/device_transform_component.h"
+#include "components/material_component.h"
 #include "systems/renderable_system.h"
 #include "systems/transform_system.h"
 #include "mesh_system.h"
@@ -80,6 +81,13 @@ namespace ECS
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
             RenderableComponent.RenderablePropertyMask &= ~RENDERABLE_SELECTED_BIT;
             MarkDirty(Entity);
+        }
+
+        void FRenderableSystem::SetMaterial(FEntity Renderable, FEntity Material)
+        {
+            auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Renderable);
+            RenderableComponent.MaterialIndex = GetCoordinator().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
+            MarkDirty(Renderable);
         }
 
         void FRenderableSystem::SetIndexed(FEntity Entity)
