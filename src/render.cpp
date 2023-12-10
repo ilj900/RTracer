@@ -365,18 +365,51 @@ int FRender::Update()
 
 int FRender::LoadScene(const std::string& Path)
 {
-    Models.push_back(AddPlane({0.6f, 0.9f, 0.0f}, {-5.f, 0.f, -2.f}));
-    Models.push_back(AddPyramid({0.9f, 0.6f, 0.0f}, {-3.f, 0.f, -2.f}));
-    Models.push_back(AddModel({0.9f, 0.0f, 0.6f}, {-1.f, 0.f, -2.f}, "../models/viking_room/viking_room.obj"));
-    Models.push_back(AddCube({0.0f, 0.9f, 0.6f}, {1.f, 0.f, -2.f}));
-    Models.push_back(AddSphere({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, 10));
-    Models.push_back(AddModel({0.9f, 0.0f, 0.6f}, {5.f, -1.f, -2.f}, "../models/Shaderball.obj"));
+    auto MagentaMaterial = CreateMaterial({1, 0, 1});
+    auto Plane = CreatePlane({0.6f, 0.9f, 0.0f}, {-5.f, 0.f, -2.f});
+    ShapeSetMaterial(Plane, MagentaMaterial);
 
-    AddLight({5, 5, 5});
+    auto YellowMaterial = CreateMaterial({1, 1, 0});
+    auto Pyramid = CreatePyramid({0.9f, 0.6f, 0.0f}, {-3.f, 0.f, -2.f});
+    ShapeSetMaterial(Pyramid, YellowMaterial);
+
+    auto VikingRoomMaterial = CreateMaterial({0, 1, 1});
+    auto VikingRoom = CreateModel({0.9f, 0.0f, 0.6f}, {-1.f, 0.f, -2.f}, "../models/viking_room/viking_room.obj");
+    ShapeSetMaterial(VikingRoom, VikingRoomMaterial);
+
+    auto RedMaterial = CreateMaterial({1, 0, 0});
+    auto Cube = CreateCube({0.0f, 0.9f, 0.6f}, {1.f, 0.f, -2.f});
+    ShapeSetMaterial(Cube, RedMaterial);
+
+    auto GreenMaterial = CreateMaterial({0, 1, 0});
+    auto Sphere = CreateSphere({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, 10);
+    ShapeSetMaterial(Sphere, GreenMaterial);
+
+    auto BlueMaterial = CreateMaterial({0, 0, 1});
+    auto Shaderball = CreateModel({0.9f, 0.0f, 0.6f}, {5.f, -1.f, -2.f}, "../models/Shaderball.obj");
+    ShapeSetMaterial(Shaderball, BlueMaterial);
+
+    CreateLight({5, 5, 5});
 
     TRANSFORM_SYSTEM()->Update();
 
     return 0;
+}
+
+ECS::FEntity FRender::CreateMaterial(const FVector3& BaseColor)
+{
+    auto NewMaterial = MATERIAL_SYSTEM()->CreateMaterial();
+    MATERIAL_SYSTEM()->SetBaseColor(NewMaterial, BaseColor.X, BaseColor.Y, BaseColor.Z);
+    Materials.push_back(NewMaterial);
+
+    return NewMaterial;
+}
+
+ECS::FEntity FRender::ShapeSetMaterial(ECS::FEntity Shape, ECS::FEntity Material)
+{
+    RENDERABLE_SYSTEM()->SetMaterial(Shape, Material);
+
+    return Shape;
 }
 
 int FRender::SetIBL(const std::string& Path)
@@ -407,7 +440,7 @@ int FRender::LoadDataToGPU()
     return 0;
 }
 
-ECS::FEntity FRender::AddPlane(const FVector3& Color, const FVector3& Position)
+ECS::FEntity FRender::CreatePlane(const FVector3& Color, const FVector3& Position)
 {
     auto NewModel = CreateEmptyModel();
 
@@ -417,15 +450,12 @@ ECS::FEntity FRender::AddPlane(const FVector3& Color, const FVector3& Position)
     RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
     RENDERABLE_SYSTEM()->SetIndexed(NewModel);
 
-    auto NewMaterial = MATERIAL_SYSTEM()->CreateMaterial();
-    MATERIAL_SYSTEM()->SetBaseColor(NewMaterial, 1, 0, 1);
-    RENDERABLE_SYSTEM()->SetMaterial(NewModel, NewMaterial);
-
+    Models.push_back(NewModel);
 
     return NewModel;
 }
 
-ECS::FEntity FRender::AddCube(const FVector3& Color, const FVector3& Position)
+ECS::FEntity FRender::CreateCube(const FVector3& Color, const FVector3& Position)
 {
     auto NewModel = CreateEmptyModel();
 
@@ -434,14 +464,12 @@ ECS::FEntity FRender::AddCube(const FVector3& Color, const FVector3& Position)
     RENDERABLE_SYSTEM()->SyncTransform(NewModel);
     RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
 
-    auto NewMaterial = MATERIAL_SYSTEM()->CreateMaterial();
-    MATERIAL_SYSTEM()->SetBaseColor(NewMaterial, 1, 0, 1);
-    RENDERABLE_SYSTEM()->SetMaterial(NewModel, NewMaterial);
+    Models.push_back(NewModel);
 
     return NewModel;
 }
 
-ECS::FEntity FRender::AddSphere(const FVector3& Color, const FVector3& Position, int LevelOfComplexity)
+ECS::FEntity FRender::CreateSphere(const FVector3& Color, const FVector3& Position, int LevelOfComplexity)
 {
     auto NewModel = CreateEmptyModel();
 
@@ -450,14 +478,12 @@ ECS::FEntity FRender::AddSphere(const FVector3& Color, const FVector3& Position,
     RENDERABLE_SYSTEM()->SyncTransform(NewModel);
     RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
 
-    auto NewMaterial = MATERIAL_SYSTEM()->CreateMaterial();
-    MATERIAL_SYSTEM()->SetBaseColor(NewMaterial, 0, 1, 1);
-    RENDERABLE_SYSTEM()->SetMaterial(NewModel, NewMaterial);
+    Models.push_back(NewModel);
 
     return NewModel;
 }
 
-ECS::FEntity FRender::AddModel(const FVector3& Color, const FVector3& Position, const std::string& Path)
+ECS::FEntity FRender::CreateModel(const FVector3& Color, const FVector3& Position, const std::string& Path)
 {
     auto NewModel = CreateEmptyModel();
 
@@ -468,14 +494,12 @@ ECS::FEntity FRender::AddModel(const FVector3& Color, const FVector3& Position, 
     RENDERABLE_SYSTEM()->SetIndexed(NewModel);
     RENDERABLE_SYSTEM()->SetRenderableHasTexture(NewModel);
 
-    auto NewMaterial = MATERIAL_SYSTEM()->CreateMaterial();
-    MATERIAL_SYSTEM()->SetBaseColor(NewMaterial, 1, 1, 1);
-    RENDERABLE_SYSTEM()->SetMaterial(NewModel, NewMaterial);
+    Models.push_back(NewModel);
 
     return NewModel;
 }
 
-ECS::FEntity FRender::AddPyramid(const FVector3& Color, const FVector3& Position)
+ECS::FEntity FRender::CreatePyramid(const FVector3& Color, const FVector3& Position)
 {
     auto NewModel = CreateEmptyModel();
 
@@ -484,14 +508,12 @@ ECS::FEntity FRender::AddPyramid(const FVector3& Color, const FVector3& Position
     RENDERABLE_SYSTEM()->SyncTransform(NewModel);
     RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
 
-    auto NewMaterial = MATERIAL_SYSTEM()->CreateMaterial();
-    MATERIAL_SYSTEM()->SetBaseColor(NewMaterial, 1, 1, 0);
-    RENDERABLE_SYSTEM()->SetMaterial(NewModel, NewMaterial);
+    Models.push_back(NewModel);
 
     return NewModel;
 }
 
-int FRender::AddLight(const FVector3& Position)
+int FRender::CreateLight(const FVector3& Position)
 {
     auto& Coordinator = ECS::GetCoordinator();
     auto LightSystem = Coordinator.GetSystem<ECS::SYSTEMS::FLightSystem>();

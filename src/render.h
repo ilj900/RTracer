@@ -36,12 +36,14 @@ public:
     int Update();
 
     int LoadScene(const std::string& Path);
-    ECS::FEntity AddPlane(const FVector3& Color, const FVector3& Position);
-    ECS::FEntity AddPyramid(const FVector3& Color, const FVector3& Position);
-    ECS::FEntity AddCube(const FVector3& Color, const FVector3& Position);
-    ECS::FEntity AddSphere(const FVector3& Color, const FVector3& Position, int LevelOfComplexity);
-    ECS::FEntity AddModel(const FVector3& Color, const FVector3& Position, const std::string& Path);
-    int AddLight(const FVector3& Position);
+    ECS::FEntity CreateMaterial(const FVector3& BaseColor);
+    ECS::FEntity ShapeSetMaterial(ECS::FEntity Shape, ECS::FEntity Material);
+    ECS::FEntity CreatePlane(const FVector3& Color, const FVector3& Position);
+    ECS::FEntity CreatePyramid(const FVector3& Color, const FVector3& Position);
+    ECS::FEntity CreateCube(const FVector3& Color, const FVector3& Position);
+    ECS::FEntity CreateSphere(const FVector3& Color, const FVector3& Position, int LevelOfComplexity);
+    ECS::FEntity CreateModel(const FVector3& Color, const FVector3& Position, const std::string& Path);
+    int CreateLight(const FVector3& Position);
     int SetIBL(const std::string& Path);
     int LoadDataToGPU();
 
@@ -62,6 +64,7 @@ public:
     uint32_t RenderFrameIndex = 0;
 
     std::vector<ECS::FEntity> Models;
+    std::vector<ECS::FEntity> Materials;
     std::vector<ECS::FEntity> Lights;
 
     std::shared_ptr<FRaytraceTask> RayTraceTask = nullptr;
