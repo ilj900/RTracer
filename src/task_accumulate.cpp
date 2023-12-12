@@ -53,20 +53,9 @@ void FAccumulateTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        VkDescriptorImageInfo InputImageInfo{};
-        InputImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-        InputImageInfo.imageView = Inputs[0]->View;
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, &InputImageInfo);
-
-        VkDescriptorImageInfo AccumulateImageInfo{};
-        AccumulateImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-        AccumulateImageInfo.imageView = Outputs[0]->View;
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, ACCUMULATE_PER_FRAME_LAYOUT_INDEX, ACCUMULATE_IMAGE_INDEX, i, &AccumulateImageInfo);
-
-        VkDescriptorImageInfo EstimatedImageInfo{};
-        EstimatedImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-        EstimatedImageInfo.imageView = Outputs[1]->View;
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, ACCUMULATE_PER_FRAME_LAYOUT_INDEX, ESTIMATED_IMAGE_INDEX, i, &EstimatedImageInfo);
+        UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, Inputs[0]);
+        UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, ACCUMULATE_IMAGE_INDEX, i, Outputs[0]);
+        UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, ESTIMATED_IMAGE_INDEX, i, Outputs[1]);
     }
 };
 

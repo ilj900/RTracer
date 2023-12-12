@@ -54,6 +54,32 @@ void FExecutableTask::RegisterOutput(int Index, ImagePtr Image)
     Outputs[Index] = Image;
 }
 
+void FExecutableTask::UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t LayoutIndex, int FrameIndex, const FBuffer& Buffer)
+{
+    VkDescriptorBufferInfo BufferInfo{};
+    BufferInfo.buffer = Buffer.Buffer;
+    BufferInfo.offset = 0;
+    BufferInfo.range = Buffer.BufferSize;
+    Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, LayoutSetIndex, LayoutIndex, FrameIndex, &BufferInfo);
+}
+
+void FExecutableTask::UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t LayoutIndex, int FrameIndex, ImagePtr Image)
+{
+    VkDescriptorImageInfo ImageInfo{};
+    ImageInfo.imageLayout = Image->CurrentLayout;
+    ImageInfo.imageView = Image->View;
+    Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, LayoutSetIndex, LayoutIndex, FrameIndex, &ImageInfo);
+}
+
+void FExecutableTask::UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t LayoutIndex, int FrameIndex, ImagePtr Image, VkSampler Sampler)
+{
+    VkDescriptorImageInfo ImageInfo{};
+    ImageInfo.imageLayout = Image->CurrentLayout;
+    ImageInfo.imageView = Image->View;
+    ImageInfo.sampler = Sampler;
+    Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, LayoutSetIndex, LayoutIndex, FrameIndex, &ImageInfo);
+}
+
 ImagePtr FExecutableTask::GetInput(int Index)
 {
     if (Inputs.size() > Index)

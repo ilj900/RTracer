@@ -174,26 +174,9 @@ void FRaytraceTask::UpdateDescriptorSets()
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_LAYOUT_INDEX, i, &TLAS.AccelerationStructure);
-
-        auto InitialRaysBuffer = Context->ResourceAllocator->GetBuffer("InitialRaysBuffer");
-        VkDescriptorBufferInfo RayDataBufferInfo{};
-        RayDataBufferInfo.buffer = InitialRaysBuffer.Buffer;
-        RayDataBufferInfo.offset = 0;
-        RayDataBufferInfo.range = InitialRaysBuffer.BufferSize;
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_RAYS_DATA_BUFFER, i, &RayDataBufferInfo);
-
-        VkDescriptorBufferInfo RenderableBufferInfo{};
-        RenderableBufferInfo.buffer = RENDERABLE_SYSTEM()->DeviceBuffer.Buffer;
-        RenderableBufferInfo.offset = 0;
-        RenderableBufferInfo.range = RENDERABLE_SYSTEM()->GetTotalSize();
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_RENDERABLE_BUFFER_INDEX, i, &RenderableBufferInfo);
-
-        auto HitsBuffer = Context->ResourceAllocator->GetBuffer("HitsBuffer");
-        VkDescriptorBufferInfo HitsBufferInfo{};
-        HitsBufferInfo.buffer = HitsBuffer.Buffer;
-        HitsBufferInfo.offset = 0;
-        HitsBufferInfo.range = HitsBuffer.BufferSize;
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_HIT_BUFFER, i, &HitsBufferInfo);
+        UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_RAYS_DATA_BUFFER, i, Context->ResourceAllocator->GetBuffer("InitialRaysBuffer"));
+        UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_RENDERABLE_BUFFER_INDEX, i, RENDERABLE_SYSTEM()->DeviceBuffer);
+        UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_HIT_BUFFER, i, Context->ResourceAllocator->GetBuffer("HitsBuffer"));
     }
 };
 

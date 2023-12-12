@@ -135,6 +135,8 @@ void FImage::Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout)
         vkCmdPipelineBarrier(CommandBuffer, SourceStage, DestinationStage, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
 
     }, "Transitioning_Image_Layout");
+
+    CurrentLayout = NewLayout;
 }
 
 void FImage::SwapData(FImage& Other)

@@ -80,48 +80,13 @@ void FShadeTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        VkDescriptorImageInfo InputImageInfo{};
-        InputImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-        InputImageInfo.imageView = Inputs[0]->View;
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_OUTPUT_IMAGE_INDEX, i, &InputImageInfo);
-
-        VkDescriptorBufferInfo MaterialDescriptorBufferInfo{};
-        MaterialDescriptorBufferInfo.buffer = MATERIAL_SYSTEM()->DeviceBuffer.Buffer;
-        MaterialDescriptorBufferInfo.offset = 0;
-        MaterialDescriptorBufferInfo.range = MATERIAL_SYSTEM()->GetTotalSize();
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_MATERIAL_BUFFER_INDEX, i, &MaterialDescriptorBufferInfo);
-
-        VkDescriptorBufferInfo RenderableDescriptorBufferInfo{};
-        RenderableDescriptorBufferInfo.buffer = RENDERABLE_SYSTEM()->DeviceBuffer.Buffer;
-        RenderableDescriptorBufferInfo.offset = 0;
-        RenderableDescriptorBufferInfo.range = RENDERABLE_SYSTEM()->GetTotalSize();
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_RENDERABLE_BUFFER_INDEX, i, &RenderableDescriptorBufferInfo);
-
-        auto HitsBuffer = Context->ResourceAllocator->GetBuffer("HitsBuffer");
-        VkDescriptorBufferInfo HitsBufferInfo{};
-        HitsBufferInfo.buffer = HitsBuffer.Buffer;
-        HitsBufferInfo.offset = 0;
-        HitsBufferInfo.range = HitsBuffer.BufferSize;
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_HITS_BUFFER_INDEX, i, &HitsBufferInfo);
-
-        VkDescriptorBufferInfo TransformDescriptorBufferInfo{};
-        TransformDescriptorBufferInfo.buffer = TRANSFORM_SYSTEM()->DeviceBuffer.Buffer;
-        TransformDescriptorBufferInfo.offset = 0;
-        TransformDescriptorBufferInfo.range = TRANSFORM_SYSTEM()->GetTotalSize();
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_TRANSFORM_INDEX, i, &TransformDescriptorBufferInfo);
-
-        auto RaysDataBuffer = Context->ResourceAllocator->GetBuffer("InitialRaysBuffer");
-        VkDescriptorBufferInfo RaysDataBufferInfo{};
-        RaysDataBufferInfo.buffer = RaysDataBuffer.Buffer;
-        RaysDataBufferInfo.offset = 0;
-        RaysDataBufferInfo.range = RaysDataBuffer.BufferSize;
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_RAYS_BUFFER_INDEX, i, &RaysDataBufferInfo);
-
-        VkDescriptorImageInfo IBLSamplerImage{};
-        IBLSamplerImage.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        IBLSamplerImage.imageView = Inputs[1]->View;
-        IBLSamplerImage.sampler = IBLImageSampler;
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_IBL_IMAGE_INDEX, i, &IBLSamplerImage);
+        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_OUTPUT_IMAGE_INDEX, i, Inputs[0]);
+        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_MATERIAL_BUFFER_INDEX, i, MATERIAL_SYSTEM()->DeviceBuffer);
+        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_RENDERABLE_BUFFER_INDEX, i, RENDERABLE_SYSTEM()->DeviceBuffer);
+        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_HITS_BUFFER_INDEX, i, Context->ResourceAllocator->GetBuffer("HitsBuffer"));
+        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_TRANSFORM_INDEX, i, TRANSFORM_SYSTEM()->DeviceBuffer);
+        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_RAYS_BUFFER_INDEX, i, Context->ResourceAllocator->GetBuffer("InitialRaysBuffer"));
+        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_IBL_IMAGE_INDEX, i, Inputs[1], IBLImageSampler);
 
         VkDescriptorImageInfo MaterialTextureSamplerInfo{};
         MaterialTextureSamplerInfo.sampler = MaterialTextureSampler;
@@ -130,11 +95,7 @@ void FShadeTask::UpdateDescriptorSets()
         auto TextureSampler = GetTextureManager()->GetDescriptorImageInfos();
         Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_TEXTURE_ARRAY, i, TextureSampler);
 
-        VkDescriptorBufferInfo LightsDescriptorBufferInfo{};
-        LightsDescriptorBufferInfo.buffer = LIGHT_SYSTEM()->DeviceBuffer.Buffer;
-        LightsDescriptorBufferInfo.offset = 0;
-        LightsDescriptorBufferInfo.range = LIGHT_SYSTEM()->GetTotalSize();
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_LIGHTS_BUFFER_INDEX, i, &LightsDescriptorBufferInfo);
+        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_LIGHTS_BUFFER_INDEX, i, LIGHT_SYSTEM()->DeviceBuffer);
     }
 };
 

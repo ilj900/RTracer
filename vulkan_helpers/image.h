@@ -32,6 +32,7 @@ struct FImage
     VkMemoryPropertyFlags Properties;
     VkImageAspectFlags AspectFlags;
     VkDeviceSize Size;
+    VkImageLayout CurrentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     bool bInitialized = false;
     std::string DebugName;
 

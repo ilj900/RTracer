@@ -19,6 +19,9 @@ public:
 
     void RegisterInput(int Index, ImagePtr Image);
     void RegisterOutput(int Index, ImagePtr Image);
+    void UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t LayoutIndex, int FrameIndex, const FBuffer& Buffer);
+    void UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t LayoutIndex, int FrameIndex, ImagePtr Image);
+    void UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t LayoutIndex, int FrameIndex, ImagePtr Image, VkSampler Sampler);
     ImagePtr GetInput(int Index);
     ImagePtr GetOutput(int Index);
 
