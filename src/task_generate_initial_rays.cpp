@@ -12,7 +12,7 @@
 
 #include "common_defines.h"
 
-FGenerateInitialRays::FGenerateInitialRays(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+FGenerateInitialRays::FGenerateInitialRays(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
     Name = "Generate rays pipeline";
@@ -24,7 +24,8 @@ FGenerateInitialRays::FGenerateInitialRays(int WidthIn, int HeightIn, FVulkanCon
     DescriptorSetManager->AddDescriptorLayout(Name, GENERATE_RAYS_LAYOUT_INDEX, CAMERA_POSITION_BUFFER,
                                               {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
-    DescriptorSetManager->CreateDescriptorSetLayout(Name);
+    VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants)};
+    DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
     FBuffer InitialRaysBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(FRayData) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Name);
     Context->ResourceAllocator->RegisterBuffer(InitialRaysBuffer, "InitialRaysBuffer");
@@ -53,7 +54,6 @@ void FGenerateInitialRays::Init()
     DescriptorSetManager->ReserveDescriptorPool(Name);
 
     DescriptorSetManager->AllocateAllDescriptorSets(Name);
-
 };
 
 void FGenerateInitialRays::UpdateDescriptorSets()
@@ -77,6 +77,10 @@ void FGenerateInitialRays::RecordCommands()
             auto ComputeDescriptorSet = Context->DescriptorSetManager->GetSet(Name, GENERATE_RAYS_LAYOUT_INDEX, i);
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &ComputeDescriptorSet, 0, nullptr);
+
+            FPushConstants PushConstants = {Width, Height};
+            vkCmdPushConstants(CommandBuffer, Context->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
+
             vkCmdDispatch(CommandBuffer, Width * Height / 256, 1, 1);
         });
 

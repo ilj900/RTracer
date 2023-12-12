@@ -21,7 +21,7 @@ struct FDescriptorSetLayout
 struct FPipelineDescriptorSetLayout
 {
     void AddDescriptorLayout(uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, const FDescriptor& Descriptor);
-    void CreateDescriptorSetLayout(VkDevice LogicalDevice, const std::string& PipelineDebugName);
+    void CreateDescriptorSetLayout(VkDevice LogicalDevice, const std::vector<VkPushConstantRange>& PushConstantRangeVector, const std::string& PipelineDebugName);
     VkDescriptorSetLayout GetVkDescriptorSetLayout(uint32_t DescriptorSetLayoutIndex);
     VkPipelineLayout GetPipelineLayout();
 
@@ -59,7 +59,7 @@ public:
     ~FDescriptorSetManager();
 
     void AddDescriptorLayout(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, const FDescriptor& Descriptor);
-    void CreateDescriptorSetLayout(const std::string& PipelineName);
+    void CreateDescriptorSetLayout(const std::vector<VkPushConstantRange>& PushConstantRangeVector, const std::string& PipelineName);
     VkDescriptorSetLayout GetVkDescriptorSetLayout(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex);
     VkPipelineLayout GetPipelineLayout(const std::string& PipelineName);
 

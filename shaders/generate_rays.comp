@@ -15,14 +15,20 @@ layout (set = GENERATE_RAYS_LAYOUT_INDEX, binding = CAMERA_POSITION_BUFFER) unif
     FCamera Camera;
 };
 
+layout (push_constant) uniform PushConstantsBlock
+{
+    FPushConstants PushConstants;
+};
+
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
 
 void main()
 {
-    uvec2 PixelIndex = uvec2(gl_GlobalInvocationID.x % 1920, gl_GlobalInvocationID.x / 1920);
+    uvec2 PixelIndex = uvec2(gl_GlobalInvocationID.x % PushConstants.Width, gl_GlobalInvocationID.x / PushConstants.Width);
 
     const vec2 PixelCenter = PixelIndex + vec2(0.5f);
-    const vec2 InUV = PixelCenter/vec2(1920, 1080);
+    const vec2 InUV = PixelCenter/vec2(PushConstants.Width, PushConstants.Height);
     vec2 D = InUV * 2.0f - 1.f;
 
     vec4 Origin = inverse(Camera.ViewMatrix) * vec4(0.f, 0.f, 0.f, 1.f);

@@ -7,7 +7,7 @@
 
 #include "task_accumulate.h"
 
-FAccumulateTask::FAccumulateTask(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+FAccumulateTask::FAccumulateTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
     Name = "Accumulate pipeline";
@@ -21,7 +21,7 @@ FAccumulateTask::FAccumulateTask(int WidthIn, int HeightIn, FVulkanContext* Cont
     DescriptorSetManager->AddDescriptorLayout(Name, ACCUMULATE_PER_FRAME_LAYOUT_INDEX, ESTIMATED_IMAGE_INDEX,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_COMPUTE_BIT});
 
-    DescriptorSetManager->CreateDescriptorSetLayout(Name);
+    DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
 
     CreateSyncObjects();
 }

@@ -5,7 +5,7 @@
 class FAccumulateTask : public FExecutableTask
 {
 public:
-    FAccumulateTask(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+    FAccumulateTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
     ~FAccumulateTask();
 
     void Init() override;

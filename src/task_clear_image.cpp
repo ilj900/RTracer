@@ -7,7 +7,7 @@
 #include "task_clear_image.h"
 #include "common_defines.h"
 
-FClearImageTask::FClearImageTask(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+FClearImageTask::FClearImageTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
     Name = "Clear image pipeline";
@@ -17,7 +17,7 @@ FClearImageTask::FClearImageTask(int WidthIn, int HeightIn, FVulkanContext* Cont
     DescriptorSetManager->AddDescriptorLayout(Name, CLEAR_IMAGE_LAYOUT_INDEX, IMAGE_TO_CLEAR,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_COMPUTE_BIT});
 
-    DescriptorSetManager->CreateDescriptorSetLayout(Name);
+    DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
 
     CreateSyncObjects();
 }

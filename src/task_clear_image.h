@@ -5,7 +5,7 @@
 class FClearImageTask : public FExecutableTask
 {
 public:
-    FClearImageTask(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+    FClearImageTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
     ~FClearImageTask();
 
     void Init() override;

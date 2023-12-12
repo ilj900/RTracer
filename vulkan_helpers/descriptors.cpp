@@ -21,7 +21,7 @@ void FPipelineDescriptorSetLayout::AddDescriptorLayout(uint32_t DescriptorSetLay
     PipelineDescriptorSets[DescriptorSetLayoutIndex].DescriptorSets[DescriptorLayoutIndex] = Descriptor;
 }
 
-void FPipelineDescriptorSetLayout::CreateDescriptorSetLayout(VkDevice LogicalDevice, const std::string& PipelineDebugName)
+void FPipelineDescriptorSetLayout::CreateDescriptorSetLayout(VkDevice LogicalDevice, const std::vector<VkPushConstantRange>& PushConstantRangeVector, const std::string& PipelineDebugName)
 {
     for (auto Entry : PipelineDescriptorSets)
     {
@@ -70,8 +70,8 @@ void FPipelineDescriptorSetLayout::CreateDescriptorSetLayout(VkDevice LogicalDev
     PipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     PipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(DescriptorSetLayouts.size());
     PipelineLayoutInfo.pSetLayouts = DescriptorSetLayouts.data();
-    PipelineLayoutInfo.pushConstantRangeCount = 0;
-    PipelineLayoutInfo.pPushConstantRanges = nullptr;
+    PipelineLayoutInfo.pushConstantRangeCount = PushConstantRangeVector.size();
+    PipelineLayoutInfo.pPushConstantRanges = (PushConstantRangeVector.size() == 0) ? nullptr : PushConstantRangeVector.data();
 
     if (vkCreatePipelineLayout(LogicalDevice, &PipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
     {
@@ -263,9 +263,9 @@ void FDescriptorSetManager::AddDescriptorLayout(const std::string& PipelineName,
     PipelineDescriptorSetLayouts[PipelineName].AddDescriptorLayout(DescriptorSetLayoutIndex, DescriptorLayoutIndex, Descriptor);
 }
 
-void FDescriptorSetManager::CreateDescriptorSetLayout(const std::string& PipelineName)
+void FDescriptorSetManager::CreateDescriptorSetLayout(const std::vector<VkPushConstantRange>& PushConstantRangeVector, const std::string& PipelineName)
 {
-    PipelineDescriptorSetLayouts[PipelineName].CreateDescriptorSetLayout(LogicalDevice, PipelineName);
+    PipelineDescriptorSetLayouts[PipelineName].CreateDescriptorSetLayout(LogicalDevice, PushConstantRangeVector, PipelineName);
 }
 
 VkDescriptorSetLayout FDescriptorSetManager::GetVkDescriptorSetLayout(const std::string& PipelineName, uint32_t DescriptorSetLayoutIndex)

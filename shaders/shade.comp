@@ -103,11 +103,16 @@ bool IsIndexed(FRenderable Renderable)
     return CheckFlag(Renderable.RenderablePropertyMask, RENDERABLE_IS_INDEXED);
 }
 
+layout (push_constant) uniform PushConstantsBlock
+{
+    FPushConstants PushConstants;
+};
+
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 void main()
 {
-    uint PixelIndex = gl_GlobalInvocationID.y * 1920 + gl_GlobalInvocationID.x;
+    uint PixelIndex = gl_GlobalInvocationID.y * PushConstants.Width + gl_GlobalInvocationID.x;
 
     FHit Hit = FetchHit(PixelIndex);
     FRenderable Renderable = FetchRenderable(Hit.RenderableIndex);

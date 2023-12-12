@@ -128,4 +128,10 @@ struct FVertex
     FVector2 TexCoord;
 };
 
+struct FPushConstants
+{
+    uint32_t Width;
+    uint32_t Height;
+};
+
 #endif // COMMON_STRUCTURES_H

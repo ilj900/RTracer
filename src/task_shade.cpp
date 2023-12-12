@@ -2,6 +2,7 @@
 #include "vk_debug.h"
 #include "vk_functions.h"
 #include "common_defines.h"
+#include "common_structures.h"
 
 #include "systems/material_system.h"
 #include "systems/renderable_system.h"
@@ -14,7 +15,7 @@
 
 #include "task_shade.h"
 
-FShadeTask::FShadeTask(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+FShadeTask::FShadeTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
     Name = "Shade pipeline";
@@ -42,7 +43,8 @@ FShadeTask::FShadeTask(int WidthIn, int HeightIn, FVulkanContext* Context, int N
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_LIGHTS_BUFFER_INDEX,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
-    DescriptorSetManager->CreateDescriptorSetLayout(Name);
+    VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants)};
+    DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
     CreateSyncObjects();
 }
@@ -111,6 +113,9 @@ void FShadeTask::RecordCommands()
             auto RayTracingDescriptorSet = Context->DescriptorSetManager->GetSet(Name, COMPUTE_SHADE_LAYOUT_INDEX, i);
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &RayTracingDescriptorSet, 0, nullptr);
+
+            FPushConstants PushConstants = {Width, Height};
+            vkCmdPushConstants(CommandBuffer, Context->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
 
             int GroupSizeX = (Width % 8 == 0) ? (Width / 8) : (Width / 8) + 1;
             int GroupSizeY = (Height % 8 == 0) ? (Height / 8) : (Height / 8) + 1;

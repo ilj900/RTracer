@@ -6,11 +6,8 @@
 #include "components/device_mesh_component.h"
 #include "components/device_transform_component.h"
 #include "components/device_camera_component.h"
-#include "systems/material_system.h"
 #include "systems/mesh_system.h"
 #include "systems/renderable_system.h"
-#include "systems/light_system.h"
-#include "systems/transform_system.h"
 #include "vk_shader_compiler.h"
 
 #include "task_raytrace.h"
@@ -18,7 +15,7 @@
 
 #include "common_defines.h"
 
-FRaytraceTask::FRaytraceTask(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+FRaytraceTask::FRaytraceTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
     Name = "RayTracing pipeline";
@@ -37,8 +34,7 @@ FRaytraceTask::FRaytraceTask(int WidthIn, int HeightIn, FVulkanContext* Context,
     FBuffer HitsBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(FHit) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Name);
     Context->ResourceAllocator->RegisterBuffer(HitsBuffer, "HitsBuffer");
 
-
-    DescriptorSetManager->CreateDescriptorSetLayout(Name);
+    DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
 
     CreateSyncObjects();
 }
@@ -192,7 +188,7 @@ void FRaytraceTask::RecordCommands()
             auto RayTracingDescriptorSet = Context->DescriptorSetManager->GetSet(Name, RAYTRACE_LAYOUT_INDEX, i);
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, Context->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &RayTracingDescriptorSet, 0, nullptr);
-            V::vkCmdTraceRaysKHR(CommandBuffer, &RGenRegion, &RMissRegion, &RHitRegion, &RCallRegion, 1920, 1080, 1);
+            V::vkCmdTraceRaysKHR(CommandBuffer, &RGenRegion, &RMissRegion, &RHitRegion, &RCallRegion, Width, Height, 1);
         });
 
         V::SetName(LogicalDevice, CommandBuffers[i], "V::RayTracing_Command_Buffer");

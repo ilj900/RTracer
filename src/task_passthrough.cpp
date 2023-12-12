@@ -8,7 +8,7 @@
 
 #include "common_defines.h"
 
-FPassthroughTask::FPassthroughTask(int WidthIn, int HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+FPassthroughTask::FPassthroughTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
     Name = "Passthrough pipeline";
@@ -18,7 +18,7 @@ FPassthroughTask::FPassthroughTask(int WidthIn, int HeightIn, FVulkanContext* Co
     DescriptorSetManager->AddDescriptorLayout(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX,
                                               {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
 
-    DescriptorSetManager->CreateDescriptorSetLayout(Name);
+    DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
 }
 
 FPassthroughTask::~FPassthroughTask()
