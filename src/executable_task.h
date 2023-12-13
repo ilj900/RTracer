@@ -15,7 +15,7 @@ public:
     virtual void UpdateDescriptorSets() = 0;
     virtual void RecordCommands() = 0;
     virtual void Cleanup() = 0;
-    virtual VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex) = 0;
+    VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipelineStageFlags PipelineStageFlags, VkFence WaitFence, VkFence SignalFence, int IterationIndex);
 
     void RegisterInput(int Index, ImagePtr Image);
     void RegisterOutput(int Index, ImagePtr Image);

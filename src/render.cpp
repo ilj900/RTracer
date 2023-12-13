@@ -128,8 +128,6 @@ FRender::FRender()
     LoadScene("");
     LoadDataToGPU();
 
-    ImGuiFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
         ImageAvailableSemaphores.push_back(Context.CreateSemaphore());
@@ -328,9 +326,7 @@ int FRender::Render()
 
     auto ImguiFinishedSemaphore = ImguiTask->Submit(Context.GetGraphicsQueue(), PassthroughSignalSemaphore, VK_NULL_HANDLE, ImagesInFlight[ImageIndex], CurrentFrame);
 
-    ImGuiFinishedSemaphores[CurrentFrame] = ImguiFinishedSemaphore;
-
-    Result = Context.Present(Swapchain->GetSwapchain(), ImGuiFinishedSemaphores[CurrentFrame], CurrentFrame);
+    Result = Context.Present(Swapchain->GetSwapchain(), ImguiFinishedSemaphore, CurrentFrame);
 
     if (Result == VK_ERROR_OUT_OF_DATE_KHR || Result == VK_SUBOPTIMAL_KHR)
     {

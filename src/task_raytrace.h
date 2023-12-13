@@ -13,7 +13,7 @@ public:
     void UpdateDescriptorSets() override;
     void RecordCommands() override;
     void Cleanup() override;
-    VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex) override;
+    VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex);
 
     std::vector<FAccelerationStructure> BLASVector;
     FAccelerationStructure TLAS;

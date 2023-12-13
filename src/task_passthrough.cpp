@@ -127,36 +127,5 @@ void FPassthroughTask::Cleanup()
 
 VkSemaphore FPassthroughTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
 {
-    VkSubmitInfo PassThroughSubmitInfo{};
-    PassThroughSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    VkSemaphore PassthroughWaitSemaphores[] = {WaitSemaphore};
-    VkPipelineStageFlags PassthroughWaitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    PassThroughSubmitInfo.waitSemaphoreCount = 1;
-    PassThroughSubmitInfo.pWaitSemaphores = PassthroughWaitSemaphores;
-    PassThroughSubmitInfo.pWaitDstStageMask = PassthroughWaitStages;
-    PassThroughSubmitInfo.commandBufferCount = 1;
-    PassThroughSubmitInfo.pCommandBuffers = &CommandBuffers[IterationIndex];
-
-    VkSemaphore PassthroughSignalSemaphores[] = {SignalSemaphores[IterationIndex]};
-    PassThroughSubmitInfo.signalSemaphoreCount = 1;
-    PassThroughSubmitInfo.pSignalSemaphores = PassthroughSignalSemaphores;
-
-    if(WaitFence != VK_NULL_HANDLE)
-    {
-        vkWaitForFences(LogicalDevice, 1, &WaitFence, VK_TRUE, UINT64_MAX);
-    }
-
-    if (SignalFence != VK_NULL_HANDLE)
-    {
-        vkResetFences(LogicalDevice, 1, &SignalFence);
-    }
-
-    /// Submit rendering. When rendering finished, appropriate fence will be signalled
-    if (vkQueueSubmit(Queue, 1, &PassThroughSubmitInfo, SignalFence) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to submit draw command buffer!");
-    }
-    
-    return SignalSemaphores[IterationIndex];
+    return FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, WaitFence, SignalFence, IterationIndex);
 }

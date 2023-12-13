@@ -76,7 +76,6 @@ public:
     std::shared_ptr<FShadeTask> ShadeTask = nullptr;
 
     std::vector<VkSemaphore> ImageAvailableSemaphores;
-    std::vector<VkSemaphore> ImGuiFinishedSemaphores;
     std::vector<VkFence> ImagesInFlight;
 
 private:

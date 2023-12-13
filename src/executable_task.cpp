@@ -54,6 +54,41 @@ void FExecutableTask::RegisterOutput(int Index, ImagePtr Image)
     Outputs[Index] = Image;
 }
 
+VkSemaphore FExecutableTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipelineStageFlags PipelineStageFlags, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
+{
+    VkSemaphore WaitSemaphores[] = {WaitSemaphore};
+    VkPipelineStageFlags WaitStages[] = {PipelineStageFlags};
+    VkSubmitInfo SubmitInfo{};
+    SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    SubmitInfo.waitSemaphoreCount = 1;
+    SubmitInfo.pWaitSemaphores = WaitSemaphores;
+    SubmitInfo.pWaitDstStageMask = WaitStages;
+    SubmitInfo.commandBufferCount = 1;
+    SubmitInfo.pCommandBuffers = &CommandBuffers[IterationIndex];
+
+    VkSemaphore Semaphores[] = {SignalSemaphores[IterationIndex]};
+    SubmitInfo.signalSemaphoreCount = 1;
+    SubmitInfo.pSignalSemaphores = Semaphores;
+
+    if(WaitFence != VK_NULL_HANDLE)
+    {
+        vkWaitForFences(LogicalDevice, 1, &WaitFence, VK_TRUE, UINT64_MAX);
+    }
+
+    if (SignalFence != VK_NULL_HANDLE)
+    {
+        vkResetFences(LogicalDevice, 1, &SignalFence);
+    }
+
+    /// Submit computing. When computing finished, appropriate fence will be signalled
+    if (vkQueueSubmit(Queue, 1, &SubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to submit draw command buffer!");
+    }
+
+    return SignalSemaphores[IterationIndex];
+}
+
 void FExecutableTask::UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t LayoutIndex, int FrameIndex, const FBuffer& Buffer)
 {
     VkDescriptorBufferInfo BufferInfo{};

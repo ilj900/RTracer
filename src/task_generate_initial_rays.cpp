@@ -106,35 +106,5 @@ void FGenerateInitialRays::Cleanup()
 
 VkSemaphore FGenerateInitialRays::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
 {
-    VkSemaphore WaitSemaphores[] = {WaitSemaphore};
-    VkPipelineStageFlags WaitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    VkSubmitInfo SubmitInfo{};
-    SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    SubmitInfo.waitSemaphoreCount = 1;
-    SubmitInfo.pWaitSemaphores = WaitSemaphores;
-    SubmitInfo.pWaitDstStageMask = WaitStages;
-    SubmitInfo.commandBufferCount = 1;
-    SubmitInfo.pCommandBuffers = &CommandBuffers[IterationIndex];
-
-    VkSemaphore Semaphores[] = {SignalSemaphores[IterationIndex]};
-    SubmitInfo.signalSemaphoreCount = 1;
-    SubmitInfo.pSignalSemaphores = Semaphores;
-
-    if(WaitFence != VK_NULL_HANDLE)
-    {
-        vkWaitForFences(LogicalDevice, 1, &WaitFence, VK_TRUE, UINT64_MAX);
-    }
-
-    if (SignalFence != VK_NULL_HANDLE)
-    {
-        vkResetFences(LogicalDevice, 1, &SignalFence);
-    }
-
-    /// Submit rendering. When rendering finished, appropriate fence will be signalled
-    if (vkQueueSubmit(Queue, 1, &SubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to submit draw command buffer!");
-    }
-
-    return SignalSemaphores[IterationIndex];
+    return FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, WaitFence, SignalFence, IterationIndex);
 };
