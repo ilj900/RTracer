@@ -81,7 +81,7 @@ VkSemaphore FExecutableTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, Vk
     }
 
     /// Submit computing. When computing finished, appropriate fence will be signalled
-    if (vkQueueSubmit(Queue, 1, &SubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+    if (vkQueueSubmit(Queue, 1, &SubmitInfo, SignalFence) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to submit draw command buffer!");
     }

@@ -101,6 +101,7 @@ void FImguiTask::UpdateDescriptorSets()
 
 void FImguiTask::RecordCommands()
 {
+    CommandBuffers.resize(NumberOfSimultaneousSubmits);
 }
 
 void FImguiTask::Cleanup()
@@ -138,9 +139,9 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence
 
     auto& Context = GetContext();
 
-    auto CommandBuffer = Context.CommandBufferManager->BeginSingleTimeCommand();
+    CommandBuffers[IterationIndex] = Context.CommandBufferManager->BeginSingleTimeCommand();
 
-    V::SetName(LogicalDevice, CommandBuffer, "V_ImguiCommandBuffer" + std::to_string(IterationIndex % NumberOfSimultaneousSubmits));
+    V::SetName(LogicalDevice, CommandBuffers[IterationIndex], "V_ImguiCommandBuffer" + std::to_string(IterationIndex % NumberOfSimultaneousSubmits));
 
     Context.CommandBufferManager->RecordCommand([&, this](VkCommandBuffer)
     {
@@ -152,45 +153,15 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence
             /// TODO: find a better way to pass extent
             RenderPassBeginInfo.renderArea.extent = {uint32_t(Width), uint32_t(Height)};
             RenderPassBeginInfo.clearValueCount = 0;
-            vkCmdBeginRenderPass(CommandBuffer, &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+            vkCmdBeginRenderPass(CommandBuffers[IterationIndex], &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         }
 
         ImGui::Render();
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), CommandBuffer);
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), CommandBuffers[IterationIndex]);
 
-        vkCmdEndRenderPass(CommandBuffer);
-        vkEndCommandBuffer(CommandBuffer);
+        vkCmdEndRenderPass(CommandBuffers[IterationIndex]);
+        vkEndCommandBuffer(CommandBuffers[IterationIndex]);
     });
 
-    VkSubmitInfo SubmitInfo{};
-    SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    VkSemaphore ImguiWaitSemaphores[] = {WaitSemaphore};
-    VkPipelineStageFlags WaitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    SubmitInfo.waitSemaphoreCount = 1;
-    SubmitInfo.pWaitSemaphores = ImguiWaitSemaphores;
-    SubmitInfo.pWaitDstStageMask = WaitStages;
-    SubmitInfo.commandBufferCount = 1;
-    SubmitInfo.pCommandBuffers = &CommandBuffer;
-
-    VkSemaphore ImguiSignalSemaphores[] = {SignalSemaphores[IterationIndex]};
-    SubmitInfo.signalSemaphoreCount = 1;
-    SubmitInfo.pSignalSemaphores = ImguiSignalSemaphores;
-
-    if(WaitFence != VK_NULL_HANDLE)
-    {
-        vkWaitForFences(LogicalDevice, 1, &WaitFence, VK_TRUE, UINT64_MAX);
-    }
-
-    if (SignalFence != VK_NULL_HANDLE)
-    {
-        vkResetFences(LogicalDevice, 1, &SignalFence);
-    }
-
-    if (vkQueueSubmit(Context.GetGraphicsQueue(), 1, &SubmitInfo, SignalFence) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to submit ImGui draw command buffer!");
-    }
-
-    return SignalSemaphores[IterationIndex];
+    return FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, WaitFence, SignalFence, IterationIndex);
 }

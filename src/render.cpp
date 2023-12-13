@@ -208,6 +208,7 @@ int FRender::Init()
         ImguiTask->RegisterOutput(i, Swapchain->Images[i]);
     }
     ImguiTask->Init();
+    ImguiTask->RecordCommands();
 
     RenderFrameIndex = 0;
 
