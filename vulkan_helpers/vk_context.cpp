@@ -9,6 +9,9 @@
 #include "systems/material_system.h"
 #include "systems/light_system.h"
 #include "coordinator.h"
+#include "components/device_mesh_component.h"
+#include "components/mesh_component.h"
+#include "components/device_transform_component.h"
 
 #include "texture_manager.h"
 
@@ -56,9 +59,30 @@ VKAPI_ATTR VkBool32 VKAPI_CALL FVulkanContext::DebugCallback(
     return VK_FALSE;
 }
 
-void FVulkanContext::Init(int Width, int Height)
+void FVulkanContext::UpdateAS()
 {
-    TextureImage = LoadImageFromFile(TexturePath, "V_TextureImage");
+    auto MeshSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>();
+
+    for(auto Mesh : *MeshSystem)
+    {
+        auto MeshComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FMeshComponent>(Mesh);
+        auto DeviceMeshComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Mesh);
+        BLASVector.emplace_back(GenerateBlas(MESH_SYSTEM()->VertexBuffer, MESH_SYSTEM()->IndexBuffer,
+                                sizeof (FVertex), MeshComponent.Indexed ? MeshComponent.Indices.size() : MeshComponent.Vertices.size(),
+                                DeviceMeshComponent.VertexPtr, DeviceMeshComponent.IndexPtr));
+    }
+
+    std::vector<FMatrix4> Transforms;
+    std::vector<uint32_t> BlasIndices;
+    int i = 0;
+
+    for(auto Mesh : *MeshSystem)
+    {
+        Transforms.push_back(ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Mesh).ModelMatrix);
+        BlasIndices.push_back(i++);
+    }
+
+    TLAS = GenerateTlas(BLASVector, Transforms, BlasIndices);
 }
 
 #ifndef NDEBUG
@@ -1439,6 +1463,12 @@ void FVulkanContext::DestroyDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT& Deb
 
 void FVulkanContext::CleanUp()
 {
+    DestroyAccelerationStructure(TLAS);
+    for (auto BLAS : BLASVector)
+    {
+        DestroyAccelerationStructure(BLAS);
+    }
+
     FreeTextureManager();
 
     /// Free all device buffers
@@ -1449,8 +1479,6 @@ void FVulkanContext::CleanUp()
     GetResourceAllocator()->DestroyBuffer(MATERIAL_SYSTEM()->DeviceBuffer);
     GetResourceAllocator()->DestroyBuffer(LIGHT_SYSTEM()->DeviceBuffer);
     GetResourceAllocator()->DestroyBuffer(TRANSFORM_SYSTEM()->DeviceBuffer);
-
-    TextureImage = nullptr;
 
     DescriptorSetManager = nullptr;
     CommandBufferManager = nullptr;

@@ -43,12 +43,6 @@ FRaytraceTask::~FRaytraceTask()
 {
     FreeSyncObjects();
     Context->ResourceAllocator->UnregisterAndDestroyBuffer("HitsBuffer");
-
-    Context->DestroyAccelerationStructure(TLAS);
-    for (auto BLAS : BLASVector)
-    {
-        Context->DestroyAccelerationStructure(BLAS);
-    }
 }
 
 void FRaytraceTask::Init()
@@ -62,29 +56,6 @@ void FRaytraceTask::Init()
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
 
     Pipeline = Context->CreateRayTracingPipeline(RayGenerationShader(), RayMissShader(), RayClosestHitShader(), Width, Height, PipelineLayout);
-
-    auto MeshSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>();
-
-    for(auto Mesh : *MeshSystem)
-    {
-        auto MeshComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FMeshComponent>(Mesh);
-        auto DeviceMeshComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Mesh);
-        BLASVector.emplace_back(Context->GenerateBlas(MESH_SYSTEM()->VertexBuffer, MESH_SYSTEM()->IndexBuffer,
-                                                      sizeof (FVertex), MeshComponent.Indexed ? MeshComponent.Indices.size() : MeshComponent.Vertices.size(),
-                                                      DeviceMeshComponent.VertexPtr, DeviceMeshComponent.IndexPtr));
-    }
-
-    std::vector<FMatrix4> Transforms;
-    std::vector<uint32_t> BlasIndices;
-    int i = 0;
-
-    for(auto Mesh : *MeshSystem)
-    {
-        Transforms.push_back(ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Mesh).ModelMatrix);
-        BlasIndices.push_back(i++);
-    }
-
-    TLAS = Context->GenerateTlas(BLASVector, Transforms, BlasIndices);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
     DescriptorSetManager->ReserveDescriptorSet(Name, RAYTRACE_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
@@ -169,7 +140,7 @@ void FRaytraceTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_LAYOUT_INDEX, i, &TLAS.AccelerationStructure);
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_LAYOUT_INDEX, i, &Context->TLAS.AccelerationStructure);
         UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_RAYS_DATA_BUFFER, i, Context->ResourceAllocator->GetBuffer("InitialRaysBuffer"));
         UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_RENDERABLE_BUFFER_INDEX, i, RENDERABLE_SYSTEM()->DeviceBuffer);
         UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_HIT_BUFFER, i, Context->ResourceAllocator->GetBuffer("HitsBuffer"));

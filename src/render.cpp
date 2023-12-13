@@ -127,14 +127,13 @@ FRender::FRender()
 
     LoadScene("");
     LoadDataToGPU();
+    Context.UpdateAS();
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
         ImageAvailableSemaphores.push_back(Context.CreateSemaphore());
         ImagesInFlight.push_back(Context.CreateSignalledFence());
     }
-
-    Context.Init(WINDOW_WIDTH, WINDOW_HEIGHT);
 
     Init();
 }

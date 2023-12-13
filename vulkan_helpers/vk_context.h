@@ -31,7 +31,9 @@ public:
     FVulkanContext(const FVulkanContext& Other) = delete;
     ~FVulkanContext();
 
-    void Init(int Width, int Height);
+    void UpdateAS();
+    std::vector<FAccelerationStructure> BLASVector;
+    FAccelerationStructure TLAS;
 
 #ifndef NDEBUG
     VkDebugUtilsMessengerEXT CreateDebugMessenger(FVulkanContextOptions& VulkanContextOptions) const;
@@ -162,9 +164,6 @@ public:
 #ifndef NDEBUG
     VkDebugUtilsMessengerEXT DebugMessenger = VK_NULL_HANDLE;
 #endif
-
-    /// Texture used to pain the model
-    ImagePtr TextureImage;
 
     uint32_t MipLevels = 0;
     std::shared_ptr<FDescriptorSetManager>DescriptorSetManager = nullptr;

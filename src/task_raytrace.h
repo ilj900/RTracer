@@ -15,8 +15,6 @@ public:
     void Cleanup() override;
     VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex);
 
-    std::vector<FAccelerationStructure> BLASVector;
-    FAccelerationStructure TLAS;
     FBuffer SBTBuffer;
 
     VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
