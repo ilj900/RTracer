@@ -114,9 +114,6 @@ FRender::FRender()
 
     Context.GetDeviceQueues(Surface);
 
-    Swapchain = std::make_shared<FSwapchain>(WINDOW_WIDTH, WINDOW_HEIGHT, PhysicalDevice, LogicalDevice, Surface, Context.GetGraphicsQueueIndex(), Context.GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
-    MAX_FRAMES_IN_FLIGHT = Swapchain->Size();
-
     Context.InitManagerResources();
     CAMERA_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     RENDERABLE_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
@@ -129,18 +126,21 @@ FRender::FRender()
     LoadDataToGPU();
     Context.UpdateAS();
 
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
-    {
-        ImageAvailableSemaphores.push_back(Context.CreateSemaphore());
-        ImagesInFlight.push_back(Context.CreateSignalledFence());
-    }
-
     Init();
 }
 
 int FRender::Init()
 {
     auto& Context = GetContext();
+
+    Swapchain = std::make_shared<FSwapchain>(WINDOW_WIDTH, WINDOW_HEIGHT, PhysicalDevice, LogicalDevice, Surface, Context.GetGraphicsQueueIndex(), Context.GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
+    MAX_FRAMES_IN_FLIGHT = Swapchain->Size();
+
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    {
+        ImageAvailableSemaphores.push_back(Context.CreateSemaphore());
+        ImagesInFlight.push_back(Context.CreateSignalledFence());
+    }
 
     auto RTColorImage = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
                                               VK_IMAGE_USAGE_STORAGE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -231,6 +231,17 @@ int FRender::Cleanup()
     ImguiTask->Cleanup();
     ImguiTask = nullptr;
 
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    {
+        vkDestroySemaphore(GetContext().LogicalDevice, ImageAvailableSemaphores[i], nullptr);
+        ImageAvailableSemaphores[i] = VK_NULL_HANDLE;
+        vkDestroyFence(GetContext().LogicalDevice, ImagesInFlight[i], nullptr);
+        ImagesInFlight[i] = VK_NULL_HANDLE;
+    }
+
+    ImageAvailableSemaphores.clear();
+    ImagesInFlight.clear();
+
     Swapchain = nullptr;
 
     return 0;
@@ -248,17 +259,6 @@ FRender::~FRender()
 {
     GetContext().WaitIdle();
     Cleanup();
-
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
-    {
-        vkDestroySemaphore(GetContext().LogicalDevice, ImageAvailableSemaphores[i], nullptr);
-        ImageAvailableSemaphores[i] = VK_NULL_HANDLE;
-        vkDestroyFence(GetContext().LogicalDevice, ImagesInFlight[i], nullptr);
-        ImagesInFlight[i] = VK_NULL_HANDLE;
-    }
-
-    ImageAvailableSemaphores.clear();
-    ImagesInFlight.clear();
 
     GetContext().CleanUp();
 
@@ -384,6 +384,20 @@ int FRender::LoadScene(const std::string& Path)
     auto BlueMaterial = CreateMaterial({0, 0, 1});
     auto Shaderball = CreateModel({0.9f, 0.0f, 0.6f}, {5.f, -1.f, -2.f}, "../models/Shaderball.obj");
     ShapeSetMaterial(Shaderball, BlueMaterial);
+
+    auto& Context = GetContext();
+    auto WoodAlbedoTexture = Context.LoadImageFromFile("../resources/Wood/Wood_8K_Albedo.jpg", "V_Wood_8K_Albedo");
+    auto WoodAOTexture = Context.LoadImageFromFile("../resources/Wood/Wood_8K_AO.jpg", "V_Wood_8K_AO");
+    auto ModelTexture = Context.LoadImageFromFile("../models/viking_room/viking_room.png", "V_viking_room");
+    auto WoodRoughnessTexture = Context.LoadImageFromFile("../resources/Wood/Wood_8K_Roughness.jpg", "V_Wood_8K_Roughness");
+    auto WoodNormalTexture = Context.LoadImageFromFile("../resources/Wood/Wood_8K_Normal.jpg", "V_Wood_8K_Normal");
+
+    auto TextureManager = GetTextureManager();
+    TextureManager->RegiseterTexture(WoodAlbedoTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    TextureManager->RegiseterTexture(WoodAOTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    TextureManager->RegiseterTexture(ModelTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    TextureManager->RegiseterTexture(WoodRoughnessTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    TextureManager->RegiseterTexture(WoodNormalTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     CreateLight({5, 5, 5});
 
