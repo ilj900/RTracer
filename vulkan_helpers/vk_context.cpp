@@ -59,32 +59,6 @@ VKAPI_ATTR VkBool32 VKAPI_CALL FVulkanContext::DebugCallback(
     return VK_FALSE;
 }
 
-void FVulkanContext::UpdateAS()
-{
-    auto MeshSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>();
-
-    for(auto Mesh : *MeshSystem)
-    {
-        auto MeshComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FMeshComponent>(Mesh);
-        auto DeviceMeshComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Mesh);
-        BLASVector.emplace_back(GenerateBlas(MESH_SYSTEM()->VertexBuffer, MESH_SYSTEM()->IndexBuffer,
-                                sizeof (FVertex), MeshComponent.Indexed ? MeshComponent.Indices.size() : MeshComponent.Vertices.size(),
-                                DeviceMeshComponent.VertexPtr, DeviceMeshComponent.IndexPtr));
-    }
-
-    std::vector<FMatrix4> Transforms;
-    std::vector<uint32_t> BlasIndices;
-    int i = 0;
-
-    for(auto Mesh : *MeshSystem)
-    {
-        Transforms.push_back(ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Mesh).ModelMatrix);
-        BlasIndices.push_back(i++);
-    }
-
-    TLAS = GenerateTlas(BLASVector, Transforms, BlasIndices);
-}
-
 #ifndef NDEBUG
 VkDebugUtilsMessengerEXT FVulkanContext::CreateDebugMessenger(FVulkanContextOptions& VulkanContextOptions) const
 {
@@ -1463,8 +1437,8 @@ void FVulkanContext::DestroyDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT& Deb
 
 void FVulkanContext::CleanUp()
 {
-    DestroyAccelerationStructure(TLAS);
-    for (auto BLAS : BLASVector)
+    DestroyAccelerationStructure(MESH_SYSTEM()->TLAS);
+    for (auto BLAS : MESH_SYSTEM()->BLASVector)
     {
         DestroyAccelerationStructure(BLAS);
     }

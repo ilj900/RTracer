@@ -31,10 +31,6 @@ public:
     FVulkanContext(const FVulkanContext& Other) = delete;
     ~FVulkanContext();
 
-    void UpdateAS();
-    std::vector<FAccelerationStructure> BLASVector;
-    FAccelerationStructure TLAS;
-
 #ifndef NDEBUG
     VkDebugUtilsMessengerEXT CreateDebugMessenger(FVulkanContextOptions& VulkanContextOptions) const;
     void SetDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT DebugUtilsMessengerEXT);

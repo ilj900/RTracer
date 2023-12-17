@@ -124,7 +124,7 @@ FRender::FRender()
 
     LoadScene("");
     LoadDataToGPU();
-    Context.UpdateAS();
+    MESH_SYSTEM()->UpdateAS();
 
     Init();
 }

@@ -3,6 +3,7 @@
 
 #include "components/mesh_component.h"
 #include "components/device_mesh_component.h"
+#include "components/device_transform_component.h"
 #include "systems/mesh_system.h"
 #include "coordinator.h"
 #include "vk_context.h"
@@ -17,6 +18,8 @@ namespace ECS
         {
             VertexBuffer = GetResourceAllocator()->CreateBuffer(VertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V::Vertex_Buffer");
             IndexBuffer = GetResourceAllocator()->CreateBuffer(IndexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V::Index_Buffer");
+
+
         }
 
         VkDeviceAddress FMeshSystem::GetVertexBufferAddress(FEntity Entity)
@@ -67,6 +70,32 @@ namespace ECS
         uint32_t FMeshSystem::Size()
         {
             return Entities.size();
+        }
+
+        void FMeshSystem::UpdateAS()
+        {
+            auto MeshSystem = ECS::GetCoordinator().GetSystem<ECS::SYSTEMS::FMeshSystem>();
+
+            for(auto Mesh : *MeshSystem)
+            {
+                auto MeshComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FMeshComponent>(Mesh);
+                auto DeviceMeshComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Mesh);
+                BLASVector.emplace_back(GetContext().GenerateBlas(MESH_SYSTEM()->VertexBuffer, MESH_SYSTEM()->IndexBuffer,
+                                                     sizeof (FVertex), MeshComponent.Indexed ? MeshComponent.Indices.size() : MeshComponent.Vertices.size(),
+                                                     DeviceMeshComponent.VertexPtr, DeviceMeshComponent.IndexPtr));
+            }
+
+            std::vector<FMatrix4> Transforms;
+            std::vector<uint32_t> BlasIndices;
+            int i = 0;
+
+            for(auto Mesh : *MeshSystem)
+            {
+                Transforms.push_back(ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Mesh).ModelMatrix);
+                BlasIndices.push_back(i++);
+            }
+
+            TLAS = GetContext().GenerateTlas(BLASVector, Transforms, BlasIndices);
         }
 
         void FMeshSystem::LoadMesh(FEntity Entity, const std::string &Path)

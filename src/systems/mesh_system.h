@@ -2,7 +2,7 @@
 
 #include "system.h"
 
-#include "buffer.h"
+#include "vk_acceleration_structure.h"
 #include "vulkan/vulkan.h"
 
 namespace ECS
@@ -24,6 +24,10 @@ namespace ECS
             VkDeviceAddress GetVertexBufferAddress(FEntity Entity);
             VkDeviceAddress GetIndexBufferAddress(FEntity Entity);
             void LoadToGPU(FEntity Entity);
+
+            void UpdateAS();
+            std::vector<FAccelerationStructure> BLASVector;
+            FAccelerationStructure TLAS;
 
             VkDeviceSize VertexBufferSize = uint64_t(2) * 1024 * 1024 * 1024;
             VkDeviceSize IndexBufferSize = uint64_t(1) * 1024 * 1024 * 1024;
