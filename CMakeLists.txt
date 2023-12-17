@@ -6,10 +6,10 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(Vulkan REQUIRED COMPONENTS shaderc_combined)
 
-add_subdirectory(glfw)
+add_subdirectory(3rdparty/glfw)
 
 include_directories(
-        glfw/include
+        3rdparty/glfw/include
         vulkan_helpers
         ${Vulkan_INCLUDE_DIRS}
         include
@@ -17,18 +17,20 @@ include_directories(
         src
         utils
         ECS
-        imgui
-        imgui/backends
+        3rdparty/imgui
+        3rdparty/imgui/backends
         components
         systems
         shaders)
 
 set(IMGUI_SOURCE
-        imgui/backends/imgui_impl_glfw.cpp
-        imgui/backends/imgui_impl_vulkan.cpp
-        imgui/imgui.cpp imgui/imgui_draw.cpp
-        imgui/imgui_demo.cpp imgui/imgui_tables.cpp
-        imgui/imgui_widgets.cpp)
+        3rdparty/imgui/backends/imgui_impl_glfw.cpp
+        3rdparty/imgui/backends/imgui_impl_vulkan.cpp
+        3rdparty/imgui/imgui.cpp
+        3rdparty/imgui/imgui_draw.cpp
+        3rdparty/imgui/imgui_demo.cpp
+        3rdparty/imgui/imgui_tables.cpp
+        3rdparty/imgui/imgui_widgets.cpp)
 
 set(ECS_SOURCE
         ECS/coordinator.h
