@@ -75,7 +75,7 @@ std::vector<uint32_t> CompileShaderToSpirVData(const std::string &Path)
     while (StartingIndex != std::string::npos)
     {
         auto IncludedFile = GetIncludeFileName(ShaderCode, StartingIndex);
-        auto IncludeString = ReadFileToString("../shaders/" + IncludedFile);
+        auto IncludeString = ReadFileToString("../src/shaders/" + IncludedFile);
         auto FullString = GetStringTillTheEOL(ShaderCode, StartingIndex);
         ReplaceString(ShaderCode, FullString, IncludeString, StartingIndex);
         StartingIndex = FindString(ShaderCode, "#include \"", StartingIndex);

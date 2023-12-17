@@ -43,7 +43,7 @@ void FGenerateInitialRays::Init()
 {
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
-    auto RayGenerationShader = FShader("../shaders/generate_rays.comp");
+    auto RayGenerationShader = FShader("../src/shaders/generate_rays.comp");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
     Pipeline = Context->CreateComputePipeline(RayGenerationShader(), PipelineLayout);

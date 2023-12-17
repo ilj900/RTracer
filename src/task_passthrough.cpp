@@ -32,8 +32,8 @@ void FPassthroughTask::Init()
 
     Sampler = Context->CreateTextureSampler(Context->MipLevels);
 
-    auto VertexShader = FShader("../shaders/passthrough.vert");
-    auto FragmentShader = FShader("../shaders/passthrough.frag");
+    auto VertexShader = FShader("../src/shaders/passthrough.vert");
+    auto FragmentShader = FShader("../src/shaders/passthrough.frag");
 
     GraphicsPipelineOptions.RegisterColorAttachment(0, Outputs[0], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
     GraphicsPipelineOptions.SetPipelineLayout(DescriptorSetManager->GetPipelineLayout(Name));

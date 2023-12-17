@@ -13,7 +13,6 @@ include_directories(
         vulkan_helpers
         ${Vulkan_INCLUDE_DIRS}
         include
-        math
         src
         utils
         ECS
@@ -107,7 +106,6 @@ set(SOURCE
         vulkan_helpers/vk_shader_compiler.cpp
         vulkan_helpers/texture_manager.h
         vulkan_helpers/texture_manager.cpp
-        math/maths.cpp
         utils/logging.h
         utils/logging.cpp
         utils/string_manipulation.h
@@ -139,14 +137,15 @@ set(INCLUDE
         include/stb_image_write.h
         include/tiny_obj_loader.h
         include/tinyexr.h
-        include/miniz.c
-        shaders/common_structures.h
-        shaders/common_defines.h
-        math/maths.h)
+        include/miniz.c)
 
 add_executable(RTracer ${SOURCE} ${INCLUDE})
+
+add_subdirectory(src/math)
+add_subdirectory(src/shaders)
 
 target_link_libraries(RTracer
         Vulkan::Vulkan
         Vulkan::shaderc_combined
-        glfw)
+        glfw
+        Math)

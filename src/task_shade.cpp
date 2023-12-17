@@ -61,7 +61,7 @@ void FShadeTask::Init()
 {
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
-    auto ShadeShader = FShader("../shaders/shade.comp");
+    auto ShadeShader = FShader("../src/shaders/shade.comp");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
 
