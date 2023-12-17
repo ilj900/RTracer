@@ -106,10 +106,6 @@ set(SOURCE
         vulkan_helpers/vk_shader_compiler.cpp
         vulkan_helpers/texture_manager.h
         vulkan_helpers/texture_manager.cpp
-        utils/logging.h
-        utils/logging.cpp
-        utils/string_manipulation.h
-        utils/string_manipulation.cpp
         include/miniz.c
         ${IMGUI_SOURCE})
 
@@ -143,9 +139,11 @@ add_executable(RTracer ${SOURCE} ${INCLUDE})
 
 add_subdirectory(src/math)
 add_subdirectory(src/shaders)
+add_subdirectory(src/utils)
 
 target_link_libraries(RTracer
         Vulkan::Vulkan
         Vulkan::shaderc_combined
         glfw
-        Math)
+        Math
+        Utils)
