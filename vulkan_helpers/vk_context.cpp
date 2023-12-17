@@ -1445,15 +1445,6 @@ void FVulkanContext::CleanUp()
 
     FreeTextureManager();
 
-    /// Free all device buffers
-    GetResourceAllocator()->DestroyBuffer(CAMERA_SYSTEM()->DeviceBuffer);
-    GetResourceAllocator()->DestroyBuffer(RENDERABLE_SYSTEM()->DeviceBuffer);
-    GetResourceAllocator()->DestroyBuffer(MESH_SYSTEM()->VertexBuffer);
-    GetResourceAllocator()->DestroyBuffer(MESH_SYSTEM()->IndexBuffer);
-    GetResourceAllocator()->DestroyBuffer(MATERIAL_SYSTEM()->DeviceBuffer);
-    GetResourceAllocator()->DestroyBuffer(LIGHT_SYSTEM()->DeviceBuffer);
-    GetResourceAllocator()->DestroyBuffer(TRANSFORM_SYSTEM()->DeviceBuffer);
-
     DescriptorSetManager = nullptr;
     CommandBufferManager = nullptr;
     ResourceAllocator = nullptr;

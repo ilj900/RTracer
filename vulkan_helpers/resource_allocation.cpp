@@ -18,6 +18,11 @@ FResourceAllocator::FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice
 FResourceAllocator::~FResourceAllocator()
 {
     DestroyBuffer(StagingBuffer);
+
+    for (auto& Buffer : Buffers)
+    {
+        DestroyBuffer(Buffer.second);
+    }
 }
 
 FMemoryRegion FResourceAllocator::AllocateMemory(VkDeviceSize Size, VkMemoryRequirements MemRequirements, VkMemoryPropertyFlags Properties, bool bDeviceAddressRequired)
