@@ -21,6 +21,15 @@ namespace ECS
             GetResourceAllocator()->RegisterBuffer(IndexBuffer, "Index_Buffer");
         }
 
+        void FMeshSystem::Cleanup()
+        {
+            GetContext().DestroyAccelerationStructure(TLAS);
+            for (auto BLAS : BLASVector)
+            {
+                GetContext().DestroyAccelerationStructure(BLAS);
+            }
+        }
+
         VkDeviceAddress FMeshSystem::GetVertexBufferAddress(FEntity Entity)
         {
             auto& DeviceMeshComponent = GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Entity);

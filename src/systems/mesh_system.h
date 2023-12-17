@@ -13,6 +13,7 @@ namespace ECS
         {
         public:
             void Init(int NumberOfSimultaneousSubmits);
+            void Cleanup();
 
             void LoadMesh(FEntity Entity, const std::string &Path);
             void CreateTetrahedron(FEntity Entity);

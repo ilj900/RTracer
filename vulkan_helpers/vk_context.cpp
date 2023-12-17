@@ -2,10 +2,6 @@
 #include "vk_debug.h"
 #include "vk_functions.h"
 
-#include "systems/mesh_system.h"
-#include "components/device_mesh_component.h"
-#include "components/mesh_component.h"
-
 #include "texture_manager.h"
 
 #include <stdexcept>
@@ -1430,12 +1426,6 @@ void FVulkanContext::DestroyDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT& Deb
 
 void FVulkanContext::CleanUp()
 {
-    DestroyAccelerationStructure(MESH_SYSTEM()->TLAS);
-    for (auto BLAS : MESH_SYSTEM()->BLASVector)
-    {
-        DestroyAccelerationStructure(BLAS);
-    }
-
     FreeTextureManager();
 
     DescriptorSetManager = nullptr;

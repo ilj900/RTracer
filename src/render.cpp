@@ -260,6 +260,8 @@ FRender::~FRender()
     GetContext().WaitIdle();
     Cleanup();
 
+    MESH_SYSTEM()->Cleanup();
+
     GetContext().CleanUp();
 
     glfwDestroyWindow(Window);
