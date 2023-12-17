@@ -2,16 +2,9 @@
 #include "vk_debug.h"
 #include "vk_functions.h"
 
-#include "systems/camera_system.h"
-#include "systems/transform_system.h"
-#include "systems/renderable_system.h"
 #include "systems/mesh_system.h"
-#include "systems/material_system.h"
-#include "systems/light_system.h"
-#include "coordinator.h"
 #include "components/device_mesh_component.h"
 #include "components/mesh_component.h"
-#include "components/device_transform_component.h"
 
 #include "texture_manager.h"
 
