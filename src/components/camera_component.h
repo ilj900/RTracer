@@ -1,6 +1,6 @@
 #pragma once
 
-#include "entities/entity.h"
+#include "entity.h"
 #include "maths.h"
 
 namespace ECS

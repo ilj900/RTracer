@@ -32,42 +32,31 @@ set(IMGUI_SOURCE
         3rdparty/imgui/imgui_widgets.cpp)
 
 set(ECS_SOURCE
-        ECS/coordinator.h
-        ECS/coordinator.cpp
-        ECS/entity_manager.h
-        ECS/entity_manager.cpp
-        ECS/component_array.h
-        ECS/component_manager.h
-        ECS/component_manager.cpp
-        ECS/system_manager.h
-        ECS/entities/entity.h
 
-        ECS/components/transform_component.h
-        ECS/components/camera_component.h
-        ECS/components/device_camera_component.h
-        ECS/components/device_renderable_component.h
-        ECS/components/material_component.h
-        ECS/components/mesh_component.h
-        ECS/components/device_mesh_component.h
-        ECS/components/mesh_component.cpp
-        ECS/components/light_component.h
+        src/components/transform_component.h
+        src/components/camera_component.h
+        src/components/device_camera_component.h
+        src/components/device_renderable_component.h
+        src/components/material_component.h
+        src/components/mesh_component.h
+        src/components/device_mesh_component.h
+        src/components/mesh_component.cpp
+        src/components/light_component.h
 
-        ECS/systems/system.h
-        ECS/systems/system.cpp
-        ECS/systems/camera_system.h
-        ECS/systems/camera_system.cpp
-        ECS/systems/transform_system.h
-        ECS/systems/transform_system.cpp
-        ECS/systems/renderable_system.h
-        ECS/systems/renderable_system.cpp
-        ECS/systems/material_system.h
-        ECS/systems/material_system.cpp
-        ECS/systems/mesh_system.h
-        ECS/systems/mesh_system.cpp
-        ECS/systems/light_system.h
-        ECS/systems/light_system.cpp
-        ECS/systems/gpu_bufferable_system.h
-        ECS/systems/gpu_bufferable_system.cpp)
+        src/systems/camera_system.h
+        src/systems/camera_system.cpp
+        src/systems/transform_system.h
+        src/systems/transform_system.cpp
+        src/systems/renderable_system.h
+        src/systems/renderable_system.cpp
+        src/systems/material_system.h
+        src/systems/material_system.cpp
+        src/systems/mesh_system.h
+        src/systems/mesh_system.cpp
+        src/systems/light_system.h
+        src/systems/light_system.cpp
+        src/systems/gpu_bufferable_system.h
+        src/systems/gpu_bufferable_system.cpp)
 
 set(SOURCE
         src/application.h
@@ -137,6 +126,7 @@ set(INCLUDE
 
 add_executable(RTracer ${SOURCE} ${INCLUDE})
 
+add_subdirectory(src/ECS)
 add_subdirectory(src/math)
 add_subdirectory(src/shaders)
 add_subdirectory(src/utils)
@@ -146,4 +136,5 @@ target_link_libraries(RTracer
         Vulkan::shaderc_combined
         glfw
         Math
-        Utils)
+        Utils
+        ECS)

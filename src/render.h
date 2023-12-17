@@ -7,7 +7,7 @@
 
 #include "maths.h"
 
-#include "entities/entity.h"
+#include "entity.h"
 
 #include "task_raytrace.h"
 #include "task_accumulate.h"

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "entities/entity.h"
-#include "systems/system.h"
+#include "entity.h"
+#include "system.h"
 
 #include <cassert>
 #include <memory>
