@@ -8,5 +8,4 @@ set(SOURCE
 
 add_library(Utils STATIC ${SOURCE} ${INCLUDE})
 
-target_include_directories(Renderer PUBLIC .)
 target_include_directories(Vulkan_helpers PUBLIC .)
