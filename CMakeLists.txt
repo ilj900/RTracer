@@ -10,7 +10,7 @@ add_subdirectory(3rdparty/glfw)
 
 include_directories(
         3rdparty/glfw/include
-        vulkan_helpers
+        src/vulkan_helpers
         ${Vulkan_INCLUDE_DIRS}
         include
         src
@@ -81,41 +81,41 @@ set(SOURCE
         src/task_shade.cpp
         src/task_generate_initial_rays.h
         src/task_generate_initial_rays.cpp
-        vulkan_helpers/vk_acceleration_structure.h
-        vulkan_helpers/vk_context.h
-        vulkan_helpers/vk_utils.cpp
-        vulkan_helpers/vk_context.cpp
-        vulkan_helpers/image.cpp
-        vulkan_helpers/resource_allocation.cpp
-        vulkan_helpers/swapchain.cpp
-        vulkan_helpers/renderpass.cpp
-        vulkan_helpers/descriptors.cpp
-        vulkan_helpers/command_buffer_manager.cpp
-        vulkan_helpers/vk_shader_compiler.cpp
-        vulkan_helpers/texture_manager.h
-        vulkan_helpers/texture_manager.cpp
+        src/vulkan_helpers/vk_acceleration_structure.h
+        src/vulkan_helpers/vk_context.h
+        src/vulkan_helpers/vk_utils.cpp
+        src/vulkan_helpers/vk_context.cpp
+        src/vulkan_helpers/image.cpp
+        src/vulkan_helpers/resource_allocation.cpp
+        src/vulkan_helpers/swapchain.cpp
+        src/vulkan_helpers/renderpass.cpp
+        src/vulkan_helpers/descriptors.cpp
+        src/vulkan_helpers/command_buffer_manager.cpp
+        src/vulkan_helpers/vk_shader_compiler.cpp
+        src/vulkan_helpers/texture_manager.h
+        src/vulkan_helpers/texture_manager.cpp
         ${IMGUI_SOURCE})
 
 set(INCLUDE
         ${ECS_SOURCE}
         src/controller.h
-        vulkan_helpers/vk_utils.h
-        vulkan_helpers/vk_context.h
-        vulkan_helpers/image.h
-        vulkan_helpers/resource_allocation.h
-        vulkan_helpers/swapchain.h
-        vulkan_helpers/renderpass.h
-        vulkan_helpers/buffer.h
-        vulkan_helpers/buffer.cpp
-        vulkan_helpers/descriptors.h
-        vulkan_helpers/command_buffer_manager.h
-        vulkan_helpers/vk_pipeline.h
-        vulkan_helpers/vk_pipeline.cpp
-        vulkan_helpers/vk_debug.h
-        vulkan_helpers/vk_debug.cpp
-        vulkan_helpers/vk_functions.h
-        vulkan_helpers/vk_functions.cpp
-        vulkan_helpers/vk_shader_compiler.h)
+        src/vulkan_helpers/vk_utils.h
+        src/vulkan_helpers/vk_context.h
+        src/vulkan_helpers/image.h
+        src/vulkan_helpers/resource_allocation.h
+        src/vulkan_helpers/swapchain.h
+        src/vulkan_helpers/renderpass.h
+        src/vulkan_helpers/buffer.h
+        src/vulkan_helpers/buffer.cpp
+        src/vulkan_helpers/descriptors.h
+        src/vulkan_helpers/command_buffer_manager.h
+        src/vulkan_helpers/vk_pipeline.h
+        src/vulkan_helpers/vk_pipeline.cpp
+        src/vulkan_helpers/vk_debug.h
+        src/vulkan_helpers/vk_debug.cpp
+        src/vulkan_helpers/vk_functions.h
+        src/vulkan_helpers/vk_functions.cpp
+        src/vulkan_helpers/vk_shader_compiler.h)
 
 add_executable(RTracer ${SOURCE} ${INCLUDE})
 
