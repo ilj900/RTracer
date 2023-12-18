@@ -81,7 +81,6 @@ set(SOURCE
         src/task_shade.cpp
         src/task_generate_initial_rays.h
         src/task_generate_initial_rays.cpp
-        src/tinyexr.cpp
         vulkan_helpers/vk_acceleration_structure.h
         vulkan_helpers/vk_context.h
         vulkan_helpers/vk_utils.cpp
@@ -95,7 +94,6 @@ set(SOURCE
         vulkan_helpers/vk_shader_compiler.cpp
         vulkan_helpers/texture_manager.h
         vulkan_helpers/texture_manager.cpp
-        include/miniz.c
         ${IMGUI_SOURCE})
 
 set(INCLUDE
@@ -120,9 +118,7 @@ set(INCLUDE
         vulkan_helpers/vk_shader_compiler.h
         include/stb_image.h
         include/stb_image_write.h
-        include/tiny_obj_loader.h
-        include/tinyexr.h
-        include/miniz.c)
+        include/tiny_obj_loader.h)
 
 add_executable(RTracer ${SOURCE} ${INCLUDE})
 
@@ -130,6 +126,7 @@ add_subdirectory(src/ECS)
 add_subdirectory(src/math)
 add_subdirectory(src/shaders)
 add_subdirectory(src/utils)
+add_subdirectory(3rdparty/tinyexr)
 
 target_link_libraries(RTracer
         Vulkan::Vulkan
@@ -137,4 +134,5 @@ target_link_libraries(RTracer
         glfw
         Math
         Utils
-        ECS)
+        ECS
+        tinyexr)
