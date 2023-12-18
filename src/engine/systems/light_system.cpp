@@ -1,10 +1,5 @@
-#include "components/light_component.h"
-#include "systems/light_system.h"
-#include "coordinator.h"
-
-#include "vk_context.h"
-
-#include <cassert>
+#include "light_component.h"
+#include "light_system.h"
 
 namespace ECS
 {

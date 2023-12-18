@@ -1,10 +1,5 @@
-#include "components/material_component.h"
-#include "systems/material_system.h"
-#include "coordinator.h"
-
-#include "vk_context.h"
-
-#include <cassert>
+#include "material_component.h"
+#include "material_system.h"
 
 namespace ECS
 {

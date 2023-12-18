@@ -8,7 +8,6 @@
 #include "command_buffer_manager.h"
 #include "maths.h"
 #include "swapchain.h"
-#include "controller.h"
 #include "buffer.h"
 #include "descriptors.h"
 #include "image.h"
@@ -165,9 +164,6 @@ public:
     std::shared_ptr<FDescriptorSetManager>DescriptorSetManager = nullptr;
 
     bool bFramebufferResized = false;
-
-    std::string ModelPath = "../models/viking_room/viking_room.obj";
-    std::string TexturePath = "../models/viking_room/viking_room.png";
 };
 
 FVulkanContext& GetContext();

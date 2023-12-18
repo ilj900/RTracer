@@ -1,10 +1,6 @@
 #pragma once
 
-#include "systems/gpu_bufferable_system.h"
-
-#include "components/light_component.h"
-
-#include "vk_context.h"
+#include "gpu_bufferable_system.h"
 
 namespace ECS
 {

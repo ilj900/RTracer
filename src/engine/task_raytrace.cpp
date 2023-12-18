@@ -49,9 +49,9 @@ void FRaytraceTask::Init()
 {
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
-    auto RayGenerationShader = FShader("../src/shaders/raytrace.rgen");
-    auto RayClosestHitShader = FShader("../src/shaders/raytrace.rchit");
-    auto RayMissShader = FShader("../src/shaders/raytrace.rmiss");
+    auto RayGenerationShader = FShader("../../../src/shaders/raytrace.rgen");
+    auto RayClosestHitShader = FShader("../../../src/shaders/raytrace.rchit");
+    auto RayMissShader = FShader("../../../src/shaders/raytrace.rmiss");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
 

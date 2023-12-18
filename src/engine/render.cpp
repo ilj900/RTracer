@@ -170,7 +170,7 @@ int FRender::Init()
 
     ShadeTask = std::make_shared<FShadeTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     ShadeTask->RegisterInput(0, RTColorImage);
-    SetIBL("../resources/brown_photostudio_02_4k.exr");
+    SetIBL("../../../resources/brown_photostudio_02_4k.exr");
     ShadeTask->Init();
     ShadeTask->UpdateDescriptorSets();
     ShadeTask->RecordCommands();
@@ -372,7 +372,7 @@ int FRender::LoadScene(const std::string& Path)
     ShapeSetMaterial(Pyramid, YellowMaterial);
 
     auto VikingRoomMaterial = CreateMaterial({0, 1, 1});
-    auto VikingRoom = CreateModel({0.9f, 0.0f, 0.6f}, {-1.f, 0.f, -2.f}, "../models/viking_room/viking_room.obj");
+    auto VikingRoom = CreateModel({0.9f, 0.0f, 0.6f}, {-1.f, 0.f, -2.f}, "../../../models/viking_room/viking_room.obj");
     ShapeSetMaterial(VikingRoom, VikingRoomMaterial);
 
     auto RedMaterial = CreateMaterial({1, 0, 0});
@@ -384,15 +384,15 @@ int FRender::LoadScene(const std::string& Path)
     ShapeSetMaterial(Sphere, GreenMaterial);
 
     auto BlueMaterial = CreateMaterial({0, 0, 1});
-    auto Shaderball = CreateModel({0.9f, 0.0f, 0.6f}, {5.f, -1.f, -2.f}, "../models/Shaderball.obj");
+    auto Shaderball = CreateModel({0.9f, 0.0f, 0.6f}, {5.f, -1.f, -2.f}, "../../../models/Shaderball.obj");
     ShapeSetMaterial(Shaderball, BlueMaterial);
 
     auto& Context = GetContext();
-    auto WoodAlbedoTexture = Context.LoadImageFromFile("../resources/Wood/Wood_8K_Albedo.jpg", "V_Wood_8K_Albedo");
-    auto WoodAOTexture = Context.LoadImageFromFile("../resources/Wood/Wood_8K_AO.jpg", "V_Wood_8K_AO");
-    auto ModelTexture = Context.LoadImageFromFile("../models/viking_room/viking_room.png", "V_viking_room");
-    auto WoodRoughnessTexture = Context.LoadImageFromFile("../resources/Wood/Wood_8K_Roughness.jpg", "V_Wood_8K_Roughness");
-    auto WoodNormalTexture = Context.LoadImageFromFile("../resources/Wood/Wood_8K_Normal.jpg", "V_Wood_8K_Normal");
+    auto WoodAlbedoTexture = Context.LoadImageFromFile("../../../resources/Wood/Wood_8K_Albedo.jpg", "V_Wood_8K_Albedo");
+    auto WoodAOTexture = Context.LoadImageFromFile("../../../resources/Wood/Wood_8K_AO.jpg", "V_Wood_8K_AO");
+    auto ModelTexture = Context.LoadImageFromFile("../../../models/viking_room/viking_room.png", "V_viking_room");
+    auto WoodRoughnessTexture = Context.LoadImageFromFile("../../../resources/Wood/Wood_8K_Roughness.jpg", "V_Wood_8K_Roughness");
+    auto WoodNormalTexture = Context.LoadImageFromFile("../../../resources/Wood/Wood_8K_Normal.jpg", "V_Wood_8K_Normal");
 
     auto TextureManager = GetTextureManager();
     TextureManager->RegiseterTexture(WoodAlbedoTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);

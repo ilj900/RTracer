@@ -34,6 +34,6 @@ set(INCLUDE
 
 add_library(Vulkan_helpers STATIC ${SOURCE} ${INCLUDE})
 
-target_link_libraries(Vulkan_helpers Math)
+target_link_libraries(Vulkan_helpers Math Vulkan::Vulkan glfw)
 
 target_include_directories(RTracer PUBLIC .)

@@ -1,7 +1,6 @@
-#include "components/transform_component.h"
-#include "components/device_transform_component.h"
-#include "systems/transform_system.h"
-#include "coordinator.h"
+#include "transform_component.h"
+#include "device_transform_component.h"
+#include "transform_system.h"
 
 namespace ECS
 {

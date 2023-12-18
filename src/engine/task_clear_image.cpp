@@ -31,7 +31,7 @@ void FClearImageTask::Init()
 {
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
-    auto ClearImageShader = FShader("../src/shaders/clear_image.comp");
+    auto ClearImageShader = FShader("../../../src/shaders/clear_image.comp");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
 

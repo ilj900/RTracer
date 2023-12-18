@@ -1,11 +1,6 @@
-#include "components/camera_component.h"
-#include "components/device_camera_component.h"
-#include "systems/camera_system.h"
-#include "coordinator.h"
-
-#include "vk_context.h"
-
-#include <cassert>
+#include "camera_component.h"
+#include "device_camera_component.h"
+#include "camera_system.h"
 
 namespace ECS
 {

@@ -1,0 +1,82 @@
+include_directories(
+        3rdparty/glfw/include
+        src/vulkan_helpers
+        ${Vulkan_INCLUDE_DIRS}
+        include
+        src
+        utils
+        src/ECS
+        3rdparty/imgui
+        3rdparty/imgui/backends
+        components
+        systems
+        shaders)
+
+set(ECS_SOURCE
+        components/transform_component.h
+        components/camera_component.h
+        components/device_camera_component.h
+        components/device_renderable_component.h
+        components/material_component.h
+        components/mesh_component.h
+        components/device_mesh_component.h
+        components/mesh_component.cpp
+        components/light_component.h
+
+        systems/camera_system.h
+        systems/camera_system.cpp
+        systems/transform_system.h
+        systems/transform_system.cpp
+        systems/renderable_system.h
+        systems/renderable_system.cpp
+        systems/material_system.h
+        systems/material_system.cpp
+        systems/mesh_system.h
+        systems/mesh_system.cpp
+        systems/light_system.h
+        systems/light_system.cpp
+        systems/gpu_bufferable_system.h
+        systems/gpu_bufferable_system.cpp)
+
+set(SOURCE
+        application.h
+        application.cpp
+        render.h
+        render.cpp
+        main.cpp
+        controller.cpp
+        executable_task.h
+        executable_task.cpp
+        task_passthrough.h
+        task_passthrough.cpp
+        task_imgui.h
+        task_imgui.cpp
+        task_raytrace.h
+        task_raytrace.cpp
+        task_accumulate.h
+        task_accumulate.cpp
+        task_clear_image.h
+        task_clear_image.cpp
+        task_shade.h
+        task_shade.cpp
+        task_generate_initial_rays.h
+        task_generate_initial_rays.cpp)
+
+set(INCLUDE
+        ${ECS_SOURCE}
+        controller.h)
+
+add_executable(RTracer ${SOURCE} ${INCLUDE})
+
+target_link_libraries(RTracer
+        Vulkan::Vulkan
+        Vulkan::shaderc_combined
+        glfw
+        Math
+        Utils
+        ECS
+        tinyexr
+        stb_image
+        tiny_obj_loader
+        imgui
+        Vulkan_helpers)

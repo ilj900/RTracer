@@ -1,6 +1,7 @@
 add_subdirectory(tinyexr)
 add_subdirectory(stb_image)
 add_subdirectory(tiny_obj_loader)
+add_subdirectory(glfw)
 
 set(SOURCE
         imgui/backends/imgui_impl_glfw.cpp
@@ -13,4 +14,7 @@ set(SOURCE
 
 add_library(imgui STATIC ${SOURCE})
 
+target_link_libraries(imgui Vulkan::Vulkan glfw)
+
 target_include_directories(RTracer PUBLIC .)
+target_include_directories(imgui PUBLIC imgui imgui/backends)

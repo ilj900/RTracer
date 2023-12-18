@@ -1,9 +1,9 @@
 #include "tiny_obj_loader.h"
 
-#include "components/mesh_component.h"
-#include "components/device_mesh_component.h"
-#include "components/device_transform_component.h"
-#include "systems/mesh_system.h"
+#include "mesh_component.h"
+#include "device_mesh_component.h"
+#include "device_transform_component.h"
+#include "mesh_system.h"
 #include "coordinator.h"
 #include "vk_context.h"
 

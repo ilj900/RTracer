@@ -1,14 +1,9 @@
-#include "components/device_renderable_component.h"
-#include "components/device_transform_component.h"
-#include "components/material_component.h"
-#include "systems/renderable_system.h"
-#include "systems/transform_system.h"
+#include "device_renderable_component.h"
+#include "device_transform_component.h"
+#include "material_component.h"
+#include "renderable_system.h"
+#include "transform_system.h"
 #include "mesh_system.h"
-#include "coordinator.h"
-
-#include "vk_context.h"
-
-#include <cassert>
 
 namespace ECS
 {

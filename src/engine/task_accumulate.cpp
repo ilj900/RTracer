@@ -35,7 +35,7 @@ void FAccumulateTask::Init()
 {
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
-    auto AccumulateShader = FShader("../src/shaders/accumulate.comp");
+    auto AccumulateShader = FShader("../../../src/shaders/accumulate.comp");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
 
