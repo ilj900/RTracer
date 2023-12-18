@@ -72,7 +72,6 @@ target_link_libraries(Renderer
         Vulkan::Vulkan
         Vulkan::shaderc_combined
         glfw
-        Math
         Utils
         ECS
         tinyexr

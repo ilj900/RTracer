@@ -9,13 +9,4 @@ set(SOURCE
 
 add_executable(RTracer ${SOURCE} ${INCLUDE})
 
-target_link_libraries(RTracer
-        Math
-        Utils
-        ECS
-        tinyexr
-        stb_image
-        tiny_obj_loader
-        imgui
-        Vulkan_helpers
-        Renderer)
+target_link_libraries(RTracer Renderer)
