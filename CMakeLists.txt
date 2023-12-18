@@ -116,8 +116,6 @@ set(INCLUDE
         vulkan_helpers/vk_functions.h
         vulkan_helpers/vk_functions.cpp
         vulkan_helpers/vk_shader_compiler.h
-        include/stb_image.h
-        include/stb_image_write.h
         include/tiny_obj_loader.h)
 
 add_executable(RTracer ${SOURCE} ${INCLUDE})
@@ -127,6 +125,7 @@ add_subdirectory(src/math)
 add_subdirectory(src/shaders)
 add_subdirectory(src/utils)
 add_subdirectory(3rdparty/tinyexr)
+add_subdirectory(3rdparty/stb_image)
 
 target_link_libraries(RTracer
         Vulkan::Vulkan
@@ -135,4 +134,5 @@ target_link_libraries(RTracer
         Math
         Utils
         ECS
-        tinyexr)
+        tinyexr
+        stb_image)
