@@ -9,4 +9,5 @@ set(INCLUDE
 add_library(stb_image STATIC ${SOURCE} ${INCLUDE})
 
 target_include_directories(RTracer PUBLIC .)
+target_include_directories(Vulkan_helpers PUBLIC .)
 target_include_directories(stb_image PRIVATE .)

@@ -9,3 +9,5 @@ set(INCLUDE
         logging.h)
 
 add_library(Utils STATIC ${SOURCE} ${INCLUDE})
+
+target_include_directories(Vulkan_helpers PUBLIC .)
