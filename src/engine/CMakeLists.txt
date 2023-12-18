@@ -71,7 +71,6 @@ target_include_directories(RTracer PUBLIC .)
 target_link_libraries(Renderer
         Vulkan::Vulkan
         Vulkan::shaderc_combined
-        glfw
         Utils
         ECS
         tinyexr
