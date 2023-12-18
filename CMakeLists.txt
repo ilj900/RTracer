@@ -123,9 +123,7 @@ add_subdirectory(src/ECS)
 add_subdirectory(src/math)
 add_subdirectory(src/shaders)
 add_subdirectory(src/utils)
-add_subdirectory(3rdparty/tinyexr)
-add_subdirectory(3rdparty/stb_image)
-add_subdirectory(3rdparty/tiny_obj_loader)
+add_subdirectory(3rdparty)
 
 target_link_libraries(RTracer
         Vulkan::Vulkan
