@@ -1,11 +1,3 @@
-target_include_directories(RTracer PUBLIC .)
-
-set(SOURCE
-        component_manager.cpp
-        coordinator.cpp
-        entity_manager.cpp
-        system.cpp)
-
 set(INCLUDE
         component_array.h
         component_manager.h
@@ -15,4 +7,12 @@ set(INCLUDE
         system.h
         system_manager.h)
 
+set(SOURCE
+        component_manager.cpp
+        coordinator.cpp
+        entity_manager.cpp
+        system.cpp)
+
 add_library(ECS STATIC ${SOURCE} ${INCLUDE})
+
+target_include_directories(Renderer PUBLIC .)

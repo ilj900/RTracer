@@ -13,6 +13,7 @@
 #include "components/device_transform_component.h"
 #include "components/material_component.h"
 #include "components/light_component.h"
+#include "components/camera_component.h"
 
 #include "vk_context.h"
 
@@ -26,6 +27,61 @@ int32_t FRender::Index = 0;
 
 FRender::FRender()
 {
+    auto& Coordinator = ECS::GetCoordinator();
+    Coordinator.Init();
+
+    /// Register components
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FCameraComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FDeviceCameraComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FTransformComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FDeviceTransformComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FDeviceRenderableComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FMaterialComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FDeviceMeshComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FMeshComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FLightComponent>();
+
+    /// Register systems
+    auto CameraSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FCameraSystem>();
+    auto TransformSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FTransformSystem>();
+    auto RenderableSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FRenderableSystem>();
+    auto MaterialSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FMaterialSystem>();
+    auto MeshSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FMeshSystem>();
+    auto LightSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FLightSystem>();
+
+    /// Set camera system signature
+    ECS::FSignature CameraSystemSignature;
+    CameraSystemSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FCameraComponent>());
+    CameraSystemSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FDeviceCameraComponent>());
+    Coordinator.SetSystemSignature<ECS::SYSTEMS::FCameraSystem>(CameraSystemSignature);
+
+    /// Register Transform system signature
+    ECS::FSignature TransformSystemSignature;
+    TransformSystemSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FTransformComponent>());
+    TransformSystemSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FDeviceTransformComponent>());
+    Coordinator.SetSystemSignature<ECS::SYSTEMS::FTransformSystem>(TransformSystemSignature);
+
+    /// Register Renderable system signature
+    ECS::FSignature RenderableSignature;
+    RenderableSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FDeviceRenderableComponent>());
+    Coordinator.SetSystemSignature<ECS::SYSTEMS::FRenderableSystem>(RenderableSignature);
+
+    /// Register Material system signature
+    ECS::FSignature MaterialSignature;
+    MaterialSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FMaterialComponent>());
+    Coordinator.SetSystemSignature<ECS::SYSTEMS::FMaterialSystem>(MaterialSignature);
+
+    /// Register Mesh systems signature
+    ECS::FSignature MeshSignature;
+    MeshSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FMeshComponent>());
+    MeshSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FDeviceMeshComponent>());
+    Coordinator.SetSystemSignature<ECS::SYSTEMS::FMeshSystem>(MeshSignature);
+
+    /// Register Light system signature
+    ECS::FSignature LightSignature;
+    LightSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FLightComponent>());
+    Coordinator.SetSystemSignature<ECS::SYSTEMS::FLightSystem>(LightSignature);
+
     /// Create GLFW Window
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
