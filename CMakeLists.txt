@@ -22,15 +22,6 @@ include_directories(
         systems
         shaders)
 
-set(IMGUI_SOURCE
-        3rdparty/imgui/backends/imgui_impl_glfw.cpp
-        3rdparty/imgui/backends/imgui_impl_vulkan.cpp
-        3rdparty/imgui/imgui.cpp
-        3rdparty/imgui/imgui_draw.cpp
-        3rdparty/imgui/imgui_demo.cpp
-        3rdparty/imgui/imgui_tables.cpp
-        3rdparty/imgui/imgui_widgets.cpp)
-
 set(ECS_SOURCE
 
         src/components/transform_component.h
@@ -93,8 +84,7 @@ set(SOURCE
         src/vulkan_helpers/command_buffer_manager.cpp
         src/vulkan_helpers/vk_shader_compiler.cpp
         src/vulkan_helpers/texture_manager.h
-        src/vulkan_helpers/texture_manager.cpp
-        ${IMGUI_SOURCE})
+        src/vulkan_helpers/texture_manager.cpp)
 
 set(INCLUDE
         ${ECS_SOURCE}
@@ -134,4 +124,5 @@ target_link_libraries(RTracer
         ECS
         tinyexr
         stb_image
-        tiny_obj_loader)
+        tiny_obj_loader
+        imgui)
