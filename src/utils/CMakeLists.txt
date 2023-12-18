@@ -1,10 +1,10 @@
 set(INCLUDE
-        string_manipulation.h
-        logging.h)
+        logging.h
+        string_manipulation.h)
 
 set(SOURCE
-        string_manipulation.cpp
-        logging.cpp)
+        logging.cpp
+        string_manipulation.cpp)
 
 add_library(Utils STATIC ${SOURCE} ${INCLUDE})
 

@@ -12,12 +12,14 @@ include_directories(
         systems
         shaders)
 
-set(SOURCE
+set(INCLUDE
         application.h
-        application.cpp
-        main.cpp
-        controller.cpp
         controller.h)
+
+set(SOURCE
+        application.cpp
+        controller.cpp
+        main.cpp)
 
 add_executable(RTracer ${SOURCE} ${INCLUDE})
 
