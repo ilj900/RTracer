@@ -2,11 +2,8 @@
 #include "components/camera_component.h"
 #include "components/device_camera_component.h"
 #include "systems/camera_system.h"
-#include "systems/renderable_system.h"
-#include "vk_context.h"
 
 #include <iostream>
-#include <map>
 #include <utility>
 
 FController::FController()
@@ -18,14 +15,14 @@ FController::FController()
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera, {});
 }
 
-void FController::SetWindow(GLFWwindow* Window)
+void FController::SetWindow(GLFWwindow* WindowIn)
 {
-    this->Window = Window;
+    Window = WindowIn;
 }
 
-void FController::SetRender(std::shared_ptr<FRender> Render)
+void FController::SetRender(std::shared_ptr<FRender> RenderIn)
 {
-    this->Render = std::move(Render);
+    Render = std::move(RenderIn);
 }
 
 void FramebufferResizeCallback(GLFWwindow* Window, int Width, int Height) {
@@ -103,8 +100,7 @@ void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, in
             {
                 case GLFW_PRESS:
                 {
-                    auto& Context = GetContext();
-                    std::vector<uint32_t> Data;
+
                 }
             }
         }

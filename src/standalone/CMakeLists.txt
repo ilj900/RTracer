@@ -10,7 +10,6 @@ set(SOURCE
 add_executable(RTracer ${SOURCE} ${INCLUDE})
 
 target_link_libraries(RTracer
-        glfw
         Math
         Utils
         ECS

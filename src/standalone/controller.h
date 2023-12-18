@@ -2,15 +2,14 @@
 
 #include "GLFW/glfw3.h"
 
-#include "coordinator.h"
 #include "render.h"
 
 class FController
 {
 public:
     FController();
-    void SetWindow(GLFWwindow* Window);
-    void SetRender(std::shared_ptr<FRender> Render);
+    void SetWindow(GLFWwindow* WindowIn);
+    void SetRender(std::shared_ptr<FRender> RenderIn);
     void UpdateCallbacks();
     void Update(float Time);
 
