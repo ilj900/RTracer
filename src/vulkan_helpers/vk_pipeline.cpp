@@ -2,8 +2,6 @@
 #include "vk_pipeline.h"
 #include "vk_functions.h"
 
-#include <map>
-
 void FGraphicsPipelineOptions::RegisterColorAttachment(uint32_t Index, ImagePtr& Image, VkImageLayout InitialLayout, VkImageLayout FinalLayout, VkAttachmentLoadOp AttachmentLoadOp)
 {
     if (Index >= ColorAttachmentDescriptions.size())

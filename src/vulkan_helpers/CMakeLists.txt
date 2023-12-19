@@ -3,7 +3,6 @@ set(INCLUDE
         command_buffer_manager.h
         descriptors.h
         image.h
-        renderpass.h
         resource_allocation.h
         swapchain.h
         texture_manager.h
@@ -20,7 +19,6 @@ set(SOURCE
         command_buffer_manager.cpp
         descriptors.cpp
         image.cpp
-        renderpass.cpp
         resource_allocation.cpp
         swapchain.cpp
         texture_manager.cpp

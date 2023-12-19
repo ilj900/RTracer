@@ -3,7 +3,6 @@
 #include <chrono>
 
 #include "application.h"
-#include "render.h"
 
 FApplication::FApplication()
 {
