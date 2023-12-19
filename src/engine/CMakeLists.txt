@@ -1,33 +1,25 @@
 include_directories(
-        3rdparty/glfw/include
-        src/vulkan_helpers
-        ${Vulkan_INCLUDE_DIRS}
-        include
-        src
-        utils
-        src/ECS
-        3rdparty/imgui
-        3rdparty/imgui/backends
         components
         systems)
 
 set(ECS_INCLUDE
-        components/transform_component.h
+        components/acceleration_structure_component.h
         components/camera_component.h
         components/device_camera_component.h
+        components/device_mesh_component.h
         components/device_renderable_component.h
+        components/light_component.h
         components/material_component.h
         components/mesh_component.h
-        components/light_component.h
-        components/device_mesh_component.h
+        components/transform_component.h
 
         systems/camera_system.h
-        systems/transform_system.h
-        systems/renderable_system.h
+        systems/gpu_bufferable_system.h
+        systems/light_system.h
         systems/material_system.h
         systems/mesh_system.h
-        systems/light_system.h
-        systems/gpu_bufferable_system.h)
+        systems/renderable_system.h
+        systems/transform_system.h)
 
 set(ECS_SOURCE
         components/mesh_component.cpp
