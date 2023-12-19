@@ -12,7 +12,7 @@ namespace ECS
         class FMeshSystem : public FSystem
         {
         public:
-            void Init(int NumberOfSimultaneousSubmits);
+            void Init();
             void Cleanup();
 
             void LoadMesh(FEntity Entity, const std::string &Path);
