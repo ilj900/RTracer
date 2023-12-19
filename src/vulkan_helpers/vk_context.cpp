@@ -463,7 +463,7 @@ void FVulkanContext::DestroyAccelerationStructure(FAccelerationStructure &Accele
     ResourceAllocator->DestroyBuffer(AccelerationStructure.Buffer);
 }
 
-VkDeviceAddress FVulkanContext::GetBufferDeviceAddressInfo(FBuffer& Buffer)
+VkDeviceAddress FVulkanContext::GetBufferDeviceAddressInfo(const FBuffer& Buffer)
 {
     VkBufferDeviceAddressInfo BufferDeviceAddressInfo{};
     BufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
@@ -542,7 +542,7 @@ FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuff
     VkAccelerationStructureBuildGeometryInfoKHR AccelerationStructureBuildGeometryInfo = GetAccelerationStructureBuildGeometryInfo(AccelerationStructureGeometry, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR);
     VkAccelerationStructureBuildRangeInfoKHR AccelerationStructureBuildRangeInfo = GetAccelerationStructureBuildRangeInfo(MaxVertices/3);
 
-    const VkAccelerationStructureBuildRangeInfoKHR*  VkAccelerationStructureBuildRangeInfoKHRPtr= &AccelerationStructureBuildRangeInfo;
+    const VkAccelerationStructureBuildRangeInfoKHR* VkAccelerationStructureBuildRangeInfoKHRPtr= &AccelerationStructureBuildRangeInfo;
 
     uint32_t MaxPrimitiveCount = AccelerationStructureBuildRangeInfo.primitiveCount;
 
@@ -610,31 +610,8 @@ FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuff
     return CompactedBLAS;
 }
 
-FAccelerationStructure FVulkanContext::GenerateTlas(std::vector<FAccelerationStructure> BLASes, std::vector<FMatrix4> TransformMatrices, std::vector<uint32_t> BlasIndices)
+FAccelerationStructure FVulkanContext::GenerateTlas(const FBuffer& BlasInstanceBuffer, uint32_t BLASCount)
 {
-    uint32_t BLASCount = BLASes.size();
-
-    std::vector<VkAccelerationStructureInstanceKHR> AccelerationStructureInstanceVector;
-    AccelerationStructureInstanceVector.reserve(BLASes.size());
-    for (int i = 0; i < BLASCount; ++i)
-    {
-        VkAccelerationStructureInstanceKHR BlasInstance{};
-        auto& T = TransformMatrices[i].Data;
-        BlasInstance.transform = {T[0].X, T[1].X, T[2].X, T[3].X,
-                                  T[0].Y, T[1].Y, T[2].Y, T[3].Y,
-                                  T[0].Z, T[1].Z, T[2].Z, T[3].Z,};
-        BlasInstance.instanceCustomIndex = BlasIndices[i];
-        BlasInstance.accelerationStructureReference = GetASDeviceAddressInfo(BLASes[i]);
-        BlasInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
-        BlasInstance.mask = 0xFF;
-        BlasInstance.instanceShaderBindingTableRecordOffset = 0;
-        AccelerationStructureInstanceVector.emplace_back(BlasInstance);
-    }
-
-    auto BlasInstanceBuffer = ResourceAllocator->CreateBuffer(AccelerationStructureInstanceVector.size() * sizeof(VkAccelerationStructureInstanceKHR),
-                                                                       VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V_BLAS_Instance_Buffer");
-    ResourceAllocator->LoadDataToBuffer(BlasInstanceBuffer, {AccelerationStructureInstanceVector.size() * sizeof(VkAccelerationStructureInstanceKHR)}, {0}, {AccelerationStructureInstanceVector.data()});
-
     auto BlasInstanceBufferAddress = GetBufferDeviceAddressInfo(BlasInstanceBuffer);
 
     FAccelerationStructure TLAS;
@@ -678,7 +655,6 @@ FAccelerationStructure FVulkanContext::GenerateTlas(std::vector<FAccelerationStr
         V::vkCmdBuildAccelerationStructuresKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometry, &AccelerationStructureBuildRangeInfoPtr);
     });
 
-    ResourceAllocator->DestroyBuffer(BlasInstanceBuffer);
     ResourceAllocator->DestroyBuffer(ScratchBuffer);
 
     return TLAS;

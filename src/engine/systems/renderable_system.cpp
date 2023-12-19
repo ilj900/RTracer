@@ -95,8 +95,7 @@ namespace ECS
         void FRenderableSystem::SyncTransform(FEntity Entity)
         {
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
-            auto& DeviceTransformComponent = GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
-            DeviceTransformComponent.ModelMatrix = TRANSFORM_SYSTEM()->GetModelMatrix(Entity);
+            TRANSFORM_SYSTEM()->SyncTransform(Entity);
             RenderableComponent.TransformIndex = GetCoordinator().GetIndex<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
             MarkDirty(Entity);
         }

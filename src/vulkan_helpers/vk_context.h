@@ -90,14 +90,14 @@ public:
 
     FAccelerationStructure CreateAccelerationStructure(VkDeviceSize Size, VkAccelerationStructureTypeKHR Type, const std::string& DebugName = "");
     void DestroyAccelerationStructure(FAccelerationStructure &AccelerationStructure);
-    VkDeviceAddress GetBufferDeviceAddressInfo(FBuffer& Buffer);
+    VkDeviceAddress GetBufferDeviceAddressInfo(const FBuffer& Buffer);
     VkDeviceAddress GetASDeviceAddressInfo(FAccelerationStructure& AS);
     VkAccelerationStructureGeometryTrianglesDataKHR GetAccelerationStructureGeometryTrianglesData(FBuffer& VertexBuffer, FBuffer& IndexBuffer, VkDeviceSize VertexStride, uint32_t MaxVertices, FMemoryPtr& VertexBufferPtr, FMemoryPtr& IndexBufferPtr);
     VkAccelerationStructureGeometryKHR GetAccelerationStructureGeometry(VkAccelerationStructureGeometryTrianglesDataKHR& AccelerationStructureGeometryTrianglesData);
     VkAccelerationStructureBuildRangeInfoKHR GetAccelerationStructureBuildRangeInfo(uint32_t PrimitiveCount);
     VkAccelerationStructureBuildGeometryInfoKHR GetAccelerationStructureBuildGeometryInfo(VkAccelerationStructureGeometryKHR& AccelerationStructureGeometry, VkBuildAccelerationStructureFlagsKHR Flags);
     FAccelerationStructure GenerateBlas(FBuffer& VertexBuffer, FBuffer& IndexBuffer, VkDeviceSize VertexStride, uint32_t MaxVertices, FMemoryPtr& VertexBufferPtr, FMemoryPtr& IndexBufferPtr);
-    FAccelerationStructure GenerateTlas(std::vector<FAccelerationStructure> BLASes, std::vector<FMatrix4> TransformMatrices, std::vector<uint32_t> BlasIndices);
+    FAccelerationStructure GenerateTlas(const FBuffer& BlasInstanceBuffer, uint32_t BLASCount);
 
     ImagePtr CreateImage2D(uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format,
                                VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties,

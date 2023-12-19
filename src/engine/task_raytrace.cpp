@@ -2,18 +2,14 @@
 #include "vk_debug.h"
 #include "vk_functions.h"
 
-#include "components/mesh_component.h"
-#include "components/device_mesh_component.h"
-#include "components/device_transform_component.h"
-#include "components/device_camera_component.h"
-#include "systems/mesh_system.h"
-#include "systems/renderable_system.h"
+#include "mesh_component.h"
+#include "mesh_system.h"
+#include "renderable_system.h"
+#include "acceleration_structure_system.h"
 #include "vk_shader_compiler.h"
 
 #include "task_raytrace.h"
 #include "texture_manager.h"
-
-#include "common_defines.h"
 
 FRaytraceTask::FRaytraceTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
@@ -127,7 +123,7 @@ void FRaytraceTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_LAYOUT_INDEX, i, &MESH_SYSTEM()->TLAS.AccelerationStructure);
+        Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_LAYOUT_INDEX, i, &ACCELERATION_STRUCTURE_SYSTEM()->TLAS.AccelerationStructure);
         UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_RAYS_DATA_BUFFER, i, Context->ResourceAllocator->GetBuffer("InitialRaysBuffer"));
         UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_RENDERABLE_BUFFER_INDEX, i, RENDERABLE_SYSTEM()->DeviceBuffer);
         UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_HIT_BUFFER, i, Context->ResourceAllocator->GetBuffer("HitsBuffer"));

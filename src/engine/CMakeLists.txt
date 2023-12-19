@@ -13,6 +13,7 @@ set(ECS_INCLUDE
         components/mesh_component.h
         components/transform_component.h
 
+        systems/acceleration_structure_system.h
         systems/camera_system.h
         systems/gpu_bufferable_system.h
         systems/light_system.h
@@ -24,23 +25,25 @@ set(ECS_INCLUDE
 set(ECS_SOURCE
         components/mesh_component.cpp
 
+        systems/acceleration_structure_system.cpp
         systems/camera_system.cpp
-        systems/transform_system.cpp
-        systems/renderable_system.cpp
+        systems/gpu_bufferable_system.cpp
+        systems/light_system.cpp
         systems/material_system.cpp
         systems/mesh_system.cpp
-        systems/light_system.cpp
-        systems/gpu_bufferable_system.cpp)
+        systems/renderable_system.cpp
+        systems/transform_system.cpp
+        )
 
 set(INCLUDE
         executable_task.h
-        task_passthrough.h
-        task_imgui.h
-        task_raytrace.h
+        render.h
         task_accumulate.h
         task_clear_image.h
+        task_imgui.h
+        task_passthrough.h
+        task_raytrace.h
         task_shade.h
-        render.h
         ${ECS_INCLUDE})
 
 set(SOURCE

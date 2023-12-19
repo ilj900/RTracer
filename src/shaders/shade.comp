@@ -186,6 +186,5 @@ void main()
 
     vec3 ColorOut = texture(sampler2D(Textures[Renderable.MaterialIndex], Sampler), TextureCoords).rgb;
 
-
     imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(ColorOut, 1.f));
 }

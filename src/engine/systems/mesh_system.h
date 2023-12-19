@@ -13,7 +13,6 @@ namespace ECS
         {
         public:
             void Init();
-            void Cleanup();
 
             void LoadMesh(FEntity Entity, const std::string &Path);
             void CreateTetrahedron(FEntity Entity);
@@ -22,13 +21,9 @@ namespace ECS
             void CreatePlane(FEntity Entity);
             uint32_t Size();
 
-            VkDeviceAddress GetVertexBufferAddress(FEntity Entity);
-            VkDeviceAddress GetIndexBufferAddress(FEntity Entity);
+            VkDeviceAddress GetVertexBufferAddress(FEntity Renderable);
+            VkDeviceAddress GetIndexBufferAddress(FEntity Renderable);
             void LoadToGPU(FEntity Entity);
-
-            void UpdateAS();
-            std::vector<FAccelerationStructure> BLASVector;
-            FAccelerationStructure TLAS;
 
             VkDeviceSize VertexBufferSize = uint64_t(2) * 1024 * 1024 * 1024;
             VkDeviceSize IndexBufferSize = uint64_t(1) * 1024 * 1024 * 1024;

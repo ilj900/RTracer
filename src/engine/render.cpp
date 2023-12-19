@@ -1,21 +1,23 @@
 #include "coordinator.h"
-#include "systems/mesh_system.h"
-#include "systems/transform_system.h"
-#include "systems/renderable_system.h"
-#include "systems/camera_system.h"
-#include "systems/material_system.h"
-#include "systems/light_system.h"
-#include "components/mesh_component.h"
-#include "components/device_mesh_component.h"
-#include "components/device_renderable_component.h"
-#include "components/transform_component.h"
-#include "components/device_camera_component.h"
-#include "components/device_transform_component.h"
-#include "components/material_component.h"
-#include "components/light_component.h"
-#include "components/camera_component.h"
 
-#include "vk_context.h"
+#include "acceleration_structure_system.h"
+#include "mesh_system.h"
+#include "transform_system.h"
+#include "renderable_system.h"
+#include "camera_system.h"
+#include "material_system.h"
+#include "light_system.h"
+
+#include "acceleration_structure_component.h"
+#include "mesh_component.h"
+#include "device_mesh_component.h"
+#include "device_renderable_component.h"
+#include "transform_component.h"
+#include "device_camera_component.h"
+#include "device_transform_component.h"
+#include "material_component.h"
+#include "light_component.h"
+#include "camera_component.h"
 
 #include "vk_functions.h"
 #include "render.h"
@@ -40,6 +42,8 @@ FRender::FRender()
     Coordinator.RegisterComponent<ECS::COMPONENTS::FDeviceMeshComponent>();
     Coordinator.RegisterComponent<ECS::COMPONENTS::FMeshComponent>();
     Coordinator.RegisterComponent<ECS::COMPONENTS::FLightComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FAccelerationStructureComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FMeshInstanceComponent>();
 
     /// Register systems
     auto CameraSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FCameraSystem>();
@@ -48,6 +52,7 @@ FRender::FRender()
     auto MaterialSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FMaterialSystem>();
     auto MeshSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FMeshSystem>();
     auto LightSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FLightSystem>();
+    auto AccelerationSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FAccelerationStructureSystem>();
 
     /// Set camera system signature
     ECS::FSignature CameraSystemSignature;
@@ -75,12 +80,18 @@ FRender::FRender()
     ECS::FSignature MeshSignature;
     MeshSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FMeshComponent>());
     MeshSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FDeviceMeshComponent>());
+    MeshSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FMeshInstanceComponent>());
     Coordinator.SetSystemSignature<ECS::SYSTEMS::FMeshSystem>(MeshSignature);
 
     /// Register Light system signature
     ECS::FSignature LightSignature;
     LightSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FLightComponent>());
     Coordinator.SetSystemSignature<ECS::SYSTEMS::FLightSystem>(LightSignature);
+
+    /// Register Acceleration structure system signature
+    ECS::FSignature AccelerationStructureSignature;
+    AccelerationStructureSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FAccelerationStructureComponent>());
+    Coordinator.SetSystemSignature<ECS::SYSTEMS::FAccelerationStructureSystem>(AccelerationStructureSignature);
 
     /// Create GLFW Window
     glfwInit();
@@ -177,10 +188,12 @@ FRender::FRender()
     MATERIAL_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     LIGHT_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     TRANSFORM_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
+    ACCELERATION_STRUCTURE_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
 
     LoadScene("");
     LoadDataToGPU();
-    MESH_SYSTEM()->UpdateAS();
+    ACCELERATION_STRUCTURE_SYSTEM()->Update();
+    ACCELERATION_STRUCTURE_SYSTEM()->UpdateTLAS();
 
     Init();
 }
@@ -315,8 +328,6 @@ FRender::~FRender()
 {
     GetContext().WaitIdle();
     Cleanup();
-
-    MESH_SYSTEM()->Cleanup();
 
     GetContext().CleanUp();
 
@@ -513,14 +524,19 @@ ECS::FEntity FRender::CreatePlane(const FVector3& Color, const FVector3& Positio
     auto NewModel = CreateEmptyModel();
 
     MESH_SYSTEM()->CreatePlane(NewModel);
-    TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-    RENDERABLE_SYSTEM()->SyncTransform(NewModel);
-    RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
-    RENDERABLE_SYSTEM()->SetIndexed(NewModel);
+
+    ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
+
+    auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(NewModel, Position);
+
+    TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
+    RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
+    RENDERABLE_SYSTEM()->SetRenderableColor(MeshInstance, Color.X, Color.Y, Color.Z);
+    RENDERABLE_SYSTEM()->SetIndexed(MeshInstance);
 
     Models.push_back(NewModel);
 
-    return NewModel;
+    return MeshInstance;
 }
 
 ECS::FEntity FRender::CreateCube(const FVector3& Color, const FVector3& Position)
@@ -528,13 +544,18 @@ ECS::FEntity FRender::CreateCube(const FVector3& Color, const FVector3& Position
     auto NewModel = CreateEmptyModel();
 
     MESH_SYSTEM()->CreateHexahedron(NewModel);
-    TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-    RENDERABLE_SYSTEM()->SyncTransform(NewModel);
-    RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
+
+    ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
+
+    auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(NewModel, Position);
+
+    TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
+    RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
+    RENDERABLE_SYSTEM()->SetRenderableColor(MeshInstance, Color.X, Color.Y, Color.Z);
 
     Models.push_back(NewModel);
 
-    return NewModel;
+    return MeshInstance;
 }
 
 ECS::FEntity FRender::CreateSphere(const FVector3& Color, const FVector3& Position, int LevelOfComplexity)
@@ -542,13 +563,18 @@ ECS::FEntity FRender::CreateSphere(const FVector3& Color, const FVector3& Positi
     auto NewModel = CreateEmptyModel();
 
     MESH_SYSTEM()->CreateIcosahedron(NewModel, LevelOfComplexity, true);
-    TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-    RENDERABLE_SYSTEM()->SyncTransform(NewModel);
-    RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
+
+    ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
+
+    auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(NewModel, Position);
+
+    TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
+    RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
+    RENDERABLE_SYSTEM()->SetRenderableColor(MeshInstance, Color.X, Color.Y, Color.Z);
 
     Models.push_back(NewModel);
 
-    return NewModel;
+    return MeshInstance;
 }
 
 ECS::FEntity FRender::CreateModel(const FVector3& Color, const FVector3& Position, const std::string& Path)
@@ -556,15 +582,18 @@ ECS::FEntity FRender::CreateModel(const FVector3& Color, const FVector3& Positio
     auto NewModel = CreateEmptyModel();
 
     MESH_SYSTEM()->LoadMesh(NewModel, Path);
-    TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-    RENDERABLE_SYSTEM()->SyncTransform(NewModel);
-    RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
-    RENDERABLE_SYSTEM()->SetIndexed(NewModel);
-    RENDERABLE_SYSTEM()->SetRenderableHasTexture(NewModel);
+    ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
+
+    auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(NewModel, Position);
+
+    TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
+    RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
+    RENDERABLE_SYSTEM()->SetRenderableColor(MeshInstance, Color.X, Color.Y, Color.Z);
+    RENDERABLE_SYSTEM()->SetIndexed(MeshInstance);
 
     Models.push_back(NewModel);
 
-    return NewModel;
+    return MeshInstance;
 }
 
 ECS::FEntity FRender::CreatePyramid(const FVector3& Color, const FVector3& Position)
@@ -572,13 +601,18 @@ ECS::FEntity FRender::CreatePyramid(const FVector3& Color, const FVector3& Posit
     auto NewModel = CreateEmptyModel();
 
     MESH_SYSTEM()->CreateTetrahedron(NewModel);
-    TRANSFORM_SYSTEM()->SetTransform(NewModel, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-    RENDERABLE_SYSTEM()->SyncTransform(NewModel);
-    RENDERABLE_SYSTEM()->SetRenderableColor(NewModel, Color.X, Color.Y, Color.Z);
+
+    ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
+
+    auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(NewModel, Position);
+
+    TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
+    RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
+    RENDERABLE_SYSTEM()->SetRenderableColor(MeshInstance, Color.X, Color.Y, Color.Z);
 
     Models.push_back(NewModel);
 
-    return NewModel;
+    return MeshInstance;
 }
 
 int FRender::CreateLight(const FVector3& Position)
@@ -600,9 +634,6 @@ ECS::FEntity FRender::CreateEmptyModel()
     ECS::FEntity EmptyModel = Coordinator.CreateEntity();
     Coordinator.AddComponent<ECS::COMPONENTS::FMeshComponent>(EmptyModel, {});
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceMeshComponent>(EmptyModel, {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceRenderableComponent> (EmptyModel, {FVector3{1.f, 1.f, 1.f},Index++, 0, 0, 0});
-    Coordinator.AddComponent<ECS::COMPONENTS::FTransformComponent>(EmptyModel, {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(EmptyModel, {});
 
     return EmptyModel;
 }

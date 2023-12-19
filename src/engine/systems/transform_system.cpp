@@ -104,6 +104,12 @@ namespace ECS
             MarkDirty(Entity);
         }
 
+        void FTransformSystem::SyncTransform(FEntity Entity)
+        {
+            auto& DeviceTransformComponent = GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
+            DeviceTransformComponent.ModelMatrix = TRANSFORM_SYSTEM()->GetModelMatrix(Entity);
+        }
+
         FMatrix4 FTransformSystem::GetModelMatrix(FEntity Entity)
         {
             auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
