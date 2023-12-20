@@ -38,11 +38,14 @@ public:
     int LoadScene(const std::string& Path);
     ECS::FEntity CreateMaterial(const FVector3& BaseColor);
     ECS::FEntity ShapeSetMaterial(ECS::FEntity Shape, ECS::FEntity Material);
-    ECS::FEntity CreatePlane(const FVector3& Color, const FVector3& Position);
-    ECS::FEntity CreatePyramid(const FVector3& Color, const FVector3& Position);
-    ECS::FEntity CreateCube(const FVector3& Color, const FVector3& Position);
-    ECS::FEntity CreateSphere(const FVector3& Color, const FVector3& Position, int LevelOfComplexity);
-    ECS::FEntity CreateModel(const FVector3& Color, const FVector3& Position, const std::string& Path);
+    ECS::FEntity CreatePlane();
+    ECS::FEntity CreatePyramid();
+    ECS::FEntity CreateCube();
+    ECS::FEntity CreateSphere(int LevelOfComplexity);
+    ECS::FEntity CreateModel(const std::string& Path);
+
+    ECS::FEntity CreateInstance(ECS::FEntity BaseModel,  const FVector3& Position);
+
     int CreateLight(const FVector3& Position);
     int SetIBL(const std::string& Path);
 

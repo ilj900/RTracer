@@ -430,29 +430,42 @@ int FRender::Update()
 
 int FRender::LoadScene(const std::string& Path)
 {
+    auto Plane = CreatePlane();
+    auto Pyramid = CreatePyramid();
+    auto VikingRoom = CreateModel("../../../models/viking_room/viking_room.obj");
+    auto Cube = CreateCube();
+    auto Sphere = CreateSphere(10);
+    auto Shaderball = CreateModel("../../../models/Shaderball.obj");
+
     auto MagentaMaterial = CreateMaterial({1, 0, 1});
-    auto Plane = CreatePlane({0.6f, 0.9f, 0.0f}, {-5.f, 0.f, -2.f});
-    ShapeSetMaterial(Plane, MagentaMaterial);
-
     auto YellowMaterial = CreateMaterial({1, 1, 0});
-    auto Pyramid = CreatePyramid({0.9f, 0.6f, 0.0f}, {-3.f, 0.f, -2.f});
-    ShapeSetMaterial(Pyramid, YellowMaterial);
-
     auto VikingRoomMaterial = CreateMaterial({0, 1, 1});
-    auto VikingRoom = CreateModel({0.9f, 0.0f, 0.6f}, {-1.f, 0.f, -2.f}, "../../../models/viking_room/viking_room.obj");
-    ShapeSetMaterial(VikingRoom, VikingRoomMaterial);
-
     auto RedMaterial = CreateMaterial({1, 0, 0});
-    auto Cube = CreateCube({0.0f, 0.9f, 0.6f}, {1.f, 0.f, -2.f});
-    ShapeSetMaterial(Cube, RedMaterial);
-
     auto GreenMaterial = CreateMaterial({0, 1, 0});
-    auto Sphere = CreateSphere({0.6f, 0.0f, 0.9f}, {3.f, 0.f, -2.f}, 10);
-    ShapeSetMaterial(Sphere, GreenMaterial);
-
     auto BlueMaterial = CreateMaterial({0, 0, 1});
-    auto Shaderball = CreateModel({0.9f, 0.0f, 0.6f}, {5.f, -1.f, -2.f}, "../../../models/Shaderball.obj");
-    ShapeSetMaterial(Shaderball, BlueMaterial);
+
+    auto PlaneInstance = CreateInstance(Plane, {-5.f, 0.f, -2.f});
+    auto PyramidInstance = CreateInstance(Pyramid, {-3.f, 0.f, -2.f});
+    auto VikingRoomInstance = CreateInstance(VikingRoom, {-1.f, 0.f, -2.f});
+    auto CubeInstance = CreateInstance(Cube, {1.f, 0.f, -2.f});
+    auto SphereInstance = CreateInstance(Sphere, {3.f, 0.f, -2.f});
+    auto ShaderballInstance = CreateInstance(Shaderball, {5.f, -1.f, -2.f});
+    auto ShaderballInstance2 = CreateInstance(Shaderball, {5.f, 1.f, -2.f});
+    auto ShaderballInstance3 = CreateInstance(Shaderball, {5.f, 3.f, -2.f});
+    auto ShaderballInstance4 = CreateInstance(Shaderball, {5.f, 5.f, -2.f});
+    auto ShaderballInstance5 = CreateInstance(Shaderball, {5.f, 7.f, -2.f});
+
+
+    ShapeSetMaterial(PlaneInstance, MagentaMaterial);
+    ShapeSetMaterial(PyramidInstance, YellowMaterial);
+    ShapeSetMaterial(VikingRoomInstance, VikingRoomMaterial);
+    ShapeSetMaterial(CubeInstance, RedMaterial);
+    ShapeSetMaterial(SphereInstance, GreenMaterial);
+    ShapeSetMaterial(ShaderballInstance, BlueMaterial);
+    ShapeSetMaterial(ShaderballInstance2, BlueMaterial);
+    ShapeSetMaterial(ShaderballInstance3, BlueMaterial);
+    ShapeSetMaterial(ShaderballInstance4, BlueMaterial);
+    ShapeSetMaterial(ShaderballInstance5, BlueMaterial);
 
     auto& Context = GetContext();
     auto WoodAlbedoTexture = Context.LoadImageFromFile("../../../resources/Wood/Wood_8K_Albedo.jpg", "V_Wood_8K_Albedo");
@@ -500,7 +513,7 @@ int FRender::SetIBL(const std::string& Path)
     return 0;
 }
 
-ECS::FEntity FRender::CreatePlane(const FVector3& Color, const FVector3& Position)
+ECS::FEntity FRender::CreatePlane()
 {
     auto NewModel = CreateEmptyModel();
 
@@ -509,20 +522,12 @@ ECS::FEntity FRender::CreatePlane(const FVector3& Color, const FVector3& Positio
 
     ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
 
-    auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(NewModel, Position);
-    RENDERABLE_SYSTEM()->SetRenderableDeviceAddress(MeshInstance, MESH_SYSTEM()->GetVertexBufferAddress(MeshInstance), MESH_SYSTEM()->GetIndexBufferAddress(MeshInstance));
-
-    TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-    RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
-    RENDERABLE_SYSTEM()->SetRenderableColor(MeshInstance, Color.X, Color.Y, Color.Z);
-    RENDERABLE_SYSTEM()->SetIndexed(MeshInstance);
-
     Models.push_back(NewModel);
 
-    return MeshInstance;
+    return NewModel;
 }
 
-ECS::FEntity FRender::CreateCube(const FVector3& Color, const FVector3& Position)
+ECS::FEntity FRender::CreateCube()
 {
     auto NewModel = CreateEmptyModel();
 
@@ -531,19 +536,12 @@ ECS::FEntity FRender::CreateCube(const FVector3& Color, const FVector3& Position
 
     ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
 
-    auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(NewModel, Position);
-    RENDERABLE_SYSTEM()->SetRenderableDeviceAddress(MeshInstance, MESH_SYSTEM()->GetVertexBufferAddress(MeshInstance), MESH_SYSTEM()->GetIndexBufferAddress(MeshInstance));
-
-    TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-    RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
-    RENDERABLE_SYSTEM()->SetRenderableColor(MeshInstance, Color.X, Color.Y, Color.Z);
-
     Models.push_back(NewModel);
 
-    return MeshInstance;
+    return NewModel;
 }
 
-ECS::FEntity FRender::CreateSphere(const FVector3& Color, const FVector3& Position, int LevelOfComplexity)
+ECS::FEntity FRender::CreateSphere(int LevelOfComplexity)
 {
     auto NewModel = CreateEmptyModel();
 
@@ -552,19 +550,10 @@ ECS::FEntity FRender::CreateSphere(const FVector3& Color, const FVector3& Positi
 
     ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
 
-    auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(NewModel, Position);
-    RENDERABLE_SYSTEM()->SetRenderableDeviceAddress(MeshInstance, MESH_SYSTEM()->GetVertexBufferAddress(MeshInstance), MESH_SYSTEM()->GetIndexBufferAddress(MeshInstance));
-
-    TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-    RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
-    RENDERABLE_SYSTEM()->SetRenderableColor(MeshInstance, Color.X, Color.Y, Color.Z);
-
-    Models.push_back(NewModel);
-
-    return MeshInstance;
+    return NewModel;
 }
 
-ECS::FEntity FRender::CreateModel(const FVector3& Color, const FVector3& Position, const std::string& Path)
+ECS::FEntity FRender::CreateModel(const std::string& Path)
 {
     auto NewModel = CreateEmptyModel();
 
@@ -573,20 +562,12 @@ ECS::FEntity FRender::CreateModel(const FVector3& Color, const FVector3& Positio
 
     ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
 
-    auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(NewModel, Position);
-    RENDERABLE_SYSTEM()->SetRenderableDeviceAddress(MeshInstance, MESH_SYSTEM()->GetVertexBufferAddress(MeshInstance), MESH_SYSTEM()->GetIndexBufferAddress(MeshInstance));
-
-    TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-    RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
-    RENDERABLE_SYSTEM()->SetRenderableColor(MeshInstance, Color.X, Color.Y, Color.Z);
-    RENDERABLE_SYSTEM()->SetIndexed(MeshInstance);
-
     Models.push_back(NewModel);
 
-    return MeshInstance;
+    return NewModel;
 }
 
-ECS::FEntity FRender::CreatePyramid(const FVector3& Color, const FVector3& Position)
+ECS::FEntity FRender::CreatePyramid()
 {
     auto NewModel = CreateEmptyModel();
 
@@ -595,14 +576,24 @@ ECS::FEntity FRender::CreatePyramid(const FVector3& Color, const FVector3& Posit
 
     ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
 
-    auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(NewModel, Position);
+    Models.push_back(NewModel);
+
+    return NewModel;
+}
+
+ECS::FEntity FRender::CreateInstance(ECS::FEntity BaseModel,  const FVector3& Position)
+{
+    auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(BaseModel, Position);
     RENDERABLE_SYSTEM()->SetRenderableDeviceAddress(MeshInstance, MESH_SYSTEM()->GetVertexBufferAddress(MeshInstance), MESH_SYSTEM()->GetIndexBufferAddress(MeshInstance));
 
     TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
     RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
-    RENDERABLE_SYSTEM()->SetRenderableColor(MeshInstance, Color.X, Color.Y, Color.Z);
+    auto MeshComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FMeshComponent>(BaseModel);
 
-    Models.push_back(NewModel);
+    if (MeshComponent.Indexed)
+    {
+        RENDERABLE_SYSTEM()->SetIndexed(MeshInstance);
+    }
 
     return MeshInstance;
 }
