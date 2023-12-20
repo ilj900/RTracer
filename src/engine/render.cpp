@@ -191,6 +191,7 @@ FRender::FRender()
     ACCELERATION_STRUCTURE_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
 
     LoadScene("");
+    ACCELERATION_STRUCTURE_SYSTEM()->Update();
     ACCELERATION_STRUCTURE_SYSTEM()->UpdateTLAS();
 
     Init();
