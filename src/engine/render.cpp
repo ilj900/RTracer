@@ -191,8 +191,6 @@ FRender::FRender()
     ACCELERATION_STRUCTURE_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
 
     LoadScene("");
-    LoadDataToGPU();
-    ACCELERATION_STRUCTURE_SYSTEM()->Update();
     ACCELERATION_STRUCTURE_SYSTEM()->UpdateTLAS();
 
     Init();
@@ -370,8 +368,7 @@ int FRender::Render()
     RENDERABLE_SYSTEM()->Update();
     MATERIAL_SYSTEM()->Update();
     LIGHT_SYSTEM()->Update();
-
-    std::vector<ECS::COMPONENTS::FDeviceCameraComponent> Data2 = Context.ResourceAllocator->DebugGetDataFromBuffer<ECS::COMPONENTS::FDeviceCameraComponent>(CAMERA_SYSTEM()->DeviceBuffer, CAMERA_SYSTEM()->GetTotalSize(), 0);
+    ACCELERATION_STRUCTURE_SYSTEM()->Update();
 
     auto GenerateRaysSemaphore = GenerateRaysTask->Submit(Context.GetComputeQueue(), ImageAvailableSemaphores[CurrentFrame], ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
 
@@ -380,6 +377,8 @@ int FRender::Render()
     auto ShadeSignalSemaphore = ShadeTask->Submit(Context.GetComputeQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
     VkSemaphore AccumulateSignalSemaphore = VK_NULL_HANDLE;
+
+    //auto Data = Context.ResourceAllocator->DebugGetDataFromBuffer<VkAccelerationStructureInstanceKHR>(ACCELERATION_STRUCTURE_SYSTEM()->BLASInstanceBuffer, ACCELERATION_STRUCTURE_SYSTEM()->BLASInstanceBuffer.BufferSize, 0);
 
     if (NeedUpdate)
     {
@@ -500,34 +499,17 @@ int FRender::SetIBL(const std::string& Path)
     return 0;
 }
 
-int FRender::LoadDataToGPU()
-{
-    auto MeshSystem = MESH_SYSTEM();
-
-    for(auto Mesh : *MeshSystem)
-    {
-        MeshSystem->LoadToGPU(Mesh);
-    }
-
-    auto RenderableSystem = RENDERABLE_SYSTEM();
-
-    for (auto Renderable : *RenderableSystem)
-    {
-        RenderableSystem->SetRenderableDeviceAddress(Renderable, MeshSystem->GetVertexBufferAddress(Renderable), MeshSystem->GetIndexBufferAddress(Renderable));
-    }
-
-    return 0;
-}
-
 ECS::FEntity FRender::CreatePlane(const FVector3& Color, const FVector3& Position)
 {
     auto NewModel = CreateEmptyModel();
 
     MESH_SYSTEM()->CreatePlane(NewModel);
+    MESH_SYSTEM()->LoadToGPU(NewModel);
 
     ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
 
     auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(NewModel, Position);
+    RENDERABLE_SYSTEM()->SetRenderableDeviceAddress(MeshInstance, MESH_SYSTEM()->GetVertexBufferAddress(MeshInstance), MESH_SYSTEM()->GetIndexBufferAddress(MeshInstance));
 
     TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
     RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
@@ -548,6 +530,7 @@ ECS::FEntity FRender::CreateCube(const FVector3& Color, const FVector3& Position
     ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
 
     auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(NewModel, Position);
+    RENDERABLE_SYSTEM()->SetRenderableDeviceAddress(MeshInstance, MESH_SYSTEM()->GetVertexBufferAddress(MeshInstance), MESH_SYSTEM()->GetIndexBufferAddress(MeshInstance));
 
     TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
     RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
@@ -567,6 +550,7 @@ ECS::FEntity FRender::CreateSphere(const FVector3& Color, const FVector3& Positi
     ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
 
     auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(NewModel, Position);
+    RENDERABLE_SYSTEM()->SetRenderableDeviceAddress(MeshInstance, MESH_SYSTEM()->GetVertexBufferAddress(MeshInstance), MESH_SYSTEM()->GetIndexBufferAddress(MeshInstance));
 
     TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
     RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
@@ -585,6 +569,7 @@ ECS::FEntity FRender::CreateModel(const FVector3& Color, const FVector3& Positio
     ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
 
     auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(NewModel, Position);
+    RENDERABLE_SYSTEM()->SetRenderableDeviceAddress(MeshInstance, MESH_SYSTEM()->GetVertexBufferAddress(MeshInstance), MESH_SYSTEM()->GetIndexBufferAddress(MeshInstance));
 
     TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
     RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
@@ -605,6 +590,7 @@ ECS::FEntity FRender::CreatePyramid(const FVector3& Color, const FVector3& Posit
     ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
 
     auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(NewModel, Position);
+    RENDERABLE_SYSTEM()->SetRenderableDeviceAddress(MeshInstance, MESH_SYSTEM()->GetVertexBufferAddress(MeshInstance), MESH_SYSTEM()->GetIndexBufferAddress(MeshInstance));
 
     TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
     RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);

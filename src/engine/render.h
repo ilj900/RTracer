@@ -45,7 +45,6 @@ public:
     ECS::FEntity CreateModel(const FVector3& Color, const FVector3& Position, const std::string& Path);
     int CreateLight(const FVector3& Position);
     int SetIBL(const std::string& Path);
-    int LoadDataToGPU();
 
     VkInstance Instance = VK_NULL_HANDLE;
     VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;

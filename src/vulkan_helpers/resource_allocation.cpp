@@ -110,6 +110,12 @@ FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags U
 
 FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDeviceSize> Sizes, std::vector<VkDeviceSize> Offsets, std::vector<void*> Datas)
 {
+    if (Sizes.size() == 0)
+    {
+        /// TODO: Log warning
+        return Buffer;
+    }
+
     struct CopySizeOffsetDataPtr
     {
         VkDeviceSize Size;

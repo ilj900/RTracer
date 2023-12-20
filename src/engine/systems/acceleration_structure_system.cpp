@@ -19,7 +19,7 @@ namespace ECS
     {
         void FAccelerationStructureSystem::Init(int NumberOfSimultaneousSubmits)
         {
-            BLASInstanceBuffer = GetResourceAllocator()->CreateBuffer(sizeof(VkAccelerationStructureInstanceKHR) * MAX_INSTANCE_COUNT, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V_BLAS_Instance_Buffer");
+            BLASInstanceBuffer = GetResourceAllocator()->CreateBuffer(sizeof(VkAccelerationStructureInstanceKHR) * MAX_INSTANCE_COUNT, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V_BLAS_Instance_Buffer");
 
             for (uint32_t i = 0; i < MAX_INSTANCE_COUNT; ++i)
             {
@@ -46,6 +46,8 @@ namespace ECS
             Context.ResourceAllocator->LoadDataToBuffer(BLASInstanceBuffer, Sizes, Offsets, Data);
 
             EntitiesToUpdate.clear();
+
+            UpdateTLAS();
         }
 
         void FAccelerationStructureSystem::GenerateBLAS(FEntity Entity)
@@ -86,7 +88,7 @@ namespace ECS
             MeshInstanceComponent.instanceCustomIndex = NewIndex;
             MeshInstanceComponent.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
             MeshInstanceComponent.accelerationStructureReference = GetContext().GetASDeviceAddressInfo(BLAS.AccelerationStructure);
-            Coordinator.AddComponent<ECS::COMPONENTS::FMeshInstanceComponent>(NewMeshInstance, {});
+            Coordinator.AddComponent<ECS::COMPONENTS::FMeshInstanceComponent>(NewMeshInstance, MeshInstanceComponent);
 
             EntitiesToUpdate.insert(NewMeshInstance);
             InstanceCount++;
