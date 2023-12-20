@@ -89,16 +89,22 @@ namespace ECS
             MeshInstanceComponent.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
             MeshInstanceComponent.mask = 0xFF;
             MeshInstanceComponent.accelerationStructureReference = GetContext().GetASDeviceAddressInfo(BLAS.AccelerationStructure);
+            MeshInstanceComponent.instanceShaderBindingTableRecordOffset = 0;
             Coordinator.AddComponent<ECS::COMPONENTS::FMeshInstanceComponent>(NewMeshInstance, MeshInstanceComponent);
 
             EntitiesToUpdate.insert(NewMeshInstance);
             InstanceCount++;
+            bIsDirty = true;
             return NewMeshInstance;
         }
 
         void FAccelerationStructureSystem::UpdateTLAS()
         {
-            TLAS = GetContext().GenerateTlas(BLASInstanceBuffer, InstanceCount);
+            if (bIsDirty)
+            {
+                TLAS = GetContext().GenerateTlas(BLASInstanceBuffer, InstanceCount);
+                bIsDirty = false;
+            }
         }
     }
 }

@@ -25,8 +25,7 @@ namespace ECS
 
             void UpdateTLAS();
 
-            const uint32_t MAX_INSTANCE_COUNT = 2u * 1024u * 1024u;
-            std::vector<VkAccelerationStructureInstanceKHR> AccelerationStructureInstance;
+            const uint32_t MAX_INSTANCE_COUNT = 512u * 1024u;
             std::queue<uint32_t> AvailableIndices;
 
             FBuffer BLASInstanceBuffer;
@@ -35,6 +34,7 @@ namespace ECS
             uint32_t InstanceCount = 0u;
 
             std::set<FEntity> EntitiesToUpdate;
+            bool bIsDirty = true;
         };
     }
 }
