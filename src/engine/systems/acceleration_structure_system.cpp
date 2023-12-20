@@ -87,6 +87,7 @@ namespace ECS
                                                 ModelMatrix[0].Z, ModelMatrix[1].Z, ModelMatrix[2].Z, ModelMatrix[3].Z,};
             MeshInstanceComponent.instanceCustomIndex = NewIndex;
             MeshInstanceComponent.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+            MeshInstanceComponent.mask = 0xFF;
             MeshInstanceComponent.accelerationStructureReference = GetContext().GetASDeviceAddressInfo(BLAS.AccelerationStructure);
             Coordinator.AddComponent<ECS::COMPONENTS::FMeshInstanceComponent>(NewMeshInstance, MeshInstanceComponent);
 
