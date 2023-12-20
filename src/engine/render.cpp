@@ -526,6 +526,7 @@ ECS::FEntity FRender::CreateCube(const FVector3& Color, const FVector3& Position
     auto NewModel = CreateEmptyModel();
 
     MESH_SYSTEM()->CreateHexahedron(NewModel);
+    MESH_SYSTEM()->LoadToGPU(NewModel);
 
     ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
 
@@ -546,6 +547,7 @@ ECS::FEntity FRender::CreateSphere(const FVector3& Color, const FVector3& Positi
     auto NewModel = CreateEmptyModel();
 
     MESH_SYSTEM()->CreateIcosahedron(NewModel, LevelOfComplexity, true);
+    MESH_SYSTEM()->LoadToGPU(NewModel);
 
     ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
 
@@ -566,6 +568,8 @@ ECS::FEntity FRender::CreateModel(const FVector3& Color, const FVector3& Positio
     auto NewModel = CreateEmptyModel();
 
     MESH_SYSTEM()->LoadMesh(NewModel, Path);
+    MESH_SYSTEM()->LoadToGPU(NewModel);
+
     ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
 
     auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(NewModel, Position);
@@ -586,6 +590,7 @@ ECS::FEntity FRender::CreatePyramid(const FVector3& Color, const FVector3& Posit
     auto NewModel = CreateEmptyModel();
 
     MESH_SYSTEM()->CreateTetrahedron(NewModel);
+    MESH_SYSTEM()->LoadToGPU(NewModel);
 
     ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
 
