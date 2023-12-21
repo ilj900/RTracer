@@ -135,11 +135,12 @@ class FTimer
 {
 public:
     FTimer(const std::string& TextToPrint);
+    void operator()(const std::string& TextToPrint);
     ~FTimer();
 
 private:
-    std::chrono::time_point<std::chrono::high_resolution_clock> StartTime;
-    std::string Text = "YOU FORGOT TO PASS THE TEXT: ";
+    typedef std::pair<std::chrono::time_point<std::chrono::high_resolution_clock>, std::string> NamedEvent;
+    std::vector<NamedEvent> NamedEvents;
 };
 
 template <typename T>

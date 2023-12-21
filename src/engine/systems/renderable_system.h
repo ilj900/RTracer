@@ -27,7 +27,7 @@ namespace ECS
             void SetNotIndex(FEntity Entity);
             void SetRenderableDeviceAddress(FEntity Entity, VkDeviceAddress VertexDeviceAddress, VkDeviceAddress IndexDeviceAddress);
 
-            const uint32_t MAX_RENDERABLES = 32;
+            const uint32_t MAX_RENDERABLES = 512u * 1024u; /// TODO
         };
     }
 }

@@ -379,8 +379,6 @@ int FRender::Render()
 
     VkSemaphore AccumulateSignalSemaphore = VK_NULL_HANDLE;
 
-    //auto Data = Context.ResourceAllocator->DebugGetDataFromBuffer<VkAccelerationStructureInstanceKHR>(ACCELERATION_STRUCTURE_SYSTEM()->BLASInstanceBuffer, ACCELERATION_STRUCTURE_SYSTEM()->BLASInstanceBuffer.BufferSize, 0);
-
     if (NeedUpdate)
     {
         auto ClearAccumulatorSemaphore = ClearImageTask->Submit(Context.GetComputeQueue(), ShadeSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
@@ -448,24 +446,23 @@ int FRender::LoadScene(const std::string& Path)
     auto PyramidInstance = CreateInstance(Pyramid, {-3.f, 0.f, -2.f});
     auto VikingRoomInstance = CreateInstance(VikingRoom, {-1.f, 0.f, -2.f});
     auto CubeInstance = CreateInstance(Cube, {1.f, 0.f, -2.f});
-    auto SphereInstance = CreateInstance(Sphere, {3.f, 0.f, -2.f});
     auto ShaderballInstance = CreateInstance(Shaderball, {5.f, -1.f, -2.f});
-    auto ShaderballInstance2 = CreateInstance(Shaderball, {5.f, 1.f, -2.f});
-    auto ShaderballInstance3 = CreateInstance(Shaderball, {5.f, 3.f, -2.f});
-    auto ShaderballInstance4 = CreateInstance(Shaderball, {5.f, 5.f, -2.f});
-    auto ShaderballInstance5 = CreateInstance(Shaderball, {5.f, 7.f, -2.f});
+
+    for (int i = -10; i < 10; ++i)
+    {
+        for (int j = -10; j < 10; ++j)
+        {
+            auto SphereInstance = CreateInstance(Sphere, {2.f * i, -5.f, 2.f * j});
+            ShapeSetMaterial(SphereInstance, GreenMaterial);
+        }
+    }
 
 
     ShapeSetMaterial(PlaneInstance, MagentaMaterial);
     ShapeSetMaterial(PyramidInstance, YellowMaterial);
     ShapeSetMaterial(VikingRoomInstance, VikingRoomMaterial);
     ShapeSetMaterial(CubeInstance, RedMaterial);
-    ShapeSetMaterial(SphereInstance, GreenMaterial);
     ShapeSetMaterial(ShaderballInstance, BlueMaterial);
-    ShapeSetMaterial(ShaderballInstance2, BlueMaterial);
-    ShapeSetMaterial(ShaderballInstance3, BlueMaterial);
-    ShapeSetMaterial(ShaderballInstance4, BlueMaterial);
-    ShapeSetMaterial(ShaderballInstance5, BlueMaterial);
 
     auto& Context = GetContext();
     auto WoodAlbedoTexture = Context.LoadImageFromFile("../../../resources/Wood/Wood_8K_Albedo.jpg", "V_Wood_8K_Albedo");
@@ -583,18 +580,24 @@ ECS::FEntity FRender::CreatePyramid()
 
 ECS::FEntity FRender::CreateInstance(ECS::FEntity BaseModel,  const FVector3& Position)
 {
+    //FTimer Timer("Creating Instance time: ");
     auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(BaseModel, Position);
+    //Timer("Setting renderable device address time: ");
     RENDERABLE_SYSTEM()->SetRenderableDeviceAddress(MeshInstance, MESH_SYSTEM()->GetVertexBufferAddress(MeshInstance), MESH_SYSTEM()->GetIndexBufferAddress(MeshInstance));
 
+    //Timer("Setting transform time: ");
     TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
+    //Timer("Syncing transform time: ");
     RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
-    auto MeshComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FMeshComponent>(BaseModel);
-
+    //Timer("Fetch mesh component time: ");
+    auto& MeshComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FMeshComponent>(BaseModel);
+    //Timer("Checking indexed time: ");
     if (MeshComponent.Indexed)
     {
+        //Timer("Set indexed time: ");
         RENDERABLE_SYSTEM()->SetIndexed(MeshInstance);
     }
-
+    //Timer("Returning time: ");
     return MeshInstance;
 }
 

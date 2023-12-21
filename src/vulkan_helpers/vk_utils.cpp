@@ -192,20 +192,55 @@ std::string ReadFileToString(const std::string& FileName)
 
 FTimer::FTimer(const std::string &TextToPrint)
 {
-    StartTime = std::chrono::high_resolution_clock::now();
-    Text = TextToPrint;
+    NamedEvents.push_back({std::chrono::high_resolution_clock::now(), TextToPrint});
+}
+
+void FTimer::operator()(const std::string& TextToPrint)
+{
+    NamedEvents.push_back({std::chrono::high_resolution_clock::now(), TextToPrint});
 }
 
 FTimer::~FTimer()
 {
+    static std::vector<std::string> TimeUnits = {"us", "ms", "s"};
+
+    for (int i = 0; i < NamedEvents.size() - 1; ++i)
+    {
+        auto Start = std::chrono::time_point_cast<std::chrono::microseconds>(NamedEvents[i].first).time_since_epoch().count();
+        auto End = std::chrono::time_point_cast<std::chrono::microseconds>(NamedEvents[i + 1].first).time_since_epoch().count();
+
+        auto Duration = static_cast<double>(End - Start);
+
+        int TimeUnitUsed = 0;
+
+        if (Duration > 1000)
+        {
+            Duration /= 1000;
+            TimeUnitUsed++;
+        }
+
+        if (Duration > 1000)
+        {
+            Duration /= 1000;
+            TimeUnitUsed++;
+        }
+
+        if (Duration > 1000)
+        {
+            Duration /= 1000;
+            TimeUnitUsed++;
+        }
+
+        std::cout << NamedEvents[i].second << Duration << TimeUnits[TimeUnitUsed] << std::endl;
+    }
+
     auto EndTime = std::chrono::high_resolution_clock::now();
 
-    auto Start = std::chrono::time_point_cast<std::chrono::microseconds>(StartTime).time_since_epoch().count();
+    auto Start = std::chrono::time_point_cast<std::chrono::microseconds>(NamedEvents.back().first).time_since_epoch().count();
     auto End = std::chrono::time_point_cast<std::chrono::microseconds>(EndTime).time_since_epoch().count();
 
     auto Duration = static_cast<double>(End - Start);
 
-    static std::vector<std::string> TimeUnits = {"us", "ms", "s"};
     int TimeUnitUsed = 0;
 
     if (Duration > 1000)
@@ -226,5 +261,5 @@ FTimer::~FTimer()
         TimeUnitUsed++;
     }
 
-    std::cout << Text << Duration << TimeUnits[TimeUnitUsed] << std::endl;
+    std::cout << NamedEvents.back().second << Duration << TimeUnits[TimeUnitUsed] << std::endl;
 }
