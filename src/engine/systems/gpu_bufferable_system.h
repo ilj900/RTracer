@@ -30,43 +30,15 @@ namespace ECS
             {
                 for (int i = 0; i < BufferPartThatNeedsUpdate.size(); ++i)
                 {
-                    VkDeviceSize DeviceBufferBaseOffset = i * GetTotalSize() / NumberOfSimultaneousSubmits;
-
-                    if (BufferPartThatNeedsUpdate[i])
-                    {
-                        std::vector<VkDeviceSize> Sizes;
-                        std::vector<VkDeviceSize> Offsets;
-                        std::vector<void*> Data;
-
-                        auto& Coordinator = GetCoordinator();
-
-                        for (auto Entity : EntitiesToUpdate[i])
-                        {
-                            if (Offsets.size() > 0 && ((Coordinator.GetOffset<T>(Entity) + DeviceBufferBaseOffset) == Offsets.back() + Sizes.back()))
-                            {
-                                Sizes.back() += sizeof(T);
-                            }
-                            else
-                            {
-                                Sizes.push_back(sizeof(T));
-                                Offsets.push_back(Coordinator.GetOffset<T>(Entity) + DeviceBufferBaseOffset);
-                                Data.push_back(Coordinator.Data<T>(Entity));
-                            }
-                        }
-
-                        auto& Context = GetContext();
-                        Context.ResourceAllocator->LoadDataToBuffer(DeviceBuffer, Sizes, Offsets, Data);
-
-                        BufferPartThatNeedsUpdate[i] = false;
-                    }
-
-                    EntitiesToUpdate[i].clear();
+                    UpdateTemplate<T>(i);
                 }
             }
 
             template<typename T>
             void UpdateTemplate(int Index)
             {
+                VkDeviceSize DeviceBufferBaseOffset = Index * GetTotalSize() / NumberOfSimultaneousSubmits;
+
                 if (BufferPartThatNeedsUpdate[Index])
                 {
                     std::vector<VkDeviceSize> Sizes;
@@ -74,18 +46,17 @@ namespace ECS
                     std::vector<void*> Data;
 
                     auto& Coordinator = GetCoordinator();
-                    auto DeviceComponentsSize = Coordinator.Size<T>();
 
                     for (auto Entity : EntitiesToUpdate[Index])
                     {
-                        if (Offsets.size() > 0 && (Coordinator.GetOffset<T>(Entity) == Offsets.back() + Sizes.back()))
+                        if (Offsets.size() > 0 && ((Coordinator.GetOffset<T>(Entity) + DeviceBufferBaseOffset) == Offsets.back() + Sizes.back()))
                         {
                             Sizes.back() += sizeof(T);
                         }
                         else
                         {
                             Sizes.push_back(sizeof(T));
-                            Offsets.push_back(Coordinator.GetOffset<T>(Entity) + (DeviceComponentsSize * Index));
+                            Offsets.push_back(Coordinator.GetOffset<T>(Entity) + DeviceBufferBaseOffset);
                             Data.push_back(Coordinator.Data<T>(Entity));
                         }
                     }
