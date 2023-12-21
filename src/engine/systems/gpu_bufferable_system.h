@@ -42,9 +42,16 @@ namespace ECS
 
                         for (auto Entity : EntitiesToUpdate[i])
                         {
-                            Sizes.push_back(sizeof(T));
-                            Offsets.push_back(Coordinator.GetOffset<T>(Entity) + DeviceBufferBaseOffset);
-                            Data.push_back(Coordinator.Data<T>(Entity));
+                            if (Offsets.size() > 0 && ((Coordinator.GetOffset<T>(Entity) + DeviceBufferBaseOffset) == Offsets.back() + Sizes.back()))
+                            {
+                                Sizes.back() += sizeof(T);
+                            }
+                            else
+                            {
+                                Sizes.push_back(sizeof(T));
+                                Offsets.push_back(Coordinator.GetOffset<T>(Entity) + DeviceBufferBaseOffset);
+                                Data.push_back(Coordinator.Data<T>(Entity));
+                            }
                         }
 
                         auto& Context = GetContext();
@@ -71,9 +78,16 @@ namespace ECS
 
                     for (auto Entity : EntitiesToUpdate[Index])
                     {
-                        Sizes.push_back(sizeof(T));
-                        Offsets.push_back(Coordinator.GetOffset<T>(Entity) + (DeviceComponentsSize * Index));
-                        Data.push_back(Coordinator.Data<T>(Entity));
+                        if (Offsets.size() > 0 && (Coordinator.GetOffset<T>(Entity) == Offsets.back() + Sizes.back()))
+                        {
+                            Sizes.back() += sizeof(T);
+                        }
+                        else
+                        {
+                            Sizes.push_back(sizeof(T));
+                            Offsets.push_back(Coordinator.GetOffset<T>(Entity) + (DeviceComponentsSize * Index));
+                            Data.push_back(Coordinator.Data<T>(Entity));
+                        }
                     }
 
                     auto& Context = GetContext();
@@ -93,7 +107,7 @@ namespace ECS
             bool bIsDirty = false;
 
             FBuffer DeviceBuffer;
-            std::vector<std::unordered_set<FEntity>> EntitiesToUpdate;
+            std::vector<std::set<FEntity>> EntitiesToUpdate;
         };
     }
 }

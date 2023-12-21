@@ -37,9 +37,19 @@ namespace ECS
 
             for (auto Entity : EntitiesToUpdate)
             {
-                Sizes.push_back(sizeof(ECS::COMPONENTS::FMeshInstanceComponent));
-                Offsets.push_back(Coordinator.GetOffset<ECS::COMPONENTS::FMeshInstanceComponent>(Entity));
-                Data.push_back(Coordinator.Data<ECS::COMPONENTS::FMeshInstanceComponent>(Entity));
+                /// This check checks whether the data to be uploaded are in a continues block
+                if (Offsets.size() > 0 && (Coordinator.GetOffset<ECS::COMPONENTS::FMeshInstanceComponent>(Entity) == Offsets.back() + Sizes.back()))
+                {
+                    /// If the block is continuing, then just increase it's size
+                    Sizes.back() += sizeof(ECS::COMPONENTS::FMeshInstanceComponent);
+                }
+                else
+                {
+                    /// Else - push the new block...
+                    Offsets.push_back(Coordinator.GetOffset<ECS::COMPONENTS::FMeshInstanceComponent>(Entity));
+                    Sizes.push_back(sizeof(ECS::COMPONENTS::FMeshInstanceComponent));
+                    Data.push_back(Coordinator.Data<ECS::COMPONENTS::FMeshInstanceComponent>(Entity));
+                }
             }
 
             auto& Context = GetContext();

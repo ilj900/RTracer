@@ -18,7 +18,7 @@ namespace ECS
             {
                 for (auto Entity: EntitiesToUpdate[i])
                 {
-                    auto DeviceTransformComponent = GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
+                    auto& DeviceTransformComponent = GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
                     DeviceTransformComponent.ModelMatrix = GetModelMatrix(Entity);
                 }
             }
@@ -30,7 +30,7 @@ namespace ECS
         {
             for (auto Entity: EntitiesToUpdate[Index])
             {
-                auto DeviceTransformComponent = GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
+                auto& DeviceTransformComponent = GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
                 DeviceTransformComponent.ModelMatrix = GetModelMatrix(Entity);
             }
 
