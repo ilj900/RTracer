@@ -75,7 +75,6 @@ namespace ECS
 
             std::vector<bool> BufferPartThatNeedsUpdate;
             int NumberOfSimultaneousSubmits = 2;
-            bool bIsDirty = false;
 
             FBuffer DeviceBuffer;
             std::vector<std::set<FEntity>> EntitiesToUpdate;

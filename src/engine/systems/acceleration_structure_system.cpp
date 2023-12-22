@@ -19,7 +19,8 @@ namespace ECS
     {
         void FAccelerationStructureSystem::Init(int NumberOfSimultaneousSubmits)
         {
-            BLASInstanceBuffer = GetResourceAllocator()->CreateBuffer(sizeof(VkAccelerationStructureInstanceKHR) * MAX_INSTANCE_COUNT, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V_BLAS_Instance_Buffer");
+            FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(COMPONENTS::FMeshInstanceComponent) * MAX_INSTANCE_COUNT,
+                                       VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Acceleration_Structure_Buffer");
 
             for (uint32_t i = 0; i < MAX_INSTANCE_COUNT; ++i)
             {
@@ -29,33 +30,14 @@ namespace ECS
 
         void FAccelerationStructureSystem::Update()
         {
-            std::vector<VkDeviceSize> Sizes;
-            std::vector<VkDeviceSize> Offsets;
-            std::vector<void*> Data;
+            FGPUBufferableSystem::UpdateTemplate<COMPONENTS::FMeshInstanceComponent>();
 
-            auto& Coordinator = GetCoordinator();
+            UpdateTLAS();
+        }
 
-            for (auto Entity : EntitiesToUpdate)
-            {
-                /// This check checks whether the data to be uploaded are in a continues block
-                if (Offsets.size() > 0 && (Coordinator.GetOffset<ECS::COMPONENTS::FMeshInstanceComponent>(Entity) == Offsets.back() + Sizes.back()))
-                {
-                    /// If the block is continuing, then just increase it's size
-                    Sizes.back() += sizeof(ECS::COMPONENTS::FMeshInstanceComponent);
-                }
-                else
-                {
-                    /// Else - push the new block...
-                    Offsets.push_back(Coordinator.GetOffset<ECS::COMPONENTS::FMeshInstanceComponent>(Entity));
-                    Sizes.push_back(sizeof(ECS::COMPONENTS::FMeshInstanceComponent));
-                    Data.push_back(Coordinator.Data<ECS::COMPONENTS::FMeshInstanceComponent>(Entity));
-                }
-            }
-
-            auto& Context = GetContext();
-            Context.ResourceAllocator->LoadDataToBuffer(BLASInstanceBuffer, Sizes, Offsets, Data);
-
-            EntitiesToUpdate.clear();
+        void FAccelerationStructureSystem::Update(int Index)
+        {
+            FGPUBufferableSystem::UpdateTemplate<COMPONENTS::FMeshInstanceComponent>(Index);
 
             UpdateTLAS();
         }
@@ -102,9 +84,9 @@ namespace ECS
             MeshInstanceComponent.instanceShaderBindingTableRecordOffset = 0;
             Coordinator.AddComponent<ECS::COMPONENTS::FMeshInstanceComponent>(NewMeshInstance, MeshInstanceComponent);
 
-            EntitiesToUpdate.insert(NewMeshInstance);
-            InstanceCount++;
+            MarkDirty(NewMeshInstance);
             bIsDirty = true;
+            InstanceCount++;
             return NewMeshInstance;
         }
 
@@ -112,7 +94,7 @@ namespace ECS
         {
             if (bIsDirty)
             {
-                TLAS = GetContext().GenerateTlas(BLASInstanceBuffer, InstanceCount);
+                TLAS = GetContext().GenerateTlas(DeviceBuffer, InstanceCount);
                 bIsDirty = false;
             }
         }

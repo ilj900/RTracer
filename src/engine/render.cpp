@@ -90,7 +90,7 @@ FRender::FRender()
 
     /// Register Acceleration structure system signature
     ECS::FSignature AccelerationStructureSignature;
-    AccelerationStructureSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FAccelerationStructureComponent>());
+    AccelerationStructureSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FMeshInstanceComponent>());
     Coordinator.SetSystemSignature<ECS::SYSTEMS::FAccelerationStructureSystem>(AccelerationStructureSignature);
 
     /// Create GLFW Window

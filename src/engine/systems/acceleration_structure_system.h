@@ -1,6 +1,6 @@
 #pragma once
 
-#include "system.h"
+#include "gpu_bufferable_system.h"
 
 #include "buffer.h"
 
@@ -14,11 +14,12 @@ namespace ECS
 {
     namespace SYSTEMS
     {
-        class FAccelerationStructureSystem : public FSystem
+        class FAccelerationStructureSystem : public FGPUBufferableSystem
         {
         public:
             void Init(int NumberOfSimultaneousSubmits);
             void Update();
+            void Update(int Index);
 
             void GenerateBLAS(FEntity Entity);
             FEntity CreateInstance(FEntity Entity, const FVector3& Position);
@@ -28,12 +29,10 @@ namespace ECS
             const uint32_t MAX_INSTANCE_COUNT = 512u * 1024u;
             std::queue<uint32_t> AvailableIndices;
 
-            FBuffer BLASInstanceBuffer;
             FAccelerationStructure TLAS;
 
             uint32_t InstanceCount = 0u;
 
-            std::set<FEntity> EntitiesToUpdate;
             bool bIsDirty = true;
         };
     }
