@@ -11,7 +11,6 @@
 #include "mesh_system.h"
 
 #include "acceleration_structure_system.h"
-#include "vk_context.h"
 
 namespace ECS
 {
@@ -28,6 +27,11 @@ namespace ECS
             }
         }
 
+        void FAccelerationStructureSystem::Terminate()
+        {
+            GetContext().DestroyAccelerationStructure(TLAS);
+        }
+
         void FAccelerationStructureSystem::Update()
         {
             FGPUBufferableSystem::UpdateTemplate<COMPONENTS::FMeshInstanceComponent>();
@@ -40,19 +44,6 @@ namespace ECS
             FGPUBufferableSystem::UpdateTemplate<COMPONENTS::FMeshInstanceComponent>(Index);
 
             UpdateTLAS();
-        }
-
-        void FAccelerationStructureSystem::GenerateBLAS(FEntity Entity)
-        {
-            auto& Coordinator = ECS::GetCoordinator();
-            Coordinator.AddComponent<ECS::COMPONENTS::FAccelerationStructureComponent>(Entity, {});
-            auto& AccelerationStructureComponent = GetComponent<ECS::COMPONENTS::FAccelerationStructureComponent>(Entity);
-
-            auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
-            auto& DeviceMeshComponent = GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Entity);
-            AccelerationStructureComponent =  GetContext().GenerateBlas(MESH_SYSTEM()->VertexBuffer, MESH_SYSTEM()->IndexBuffer,
-                                                                        sizeof (FVertex), MeshComponent.Indexed ? MeshComponent.Indices.size() : MeshComponent.Vertices.size(),
-                                                                        DeviceMeshComponent.VertexPtr, DeviceMeshComponent.IndexPtr);
         }
 
         FEntity FAccelerationStructureSystem::CreateInstance(FEntity Entity, const FVector3& Position)

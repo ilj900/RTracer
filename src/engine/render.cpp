@@ -80,7 +80,7 @@ FRender::FRender()
     ECS::FSignature MeshSignature;
     MeshSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FMeshComponent>());
     MeshSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FDeviceMeshComponent>());
-    MeshSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FMeshInstanceComponent>());
+    MeshSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FAccelerationStructureComponent>());
     Coordinator.SetSystemSignature<ECS::SYSTEMS::FMeshSystem>(MeshSignature);
 
     /// Register Light system signature
@@ -328,6 +328,9 @@ FRender::~FRender()
     GetContext().WaitIdle();
     Cleanup();
 
+    ACCELERATION_STRUCTURE_SYSTEM()->Terminate();
+    MESH_SYSTEM()->Terminate();
+
     GetContext().CleanUp();
 
     glfwDestroyWindow(Window);
@@ -517,8 +520,7 @@ ECS::FEntity FRender::CreatePlane()
 
     MESH_SYSTEM()->CreatePlane(NewModel);
     MESH_SYSTEM()->LoadToGPU(NewModel);
-
-    ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
+    MESH_SYSTEM()->GenerateBLAS(NewModel);
 
     Models.push_back(NewModel);
 
@@ -531,8 +533,7 @@ ECS::FEntity FRender::CreateCube()
 
     MESH_SYSTEM()->CreateHexahedron(NewModel);
     MESH_SYSTEM()->LoadToGPU(NewModel);
-
-    ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
+    MESH_SYSTEM()->GenerateBLAS(NewModel);
 
     Models.push_back(NewModel);
 
@@ -545,8 +546,7 @@ ECS::FEntity FRender::CreateSphere(int LevelOfComplexity)
 
     MESH_SYSTEM()->CreateIcosahedron(NewModel, LevelOfComplexity, true);
     MESH_SYSTEM()->LoadToGPU(NewModel);
-
-    ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
+    MESH_SYSTEM()->GenerateBLAS(NewModel);
 
     return NewModel;
 }
@@ -557,8 +557,7 @@ ECS::FEntity FRender::CreateModel(const std::string& Path)
 
     MESH_SYSTEM()->LoadMesh(NewModel, Path);
     MESH_SYSTEM()->LoadToGPU(NewModel);
-
-    ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
+    MESH_SYSTEM()->GenerateBLAS(NewModel);
 
     Models.push_back(NewModel);
 
@@ -571,8 +570,7 @@ ECS::FEntity FRender::CreatePyramid()
 
     MESH_SYSTEM()->CreateTetrahedron(NewModel);
     MESH_SYSTEM()->LoadToGPU(NewModel);
-
-    ACCELERATION_STRUCTURE_SYSTEM()->GenerateBLAS(NewModel);
+    MESH_SYSTEM()->GenerateBLAS(NewModel);
 
     Models.push_back(NewModel);
 

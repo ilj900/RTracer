@@ -4,6 +4,7 @@
 #include "device_mesh_component.h"
 #include "device_transform_component.h"
 #include "device_renderable_component.h"
+#include "acceleration_structure_component.h"
 #include "mesh_system.h"
 #include "renderable_system.h"
 #include "coordinator.h"
@@ -67,6 +68,35 @@ namespace ECS
                 DeviceMeshComponent.IndexPtr = IndexBufferChunk;
                 Context.ResourceAllocator->LoadDataToBuffer(IndexBuffer, {DeviceMeshComponent.IndexPtr.Size}, {DeviceMeshComponent.IndexPtr.Offset}, {MeshComponent.Indices.data()});
             }
+        }
+
+        void FMeshSystem::Terminate()
+        {
+            for (auto Entity : Entities)
+            {
+                DeleteBLAS(Entity);
+            }
+        }
+
+        void FMeshSystem::GenerateBLAS(FEntity Entity)
+        {
+            auto& Coordinator = ECS::GetCoordinator();
+            Coordinator.AddComponent<ECS::COMPONENTS::FAccelerationStructureComponent>(Entity, {});
+            auto& AccelerationStructureComponent = GetComponent<ECS::COMPONENTS::FAccelerationStructureComponent>(Entity);
+
+            auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
+            auto& DeviceMeshComponent = GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Entity);
+            AccelerationStructureComponent =  GetContext().GenerateBlas(MESH_SYSTEM()->VertexBuffer, MESH_SYSTEM()->IndexBuffer,
+                                                                        sizeof (FVertex), MeshComponent.Indexed ? MeshComponent.Indices.size() : MeshComponent.Vertices.size(),
+                                                                        DeviceMeshComponent.VertexPtr, DeviceMeshComponent.IndexPtr);
+        }
+
+        void FMeshSystem::DeleteBLAS(FEntity Entity)
+        {
+            auto& AccelerationStructureComponent = GetComponent<ECS::COMPONENTS::FAccelerationStructureComponent>(Entity);
+            GetContext().DestroyAccelerationStructure(AccelerationStructureComponent.AccelerationStructure);
+            AccelerationStructureComponent.AccelerationStructure.AccelerationStructure = VK_NULL_HANDLE;
+            AccelerationStructureComponent.AccelerationStructure.Buffer.Buffer = VK_NULL_HANDLE;
         }
 
         uint32_t FMeshSystem::Size()

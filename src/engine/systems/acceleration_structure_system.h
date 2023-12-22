@@ -20,8 +20,8 @@ namespace ECS
             void Init(int NumberOfSimultaneousSubmits);
             void Update();
             void Update(int Index);
+            void Terminate();
 
-            void GenerateBLAS(FEntity Entity);
             FEntity CreateInstance(FEntity Entity, const FVector3& Position);
 
             void UpdateTLAS();

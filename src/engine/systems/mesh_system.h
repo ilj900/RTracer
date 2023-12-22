@@ -24,6 +24,9 @@ namespace ECS
             VkDeviceAddress GetVertexBufferAddress(FEntity Renderable);
             VkDeviceAddress GetIndexBufferAddress(FEntity Renderable);
             void LoadToGPU(FEntity Entity);
+            void Terminate();
+            void GenerateBLAS(FEntity Entity);
+            void DeleteBLAS(FEntity Entity);
 
             VkDeviceSize VertexBufferSize = uint64_t(2) * 1024 * 1024 * 1024;
             VkDeviceSize IndexBufferSize = uint64_t(1) * 1024 * 1024 * 1024;
