@@ -88,6 +88,11 @@ public:
     void SetWindow(GLFWwindow* WindowIn);
     GLFWwindow* GetWindow() const;
 
+    void SaveBufferFloat(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name);
+    void SaveBufferFloat3(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name);
+    void SaveBufferUint(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name);
+    void SaveBufferUint3(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name);
+
     FAccelerationStructure CreateAccelerationStructure(VkDeviceSize Size, VkAccelerationStructureTypeKHR Type, const std::string& DebugName = "");
     void DestroyAccelerationStructure(FAccelerationStructure &AccelerationStructure);
     VkDeviceAddress GetBufferDeviceAddressInfo(const FBuffer& Buffer);

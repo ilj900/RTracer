@@ -438,6 +438,69 @@ uint32_t FVulkanContext::GetPresentIndex() const
     return PresentQueue.QueueIndex;
 }
 
+void FVulkanContext::SaveBufferFloat(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name)
+{
+    if (WidthIn * HeightIn != (Buffer.BufferSize / sizeof(float)))
+    {
+        throw std::runtime_error("You are trying to fetch data of the wrong size from buffer");
+    }
+
+    auto Data = ResourceAllocator->DebugGetDataFromBuffer<float>(Buffer, Buffer.BufferSize, 0);
+
+    const char* Err = NULL;
+    SaveEXR(Data.data(), WidthIn, HeightIn, 1, false, Name.c_str(), &Err);
+}
+
+void FVulkanContext::SaveBufferFloat3(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name)
+{
+    if (WidthIn * HeightIn != (Buffer.BufferSize / sizeof(FVector3)))
+    {
+        throw std::runtime_error("You are trying to fetch data of the wrong size from buffer");
+    }
+
+    auto Data = ResourceAllocator->DebugGetDataFromBuffer<float>(Buffer, Buffer.BufferSize * 3, 0);
+
+    const char* Err = NULL;
+    SaveEXR(Data.data(), WidthIn, HeightIn, 3, false, Name.c_str(), &Err);
+}
+
+void FVulkanContext::SaveBufferUint(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name)
+{
+    if (WidthIn * HeightIn != (Buffer.BufferSize / sizeof(uint32_t)))
+    {
+        throw std::runtime_error("You are trying to fetch data of the wrong size from buffer");
+    }
+
+    auto Data = ResourceAllocator->DebugGetDataFromBuffer<uint32_t>(Buffer, Buffer.BufferSize, 0);
+    std::vector<float> NewData(Data.size());
+    for (int i = 0; i < Data.size(); ++i)
+    {
+        NewData[i] = float(Data[i]);
+    }
+
+    const char* Err = NULL;
+    SaveEXR(NewData.data(), WidthIn, HeightIn, 1, false, Name.c_str(), &Err);
+}
+
+void FVulkanContext::SaveBufferUint3(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name)
+{
+    if (WidthIn * HeightIn != (Buffer.BufferSize / (sizeof(uint32_t) * 3)))
+    {
+        throw std::runtime_error("You are trying to fetch data of the wrong size from buffer");
+    }
+
+    auto Data = ResourceAllocator->DebugGetDataFromBuffer<uint32_t>(Buffer, Buffer.BufferSize, 0);
+    std::vector<float> NewData(Data.size());
+    for (int i = 0; i < Data.size(); ++i)
+    {
+        NewData[i] = float(Data[i]);
+    }
+
+    const char* Err = NULL;
+    SaveEXR(NewData.data(), WidthIn, HeightIn, 3, false, Name.c_str(), &Err);
+}
+
+
 FAccelerationStructure FVulkanContext::CreateAccelerationStructure(VkDeviceSize Size, VkAccelerationStructureTypeKHR Type, const std::string& DebugName)
 {
     FAccelerationStructure AccelerationStructure;

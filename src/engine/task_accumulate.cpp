@@ -72,8 +72,8 @@ void FAccumulateTask::RecordCommands()
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &RayTracingDescriptorSet, 0, nullptr);
 
-            int GroupSizeX = (Width % 8 == 0) ? (Width / 8) : (Width / 8) + 1;
-            int GroupSizeY = (Height % 8 == 0) ? (Height / 8) : (Height / 8) + 1;
+            uint32_t GroupSizeX = (Width % 8 == 0) ? (Width / 8) : (Width / 8) + 1;
+            uint32_t GroupSizeY = (Height % 8 == 0) ? (Height / 8) : (Height / 8) + 1;
 
             vkCmdDispatch(CommandBuffer, GroupSizeX, GroupSizeY, 1);
         });
