@@ -127,7 +127,7 @@ VkSemaphore FGenerateInitialRays::Submit(VkQueue Queue, VkSemaphore WaitSemaphor
     auto Result =  FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, WaitFence, SignalFence, IterationIndex);
 
     static std::vector<uint64_t> TimeStamps(NumberOfSimultaneousSubmits * 2);
-    vkGetQueryPoolResults(LogicalDevice, QueryPool, IterationIndex * 2, 2, sizeof(uint64_t) * 2, TimeStamps.data(), sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+    vkGetQueryPoolResults(LogicalDevice, QueryPool, IterationIndex * 2, 2, sizeof(uint64_t) * 2, TimeStamps.data() + IterationIndex * 2, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
     uint64_t Delta = (TimeStamps[IterationIndex * 2 + 1] - TimeStamps[IterationIndex * 2]);
     std::cout << std::setprecision(2) << "Delta in ms:" << (float(Delta) / 1000000.f) << std::endl;
     return Result;
