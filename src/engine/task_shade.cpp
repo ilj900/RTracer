@@ -114,7 +114,7 @@ void FShadeTask::RecordCommands()
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &RayTracingDescriptorSet, 0, nullptr);
 
-            FPushConstants PushConstants = {Width, Height};
+            FPushConstants PushConstants = {Width, Height, 1.f / Width, 1.f / Height};
             vkCmdPushConstants(CommandBuffer, Context->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
 
             int GroupSizeX = (Width % 8 == 0) ? (Width / 8) : (Width / 8) + 1;

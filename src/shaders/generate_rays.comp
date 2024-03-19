@@ -12,7 +12,7 @@ layout (set = GENERATE_RAYS_LAYOUT_INDEX, binding = CAMERA_RAYS_BUFFER) buffer R
 
 layout (set = GENERATE_RAYS_LAYOUT_INDEX, binding = CAMERA_POSITION_BUFFER) uniform CameraBufferObject
 {
-    FCamera Camera;
+    FDeviceCamera DeviceCamera;
 };
 
 layout (push_constant) uniform PushConstantsBlock
@@ -28,12 +28,12 @@ void main()
     uvec2 PixelIndex = uvec2(gl_GlobalInvocationID.x % PushConstants.Width, gl_GlobalInvocationID.x / PushConstants.Width);
 
     const vec2 PixelCenter = PixelIndex + vec2(0.5f);
-    const vec2 InUV = PixelCenter/vec2(PushConstants.Width, PushConstants.Height);
+    const vec2 InUV = PixelCenter * vec2(PushConstants.InvWidth, PushConstants.InvHeight);
     vec2 D = InUV * 2.0f - 1.f;
 
-    vec4 Origin = inverse(Camera.ViewMatrix) * vec4(0.f, 0.f, 0.f, 1.f);
-    vec4 Target = inverse(Camera.ProjectionMatrix) * vec4(D.x, D.y, 1.f, 1.f);
-    vec4 Direction = inverse(Camera.ViewMatrix) * vec4(normalize(Target.xyz), 0.f);
+    vec4 Origin = vec4(DeviceCamera.Origin, 1.f);
+    vec4 Target = inverse(DeviceCamera.ProjectionMatrix) * vec4(D.x, D.y, 1.f, 1.f);
+    vec4 Direction = inverse(DeviceCamera.ViewMatrix) * vec4(normalize(Target.xyz), 0.f);
 
     float tMin = 0.001f;
     float tMax = 10000.f;

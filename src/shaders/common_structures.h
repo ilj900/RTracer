@@ -26,10 +26,18 @@ struct FRayData
     float Dummy;
 };
 
-struct FCamera
+struct FDeviceCamera
 {
     FMatrix4 ViewMatrix;
     FMatrix4 ProjectionMatrix;
+    FVector3 Origin;
+    float ZNear;
+    FVector3 ViewDirection;
+    float ZFar;
+    float FOV;
+    float dummy_1;
+    float dummy_2;
+    float dummy_3;
 };
 
 struct FLight
@@ -132,6 +140,8 @@ struct FPushConstants
 {
     uint32_t Width;
     uint32_t Height;
+    float InvWidth;
+    float InvHeight;
 };
 
 #endif // COMMON_STRUCTURES_H

@@ -97,7 +97,14 @@ FRender::FRender()
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
-    Window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_NAME.c_str(), nullptr, nullptr);
+    GLFWmonitor* PrimaryMonitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* Mode = glfwGetVideoMode(PrimaryMonitor);
+    if (bFullscreen)
+    {
+        WINDOW_WIDTH = Mode->width;
+        WINDOW_HEIGHT = Mode->height;
+    }
+    Window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_NAME.c_str(), bFullscreen ? PrimaryMonitor : nullptr, nullptr);
     glfwSetWindowPos(Window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
     glfwSetCursorPos(Window, 0.f, 0.f);
 

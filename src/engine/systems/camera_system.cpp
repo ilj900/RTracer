@@ -23,6 +23,11 @@ namespace ECS
                     auto& CameraComponent = Coordinator.GetComponent<COMPONENTS::FCameraComponent>(Entity);
                     DeviceCameraComponent.ViewMatrix = LookAt(CameraComponent.Position, CameraComponent.Position + CameraComponent.Direction, CameraComponent.Up);
                     DeviceCameraComponent.ProjectionMatrix = GetPerspective(CameraComponent.FOV / 90.f, CameraComponent.Ratio, CameraComponent.ZNear, CameraComponent.ZFar);
+                    DeviceCameraComponent.FOV = CameraComponent.FOV;
+                    DeviceCameraComponent.Origin = CameraComponent.Position;
+                    DeviceCameraComponent.ViewDirection = CameraComponent.Direction;
+                    DeviceCameraComponent.ZFar = CameraComponent.ZFar;
+                    DeviceCameraComponent.ZNear = CameraComponent.ZNear;
                 }
             }
 
@@ -40,6 +45,11 @@ namespace ECS
                     auto& CameraComponent = Coordinator.GetComponent<COMPONENTS::FCameraComponent>(Entity);
                     DeviceCameraComponent.ViewMatrix = LookAt(CameraComponent.Position, CameraComponent.Position + CameraComponent.Direction, CameraComponent.Up);
                     DeviceCameraComponent.ProjectionMatrix = GetPerspective(CameraComponent.FOV / 90.f, CameraComponent.Ratio, CameraComponent.ZNear, CameraComponent.ZFar);
+                    DeviceCameraComponent.FOV = CameraComponent.FOV;
+                    DeviceCameraComponent.Origin = CameraComponent.Position;
+                    DeviceCameraComponent.ViewDirection = CameraComponent.Direction;
+                    DeviceCameraComponent.ZFar = CameraComponent.ZFar;
+                    DeviceCameraComponent.ZNear = CameraComponent.ZNear;
                 }
             }
 
