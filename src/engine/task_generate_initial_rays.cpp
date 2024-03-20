@@ -8,7 +8,6 @@
 
 #include "components/device_camera_component.h"
 #include "systems/camera_system.h"
-#include "common_structures.h"
 
 #include "common_defines.h"
 
@@ -40,11 +39,12 @@ FGenerateInitialRays::~FGenerateInitialRays()
 {
     FreeSyncObjects();
     Context->ResourceAllocator->UnregisterAndDestroyBuffer("InitialRaysBuffer");
-    vkDestroyQueryPool(LogicalDevice, QueryPool, nullptr);
 }
 
 void FGenerateInitialRays::Init()
 {
+    FExecutableTask::Init();
+
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
     auto RayGenerationShader = FShader("../../../src/shaders/generate_rays.comp");
@@ -58,16 +58,6 @@ void FGenerateInitialRays::Init()
     DescriptorSetManager->ReserveDescriptorPool(Name);
 
     DescriptorSetManager->AllocateAllDescriptorSets(Name);
-
-    VkQueryPoolCreateInfo QueryPoolCreateInfo{};
-    QueryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
-    QueryPoolCreateInfo.queryCount = NumberOfSimultaneousSubmits * 2;
-    QueryPoolCreateInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
-
-    if (vkCreateQueryPool(LogicalDevice, &QueryPoolCreateInfo, nullptr, &QueryPool) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create query pool!");
-    }
 };
 
 void FGenerateInitialRays::UpdateDescriptorSets()
@@ -87,6 +77,9 @@ void FGenerateInitialRays::RecordCommands()
     {
         CommandBuffers[i] = GetContext().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
+            vkCmdResetQueryPool(CommandBuffer, QueryPool, i * 2, 2);
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, QueryPool, i * 2);
+
             vkCmdResetQueryPool(CommandBuffer, QueryPool, i * 2, 2);
             vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, QueryPool, i * 2);
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
@@ -129,6 +122,6 @@ VkSemaphore FGenerateInitialRays::Submit(VkQueue Queue, VkSemaphore WaitSemaphor
     static std::vector<uint64_t> TimeStamps(NumberOfSimultaneousSubmits * 2);
     vkGetQueryPoolResults(LogicalDevice, QueryPool, IterationIndex * 2, 2, sizeof(uint64_t) * 2, TimeStamps.data() + IterationIndex * 2, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
     uint64_t Delta = (TimeStamps[IterationIndex * 2 + 1] - TimeStamps[IterationIndex * 2]);
-    std::cout << std::setprecision(2) << "Delta in ms:" << (float(Delta) / 1000000.f) << std::endl;
+    std::cout << std::setprecision(2) << Name << " delta in ms:" << (float(Delta) / 1000000.f) << std::endl;
     return Result;
 };

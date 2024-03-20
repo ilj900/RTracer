@@ -16,5 +16,4 @@ public:
 
     VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
     VkPipeline Pipeline = VK_NULL_HANDLE;
-    VkQueryPool QueryPool = VK_NULL_HANDLE;
 };

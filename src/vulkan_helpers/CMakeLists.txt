@@ -6,6 +6,7 @@ set(INCLUDE
         resource_allocation.h
         swapchain.h
         texture_manager.h
+        timing_manager.h
         vk_acceleration_structure.h
         vk_context.h
         vk_debug.h
@@ -22,6 +23,7 @@ set(SOURCE
         resource_allocation.cpp
         swapchain.cpp
         texture_manager.cpp
+        timing_manager.cpp
         vk_context.cpp
         vk_debug.cpp
         vk_functions.cpp

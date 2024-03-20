@@ -7,6 +7,9 @@
 
 #include "task_accumulate.h"
 
+#include <iostream>
+#include <iomanip>
+
 FAccumulateTask::FAccumulateTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
@@ -33,6 +36,8 @@ FAccumulateTask::~FAccumulateTask()
 
 void FAccumulateTask::Init()
 {
+    FExecutableTask::Init();
+
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
     auto AccumulateShader = FShader("../../../src/shaders/accumulate.comp");
@@ -67,6 +72,9 @@ void FAccumulateTask::RecordCommands()
     {
         CommandBuffers[i] = GetContext().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
+            vkCmdResetQueryPool(CommandBuffer, QueryPool, i * 2, 2);
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, QueryPool, i * 2);
+
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
             auto RayTracingDescriptorSet = Context->DescriptorSetManager->GetSet(Name, ACCUMULATE_PER_FRAME_LAYOUT_INDEX, i);
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context->DescriptorSetManager->GetPipelineLayout(Name),
@@ -76,6 +84,8 @@ void FAccumulateTask::RecordCommands()
             uint32_t GroupSizeY = (Height % 8 == 0) ? (Height / 8) : (Height / 8) + 1;
 
             vkCmdDispatch(CommandBuffer, GroupSizeX, GroupSizeY, 1);
+
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, QueryPool, i * 2 + 1);
         });
 
         V::SetName(LogicalDevice, CommandBuffers[i], "V::Accumulator_Command_Buffer");
@@ -100,5 +110,11 @@ void FAccumulateTask::Cleanup()
 
 VkSemaphore FAccumulateTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
 {
-    return FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, WaitFence, SignalFence, IterationIndex);
+    auto Result = FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, WaitFence, SignalFence, IterationIndex);
+
+    static std::vector<uint64_t> TimeStamps(NumberOfSimultaneousSubmits * 2);
+    vkGetQueryPoolResults(LogicalDevice, QueryPool, IterationIndex * 2, 2, sizeof(uint64_t) * 2, TimeStamps.data() + IterationIndex * 2, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+    uint64_t Delta = (TimeStamps[IterationIndex * 2 + 1] - TimeStamps[IterationIndex * 2]);
+    std::cout << std::setprecision(2) << Name << " delta in ms:" << (float(Delta) / 1000000.f) << std::endl;
+    return Result;
 };

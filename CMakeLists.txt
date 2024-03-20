@@ -4,6 +4,8 @@ project(RTracer)
 
 set(CMAKE_CXX_STANDARD 17)
 
+option(ENABLE_GPU_TIMINGS "Enables GPU timings for profiling" ON)
+
 find_package(Vulkan REQUIRED COMPONENTS shaderc_combined)
 
 add_subdirectory(src/standalone)
