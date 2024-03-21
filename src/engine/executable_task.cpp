@@ -10,20 +10,6 @@ FExecutableTask::FExecutableTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanCon
 
 FExecutableTask::~FExecutableTask()
 {
-    vkDestroyQueryPool(LogicalDevice, QueryPool, nullptr);
-}
-
-void FExecutableTask::Init()
-{
-    VkQueryPoolCreateInfo QueryPoolCreateInfo{};
-    QueryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
-    QueryPoolCreateInfo.queryCount = NumberOfSimultaneousSubmits * 2;
-    QueryPoolCreateInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
-
-    if (vkCreateQueryPool(LogicalDevice, &QueryPoolCreateInfo, nullptr, &QueryPool) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create query pool!");
-    }
 }
 
 void FExecutableTask::CreateSyncObjects()

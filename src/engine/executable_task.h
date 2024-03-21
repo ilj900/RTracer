@@ -11,7 +11,7 @@ public:
     FExecutableTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
     virtual ~FExecutableTask();
 
-    virtual void Init();
+    virtual void Init() = 0;
     virtual void UpdateDescriptorSets() = 0;
     virtual void RecordCommands() = 0;
     virtual void Cleanup() = 0;

@@ -28,7 +28,7 @@ FImguiTask::~FImguiTask()
 
 void FImguiTask::Init()
 {
-    FExecutableTask::Init();
+    Context->TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
 
     auto& Context = GetContext();
     FGraphicsPipelineOptions ImguiPipelineOptions;
@@ -149,8 +149,7 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence
     Context.CommandBufferManager->RecordCommand([&, this](VkCommandBuffer)
     {
         {
-            vkCmdResetQueryPool(CommandBuffers[IterationIndex], QueryPool, IterationIndex * 2, 2);
-            vkCmdWriteTimestamp(CommandBuffers[IterationIndex], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, QueryPool, IterationIndex * 2);
+            Context.TimingManager->TimestampStart(Name, CommandBuffers[IterationIndex], IterationIndex);
 
             VkRenderPassBeginInfo RenderPassBeginInfo{};
             RenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -161,7 +160,7 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence
             RenderPassBeginInfo.clearValueCount = 0;
             vkCmdBeginRenderPass(CommandBuffers[IterationIndex], &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            vkCmdWriteTimestamp(CommandBuffers[IterationIndex], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, QueryPool, IterationIndex * 2 + 1);
+            Context.TimingManager->TimestampEnd(Name, CommandBuffers[IterationIndex], IterationIndex);
         }
 
         ImGui::Render();
@@ -173,9 +172,7 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence
 
     auto Result = FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, WaitFence, SignalFence, IterationIndex);
 
-    static std::vector<uint64_t> TimeStamps(NumberOfSimultaneousSubmits * 2);
-    vkGetQueryPoolResults(LogicalDevice, QueryPool, IterationIndex * 2, 2, sizeof(uint64_t) * 2, TimeStamps.data() + IterationIndex * 2, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-    uint64_t Delta = (TimeStamps[IterationIndex * 2 + 1] - TimeStamps[IterationIndex * 2]);
-    std::cout << std::setprecision(2) << Name << " delta in ms:" << (float(Delta) / 1000000.f) << std::endl;
+    float DeltaTime = Context->TimingManager->GetDeltaTime(Name, IterationIndex);
+    std::cout << std::setprecision(2) << Name << " delta in ms:" << DeltaTime << std::endl;
     return Result;
 }

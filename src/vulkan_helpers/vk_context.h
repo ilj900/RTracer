@@ -6,6 +6,7 @@
 
 #include "resource_allocation.h"
 #include "command_buffer_manager.h"
+#include "timing_manager.h"
 #include "maths.h"
 #include "swapchain.h"
 #include "buffer.h"
@@ -141,6 +142,7 @@ public:
 
     std::shared_ptr<FResourceAllocator> ResourceAllocator = nullptr;
     std::shared_ptr<FCommandBufferManager> CommandBufferManager = nullptr;
+    std::shared_ptr<FTimingManager> TimingManager = nullptr;
 
     VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 

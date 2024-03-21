@@ -175,6 +175,7 @@ void FVulkanContext::InitManagerResources()
 
     CommandBufferManager = std::make_shared<FCommandBufferManager>(LogicalDevice, GetQueue(VK_QUEUE_GRAPHICS_BIT),
                                                                    GetQueueIndex(VK_QUEUE_GRAPHICS_BIT));
+    TimingManager = std::make_shared<FTimingManager>(LogicalDevice);
 }
 
 void FVulkanContext::QueuePhysicalDeviceProperties()
@@ -1467,6 +1468,7 @@ void FVulkanContext::CleanUp()
     DescriptorSetManager = nullptr;
     CommandBufferManager = nullptr;
     ResourceAllocator = nullptr;
+    TimingManager = nullptr;
 
     vkDestroyDevice(LogicalDevice, nullptr);
 
