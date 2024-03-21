@@ -172,7 +172,7 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence
 
     auto Result = FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, WaitFence, SignalFence, IterationIndex);
 
-    float DeltaTime = Context->TimingManager->GetDeltaTime(Name, IterationIndex);
+    float DeltaTime = Context.TimingManager->GetDeltaTime(Name, IterationIndex);
     std::cout << std::setprecision(2) << Name << " delta in ms:" << DeltaTime << std::endl;
     return Result;
 }
