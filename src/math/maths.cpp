@@ -297,6 +297,11 @@ bool operator==(const FVector2& A, const FVector2& B)
     return (A.X == B.X && A.Y == B.Y);
 }
 
+FVector2 operator+(const FVector2& A, const FVector2& B)
+{
+    return FVector2(A.X + B.X, A.Y + B.Y);
+}
+
 ///****************************************************************
 ///FMatrix4 and it's operations
 ///****************************************************************

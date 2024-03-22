@@ -7,6 +7,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
+#include "ImGuiProfilerRenderer.h"
 
 #include <iostream>
 #include <iomanip>
@@ -74,6 +75,7 @@ void FImguiTask::Init()
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& IO = ImGui::GetIO();
+    IO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 
     ImGui::StyleColorsDark();
 
@@ -126,6 +128,8 @@ void FImguiTask::Cleanup()
 
 VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
 {
+    static bool bFirstCall = true;
+
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -135,6 +139,38 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence
     ImGui::SetWindowSize({600, 300});
     ImGui::TextColored({0.f, 1.f, 0.f, 1.f}, "Test text");
     ImGui::End();
+
+    auto StringToColor = [](const std::string& String)
+    {
+        static std::hash<std::string> HashingFunction;
+        uint32_t Color = (uint32_t)HashingFunction(String);
+        Color |= 255 << 24;
+        return Color;
+    };
+
+    static ImGuiUtils::ProfilersWindow ProfilerData;
+    if (!bFirstCall)
+    {
+        std::vector<std::string> Names;
+        std::vector<float> Timings;
+        float DeltaTime = 0;
+        Context->TimingManager->GetAllTimings(Names, Timings, DeltaTime, PreviousIterationIndex);
+        std::vector<legit::ProfilerTask> GPUTasks(Timings.size());
+
+        float StartTime = 0.f;
+        float EndTime = 0.f;
+
+        for (int i = 0; i < Names.size(); ++i)
+        {
+            EndTime = StartTime + Timings[i];
+            GPUTasks[i] = {StartTime, EndTime, Names[i], StringToColor(Names[i])};
+            StartTime = EndTime;
+        }
+
+        ProfilerData.gpuGraph.LoadFrameData(GPUTasks.data(), GPUTasks.size());
+
+        ProfilerData.Render();
+    }
 
     auto& Context = GetContext();
 
@@ -166,9 +202,12 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence
         vkEndCommandBuffer(CommandBuffers[IterationIndex]);
     });
 
-    auto Result = FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, WaitFence, SignalFence, IterationIndex);
+    if (bFirstCall)
+    {
+        bFirstCall = false;
+    }
 
-    float DeltaTime = Context.TimingManager->GetDeltaTime(Name, IterationIndex);
-    std::cout << std::setprecision(2) << Name << " delta in ms:" << DeltaTime << std::endl;
-    return Result;
+    PreviousIterationIndex = IterationIndex;
+
+    return FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, WaitFence, SignalFence, IterationIndex);
 }

@@ -24,4 +24,6 @@ public:
     VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
 
     std::vector<VkFramebuffer> ImguiFramebuffers;
+
+    int PreviousIterationIndex = 0;
 };
