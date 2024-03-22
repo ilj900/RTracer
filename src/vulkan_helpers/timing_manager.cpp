@@ -62,5 +62,19 @@ void FTimingManager::NewTime()
 
 float FTimingManager::GetDeltaTime()
 {
-    return std::chrono::duration<float, std::chrono::seconds::period>(Time - PreviousTime).count();
+    return std::chrono::duration<float, std::chrono::milliseconds ::period>(Time - PreviousTime).count();
+}
+
+void FTimingManager::GetAllTimings(std::vector<std::string>& Names, std::vector<float>& Timings, float& FrameTime, int FrameIndex)
+{
+    Names.clear();
+    Timings.clear();
+
+    FrameTime = GetDeltaTime();
+
+    for (auto& Task : NameToQueryPool)
+    {
+        Names.push_back(Task.first);
+        Timings.push_back(GetDeltaTime(Task.first, FrameIndex));
+    }
 }

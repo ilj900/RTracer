@@ -90,11 +90,6 @@ void FImguiTask::Init()
     InitInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
     InitInfo.CheckVkResultFn = CheckResultFunction;
     ImGui_ImplVulkan_Init(&InitInfo, RenderPass);
-
-    {
-        Context.CommandBufferManager->RunSingletimeCommand(ImGui_ImplVulkan_CreateFontsTexture, "ImGui_ImplVulkan_CreateFontsTexture");
-    }
-
     CreateSyncObjects();
 }
 
@@ -137,6 +132,7 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence
 
     ImGui::Begin("Info", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar);
     ImGui::SetWindowPos({0.f, 0.f});
+    ImGui::SetWindowSize({600, 300});
     ImGui::TextColored({0.f, 1.f, 0.f, 1.f}, "Test text");
     ImGui::End();
 

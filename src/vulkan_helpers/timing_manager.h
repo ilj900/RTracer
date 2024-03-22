@@ -19,6 +19,7 @@ public:
     void TimestampEnd(const std::string& TimingName, VkCommandBuffer CommandBuffer, int FrameIndex);
     void NewTime();
     float GetDeltaTime();
+    void GetAllTimings(std::vector<std::string>& Names, std::vector<float>& Timings, float& FrameTime, int FrameIndex);
 
 private:
     std::chrono::time_point<std::chrono::steady_clock> Time;

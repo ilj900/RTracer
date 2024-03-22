@@ -61,7 +61,7 @@ public:
 
     uint32_t WINDOW_WIDTH = 1920;
     uint32_t WINDOW_HEIGHT = 1080;
-    bool bFullscreen = true;
+    bool bFullscreen = false;
     const std::string WINDOW_NAME = "RTracer";
     int MAX_FRAMES_IN_FLIGHT = 2;
     uint32_t RenderFrameIndex = 0;

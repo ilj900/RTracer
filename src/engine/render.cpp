@@ -353,6 +353,8 @@ int FRender::Render()
 
     auto& Context = GetContext();
 
+    Context.TimingManager->NewTime();
+
     uint32_t CurrentFrame = RenderFrameIndex % MAX_FRAMES_IN_FLIGHT;
 
     /// Previous rendering iteration of the frame might still be in use, so we wait for it
