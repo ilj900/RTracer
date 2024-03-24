@@ -6,6 +6,8 @@
 #include <iostream>
 #include <utility>
 
+FController* FController::Controller = nullptr;
+
 FController::FController()
 {
     auto& Coordinator = ECS::GetCoordinator();
@@ -85,4 +87,14 @@ void FController::Update(float Time)
             CAMERA_SYSTEM()->LookUp(Camera, float(-YDelta * Sensitivity));
         }
     }
+}
+
+FController* GetController()
+{
+    if (nullptr == FController::Controller)
+    {
+        FController::Controller = new FController();
+    }
+
+    return FController::Controller;
 }

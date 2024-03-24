@@ -1,4 +1,7 @@
+#include "controller.h"
 #include "window_manager.h"
+
+#include "camera_system.h"
 
 FWindowManager* FWindowManager::WindowManager = nullptr;
 
@@ -51,7 +54,6 @@ int FWindowManager::GetHeight()
     return Height;
 }
 
-
 FVector2 FWindowManager::GetSize2D()
 {
     return FVector2(Width, Height);
@@ -70,21 +72,72 @@ FWindowManager* GetWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, 
 
 void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int Action, int Mods)
 {
-
+    switch (Key)
+    {
+        case GLFW_KEY_ESCAPE:
+        {
+            if (Action == GLFW_PRESS) {
+                glfwSetWindowShouldClose(Window, GLFW_TRUE);
+            }
+            break;
+        }
+        case GLFW_KEY_U:
+        {
+            if (Action == GLFW_PRESS)
+            {
+                auto& Context = GetContext();
+            }
+            break;
+        }
+    }
 }
 
 void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, int Mods)
 {
+    switch (Button)
+    {
+        case GLFW_MOUSE_BUTTON_RIGHT:
+        {
+            switch (Action)
+            {
+                case GLFW_PRESS:
+                {
+                    glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                    CONTROLLER()->CameraControlMode = true;
+                    CONTROLLER()->FirstUpdateSinceRMB = true;
+                    break;
+                }
+                case GLFW_RELEASE:
+                {
+                    CONTROLLER()->CameraControlMode = false;
+                    glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                    break;
+                }
+            }
+            break;
+        }
+        case GLFW_MOUSE_BUTTON_LEFT:
+        {
+            switch (Action)
+            {
+                case GLFW_PRESS:
+                {
 
+                }
+            }
+        }
+    }
 }
 
 void MouseMoved(GLFWwindow* Window, double XPos, double YPos)
 {
-
+    CONTROLLER()->XCurrent = XPos;
+    CONTROLLER()->YCurrent = YPos;
 }
 
 void FramebufferResizeCallback(GLFWwindow* window, int Width, int Height)
 {
-
+    CONTROLLER()->Render->SetSize(Width, Height);
+    CAMERA_SYSTEM()->SetAspectRatio(CONTROLLER()->Camera, float(Width) / float(Height));
 }
 

@@ -36,6 +36,7 @@ set(ECS_SOURCE
         )
 
 set(INCLUDE
+        controller.h
         executable_task.h
         render.h
         task_accumulate.h
@@ -48,6 +49,7 @@ set(INCLUDE
         ${ECS_INCLUDE})
 
 set(SOURCE
+        controller.cpp
         executable_task.cpp
         task_generate_initial_rays.h
         task_passthrough.cpp

@@ -9,15 +9,13 @@ FApplication::FApplication()
 {
     INIT_WINDOW_MANAGER(1920, 1080, false, "RTRacer");
     Render = std::make_shared<FRender>();
-    Controller = std::make_shared<FController>();
 
-    Controller->SetWindow(WINDOW_MANAGER()->GetWindow());
-    Controller->SetRender(Render);
+    CONTROLLER()->SetWindow(WINDOW_MANAGER()->GetWindow());
+    CONTROLLER()->SetRender(Render);
 }
 
 FApplication::~FApplication()
 {
-    Controller = nullptr;
     Render = nullptr;
 }
 
@@ -31,7 +29,7 @@ int FApplication::Run()
         float Time = std::chrono::duration<float, std::chrono::seconds::period>(CurrentTime - StartTime).count();
         StartTime = CurrentTime;
 
-        Controller->Update(Time);
+        CONTROLLER()->Update(Time);
         i = Render->Update();
         i += Render->Render();
     }
