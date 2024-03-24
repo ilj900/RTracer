@@ -204,6 +204,8 @@ void FVulkanContext::QueuePhysicalDeviceProperties()
     {
         MSAASamples = VK_SAMPLE_COUNT_1_BIT;
     }
+
+    TimestampPeriod = PhysicalDeviceProperties.limits.timestampPeriod;
 }
 
 bool FVulkanContext::CheckInstanceLayersSupport(const std::vector<const char*>& Layers)

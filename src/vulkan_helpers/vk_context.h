@@ -142,6 +142,8 @@ public:
 
     VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
+    int TimestampPeriod = 1;
+
     VkInstance Instance = VK_NULL_HANDLE;
     VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
     VkDevice LogicalDevice = VK_NULL_HANDLE;

@@ -192,7 +192,10 @@ int FRender::Init()
 {
     auto& Context = GetContext();
 
-    Swapchain = std::make_shared<FSwapchain>(WINDOW_WIDTH, WINDOW_HEIGHT, PhysicalDevice, LogicalDevice, Surface, Context.GetGraphicsQueueIndex(), Context.GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
+    int Width = WINDOW_MANAGER()->GetWidth();
+    int Height = WINDOW_MANAGER()->GetHeight();
+
+    Swapchain = std::make_shared<FSwapchain>(Width, Height, PhysicalDevice, LogicalDevice, Surface, Context.GetGraphicsQueueIndex(), Context.GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
     MAX_FRAMES_IN_FLIGHT = Swapchain->Size();
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
@@ -201,40 +204,40 @@ int FRender::Init()
         ImagesInFlight.push_back(Context.CreateSignalledFence());
     }
 
-    auto RTColorImage = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+    auto RTColorImage = Context.CreateImage2D(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
                                               VK_IMAGE_USAGE_STORAGE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                               VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_RayTracingColorImage");
     RTColorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-    auto AccumulatorImage = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+    auto AccumulatorImage = Context.CreateImage2D(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
                                                   VK_IMAGE_USAGE_STORAGE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                                   VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_AccumulatorImage");
     AccumulatorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-    auto EstimatedImage = Context.CreateImage2D(WINDOW_WIDTH, WINDOW_HEIGHT, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+    auto EstimatedImage = Context.CreateImage2D(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
                                                   VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                                   VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_EstimatedImage");
     EstimatedImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-    GenerateRaysTask = std::make_shared<FGenerateInitialRays>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    GenerateRaysTask = std::make_shared<FGenerateInitialRays>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     GenerateRaysTask->Init();
     GenerateRaysTask->UpdateDescriptorSets();
     GenerateRaysTask->RecordCommands();
 
-    RayTraceTask = std::make_shared<FRaytraceTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    RayTraceTask = std::make_shared<FRaytraceTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
 
     RayTraceTask->Init();
     RayTraceTask->UpdateDescriptorSets();
     RayTraceTask->RecordCommands();
 
-    ShadeTask = std::make_shared<FShadeTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    ShadeTask = std::make_shared<FShadeTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     ShadeTask->RegisterInput(0, RTColorImage);
     SetIBL("../../../resources/brown_photostudio_02_4k.exr");
     ShadeTask->Init();
     ShadeTask->UpdateDescriptorSets();
     ShadeTask->RecordCommands();
 
-    AccumulateTask = std::make_shared<FAccumulateTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    AccumulateTask = std::make_shared<FAccumulateTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     AccumulateTask->RegisterInput(0, RTColorImage);
     AccumulateTask->RegisterOutput(0, AccumulatorImage);
     AccumulateTask->RegisterOutput(1, EstimatedImage);
@@ -243,14 +246,14 @@ int FRender::Init()
     AccumulateTask->UpdateDescriptorSets();
     AccumulateTask->RecordCommands();
 
-    ClearImageTask = std::make_shared<FClearImageTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    ClearImageTask = std::make_shared<FClearImageTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     ClearImageTask->RegisterOutput(0, AccumulatorImage);
 
     ClearImageTask->Init();
     ClearImageTask->UpdateDescriptorSets();
     ClearImageTask->RecordCommands();
 
-    PassthroughTask = std::make_shared<FPassthroughTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    PassthroughTask = std::make_shared<FPassthroughTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     PassthroughTask->RegisterInput(0, EstimatedImage);
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
@@ -260,7 +263,7 @@ int FRender::Init()
     PassthroughTask->UpdateDescriptorSets();
     PassthroughTask->RecordCommands();
 
-    ImguiTask = std::make_shared<FImguiTask>(WINDOW_WIDTH, WINDOW_HEIGHT, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    ImguiTask = std::make_shared<FImguiTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
         ImguiTask->RegisterOutput(i, Swapchain->Images[i]);
@@ -308,8 +311,6 @@ int FRender::Cleanup()
 
 int FRender::SetSize(int Width, int Height)
 {
-    WINDOW_WIDTH = Width;
-    WINDOW_HEIGHT = Height;
     bShouldRecreateSwapchain = true;
     return 0;
 }

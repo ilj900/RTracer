@@ -13,7 +13,6 @@ FApplication::FApplication()
 
     Controller->SetWindow(WINDOW_MANAGER()->GetWindow());
     Controller->SetRender(Render);
-    Controller->UpdateCallbacks();
 }
 
 FApplication::~FApplication()

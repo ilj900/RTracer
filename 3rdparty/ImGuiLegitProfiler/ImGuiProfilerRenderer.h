@@ -198,7 +198,7 @@ namespace ImGuiUtils
         timeText << std::fixed << std::string("[") << (taskTimeMs * 1000.0f);
 
         Text(drawList, markerRightRectMax + textMargin, textColor, timeText.str().c_str());
-        Text(drawList, markerRightRectMax + textMargin + FVector2(nameOffset, 0.0f), textColor, (std::string("ms] ") + task.name).c_str());
+        Text(drawList, markerRightRectMax + textMargin + FVector2(nameOffset, 0.0f), textColor, (std::string(" ms] ") + task.name).c_str());
       }
     }
 

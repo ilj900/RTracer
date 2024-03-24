@@ -8,9 +8,6 @@
 
 #include "common_defines.h"
 
-#include <iostream>
-#include <iomanip>
-
 FPassthroughTask::FPassthroughTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
@@ -136,9 +133,5 @@ void FPassthroughTask::Cleanup()
 
 VkSemaphore FPassthroughTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
 {
-    auto Result = FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, WaitFence, SignalFence, IterationIndex);
-
-    float DeltaTime = Context->TimingManager->GetDeltaTime(Name, IterationIndex);
-    std::cout << std::setprecision(2) << Name << " delta in ms:" << DeltaTime << std::endl;
-    return Result;
+    return FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, WaitFence, SignalFence, IterationIndex);
 }

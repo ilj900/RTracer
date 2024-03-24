@@ -10,7 +10,6 @@
 #include "ImGuiProfilerRenderer.h"
 
 #include <iostream>
-#include <iomanip>
 
 FImguiTask::FImguiTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
@@ -79,7 +78,7 @@ void FImguiTask::Init()
 
     ImGui::StyleColorsDark();
 
-    ImGui_ImplGlfw_InitForVulkan(WINDOW_MANAGER()->GetWindow(), false);
+    ImGui_ImplGlfw_InitForVulkan(WINDOW_MANAGER()->GetWindow(), true);
     ImGui_ImplVulkan_InitInfo InitInfo{};
     InitInfo.Instance = Context.GetInstance();
     InitInfo.PhysicalDevice = Context.GetPhysicalDevice();

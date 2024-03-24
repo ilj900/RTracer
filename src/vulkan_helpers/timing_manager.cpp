@@ -1,4 +1,5 @@
 #include "timing_manager.h"
+#include "vk_context.h"
 
 #include <chrono>
 
@@ -39,8 +40,8 @@ float FTimingManager::GetDeltaTime(const std::string& TimingName, int FrameIndex
 {
     std::vector<uint64_t> TimeStamps(2);
     vkGetQueryPoolResults(LogicalDevice, NameToQueryPool[TimingName], FrameIndex * 2, 2, sizeof(uint64_t) * 2, TimeStamps.data(), sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-    uint64_t Delta = (TimeStamps[1] - TimeStamps[0]);
-    return float(Delta) / 1000000.f;
+    float Delta = float((TimeStamps[1] - TimeStamps[0]) * GetContext().TimestampPeriod) / 1000000000.f;
+    return Delta;
 }
 
 void FTimingManager::TimestampStart(const std::string& TimingName, VkCommandBuffer CommandBuffer, int FrameIndex)

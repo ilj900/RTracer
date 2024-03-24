@@ -1,5 +1,7 @@
 #include "window_manager.h"
 
+#include <iostream>
+
 FWindowManager* FWindowManager::WindowManager = nullptr;
 
 FWindowManager::FWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, const std::string &NameIn) : Width(WidthIn), Height(HeightIn), bFullscreen(bFullscreenIn), Name(NameIn)
@@ -18,6 +20,11 @@ FWindowManager::FWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, co
     Window = glfwCreateWindow(Width, Height, Name.c_str(), bFullscreen ? PrimaryMonitor : nullptr, nullptr);
     glfwSetWindowPos(Window, Width / 2, Height / 2);
     glfwSetCursorPos(Window, 0.f, 0.f);
+
+    glfwSetKeyCallback(Window, KeyboardKeyPressedOrReleased);
+    glfwSetCursorPosCallback(Window, MouseMoved);
+    glfwSetMouseButtonCallback(Window, MouseButtonPressedOrReleased);
+    glfwSetFramebufferSizeCallback(Window, FramebufferResizeCallback);
 }
 
 FWindowManager::~FWindowManager()
@@ -36,6 +43,23 @@ GLFWwindow* FWindowManager::GetWindow()
     return Window;
 }
 
+int FWindowManager::GetWidth()
+{
+    return Width;
+}
+
+int FWindowManager::GetHeight()
+{
+    return Height;
+}
+
+
+FVector2 FWindowManager::GetSize2D()
+{
+    return FVector2(Width, Height);
+}
+
+
 FWindowManager* GetWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, const std::string& NameIn)
 {
     if (nullptr == FWindowManager::WindowManager)
@@ -45,3 +69,24 @@ FWindowManager* GetWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, 
 
     return FWindowManager::WindowManager;
 }
+
+void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int Action, int Mods)
+{
+
+}
+
+void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, int Mods)
+{
+    std::cout << "Ara-ara!" << std::endl;
+}
+
+void MouseMoved(GLFWwindow* Window, double XPos, double YPos)
+{
+
+}
+
+void FramebufferResizeCallback(GLFWwindow* window, int Width, int Height)
+{
+
+}
+
