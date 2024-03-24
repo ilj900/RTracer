@@ -44,6 +44,7 @@ set(INCLUDE
         task_passthrough.h
         task_raytrace.h
         task_shade.h
+        window_manager.h
         ${ECS_INCLUDE})
 
 set(SOURCE
@@ -57,6 +58,7 @@ set(SOURCE
         task_shade.cpp
         task_generate_initial_rays.cpp
         render.cpp
+        window_manager.cpp
         ${ECS_SOURCE})
 
 add_library(Renderer ${SOURCE} ${INCLUDE})

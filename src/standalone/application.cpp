@@ -3,13 +3,15 @@
 #include <chrono>
 
 #include "application.h"
+#include "window_manager.h"
 
 FApplication::FApplication()
 {
+    INIT_WINDOW_MANAGER(1920, 1080, false, "RTRacer");
     Render = std::make_shared<FRender>();
     Controller = std::make_shared<FController>();
 
-    Controller->SetWindow(Render->Window);
+    Controller->SetWindow(WINDOW_MANAGER()->GetWindow());
     Controller->SetRender(Render);
     Controller->UpdateCallbacks();
 }

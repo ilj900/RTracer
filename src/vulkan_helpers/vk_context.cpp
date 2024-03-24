@@ -86,16 +86,6 @@ VkSurfaceKHR FVulkanContext::GetSurface() const
     return Surface;
 }
 
-void FVulkanContext::SetWindow(GLFWwindow* WindowIn)
-{
-    this->Window = WindowIn;
-}
-
-GLFWwindow* FVulkanContext::GetWindow() const
-{
-    return Window;
-}
-
 std::vector<VkPhysicalDevice> FVulkanContext::EnumerateAllPhysicalDevices(VkInstance InstanceIn)
 {
     uint32_t DeviceCount = 0;

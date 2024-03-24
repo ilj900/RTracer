@@ -54,8 +54,6 @@ public:
     VkDevice LogicalDevice = VK_NULL_HANDLE;
     VkSurfaceKHR Surface = VK_NULL_HANDLE;
 
-    GLFWwindow* Window;
-
     std::shared_ptr<FSwapchain> Swapchain = nullptr;
     bool bShouldRecreateSwapchain = false;
 

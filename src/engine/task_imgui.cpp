@@ -1,8 +1,8 @@
 #include "task_imgui.h"
-
 #include "vk_context.h"
-
 #include "vk_debug.h"
+
+#include "window_manager.h"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -79,7 +79,7 @@ void FImguiTask::Init()
 
     ImGui::StyleColorsDark();
 
-    ImGui_ImplGlfw_InitForVulkan(Context.GetWindow(), false);
+    ImGui_ImplGlfw_InitForVulkan(WINDOW_MANAGER()->GetWindow(), false);
     ImGui_ImplVulkan_InitInfo InitInfo{};
     InitInfo.Instance = Context.GetInstance();
     InitInfo.PhysicalDevice = Context.GetPhysicalDevice();

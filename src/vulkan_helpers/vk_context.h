@@ -1,8 +1,7 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
-#include "GLFW/glfw3.h"
 #include "vulkan/vulkan.h"
+#include "GLFW/glfw3.h"
 
 #include "resource_allocation.h"
 #include "command_buffer_manager.h"
@@ -86,9 +85,6 @@ public:
     void SetSurface(VkSurfaceKHR SurfaceIn);
     VkSurfaceKHR GetSurface() const;
 
-    void SetWindow(GLFWwindow* WindowIn);
-    GLFWwindow* GetWindow() const;
-
     void SaveBufferFloat(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name);
     void SaveBufferFloat3(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name);
     void SaveBufferUint(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name);
@@ -150,7 +146,6 @@ public:
     VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
     VkDevice LogicalDevice = VK_NULL_HANDLE;
     VkSurfaceKHR Surface = VK_NULL_HANDLE;
-    GLFWwindow* Window = nullptr;
 
     /// Queues
     struct IndexQueue

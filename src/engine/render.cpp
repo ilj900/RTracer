@@ -22,6 +22,7 @@
 #include "vk_functions.h"
 #include "render.h"
 #include "texture_manager.h"
+#include "window_manager.h"
 
 #include "logging.h"
 
@@ -93,24 +94,7 @@ FRender::FRender()
     AccelerationStructureSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FMeshInstanceComponent>());
     Coordinator.SetSystemSignature<ECS::SYSTEMS::FAccelerationStructureSystem>(AccelerationStructureSignature);
 
-    /// Create GLFW Window
-    glfwInit();
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
-    GLFWmonitor* PrimaryMonitor = glfwGetPrimaryMonitor();
-    const GLFWvidmode* Mode = glfwGetVideoMode(PrimaryMonitor);
-    if (bFullscreen)
-    {
-        WINDOW_WIDTH = Mode->width;
-        WINDOW_HEIGHT = Mode->height;
-    }
-    Window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_NAME.c_str(), bFullscreen ? PrimaryMonitor : nullptr, nullptr);
-    glfwSetWindowPos(Window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
-    glfwSetCursorPos(Window, 0.f, 0.f);
-
     auto& Context = GetContext();
-
-    Context.SetWindow(Window);
 
     /// Fill in vulkan context creation options
     FVulkanContextOptions VulkanContextOptions;
@@ -175,7 +159,7 @@ FRender::FRender()
     Context.SetDebugUtilsMessengerEXT(DebugUtilsMessengerEXT);
 #endif
     /// Create Surface
-    Surface = Context.CreateSurface(Window);
+    Surface = Context.CreateSurface(WINDOW_MANAGER()->GetWindow());
     Context.SetSurface(Surface);
 
     /// Pick Physical device
@@ -339,14 +323,11 @@ FRender::~FRender()
     MESH_SYSTEM()->Terminate();
 
     GetContext().CleanUp();
-
-    glfwDestroyWindow(Window);
-    glfwTerminate();
 }
 
 int FRender::Render()
 {
-    if (glfwWindowShouldClose(Window))
+    if (WINDOW_MANAGER()->ShouldClose())
     {
         return 1;
     }
