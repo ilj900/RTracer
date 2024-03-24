@@ -1,7 +1,5 @@
 #include "window_manager.h"
 
-#include <iostream>
-
 FWindowManager* FWindowManager::WindowManager = nullptr;
 
 FWindowManager::FWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, const std::string &NameIn) : Width(WidthIn), Height(HeightIn), bFullscreen(bFullscreenIn), Name(NameIn)
@@ -77,7 +75,7 @@ void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int
 
 void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, int Mods)
 {
-    std::cout << "Ara-ara!" << std::endl;
+
 }
 
 void MouseMoved(GLFWwindow* Window, double XPos, double YPos)

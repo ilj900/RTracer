@@ -30,7 +30,7 @@ void FController::Update(float Time)
     static float CameraMovementSpeed = 1.4f;
     static float CameraRotationSpeed = 0.4f;
 
-    if (!Active)
+    if (!CameraControlMode)
         return;
 
     if (glfwGetKey(Window, GLFW_KEY_W))

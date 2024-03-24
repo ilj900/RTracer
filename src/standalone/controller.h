@@ -22,7 +22,7 @@ public:
     double XCurrent = 0.;
     double YCurrent = 0.;
 
-    bool Active = false;
+    bool CameraControlMode = false;
     bool FirstUpdateSinceRMB = false;
 
     ECS::FEntity Camera;
