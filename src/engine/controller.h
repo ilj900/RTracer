@@ -12,6 +12,9 @@ public:
     void SetRender(std::shared_ptr<FRender> RenderIn);
     void Update(float Time);
     void SetCameraDirection(float XPos, float YPos);
+    void EnableCameraControlMode();
+    void DisableCameraControlMode();
+    void ToggleFirstUpdateSinceRMB();
 
 public:
     /// Data

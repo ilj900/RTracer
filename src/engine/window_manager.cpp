@@ -103,13 +103,13 @@ void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, in
                 case GLFW_PRESS:
                 {
                     glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-                    CONTROLLER()->CameraControlMode = true;
-                    CONTROLLER()->FirstUpdateSinceRMB = true;
+                    CONTROLLER()->EnableCameraControlMode();
+                    CONTROLLER()->ToggleFirstUpdateSinceRMB();
                     break;
                 }
                 case GLFW_RELEASE:
                 {
-                    CONTROLLER()->CameraControlMode = false;
+                    CONTROLLER()->DisableCameraControlMode();
                     glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                     break;
                 }

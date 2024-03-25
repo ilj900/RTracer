@@ -33,6 +33,21 @@ void FController::SetCameraDirection(float XPos, float YPos)
     YCurrent = YPos;
 }
 
+void FController::EnableCameraControlMode()
+{
+    CameraControlMode = true;
+}
+
+void FController::DisableCameraControlMode()
+{
+    CameraControlMode = false;
+}
+
+void FController::ToggleFirstUpdateSinceRMB()
+{
+    FirstUpdateSinceRMB = true;
+}
+
 void FController::Update(float Time)
 {
     static float CameraMovementSpeed = 1.4f;
