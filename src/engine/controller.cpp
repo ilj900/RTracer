@@ -27,6 +27,12 @@ void FController::SetRender(std::shared_ptr<FRender> RenderIn)
     Render = std::move(RenderIn);
 }
 
+void FController::SetCameraDirection(float XPos, float YPos)
+{
+    XCurrent = XPos;
+    YCurrent = YPos;
+}
+
 void FController::Update(float Time)
 {
     static float CameraMovementSpeed = 1.4f;

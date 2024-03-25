@@ -131,8 +131,7 @@ void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, in
 
 void MouseMoved(GLFWwindow* Window, double XPos, double YPos)
 {
-    CONTROLLER()->XCurrent = XPos;
-    CONTROLLER()->YCurrent = YPos;
+    CONTROLLER()->SetCameraDirection(XPos, YPos);
 }
 
 void FramebufferResizeCallback(GLFWwindow* window, int Width, int Height)

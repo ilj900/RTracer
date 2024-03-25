@@ -11,6 +11,7 @@ public:
     void SetWindow(GLFWwindow* WindowIn);
     void SetRender(std::shared_ptr<FRender> RenderIn);
     void Update(float Time);
+    void SetCameraDirection(float XPos, float YPos);
 
 public:
     /// Data
