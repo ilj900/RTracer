@@ -26,7 +26,6 @@
 
 #include "logging.h"
 
-int32_t FRender::Index = 0;
 
 FRender::FRender()
 {

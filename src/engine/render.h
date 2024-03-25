@@ -76,7 +76,5 @@ public:
     std::vector<VkFence> ImagesInFlight;
 
 private:
-    static int32_t Index;
-
     ECS::FEntity CreateEmptyModel();
 };

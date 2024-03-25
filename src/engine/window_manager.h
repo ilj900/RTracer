@@ -17,6 +17,11 @@ public:
     FVector2 GetSize2D();
     GLFWwindow* GetWindow();
     static FWindowManager* WindowManager;
+
+    static void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int Action, int Mods);
+    static void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, int Mods);
+    static void MouseMoved(GLFWwindow* Window, double XPos, double YPos);
+    static void FramebufferResizeCallback(GLFWwindow* window, int Width, int Height);
 private:
     GLFWwindow* Window;
     int Width = 1920;
@@ -26,11 +31,6 @@ private:
 };
 
 FWindowManager* GetWindowManager(int WidthIn = 1920, int HeightIn = 1080, bool bFullscreenIn = false, const std::string& NameIn = "Default name");
-
-void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int Action, int Mods);
-void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, int Mods);
-void MouseMoved(GLFWwindow* Window, double XPos, double YPos);
-void FramebufferResizeCallback(GLFWwindow* window, int Width, int Height);
 
 #define WINDOW_MANAGER() GetWindowManager()
 #define INIT_WINDOW_MANAGER(WidthIn, HeightIn, bFullscreenIn, NameIn) GetWindowManager(WidthIn, HeightIn, bFullscreenIn, NameIn)

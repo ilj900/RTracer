@@ -70,7 +70,7 @@ FWindowManager* GetWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, 
     return FWindowManager::WindowManager;
 }
 
-void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int Action, int Mods)
+void FWindowManager::KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int Action, int Mods)
 {
     switch (Key)
     {
@@ -92,7 +92,7 @@ void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int
     }
 }
 
-void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, int Mods)
+void FWindowManager::MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, int Mods)
 {
     switch (Button)
     {
@@ -129,12 +129,12 @@ void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, in
     }
 }
 
-void MouseMoved(GLFWwindow* Window, double XPos, double YPos)
+void FWindowManager::MouseMoved(GLFWwindow* Window, double XPos, double YPos)
 {
     CONTROLLER()->SetCameraDirection(XPos, YPos);
 }
 
-void FramebufferResizeCallback(GLFWwindow* window, int Width, int Height)
+void FWindowManager::FramebufferResizeCallback(GLFWwindow* window, int Width, int Height)
 {
     CONTROLLER()->Render->SetSize(Width, Height);
     CAMERA_SYSTEM()->SetAspectRatio(CONTROLLER()->Camera, float(Width) / float(Height));

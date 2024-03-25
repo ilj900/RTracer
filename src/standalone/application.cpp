@@ -22,7 +22,8 @@ FApplication::~FApplication()
 int FApplication::Run()
 {
     int i = 0;
-    while (0 == i) {
+    while (0 == i)
+    {
         static auto StartTime = std::chrono::high_resolution_clock::now();
 
         auto CurrentTime = std::chrono::high_resolution_clock::now();

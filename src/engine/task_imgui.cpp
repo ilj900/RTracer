@@ -86,11 +86,12 @@ void FImguiTask::Init()
     InitInfo.QueueFamily = Context.GetGraphicsQueueIndex();
     InitInfo.Queue = Context.GetGraphicsQueue();
     InitInfo.DescriptorPool = DescriptorPool;
+    InitInfo.RenderPass = RenderPass;
     InitInfo.MinImageCount = NumberOfSimultaneousSubmits;
     InitInfo.ImageCount = NumberOfSimultaneousSubmits;
     InitInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
     InitInfo.CheckVkResultFn = CheckResultFunction;
-    ImGui_ImplVulkan_Init(&InitInfo, RenderPass);
+    ImGui_ImplVulkan_Init(&InitInfo);
     CreateSyncObjects();
 }
 
