@@ -21,13 +21,12 @@ FTimingManager::~FTimingManager()
 
 void FTimingManager::RegisterTiming(const std::string& TimingName, int NumberOfSimultaneousSubmitsIn)
 {
-    NumberOfSimultaneousSubmits = NumberOfSimultaneousSubmitsIn;
     NameToQueryPool[TimingName] = VK_NULL_HANDLE;
-    TimingHistory[TimingName] = std::vector<float>(NumberOfSimultaneousSubmits * 2);
+    TimingHistory[TimingName] = std::vector<float>(NumberOfSimultaneousSubmitsIn * 2);
 
     VkQueryPoolCreateInfo QueryPoolCreateInfo{};
     QueryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
-    QueryPoolCreateInfo.queryCount = NumberOfSimultaneousSubmits * 2;
+    QueryPoolCreateInfo.queryCount = NumberOfSimultaneousSubmitsIn * 2;
     QueryPoolCreateInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
 
     if (vkCreateQueryPool(LogicalDevice, &QueryPoolCreateInfo, nullptr, &NameToQueryPool[TimingName]) != VK_SUCCESS)

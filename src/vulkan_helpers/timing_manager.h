@@ -24,7 +24,6 @@ public:
 private:
     std::chrono::time_point<std::chrono::steady_clock> Time;
     std::chrono::time_point<std::chrono::steady_clock> PreviousTime;
-    int NumberOfSimultaneousSubmits;
     VkDevice LogicalDevice = VK_NULL_HANDLE;
     std::unordered_map<std::string, VkQueryPool> NameToQueryPool;
     std::unordered_map<std::string, std::vector<float>> TimingHistory;
