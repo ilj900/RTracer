@@ -8,15 +8,14 @@
 FApplication::FApplication()
 {
     INIT_WINDOW_MANAGER(1920, 1080, false, "RTRacer");
-    Render = std::make_shared<FRender>();
-
+    RENDER();
     CONTROLLER()->SetWindow(WINDOW_MANAGER()->GetWindow());
-    WINDOW_MANAGER()->SetRender(Render);
 }
 
 FApplication::~FApplication()
 {
-    Render = nullptr;
+    RENDER()->Destroy();
+    WINDOW_MANAGER()->Destroy();
 }
 
 int FApplication::Run()
@@ -31,8 +30,8 @@ int FApplication::Run()
         StartTime = CurrentTime;
 
         CONTROLLER()->Update(Time);
-        i = Render->Update();
-        i += Render->Render();
+        i = RENDER()->Update();
+        i += RENDER()->Render();
     }
 
     return 0;

@@ -26,10 +26,10 @@ class FRender
 {
 public:
     FRender();
-    ~FRender();
 
     int Init();
     int Cleanup();
+    int Destroy();
     int SetSize(int Width, int Height);
 
     int Render();
@@ -75,6 +75,12 @@ public:
     std::vector<VkSemaphore> ImageAvailableSemaphores;
     std::vector<VkFence> ImagesInFlight;
 
+    static FRender* RenderInstance;
+
 private:
     ECS::FEntity CreateEmptyModel();
 };
+
+FRender* GetRender();
+
+#define RENDER() GetRender()

@@ -10,13 +10,12 @@ class FWindowManager
 {
 public:
     explicit FWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, const std::string& NameIn);
-    ~FWindowManager();
+    int Destroy();
     bool ShouldClose();
     int GetWidth();
     int GetHeight();
     FVector2 GetSize2D();
     GLFWwindow* GetWindow();
-    void SetRender(std::shared_ptr<FRender> RenderIn);
 
     static FWindowManager* WindowManager;
 
@@ -30,7 +29,6 @@ private:
     int Height = 1080;
     std::string Name;
     bool bFullscreen = false;
-    std::shared_ptr<FRender> Render;
 };
 
 FWindowManager* GetWindowManager(int WidthIn = 1920, int HeightIn = 1080, bool bFullscreenIn = false, const std::string& NameIn = "Default name");

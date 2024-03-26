@@ -26,6 +26,7 @@
 
 #include "logging.h"
 
+FRender* FRender::RenderInstance = nullptr;
 
 FRender::FRender()
 {
@@ -314,7 +315,7 @@ int FRender::SetSize(int Width, int Height)
     return 0;
 }
 
-FRender::~FRender()
+int FRender::Destroy()
 {
     GetContext().WaitIdle();
     Cleanup();
@@ -323,6 +324,8 @@ FRender::~FRender()
     MESH_SYSTEM()->Terminate();
 
     GetContext().CleanUp();
+
+    return 0;
 }
 
 int FRender::Render()
@@ -611,4 +614,14 @@ ECS::FEntity FRender::CreateEmptyModel()
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceMeshComponent>(EmptyModel, {});
 
     return EmptyModel;
+}
+
+FRender* GetRender()
+{
+    if (nullptr == FRender::RenderInstance)
+    {
+        FRender::RenderInstance = new FRender();
+    }
+
+    return FRender::RenderInstance;
 }
