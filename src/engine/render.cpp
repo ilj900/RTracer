@@ -159,7 +159,7 @@ FRender::FRender()
     Context.SetDebugUtilsMessengerEXT(DebugUtilsMessengerEXT);
 #endif
     /// Create Surface
-    Surface = Context.CreateSurface(WINDOW_MANAGER()->GetWindow());
+    Surface = Context.CreateSurface(WINDOW());
     Context.SetSurface(Surface);
 
     /// Pick Physical device

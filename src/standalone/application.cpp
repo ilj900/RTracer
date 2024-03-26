@@ -9,7 +9,7 @@ FApplication::FApplication()
 {
     INIT_WINDOW_MANAGER(1920, 1080, false, "RTRacer");
     RENDER();
-    CONTROLLER()->SetWindow(WINDOW_MANAGER()->GetWindow());
+    CONTROLLER()->SetWindow(WINDOW());
 }
 
 FApplication::~FApplication()
