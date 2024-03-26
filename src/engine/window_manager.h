@@ -33,6 +33,6 @@ private:
 
 FWindowManager* GetWindowManager(int WidthIn = 1920, int HeightIn = 1080, bool bFullscreenIn = false, const std::string& NameIn = "Default name");
 
+#define INIT_WINDOW_MANAGER(WidthIn, HeightIn, bFullscreenIn, NameIn) GetWindowManager(WidthIn, HeightIn, bFullscreenIn, NameIn)
 #define WINDOW_MANAGER() GetWindowManager()
 #define WINDOW() GetWindowManager()->GetWindow()
-#define INIT_WINDOW_MANAGER(WidthIn, HeightIn, bFullscreenIn, NameIn) GetWindowManager(WidthIn, HeightIn, bFullscreenIn, NameIn)

@@ -987,6 +987,36 @@ VkDescriptorPool FVulkanContext::CreateDescriptorPool(const std::map<VkDescripto
     return DescriptorPool;
 }
 
+VkDescriptorPool FVulkanContext::CreateFreeableDescriptorPool(const std::map<VkDescriptorType, uint32_t>& DescriptorsMap, VkDevice LogicalDevice, const std::string& debug_name)
+{
+    /// Fill it pool sizes
+    std::vector<VkDescriptorPoolSize> PoolSizes{};
+    uint32_t MaxSets = 0;
+    for (auto Type : DescriptorsMap)
+    {
+        PoolSizes.push_back({Type.first, Type.second});
+        MaxSets += Type.second;
+    }
+
+    VkDescriptorPoolCreateInfo PoolInfo{};
+    PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    PoolInfo.poolSizeCount = static_cast<uint32_t>(PoolSizes.size());
+    PoolInfo.pPoolSizes = PoolSizes.data();
+    PoolInfo.maxSets = static_cast<uint32_t>(MaxSets);
+    PoolInfo.flags |= VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+
+    VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
+
+    if (vkCreateDescriptorPool(LogicalDevice, &PoolInfo, nullptr, &DescriptorPool) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create descriptor pool!");
+    }
+
+    V::SetName(LogicalDevice, DescriptorPool, debug_name);
+
+    return DescriptorPool;
+}
+
 VkRenderPass FVulkanContext::CreateRenderpass(VkDevice LogicalDevice, FGraphicsPipelineOptions& GraphicsPipelineOptions)
 {
     std::vector<VkAttachmentDescription> AttachmentDescriptions;

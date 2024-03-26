@@ -19,8 +19,6 @@ FImguiTask::FImguiTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Cont
 
 FImguiTask::~FImguiTask()
 {
-    ImGui_ImplVulkan_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
     FreeSyncObjects();
@@ -60,7 +58,7 @@ void FImguiTask::Init()
                     { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
             };
 
-    DescriptorPool = Context.CreateDescriptorPool(PoolSizes, LogicalDevice, "V_ImGuiDescriptorPool");
+    DescriptorPool = Context.CreateFreeableDescriptorPool(PoolSizes, LogicalDevice, "V_ImGuiDescriptorPool");
 
     auto CheckResultFunction = [](VkResult Err)
     {
@@ -108,6 +106,9 @@ void FImguiTask::Cleanup()
 {
     Inputs.clear();
     Outputs.clear();
+
+    ImGui_ImplVulkan_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
 
     for (auto Framebuffer : ImguiFramebuffers)
     {
