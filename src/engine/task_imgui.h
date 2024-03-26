@@ -26,4 +26,5 @@ public:
     std::vector<VkFramebuffer> ImguiFramebuffers;
 
     int PreviousIterationIndex = 0;
+    bool bFirstCall = true;
 };

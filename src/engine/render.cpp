@@ -429,7 +429,7 @@ int FRender::LoadScene(const std::string& Path)
     auto Pyramid = CreatePyramid();
     auto VikingRoom = CreateModel("../../../models/viking_room/viking_room.obj");
     auto Cube = CreateCube();
-    auto Sphere = CreateSphere(10);
+    auto Sphere = CreateSphere(3);
     auto Shaderball = CreateModel("../../../models/Shaderball.obj");
 
     auto MagentaMaterial = CreateMaterial({1, 0, 1});
@@ -445,9 +445,9 @@ int FRender::LoadScene(const std::string& Path)
     auto CubeInstance = CreateInstance(Cube, {1.f, 0.f, -2.f});
     auto ShaderballInstance = CreateInstance(Shaderball, {5.f, -1.f, -2.f});
 
-    for (int i = -100; i < 100; ++i)
+    for (int i = -10; i < 10; ++i)
     {
-        for (int j = -100; j < 100; ++j)
+        for (int j = -10; j < 10; ++j)
         {
             auto SphereInstance = CreateInstance(Sphere, {2.f * i, -5.f, 2.f * j});
             ShapeSetMaterial(SphereInstance, GreenMaterial);

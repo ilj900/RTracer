@@ -27,6 +27,7 @@ FImguiTask::~FImguiTask()
 void FImguiTask::Init()
 {
     Context->TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+    bFirstCall = true;
 
     auto& Context = GetContext();
     FGraphicsPipelineOptions ImguiPipelineOptions;
@@ -119,8 +120,6 @@ void FImguiTask::Cleanup()
 
 VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
 {
-    static bool bFirstCall = true;
-
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
