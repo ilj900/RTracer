@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vulkan/vulkan.h"
+#include "render.h"
 #include "GLFW/glfw3.h"
 #include "maths.h"
 
@@ -16,6 +16,8 @@ public:
     int GetHeight();
     FVector2 GetSize2D();
     GLFWwindow* GetWindow();
+    void SetRender(std::shared_ptr<FRender> RenderIn);
+
     static FWindowManager* WindowManager;
 
     static void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int Action, int Mods);
@@ -28,6 +30,7 @@ private:
     int Height = 1080;
     std::string Name;
     bool bFullscreen = false;
+    std::shared_ptr<FRender> Render;
 };
 
 FWindowManager* GetWindowManager(int WidthIn = 1920, int HeightIn = 1080, bool bFullscreenIn = false, const std::string& NameIn = "Default name");

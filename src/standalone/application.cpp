@@ -11,7 +11,7 @@ FApplication::FApplication()
     Render = std::make_shared<FRender>();
 
     CONTROLLER()->SetWindow(WINDOW_MANAGER()->GetWindow());
-    CONTROLLER()->SetRender(Render);
+    WINDOW_MANAGER()->SetRender(Render);
 }
 
 FApplication::~FApplication()

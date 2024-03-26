@@ -9,7 +9,6 @@ class FController
 public:
     FController();
     void SetWindow(GLFWwindow* WindowIn);
-    void SetRender(std::shared_ptr<FRender> RenderIn);
     void Update(float Time);
     void SetCameraDirection(float XPos, float YPos);
     void EnableCameraControlMode();
@@ -19,7 +18,6 @@ public:
 public:
     /// Data
     GLFWwindow* Window = nullptr;
-    std::shared_ptr<FRender> Render = nullptr;
 
     double XPrevious = 0.;
     double YPrevious = 0.;

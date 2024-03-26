@@ -59,6 +59,10 @@ FVector2 FWindowManager::GetSize2D()
     return FVector2(Width, Height);
 }
 
+void FWindowManager::SetRender(std::shared_ptr<FRender> RenderIn)
+{
+    Render = std::move(RenderIn);
+}
 
 FWindowManager* GetWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, const std::string& NameIn)
 {
@@ -136,7 +140,7 @@ void FWindowManager::MouseMoved(GLFWwindow* Window, double XPos, double YPos)
 
 void FWindowManager::FramebufferResizeCallback(GLFWwindow* window, int Width, int Height)
 {
-    CONTROLLER()->Render->SetSize(Width, Height);
+    WINDOW_MANAGER()->Render->SetSize(Width, Height);
     CAMERA_SYSTEM()->SetAspectRatio(CONTROLLER()->Camera, float(Width) / float(Height));
 }
 

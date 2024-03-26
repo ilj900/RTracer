@@ -22,11 +22,6 @@ void FController::SetWindow(GLFWwindow* WindowIn)
     Window = WindowIn;
 }
 
-void FController::SetRender(std::shared_ptr<FRender> RenderIn)
-{
-    Render = std::move(RenderIn);
-}
-
 void FController::SetCameraDirection(float XPos, float YPos)
 {
     XCurrent = XPos;
