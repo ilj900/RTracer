@@ -21,6 +21,11 @@ FTimingManager::~FTimingManager()
 
 void FTimingManager::RegisterTiming(const std::string& TimingName, int NumberOfSimultaneousSubmitsIn)
 {
+    if (NameToQueryPool.find(TimingName) != NameToQueryPool.end())
+    {
+        return;
+    }
+    
     NameToQueryPool[TimingName] = VK_NULL_HANDLE;
     TimingHistory[TimingName] = std::vector<float>(NumberOfSimultaneousSubmitsIn * 2);
 
