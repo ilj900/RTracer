@@ -15,6 +15,9 @@ struct FHit
     uint32_t PrimitiveIndex;
     FVector2 HitUV;
     uint32_t MaterialIndex;
+    float Dummy1;
+    float Dummy2;
+    float Dummy3;
 };
 
 struct FRayData

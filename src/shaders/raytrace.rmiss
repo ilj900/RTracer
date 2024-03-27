@@ -14,5 +14,4 @@ void main()
     Hit.PrimitiveIndex = UINT_MAX;
     Hit.HitUV = vec2(0);
     Hit.MaterialIndex = UINT_MAX;
-
 }
