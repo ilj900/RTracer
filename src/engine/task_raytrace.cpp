@@ -26,9 +26,14 @@ FRaytraceTask::FRaytraceTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_HIT_BUFFER,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_MATERIAL_INDEX_BUFFER,
+                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 
-    FBuffer HitsBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(FHit) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Name);
+    FBuffer HitsBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(FHit) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "HitsBuffer");
     Context->ResourceAllocator->RegisterBuffer(HitsBuffer, "HitsBuffer");
+
+    FBuffer MaterialIndexBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(uint32_t) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialIndexBuffer");
+    Context->ResourceAllocator->RegisterBuffer(MaterialIndexBuffer, "MaterialIndexBuffer");
 
     DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
 
@@ -39,6 +44,7 @@ FRaytraceTask::~FRaytraceTask()
 {
     FreeSyncObjects();
     Context->ResourceAllocator->UnregisterAndDestroyBuffer("HitsBuffer");
+    Context->ResourceAllocator->UnregisterAndDestroyBuffer("MaterialIndexBuffer");
 }
 
 void FRaytraceTask::Init()
@@ -129,6 +135,7 @@ void FRaytraceTask::UpdateDescriptorSets()
         UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_RAYS_DATA_BUFFER, i, Context->ResourceAllocator->GetBuffer("InitialRaysBuffer"));
         UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_RENDERABLE_BUFFER_INDEX, i, RENDERABLE_SYSTEM()->DeviceBuffer);
         UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_HIT_BUFFER, i, Context->ResourceAllocator->GetBuffer("HitsBuffer"));
+        UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_MATERIAL_INDEX_BUFFER, i, Context->ResourceAllocator->GetBuffer("MaterialIndexBuffer"));
     }
 };
 

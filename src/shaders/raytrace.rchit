@@ -22,7 +22,10 @@ FRenderable FetchRenderable()
 
 void main()
 {
+    FRenderable Renderable = FetchRenderable();
+
     Hit.RenderableIndex = gl_InstanceCustomIndexEXT;
     Hit.PrimitiveIndex = gl_PrimitiveID;
     Hit.HitUV = HitAttributes;
+    Hit.MaterialIndex = Renderable.MaterialIndex;
 }

@@ -14,6 +14,7 @@ struct FHit
     uint32_t RenderableIndex;
     uint32_t PrimitiveIndex;
     FVector2 HitUV;
+    uint32_t MaterialIndex;
 };
 
 struct FRayData

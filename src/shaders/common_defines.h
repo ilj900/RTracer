@@ -31,6 +31,7 @@
 #define RAYTRACE_RAYS_DATA_BUFFER 1u
 #define RAYTRACE_RENDERABLE_BUFFER_INDEX 2u
 #define RAYTRACE_HIT_BUFFER 3u
+#define RAYTRACE_MATERIAL_INDEX_BUFFER 4u
 
 /// Task clear image descriptor set layout defines
 #define CLEAR_IMAGE_LAYOUT_INDEX 0u

@@ -17,7 +17,13 @@ layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_RAYS_DATA_BUFFER) buffer
 
 layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_HIT_BUFFER) buffer HitBufferObject
 {
+//TODO: Possibly separate into HitDana and HitPayload
     FHit HitData[];
+};
+
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_MATERIAL_INDEX_BUFFER) buffer MaterialIndexBufferObject
+{
+    uint MaterialIndices[];
 };
 
 void main()
@@ -28,4 +34,5 @@ void main()
     traceRayEXT(TopLevelAS, RayData.RayFlags, 0xFF, 0, 0, 0, RayData.Origin.xyz, RayData.TMin, RayData.Direction.xyz, RayData.TMax, 0);
 
     HitData[RayIndex] = Hit;
+    MaterialIndices[RayIndex] = Hit.MaterialIndex;
 }

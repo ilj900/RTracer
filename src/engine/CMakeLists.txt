@@ -42,6 +42,7 @@ set(INCLUDE
         task_accumulate.h
         task_clear_image.h
         task_imgui.h
+        task_material_sort_mount_materials.h
         task_passthrough.h
         task_raytrace.h
         task_shade.h
@@ -54,6 +55,7 @@ set(SOURCE
         task_generate_initial_rays.h
         task_passthrough.cpp
         task_imgui.cpp
+        task_material_sort_mount_materials.cpp
         task_raytrace.cpp
         task_accumulate.cpp
         task_clear_image.cpp
