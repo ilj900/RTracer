@@ -28,7 +28,7 @@
 
 FRender* FRender::RenderInstance = nullptr;
 
-FRender::FRender()
+FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(HeightIn)
 {
     auto& Coordinator = ECS::GetCoordinator();
     Coordinator.Init();
@@ -192,9 +192,6 @@ int FRender::Init()
 {
     auto& Context = GetContext();
 
-    int Width = WINDOW_MANAGER()->GetWidth();
-    int Height = WINDOW_MANAGER()->GetHeight();
-
     Swapchain = std::make_shared<FSwapchain>(Width, Height, PhysicalDevice, LogicalDevice, Surface, Context.GetGraphicsQueueIndex(), Context.GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
     MAX_FRAMES_IN_FLIGHT = Swapchain->Size();
 
@@ -309,8 +306,10 @@ int FRender::Cleanup()
     return 0;
 }
 
-int FRender::SetSize(int Width, int Height)
+int FRender::SetSize(int WidthIn, int HeightIn)
 {
+    Width = WidthIn;
+    Height = HeightIn;
     bShouldRecreateSwapchain = true;
     return 0;
 }
@@ -616,11 +615,11 @@ ECS::FEntity FRender::CreateEmptyModel()
     return EmptyModel;
 }
 
-FRender* GetRender()
+FRender* GetRender(uint32_t WidthIn, uint32_t HeightIn)
 {
     if (nullptr == FRender::RenderInstance)
     {
-        FRender::RenderInstance = new FRender();
+        FRender::RenderInstance = new FRender(WidthIn, HeightIn);
     }
 
     return FRender::RenderInstance;

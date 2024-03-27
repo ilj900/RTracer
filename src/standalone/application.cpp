@@ -7,8 +7,10 @@
 
 FApplication::FApplication()
 {
-    INIT_WINDOW_MANAGER(1920, 1080, false, "RTRacer");
-    RENDER();
+    uint32_t Width = 1920;
+    uint32_t Height = 1080;
+    INIT_WINDOW_MANAGER(Width, Height, false, "RTRacer");
+    INIT_RENDER(Width, Height);
     CONTROLLER()->SetWindow(WINDOW());
 }
 

@@ -25,12 +25,12 @@ enum MeshType {Tetrahedron, Hexahedron, Icosahedron, Model};
 class FRender
 {
 public:
-    FRender();
+    FRender(uint32_t WidthIn = 1920, uint32_t HeightIn = 1080);
 
     int Init();
     int Cleanup();
     int Destroy();
-    int SetSize(int Width, int Height);
+    int SetSize(int WidthIn, int HeightIn);
 
     int Render();
     int Update();
@@ -79,8 +79,11 @@ public:
 
 private:
     ECS::FEntity CreateEmptyModel();
+    int Width;
+    int Height;
 };
 
-FRender* GetRender();
+FRender* GetRender(uint32_t WidthIn = 1920, uint32_t HeightIn = 1080);
 
+#define INIT_RENDER(WidthIn, HeightIn) GetRender(WidthIn, HeightIn)
 #define RENDER() GetRender()

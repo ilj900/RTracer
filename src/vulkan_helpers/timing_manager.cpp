@@ -25,7 +25,7 @@ void FTimingManager::RegisterTiming(const std::string& TimingName, int NumberOfS
     {
         return;
     }
-    
+
     NameToQueryPool[TimingName] = VK_NULL_HANDLE;
     TimingHistory[TimingName] = std::vector<float>(NumberOfSimultaneousSubmitsIn * 2);
 
