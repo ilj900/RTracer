@@ -406,6 +406,10 @@ int FRender::Render()
         return 1;
     }
 
+//    Context.WaitIdle();
+//    auto Buffer = Context.ResourceAllocator->GetBuffer("MaterialIndexBuffer");
+//    Context.SaveBufferUint(Buffer, Width, Height, "Test.exr");
+
     RenderFrameIndex++;
 
     glfwPollEvents();

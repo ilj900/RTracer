@@ -27,6 +27,14 @@ public:
     void LoadDataToStagingBuffer(std::vector<VkDeviceSize> Sizes, std::vector<void*> Datas);
     void LoadDataFromStagingBuffer(VkDeviceSize Size, void* Data, VkDeviceSize Offset);
     void CopyBuffer(const FBuffer &SrcBuffer, FBuffer &DstBuffer, std::vector<VkDeviceSize> Sizes, std::vector<VkDeviceSize> SourceOffsets, std::vector<VkDeviceSize> DestinationOffsets);
+
+    template <typename T>
+    std::vector<T> DebugGetDataFromBuffer(const std::string& Name)
+    {
+        FBuffer Buffer = GetBuffer(Name);
+        return DebugGetDataFromBuffer<T>(Buffer, Buffer.BufferSize, 0);
+    }
+
     template <typename T>
     std::vector<T> DebugGetDataFromBuffer(const FBuffer& SrcBuffer, int Size, int Offset)
     {

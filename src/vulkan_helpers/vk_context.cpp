@@ -493,7 +493,6 @@ void FVulkanContext::SaveBufferUint3(FBuffer& Buffer, uint32_t WidthIn, uint32_t
     SaveEXR(NewData.data(), WidthIn, HeightIn, 3, false, Name.c_str(), &Err);
 }
 
-
 FAccelerationStructure FVulkanContext::CreateAccelerationStructure(VkDeviceSize Size, VkAccelerationStructureTypeKHR Type, const std::string& DebugName)
 {
     FAccelerationStructure AccelerationStructure;

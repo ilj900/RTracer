@@ -32,7 +32,7 @@ FRaytraceTask::FRaytraceTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext
     FBuffer HitsBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(FHit) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "HitsBuffer");
     Context->ResourceAllocator->RegisterBuffer(HitsBuffer, "HitsBuffer");
 
-    FBuffer MaterialIndexBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(uint32_t) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialIndexBuffer");
+    FBuffer MaterialIndexBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(uint32_t) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialIndexBuffer");
     Context->ResourceAllocator->RegisterBuffer(MaterialIndexBuffer, "MaterialIndexBuffer");
 
     DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
