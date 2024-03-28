@@ -1,0 +1,27 @@
+#version 460
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+#include "common_defines.h"
+
+layout (set = MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, binding = MATERIAL_SORT_MATERIALS_COUNT_BUFFER) buffer MaterialsCountBufferObject
+{
+    uint MaterialsCount[TOTAL_MATERIALS];
+};
+
+layout (set = MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, binding = MATERIAL_SORT_MATERIAL_OFFSETS_BUFFER) buffer MaterialsOffsetsBufferObject
+{
+    uint MaterialOffsets[TOTAL_MATERIALS];
+};
+
+layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    MaterialOffsets[0u] = 0u;
+
+    for (uint i = 1u; i < TOTAL_MATERIALS; ++i)
+    {
+        MaterialOffsets[i] = MaterialOffsets[i - 1u] + MaterialsCount[i - 1u];
+    }
+}

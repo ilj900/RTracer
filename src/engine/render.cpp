@@ -239,6 +239,12 @@ int FRender::Init()
     CountMaterialsTask->UpdateDescriptorSets();
     CountMaterialsTask->RecordCommands();
 
+    ComputeOffsetsTask = std::make_shared<FComputeOffsetsTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+
+    ComputeOffsetsTask->Init();
+    ComputeOffsetsTask->UpdateDescriptorSets();
+    ComputeOffsetsTask->RecordCommands();
+
     ShadeTask = std::make_shared<FShadeTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     ShadeTask->RegisterInput(0, RTColorImage);
     SetIBL("../../../resources/brown_photostudio_02_4k.exr");
@@ -293,6 +299,8 @@ int FRender::Cleanup()
     RayTraceTask = nullptr;
     ClearMaterialsCountTask->Cleanup();
     ClearMaterialsCountTask = nullptr;
+    ComputeOffsetsTask->Cleanup();
+    ComputeOffsetsTask = nullptr;
     CountMaterialsTask->Cleanup();
     CountMaterialsTask = nullptr;
     ShadeTask->Cleanup();
@@ -390,7 +398,9 @@ int FRender::Render()
 
     auto CountMaterialsSemaphore = CountMaterialsTask->Submit(Context.GetComputeQueue(), ClearMaterialCountSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ShadeSignalSemaphore = ShadeTask->Submit(Context.GetComputeQueue(), CountMaterialsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ComputeOffsetsSemaphore = ComputeOffsetsTask->Submit(Context.GetComputeQueue(), CountMaterialsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+
+    auto ShadeSignalSemaphore = ShadeTask->Submit(Context.GetComputeQueue(), ComputeOffsetsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
     VkSemaphore AccumulateSignalSemaphore = VK_NULL_HANDLE;
 
@@ -417,7 +427,7 @@ int FRender::Render()
     }
 
     Context.WaitIdle();
-    auto Buffer = Context.ResourceAllocator->GetBuffer("CountedMaterialsBuffer");
+    auto Buffer = Context.ResourceAllocator->GetBuffer("MaterialOffsetsBuffer");
     Context.SaveBufferUint(Buffer, Buffer.BufferSize / sizeof(uint32_t), 1, "Test.exr");
 
     RenderFrameIndex++;

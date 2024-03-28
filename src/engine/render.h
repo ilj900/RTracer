@@ -12,6 +12,7 @@
 #include "task_generate_initial_rays.h"
 #include "task_raytrace.h"
 #include "task_material_sort_clear_materials_count.h"
+#include "task_material_sort_compute_offsets.h"
 #include "task_material_sort_count_materials.h"
 #include "task_shade.h"
 #include "task_accumulate.h"
@@ -67,6 +68,7 @@ public:
     std::shared_ptr<FGenerateInitialRays> GenerateRaysTask = nullptr;
     std::shared_ptr<FRaytraceTask> RayTraceTask = nullptr;
     std::shared_ptr<FClearMaterialsCountTask> ClearMaterialsCountTask = nullptr;
+    std::shared_ptr<FComputeOffsetsTask> ComputeOffsetsTask = nullptr;
     std::shared_ptr<FCountMaterialsTask> CountMaterialsTask = nullptr;
     std::shared_ptr<FShadeTask> ShadeTask = nullptr;
     std::shared_ptr<FAccumulateTask> AccumulateTask = nullptr;
