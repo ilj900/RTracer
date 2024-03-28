@@ -14,7 +14,7 @@ FClearMaterialsCountTask::FClearMaterialsCountTask(uint32_t WidthIn, uint32_t He
 
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
-    DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_INDEX, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_BUFFER,
+    DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_LAYOUT_INDEX, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_BUFFER,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
     DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
@@ -43,7 +43,7 @@ void FClearMaterialsCountTask::Init()
     Pipeline = Context->CreateComputePipeline(MaterialCountShader(), PipelineLayout);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-    DescriptorSetManager->ReserveDescriptorSet(Name, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_INDEX, NumberOfSimultaneousSubmits);
+    DescriptorSetManager->ReserveDescriptorSet(Name, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
 
     DescriptorSetManager->ReserveDescriptorPool(Name);
 
@@ -54,7 +54,7 @@ void FClearMaterialsCountTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        UpdateDescriptorSet(MATERIAL_SORT_CLEAR_MATERIALS_COUNT_INDEX, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_BUFFER, i, Context->ResourceAllocator->GetBuffer("CountedMaterialsBuffer"));
+        UpdateDescriptorSet(MATERIAL_SORT_CLEAR_MATERIALS_COUNT_LAYOUT_INDEX, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_BUFFER, i, Context->ResourceAllocator->GetBuffer("CountedMaterialsBuffer"));
     }
 };
 

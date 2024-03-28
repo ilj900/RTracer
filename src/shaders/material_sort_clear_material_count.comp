@@ -2,7 +2,7 @@
 
 #include "common_defines.h"
 
-layout (set = MATERIAL_SORT_CLEAR_MATERIALS_COUNT_INDEX, binding = MATERIAL_SORT_CLEAR_MATERIALS_COUNT_BUFFER) buffer MaterialCountBufferObject
+layout (set = MATERIAL_SORT_CLEAR_MATERIALS_COUNT_LAYOUT_INDEX, binding = MATERIAL_SORT_CLEAR_MATERIALS_COUNT_BUFFER) buffer MaterialCountBufferObject
 {
     uint MaterialCount[TOTAL_MATERIALS];
 };
