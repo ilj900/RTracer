@@ -20,6 +20,8 @@ layout (push_constant) uniform PushConstantsBlock
     FPushConstants PushConstants;
 };
 
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
 /// Here we calculate how much of each material we have
 void main()
 {

@@ -406,9 +406,9 @@ int FRender::Render()
         return 1;
     }
 
-//    Context.WaitIdle();
-//    auto Buffer = Context.ResourceAllocator->GetBuffer("MaterialIndexBuffer");
-//    Context.SaveBufferUint(Buffer, Width, Height, "Test.exr");
+    Context.WaitIdle();
+    auto Buffer = Context.ResourceAllocator->GetBuffer("CountedMaterialsBuffer");
+    Context.SaveBufferUint(Buffer, Buffer.BufferSize / sizeof(uint32_t), 1, "Test.exr");
 
     RenderFrameIndex++;
 
