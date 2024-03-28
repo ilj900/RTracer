@@ -2,64 +2,63 @@
 #include "vk_debug.h"
 #include "vk_functions.h"
 #include "common_defines.h"
-#include "common_structures.h"
 
 #include "vk_shader_compiler.h"
 
-#include "task_material_sort_count_materials.h"
+#include "task_material_sort_clear_materials_count.h"
 
-FCountMaterialsTask::FCountMaterialsTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+FClearMaterialsCountTask::FClearMaterialsCountTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
-    Name = "Material sort count materials pipeline";
+    Name = "Material sort clear materials count pipeline";
 
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
-    DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_COUNT_MATERIALS_INDEX, MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_INDEX_BUFFER,
-                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
-    DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_COUNT_MATERIALS_INDEX, MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_COUNT_BUFFER,
+    DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_INDEX, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_BUFFER,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
-    VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants)};
-    DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
+    DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
+
+    FBuffer CountedMaterialsBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "CountedMaterialsBuffer");
+    Context->ResourceAllocator->RegisterBuffer(CountedMaterialsBuffer, "CountedMaterialsBuffer");
 
     CreateSyncObjects();
 }
 
-FCountMaterialsTask::~FCountMaterialsTask()
+FClearMaterialsCountTask::~FClearMaterialsCountTask()
 {
     FreeSyncObjects();
+    Context->ResourceAllocator->UnregisterAndDestroyBuffer("CountedMaterialsBuffer");
 }
 
-void FCountMaterialsTask::Init()
+void FClearMaterialsCountTask::Init()
 {
     Context->TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
 
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
-    auto MaterialCountShader = FShader("../../../src/shaders/material_sort_count_materials.comp");
+    auto MaterialCountShader = FShader("../../../src/shaders/material_sort_clear_material_count.comp");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
     Pipeline = Context->CreateComputePipeline(MaterialCountShader(), PipelineLayout);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-    DescriptorSetManager->ReserveDescriptorSet(Name, MATERIAL_SORT_COUNT_MATERIALS_INDEX, NumberOfSimultaneousSubmits);
+    DescriptorSetManager->ReserveDescriptorSet(Name, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_INDEX, NumberOfSimultaneousSubmits);
 
     DescriptorSetManager->ReserveDescriptorPool(Name);
 
     DescriptorSetManager->AllocateAllDescriptorSets(Name);
 };
 
-void FCountMaterialsTask::UpdateDescriptorSets()
+void FClearMaterialsCountTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        UpdateDescriptorSet(MATERIAL_SORT_COUNT_MATERIALS_INDEX, MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_INDEX_BUFFER, i, Context->ResourceAllocator->GetBuffer("MaterialIndexBuffer"));
-        UpdateDescriptorSet(MATERIAL_SORT_COUNT_MATERIALS_INDEX, MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_COUNT_BUFFER, i, Context->ResourceAllocator->GetBuffer("CountedMaterialsBuffer"));
+        UpdateDescriptorSet(MATERIAL_SORT_CLEAR_MATERIALS_COUNT_INDEX, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_BUFFER, i, Context->ResourceAllocator->GetBuffer("CountedMaterialsBuffer"));
     }
 };
 
-void FCountMaterialsTask::RecordCommands()
+void FClearMaterialsCountTask::RecordCommands()
 {
     CommandBuffers.resize(NumberOfSimultaneousSubmits);
 
@@ -74,10 +73,7 @@ void FCountMaterialsTask::RecordCommands()
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &ComputeDescriptorSet, 0, nullptr);
 
-            FPushConstants PushConstants = {Width, Height, 1.f / Width, 1.f / Height};
-            vkCmdPushConstants(CommandBuffer, Context->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
-
-            vkCmdDispatch(CommandBuffer, Width * Height / 256, 1, 1);
+            vkCmdDispatch(CommandBuffer, 1, 1, 1);
 
             Context->TimingManager->TimestampEnd(Name, CommandBuffer, i);
         });
@@ -86,7 +82,7 @@ void FCountMaterialsTask::RecordCommands()
     }
 };
 
-void FCountMaterialsTask::Cleanup()
+void FClearMaterialsCountTask::Cleanup()
 {
     Inputs.clear();
     Outputs.clear();
@@ -102,7 +98,7 @@ void FCountMaterialsTask::Cleanup()
     Context->DescriptorSetManager->Reset(Name);
 };
 
-VkSemaphore FCountMaterialsTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
+VkSemaphore FClearMaterialsCountTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
 {
     return FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, WaitFence, SignalFence, IterationIndex);
 };

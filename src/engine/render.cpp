@@ -227,6 +227,12 @@ int FRender::Init()
     RayTraceTask->UpdateDescriptorSets();
     RayTraceTask->RecordCommands();
 
+    ClearMaterialsCountTask = std::make_shared<FClearMaterialsCountTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+
+    ClearMaterialsCountTask->Init();
+    ClearMaterialsCountTask->UpdateDescriptorSets();
+    ClearMaterialsCountTask->RecordCommands();
+
     CountMaterialsTask = std::make_shared<FCountMaterialsTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
 
     CountMaterialsTask->Init();
@@ -285,6 +291,8 @@ int FRender::Cleanup()
     GenerateRaysTask = nullptr;
     RayTraceTask->Cleanup();
     RayTraceTask = nullptr;
+    ClearMaterialsCountTask->Cleanup();
+    ClearMaterialsCountTask = nullptr;
     CountMaterialsTask->Cleanup();
     CountMaterialsTask = nullptr;
     ShadeTask->Cleanup();
@@ -378,7 +386,9 @@ int FRender::Render()
 
     auto RenderSignalSemaphore = RayTraceTask->Submit(Context.GetGraphicsQueue(), GenerateRaysSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto CountMaterialsSemaphore = CountMaterialsTask->Submit(Context.GetComputeQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ClearMaterialCountSemaphore = ClearMaterialsCountTask->Submit(Context.GetComputeQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+
+    auto CountMaterialsSemaphore = CountMaterialsTask->Submit(Context.GetComputeQueue(), ClearMaterialCountSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
     auto ShadeSignalSemaphore = ShadeTask->Submit(Context.GetComputeQueue(), CountMaterialsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
