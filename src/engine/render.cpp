@@ -227,6 +227,12 @@ int FRender::Init()
     RayTraceTask->UpdateDescriptorSets();
     RayTraceTask->RecordCommands();
 
+    CountMaterialsTask = std::make_shared<FCountMaterialsTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+
+    CountMaterialsTask->Init();
+    CountMaterialsTask->UpdateDescriptorSets();
+    CountMaterialsTask->RecordCommands();
+
     ShadeTask = std::make_shared<FShadeTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     ShadeTask->RegisterInput(0, RTColorImage);
     SetIBL("../../../resources/brown_photostudio_02_4k.exr");
@@ -279,6 +285,8 @@ int FRender::Cleanup()
     GenerateRaysTask = nullptr;
     RayTraceTask->Cleanup();
     RayTraceTask = nullptr;
+    CountMaterialsTask->Cleanup();
+    CountMaterialsTask = nullptr;
     ShadeTask->Cleanup();
     ShadeTask = nullptr;
     AccumulateTask->Cleanup();
@@ -370,7 +378,9 @@ int FRender::Render()
 
     auto RenderSignalSemaphore = RayTraceTask->Submit(Context.GetGraphicsQueue(), GenerateRaysSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ShadeSignalSemaphore = ShadeTask->Submit(Context.GetComputeQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto CountMaterialsSemaphore = CountMaterialsTask->Submit(Context.GetComputeQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+
+    auto ShadeSignalSemaphore = ShadeTask->Submit(Context.GetComputeQueue(), CountMaterialsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
     VkSemaphore AccumulateSignalSemaphore = VK_NULL_HANDLE;
 

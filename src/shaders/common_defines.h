@@ -6,6 +6,7 @@
 #endif
 
 #define MAX_TEXTURES 512
+#define TOTAL_MATERIALS 128 /// 127 Materials + IBL
 
 #define LIGHT_TYPE_NONE 0u
 #define LIGHT_TYPE_POINT_LIGHT 1u
@@ -57,5 +58,11 @@
 
 #define CAMERA_RAYS_BUFFER 0
 #define CAMERA_POSITION_BUFFER 1
+
+/// Task material sort count materials set layout defines
+#define MATERIAL_SORT_COUNT_MATERIALS_INDEX 0
+
+#define MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_INDEX_BUFFER 0
+#define MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_COUNT_BUFFER 1
 
 #endif // COMMON_DEFINES_H

@@ -1,0 +1,38 @@
+#version 460
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+#include "common_defines.h"
+#include "common_structures.h"
+
+layout (set = MATERIAL_SORT_COUNT_MATERIALS_INDEX, binding = MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_INDEX_BUFFER) buffer MaterialIndexBufferObject
+{
+    uint MaterialIndices[];
+};
+
+layout (set = MATERIAL_SORT_COUNT_MATERIALS_INDEX, binding = MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_COUNT_BUFFER) buffer MaterialCountBufferObject
+{
+    uint MaterialCount[TOTAL_MATERIALS];
+};
+
+layout (push_constant) uniform PushConstantsBlock
+{
+    FPushConstants PushConstants;
+};
+
+/// Here we calculate how much of each material we have
+void main()
+{
+    uint PixelIndex = gl_GlobalInvocationID.y * PushConstants.Width + gl_GlobalInvocationID.x;
+    uint MaterialIndex = MaterialIndices[PixelIndex];
+
+    if (MaterialIndex == UINT_MAX)
+    {
+        /// Last material represents miss (IBL material)
+        atomicAdd(MaterialCount[TOTAL_MATERIALS - 1], 1);
+    }
+    else
+    {
+        atomicAdd(MaterialCount[MaterialIndex], 1);
+    }
+}

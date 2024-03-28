@@ -9,18 +9,17 @@
 
 #include "entity.h"
 
+#include "task_generate_initial_rays.h"
 #include "task_raytrace.h"
+#include "task_material_sort_count_materials.h"
+#include "task_shade.h"
 #include "task_accumulate.h"
 #include "task_passthrough.h"
 #include "task_imgui.h"
 #include "task_clear_image.h"
-#include "task_generate_initial_rays.h"
-#include "task_shade.h"
 
 #include <string>
 #include <vector>
-
-enum MeshType {Tetrahedron, Hexahedron, Icosahedron, Model};
 
 class FRender
 {
@@ -64,13 +63,14 @@ public:
     std::vector<ECS::FEntity> Materials;
     std::vector<ECS::FEntity> Lights;
 
+    std::shared_ptr<FGenerateInitialRays> GenerateRaysTask = nullptr;
+    std::shared_ptr<FCountMaterialsTask> CountMaterialsTask = nullptr;
     std::shared_ptr<FRaytraceTask> RayTraceTask = nullptr;
+    std::shared_ptr<FShadeTask> ShadeTask = nullptr;
     std::shared_ptr<FAccumulateTask> AccumulateTask = nullptr;
     std::shared_ptr<FPassthroughTask> PassthroughTask = nullptr;
     std::shared_ptr<FImguiTask> ImguiTask = nullptr;
     std::shared_ptr<FClearImageTask> ClearImageTask = nullptr;
-    std::shared_ptr<FGenerateInitialRays> GenerateRaysTask = nullptr;
-    std::shared_ptr<FShadeTask> ShadeTask = nullptr;
 
     std::vector<VkSemaphore> ImageAvailableSemaphores;
     std::vector<VkFence> ImagesInFlight;
