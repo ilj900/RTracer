@@ -6,6 +6,8 @@
 
 #include "task_generate_initial_rays.h"
 
+#include "utils.h"
+
 #include "components/device_camera_component.h"
 #include "systems/camera_system.h"
 
@@ -84,7 +86,7 @@ void FGenerateInitialRays::RecordCommands()
             FPushConstants PushConstants = {Width, Height, 1.f / Width, 1.f / Height};
             vkCmdPushConstants(CommandBuffer, Context->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
 
-            vkCmdDispatch(CommandBuffer, Width * Height / 256, 1, 1);
+            vkCmdDispatch(CommandBuffer, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), 1, 1);
 
             Context->TimingManager->TimestampEnd(Name, CommandBuffer, i);
         });

@@ -24,6 +24,8 @@
 #include "texture_manager.h"
 #include "window_manager.h"
 
+#include "utils.h"
+
 #include "logging.h"
 
 FRender* FRender::RenderInstance = nullptr;
@@ -427,8 +429,8 @@ int FRender::Render()
     }
 
     Context.WaitIdle();
-    auto Buffer = Context.ResourceAllocator->GetBuffer("MaterialOffsetsBuffer");
-    Context.SaveBufferUint(Buffer, Buffer.BufferSize / sizeof(uint32_t), 1, "Test.exr");
+    auto Buffer = Context.ResourceAllocator->GetBuffer("CountedMaterialsBuffer");
+    Context.SaveBufferUint(Buffer, TOTAL_MATERIALS, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), "Test.exr");
 
     RenderFrameIndex++;
 

@@ -7,6 +7,7 @@
 
 #define MAX_TEXTURES 512
 #define TOTAL_MATERIALS 128 /// 127 Materials + IBL
+#define BASIC_CHUNK_SIZE 256
 
 #define LIGHT_TYPE_NONE 0u
 #define LIGHT_TYPE_POINT_LIGHT 1u

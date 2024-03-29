@@ -2,6 +2,7 @@
 #include "vk_debug.h"
 #include "vk_functions.h"
 #include "common_defines.h"
+#include "utils.h"
 
 #include "vk_shader_compiler.h"
 
@@ -19,7 +20,7 @@ FClearMaterialsCountTask::FClearMaterialsCountTask(uint32_t WidthIn, uint32_t He
 
     DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
 
-    FBuffer CountedMaterialsBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "CountedMaterialsBuffer");
+    FBuffer CountedMaterialsBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "CountedMaterialsBuffer");
     Context->ResourceAllocator->RegisterBuffer(CountedMaterialsBuffer, "CountedMaterialsBuffer");
 
     CreateSyncObjects();

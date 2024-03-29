@@ -4,6 +4,8 @@
 #include "common_defines.h"
 #include "common_structures.h"
 
+#include "utils.h"
+
 #include "vk_shader_compiler.h"
 
 #include "task_material_sort_count_materials.h"
@@ -77,7 +79,7 @@ void FCountMaterialsTask::RecordCommands()
             FPushConstants PushConstants = {Width, Height, 1.f / Width, 1.f / Height};
             vkCmdPushConstants(CommandBuffer, Context->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
 
-            vkCmdDispatch(CommandBuffer, Width * Height / 256, 1, 1);
+            vkCmdDispatch(CommandBuffer, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), 1, 1);
 
             Context->TimingManager->TimestampEnd(Name, CommandBuffer, i);
         });

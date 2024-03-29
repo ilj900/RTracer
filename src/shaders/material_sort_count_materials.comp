@@ -12,7 +12,7 @@ layout (set = MATERIAL_SORT_COUNT_MATERIALS_INDEX, binding = MATERIAL_SORT_COUNT
 
 layout (set = MATERIAL_SORT_COUNT_MATERIALS_INDEX, binding = MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_COUNT_BUFFER) buffer MaterialCountBufferObject
 {
-    uint MaterialCount[TOTAL_MATERIALS];
+    uint MaterialCount[];
 };
 
 layout (push_constant) uniform PushConstantsBlock
@@ -20,21 +20,22 @@ layout (push_constant) uniform PushConstantsBlock
     FPushConstants PushConstants;
 };
 
-layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = BASIC_CHUNK_SIZE, local_size_y = 1, local_size_z = 1) in;
 
-/// Here we calculate how much of each material we have
+/// Here we calculate how much of each material we have in each chunk
 void main()
 {
-    uint PixelIndex = gl_GlobalInvocationID.y * PushConstants.Width + gl_GlobalInvocationID.x;
+    uint PixelIndex = gl_GlobalInvocationID.x;
+    uint ChunkIndex = PixelIndex / BASIC_CHUNK_SIZE;
     uint MaterialIndex = MaterialIndices[PixelIndex];
 
     if (MaterialIndex == UINT_MAX)
     {
         /// Last material represents miss (IBL material)
-        atomicAdd(MaterialCount[TOTAL_MATERIALS - 1], 1);
+        atomicAdd(MaterialCount[(ChunkIndex * TOTAL_MATERIALS) + TOTAL_MATERIALS - 1], 1);
     }
     else
     {
-        atomicAdd(MaterialCount[MaterialIndex], 1);
+        atomicAdd(MaterialCount[(ChunkIndex * TOTAL_MATERIALS) + MaterialIndex], 1);
     }
 }
