@@ -1,6 +1,6 @@
 #include "utils.h"
 
-int CalculateGroupCount(int NumberOfElements, int ElementsInGroup)
+uint32_t CalculateGroupCount(uint32_t NumberOfElements, uint32_t ElementsInGroup)
 {
     return (NumberOfElements + ElementsInGroup - 1) / ElementsInGroup;
 }

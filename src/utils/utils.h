@@ -1,3 +1,5 @@
 #pragma once
 
-int CalculateGroupCount(int NumberOfElements, int ElementsInGroup);
+#include <cstdint>
+
+uint32_t CalculateGroupCount(uint32_t NumberOfElements, uint32_t ElementsInGroup);
