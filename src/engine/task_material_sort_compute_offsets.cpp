@@ -45,7 +45,7 @@ void FComputeOffsetsTask::Init()
     Pipeline = Context->CreateComputePipeline(MaterialCountShader(), PipelineLayout);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-    DescriptorSetManager->ReserveDescriptorSet(Name, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
+    DescriptorSetManager->ReserveDescriptorSet(Name, MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
 
     DescriptorSetManager->ReserveDescriptorPool(Name);
 
@@ -81,7 +81,7 @@ void FComputeOffsetsTask::RecordCommands()
             Context->TimingManager->TimestampEnd(Name, CommandBuffer, i);
         });
 
-        V::SetName(LogicalDevice, CommandBuffers[i], "V::MaterialSort_Count_Materials_Command_Buffer");
+        V::SetName(LogicalDevice, CommandBuffers[i], "V::MaterialSort_Compute_Offsets_Command_Buffer");
     }
 };
 

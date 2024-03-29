@@ -229,11 +229,11 @@ int FRender::Init()
     RayTraceTask->UpdateDescriptorSets();
     RayTraceTask->RecordCommands();
 
-    ClearMaterialsCountTask = std::make_shared<FClearMaterialsCountTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    ClearMaterialsCountPerChunkTask = std::make_shared<FClearMaterialsCountPerChunkTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
 
-    ClearMaterialsCountTask->Init();
-    ClearMaterialsCountTask->UpdateDescriptorSets();
-    ClearMaterialsCountTask->RecordCommands();
+    ClearMaterialsCountPerChunkTask->Init();
+    ClearMaterialsCountPerChunkTask->UpdateDescriptorSets();
+    ClearMaterialsCountPerChunkTask->RecordCommands();
 
     CountMaterialsPerChunkTask = std::make_shared<FCountMaterialsPerChunkTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
 
@@ -299,8 +299,8 @@ int FRender::Cleanup()
     GenerateRaysTask = nullptr;
     RayTraceTask->Cleanup();
     RayTraceTask = nullptr;
-    ClearMaterialsCountTask->Cleanup();
-    ClearMaterialsCountTask = nullptr;
+    ClearMaterialsCountPerChunkTask->Cleanup();
+    ClearMaterialsCountPerChunkTask = nullptr;
     ComputeOffsetsTask->Cleanup();
     ComputeOffsetsTask = nullptr;
     CountMaterialsPerChunkTask->Cleanup();
@@ -396,9 +396,9 @@ int FRender::Render()
 
     auto RenderSignalSemaphore = RayTraceTask->Submit(Context.GetGraphicsQueue(), GenerateRaysSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ClearMaterialCountSemaphore = ClearMaterialsCountTask->Submit(Context.GetComputeQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ClearMaterialsCountPerChunkSemaphore = ClearMaterialsCountPerChunkTask->Submit(Context.GetComputeQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto CountMaterialsPerChunkSemaphore = CountMaterialsPerChunkTask->Submit(Context.GetComputeQueue(), ClearMaterialCountSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto CountMaterialsPerChunkSemaphore = CountMaterialsPerChunkTask->Submit(Context.GetComputeQueue(), ClearMaterialsCountPerChunkSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
     auto ComputeOffsetsSemaphore = ComputeOffsetsTask->Submit(Context.GetComputeQueue(), CountMaterialsPerChunkSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
