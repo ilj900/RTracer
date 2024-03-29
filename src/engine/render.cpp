@@ -235,11 +235,11 @@ int FRender::Init()
     ClearMaterialsCountTask->UpdateDescriptorSets();
     ClearMaterialsCountTask->RecordCommands();
 
-    CountMaterialsTask = std::make_shared<FCountMaterialsTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    CountMaterialsPerChunkTask = std::make_shared<FCountMaterialsPerChunkTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
 
-    CountMaterialsTask->Init();
-    CountMaterialsTask->UpdateDescriptorSets();
-    CountMaterialsTask->RecordCommands();
+    CountMaterialsPerChunkTask->Init();
+    CountMaterialsPerChunkTask->UpdateDescriptorSets();
+    CountMaterialsPerChunkTask->RecordCommands();
 
     ComputeOffsetsTask = std::make_shared<FComputeOffsetsTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
 
@@ -303,8 +303,8 @@ int FRender::Cleanup()
     ClearMaterialsCountTask = nullptr;
     ComputeOffsetsTask->Cleanup();
     ComputeOffsetsTask = nullptr;
-    CountMaterialsTask->Cleanup();
-    CountMaterialsTask = nullptr;
+    CountMaterialsPerChunkTask->Cleanup();
+    CountMaterialsPerChunkTask = nullptr;
     ShadeTask->Cleanup();
     ShadeTask = nullptr;
     AccumulateTask->Cleanup();
@@ -398,9 +398,9 @@ int FRender::Render()
 
     auto ClearMaterialCountSemaphore = ClearMaterialsCountTask->Submit(Context.GetComputeQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto CountMaterialsSemaphore = CountMaterialsTask->Submit(Context.GetComputeQueue(), ClearMaterialCountSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto CountMaterialsPerChunkSemaphore = CountMaterialsPerChunkTask->Submit(Context.GetComputeQueue(), ClearMaterialCountSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ComputeOffsetsSemaphore = ComputeOffsetsTask->Submit(Context.GetComputeQueue(), CountMaterialsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ComputeOffsetsSemaphore = ComputeOffsetsTask->Submit(Context.GetComputeQueue(), CountMaterialsPerChunkSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
     auto ShadeSignalSemaphore = ShadeTask->Submit(Context.GetComputeQueue(), ComputeOffsetsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
@@ -429,7 +429,7 @@ int FRender::Render()
     }
 
     Context.WaitIdle();
-    auto Buffer = Context.ResourceAllocator->GetBuffer("CountedMaterialsBuffer");
+    auto Buffer = Context.ResourceAllocator->GetBuffer("CountedMaterialsPerChunkBuffer");
     Context.SaveBufferUint(Buffer, TOTAL_MATERIALS, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), "Test.exr");
 
     RenderFrameIndex++;

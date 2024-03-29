@@ -2,11 +2,11 @@
 
 #include "executable_task.h"
 
-class FCountMaterialsTask : public FExecutableTask
+class FCountMaterialsPerChunkTask : public FExecutableTask
 {
 public:
-    FCountMaterialsTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
-    ~FCountMaterialsTask();
+    FCountMaterialsPerChunkTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+    ~FCountMaterialsPerChunkTask();
 
     void Init() override;
     void UpdateDescriptorSets() override;

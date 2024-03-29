@@ -5,12 +5,12 @@
 #include "common_defines.h"
 #include "common_structures.h"
 
-layout (set = MATERIAL_SORT_COUNT_MATERIALS_INDEX, binding = MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_INDEX_BUFFER) buffer MaterialIndexBufferObject
+layout (set = MATERIAL_SORT_COUNT_MATERIALS_PER_CHUNK_INDEX, binding = MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_INDEX_BUFFER) buffer MaterialIndexBufferObject
 {
     uint MaterialIndices[];
 };
 
-layout (set = MATERIAL_SORT_COUNT_MATERIALS_INDEX, binding = MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_COUNT_BUFFER) buffer MaterialCountBufferObject
+layout (set = MATERIAL_SORT_COUNT_MATERIALS_PER_CHUNK_INDEX, binding = MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_COUNT_BUFFER) buffer MaterialCountBufferObject
 {
     uint MaterialCount[];
 };

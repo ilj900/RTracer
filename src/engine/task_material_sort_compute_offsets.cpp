@@ -56,7 +56,7 @@ void FComputeOffsetsTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, MATERIAL_SORT_MATERIALS_COUNT_BUFFER, i, Context->ResourceAllocator->GetBuffer("CountedMaterialsBuffer"));
+        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, MATERIAL_SORT_MATERIALS_COUNT_BUFFER, i, Context->ResourceAllocator->GetBuffer("CountedMaterialsPerChunkBuffer"));
         UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, MATERIAL_SORT_MATERIAL_OFFSETS_BUFFER, i, Context->ResourceAllocator->GetBuffer("MaterialOffsetsBuffer"));
     }
 };
@@ -72,7 +72,7 @@ void FComputeOffsetsTask::RecordCommands()
             Context->TimingManager->TimestampStart(Name, CommandBuffer, i);
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
-            auto ComputeDescriptorSet = Context->DescriptorSetManager->GetSet(Name, MATERIAL_SORT_COUNT_MATERIALS_INDEX, i);
+            auto ComputeDescriptorSet = Context->DescriptorSetManager->GetSet(Name, MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, i);
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &ComputeDescriptorSet, 0, nullptr);
 

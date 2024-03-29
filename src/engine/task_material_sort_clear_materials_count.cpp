@@ -20,8 +20,8 @@ FClearMaterialsCountTask::FClearMaterialsCountTask(uint32_t WidthIn, uint32_t He
 
     DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
 
-    FBuffer CountedMaterialsBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "CountedMaterialsBuffer");
-    Context->ResourceAllocator->RegisterBuffer(CountedMaterialsBuffer, "CountedMaterialsBuffer");
+    FBuffer CountedMaterialsPerChunkBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "CountedMaterialsPerChunkBuffer");
+    Context->ResourceAllocator->RegisterBuffer(CountedMaterialsPerChunkBuffer, "CountedMaterialsPerChunkBuffer");
 
     CreateSyncObjects();
 }
@@ -29,7 +29,7 @@ FClearMaterialsCountTask::FClearMaterialsCountTask(uint32_t WidthIn, uint32_t He
 FClearMaterialsCountTask::~FClearMaterialsCountTask()
 {
     FreeSyncObjects();
-    Context->ResourceAllocator->UnregisterAndDestroyBuffer("CountedMaterialsBuffer");
+    Context->ResourceAllocator->UnregisterAndDestroyBuffer("CountedMaterialsPerChunkBuffer");
 }
 
 void FClearMaterialsCountTask::Init()
@@ -55,7 +55,7 @@ void FClearMaterialsCountTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        UpdateDescriptorSet(MATERIAL_SORT_CLEAR_MATERIALS_COUNT_LAYOUT_INDEX, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_BUFFER, i, Context->ResourceAllocator->GetBuffer("CountedMaterialsBuffer"));
+        UpdateDescriptorSet(MATERIAL_SORT_CLEAR_MATERIALS_COUNT_LAYOUT_INDEX, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_BUFFER, i, Context->ResourceAllocator->GetBuffer("CountedMaterialsPerChunkBuffer"));
     }
 };
 
@@ -70,7 +70,7 @@ void FClearMaterialsCountTask::RecordCommands()
             Context->TimingManager->TimestampStart(Name, CommandBuffer, i);
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
-            auto ComputeDescriptorSet = Context->DescriptorSetManager->GetSet(Name, MATERIAL_SORT_COUNT_MATERIALS_INDEX, i);
+            auto ComputeDescriptorSet = Context->DescriptorSetManager->GetSet(Name, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_LAYOUT_INDEX, i);
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &ComputeDescriptorSet, 0, nullptr);
 
@@ -79,7 +79,7 @@ void FClearMaterialsCountTask::RecordCommands()
             Context->TimingManager->TimestampEnd(Name, CommandBuffer, i);
         });
 
-        V::SetName(LogicalDevice, CommandBuffers[i], "V::MaterialSort_Count_Materials_Command_Buffer");
+        V::SetName(LogicalDevice, CommandBuffers[i], "V::MaterialSort_Clear_Materials_Count_Command_Buffer");
     }
 };
 
