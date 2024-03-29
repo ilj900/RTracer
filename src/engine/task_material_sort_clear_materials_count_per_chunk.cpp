@@ -18,7 +18,8 @@ FClearMaterialsCountPerChunkTask::FClearMaterialsCountPerChunkTask(uint32_t Widt
     DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_PER_CHUNK_LAYOUT_INDEX, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_PER_CHUNK_BUFFER,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
-    DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
+    VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t)};
+    DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
     FBuffer CountedMaterialsPerChunkBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "CountedMaterialsPerChunkBuffer");
     Context->ResourceAllocator->RegisterBuffer(CountedMaterialsPerChunkBuffer, "CountedMaterialsPerChunkBuffer");
@@ -74,7 +75,10 @@ void FClearMaterialsCountPerChunkTask::RecordCommands()
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &ComputeDescriptorSet, 0, nullptr);
 
-            vkCmdDispatch(CommandBuffer, 1, 1, 1);
+            uint32_t PushConstant = Width * Height;
+            vkCmdPushConstants(CommandBuffer, Context->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &PushConstant);
+
+            vkCmdDispatch(CommandBuffer, CalculateGroupCount(PushConstant, BASIC_CHUNK_SIZE), 1, 1);
 
             Context->TimingManager->TimestampEnd(Name, CommandBuffer, i);
         });

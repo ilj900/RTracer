@@ -23,5 +23,5 @@ void main()
         return;
     }
 
-    MaterialCount[gl_GlobalInvocationID.x] = 0;
+    MaterialCountPerChunk[gl_GlobalInvocationID.x] = 0;
 }
