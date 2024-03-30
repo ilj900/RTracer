@@ -1,27 +1,38 @@
 #version 460
 
-#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
-
 #include "common_defines.h"
 
-layout (set = MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, binding = MATERIAL_SORT_MATERIALS_COUNT_BUFFER) buffer MaterialsCountBufferObject
+layout (set = MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, binding = MATERIAL_SORT_MATERIALS_COUNT_PER_CHUNK_BUFFER) buffer MaterialsCountPerChunkBufferObject
 {
-    uint MaterialsCount[TOTAL_MATERIALS];
+    uint MaterialsCountPerChunk[];
 };
 
-layout (set = MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, binding = MATERIAL_SORT_MATERIAL_OFFSETS_BUFFER) buffer MaterialsOffsetsBufferObject
+layout (set = MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, binding = MATERIAL_SORT_TOTAL_MATERIAL_OFFSETS_BUFFER) buffer MaterialsOffsetsBufferObject
 {
-    uint MaterialOffsets[TOTAL_MATERIALS];
+    uint MaterialOffsets[];
 };
 
-layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+layout (push_constant) uniform PushConstantsBlock
+{
+    uint GroupCount;
+};
+
+layout (local_size_x = TOTAL_MATERIALS, local_size_y = 1, local_size_z = 1) in;
 
 void main()
 {
-    MaterialOffsets[0u] = 0u;
+    uint MaterialIndex = gl_GlobalInvocationID.x;
 
-    for (uint i = 1u; i < TOTAL_MATERIALS; ++i)
+/// TODO: Perhapse redundutch check...
+    if (MaterialIndex >= TOTAL_MATERIALS)
     {
-        MaterialOffsets[i] = MaterialOffsets[i - 1u] + MaterialsCount[i - 1u];
+        return;
+    }
+
+    MaterialOffsets[MaterialIndex] = 0u;
+
+    for (uint i = 1u; i < GroupCount; ++i)
+    {
+        MaterialOffsets[MaterialIndex] = MaterialOffsets[MaterialIndex] + MaterialsCountPerChunk[MaterialIndex + (i * TOTAL_MATERIALS)];
     }
 }

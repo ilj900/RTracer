@@ -2,6 +2,7 @@
 #include "vk_debug.h"
 #include "vk_functions.h"
 #include "common_defines.h"
+#include "utils.h"
 
 #include "vk_shader_compiler.h"
 
@@ -14,15 +15,13 @@ FComputeOffsetsTask::FComputeOffsetsTask(uint32_t WidthIn, uint32_t HeightIn, FV
 
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
-    DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, MATERIAL_SORT_MATERIALS_COUNT_BUFFER,
+    DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, MATERIAL_SORT_MATERIALS_COUNT_PER_CHUNK_BUFFER,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
-    DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, MATERIAL_SORT_MATERIAL_OFFSETS_BUFFER,
+    DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, MATERIAL_SORT_TOTAL_MATERIAL_OFFSETS_BUFFER,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
-    DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
-
-    FBuffer MaterialOffsetsBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialOffsetsBuffer");
-    Context->ResourceAllocator->RegisterBuffer(MaterialOffsetsBuffer, "MaterialOffsetsBuffer");
+    VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t)};
+    DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
     CreateSyncObjects();
 }
@@ -30,7 +29,6 @@ FComputeOffsetsTask::FComputeOffsetsTask(uint32_t WidthIn, uint32_t HeightIn, FV
 FComputeOffsetsTask::~FComputeOffsetsTask()
 {
     FreeSyncObjects();
-    Context->ResourceAllocator->UnregisterAndDestroyBuffer("MaterialOffsetsBuffer");
 }
 
 void FComputeOffsetsTask::Init()
@@ -56,8 +54,8 @@ void FComputeOffsetsTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, MATERIAL_SORT_MATERIALS_COUNT_BUFFER, i, Context->ResourceAllocator->GetBuffer("CountedMaterialsPerChunkBuffer"));
-        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, MATERIAL_SORT_MATERIAL_OFFSETS_BUFFER, i, Context->ResourceAllocator->GetBuffer("MaterialOffsetsBuffer"));
+        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, MATERIAL_SORT_MATERIALS_COUNT_PER_CHUNK_BUFFER, i, Context->ResourceAllocator->GetBuffer("CountedMaterialsPerChunkBuffer"));
+        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, MATERIAL_SORT_TOTAL_MATERIAL_OFFSETS_BUFFER, i, Context->ResourceAllocator->GetBuffer("TotalCountedMaterialsBuffer"));
     }
 };
 
@@ -75,6 +73,9 @@ void FComputeOffsetsTask::RecordCommands()
             auto ComputeDescriptorSet = Context->DescriptorSetManager->GetSet(Name, MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, i);
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &ComputeDescriptorSet, 0, nullptr);
+
+            uint32_t GroupCount = CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE);
+            vkCmdPushConstants(CommandBuffer, Context->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &GroupCount);
 
             vkCmdDispatch(CommandBuffer, 1, 1, 1);
 

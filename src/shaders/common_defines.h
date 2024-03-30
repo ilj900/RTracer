@@ -76,10 +76,10 @@
 
 #define MATERIAL_SORT_CLEAR_TOTAL_MATERIALS_COUNT_BUFFER 0
 
-/// Task material sort clear materials count set layout defines
+/// Task material sort compute offsets set layout defines
 #define MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX 0
 
-#define MATERIAL_SORT_MATERIALS_COUNT_BUFFER 0
-#define MATERIAL_SORT_MATERIAL_OFFSETS_BUFFER 1
+#define MATERIAL_SORT_MATERIALS_COUNT_PER_CHUNK_BUFFER 0
+#define MATERIAL_SORT_TOTAL_MATERIAL_OFFSETS_BUFFER 1
 
 #endif // COMMON_DEFINES_H
