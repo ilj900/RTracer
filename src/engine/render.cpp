@@ -402,9 +402,9 @@ int FRender::Render()
 
     auto GenerateRaysSemaphore = GenerateRaysTask->Submit(Context.GetComputeQueue(), ImageAvailableSemaphores[CurrentFrame], ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
 
-    auto RenderSignalSemaphore = RayTraceTask->Submit(Context.GetGraphicsQueue(), GenerateRaysSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto RayTraceSignalSemaphore = RayTraceTask->Submit(Context.GetGraphicsQueue(), GenerateRaysSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ClearMaterialsCountPerChunkSemaphore = ClearMaterialsCountPerChunkTask->Submit(Context.GetComputeQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ClearMaterialsCountPerChunkSemaphore = ClearMaterialsCountPerChunkTask->Submit(Context.GetComputeQueue(), RayTraceSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
     auto ClearTotalMaterialsCountSemaphore = ClearTotalMaterialsCountTask->Submit(Context.GetComputeQueue(), ClearMaterialsCountPerChunkSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
@@ -441,6 +441,8 @@ int FRender::Render()
     Context.WaitIdle();
     auto CountedMaterialsPerChunkBuffer = Context.ResourceAllocator->GetBuffer("CountedMaterialsPerChunkBuffer");
     Context.SaveBufferUint(CountedMaterialsPerChunkBuffer, TOTAL_MATERIALS, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), "CountedMaterialsPerChunkBuffer.exr");
+    auto MaterialsOffsetsPerChunkBuffer = Context.ResourceAllocator->GetBuffer("MaterialsOffsetsPerChunkBuffer");
+    Context.SaveBufferUint(MaterialsOffsetsPerChunkBuffer, TOTAL_MATERIALS, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), "MaterialsOffsetsPerChunkBuffer.exr");
     auto TotalCountedMaterialsBuffer = Context.ResourceAllocator->GetBuffer("TotalCountedMaterialsBuffer");
     Context.SaveBufferUint(TotalCountedMaterialsBuffer, TOTAL_MATERIALS, 1, "TotalCountedMaterialsBuffer.exr");
 

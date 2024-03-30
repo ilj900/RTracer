@@ -12,9 +12,14 @@ layout (set = MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, binding = MATERIAL_SOR
     uint MaterialOffsets[];
 };
 
+layout (set = MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, binding = MATERIAL_SORT_MATERIALS_OFFSETS_PER_CHUNK_BUFFER) buffer MaterialsOffsetsPerChunkBufferObject
+{
+    uint MaterialsOffsetsPerChunk[];
+};
+
 layout (push_constant) uniform PushConstantsBlock
 {
-    uint GroupCount;
+    uint ChunkIndex;
 };
 
 layout (local_size_x = TOTAL_MATERIALS, local_size_y = 1, local_size_z = 1) in;
@@ -23,16 +28,15 @@ void main()
 {
     uint MaterialIndex = gl_GlobalInvocationID.x;
 
-/// TODO: Perhapse redundutch check...
-    if (MaterialIndex >= TOTAL_MATERIALS)
+    if (ChunkIndex == 0)
     {
-        return;
+        MaterialsOffsetsPerChunk[MaterialIndex] = 0u;
+    }
+    else
+    {
+        uint PreviousChunk = ChunkIndex - 1;
+        MaterialsOffsetsPerChunk[(ChunkIndex * TOTAL_MATERIALS) + MaterialIndex] = MaterialsOffsetsPerChunk[(PreviousChunk * TOTAL_MATERIALS) + MaterialIndex] + MaterialsCountPerChunk[(PreviousChunk * TOTAL_MATERIALS) + MaterialIndex];
     }
 
-    MaterialOffsets[MaterialIndex] = 0u;
-
-    for (uint i = 1u; i < GroupCount; ++i)
-    {
-        MaterialOffsets[MaterialIndex] = MaterialOffsets[MaterialIndex] + MaterialsCountPerChunk[MaterialIndex + (i * TOTAL_MATERIALS)];
-    }
+    MaterialOffsets[MaterialIndex] += MaterialsCountPerChunk[(ChunkIndex * TOTAL_MATERIALS) + MaterialIndex];
 }
