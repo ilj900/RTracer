@@ -43,6 +43,7 @@ set(INCLUDE
         task_clear_image.h
         task_imgui.h
         task_material_sort_clear_materials_count_per_chunk.h
+        task_material_sort_clear_total_materials_count.h
         task_material_sort_compute_offsets.h
         task_material_sort_count_materials_per_chunk.h
         task_passthrough.h
@@ -58,6 +59,7 @@ set(SOURCE
         task_passthrough.cpp
         task_imgui.cpp
         task_material_sort_clear_materials_count_per_chunk.cpp
+        task_material_sort_clear_total_materials_count.cpp
         task_material_sort_compute_offsets.cpp
         task_material_sort_count_materials_per_chunk.cpp
         task_raytrace.cpp

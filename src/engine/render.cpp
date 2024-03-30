@@ -235,6 +235,12 @@ int FRender::Init()
     ClearMaterialsCountPerChunkTask->UpdateDescriptorSets();
     ClearMaterialsCountPerChunkTask->RecordCommands();
 
+    ClearTotalMaterialsCountTask = std::make_shared<FClearTotalMaterialsCountTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+
+    ClearTotalMaterialsCountTask->Init();
+    ClearTotalMaterialsCountTask->UpdateDescriptorSets();
+    ClearTotalMaterialsCountTask->RecordCommands();
+
     CountMaterialsPerChunkTask = std::make_shared<FCountMaterialsPerChunkTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
 
     CountMaterialsPerChunkTask->Init();
@@ -398,7 +404,9 @@ int FRender::Render()
 
     auto ClearMaterialsCountPerChunkSemaphore = ClearMaterialsCountPerChunkTask->Submit(Context.GetComputeQueue(), RenderSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto CountMaterialsPerChunkSemaphore = CountMaterialsPerChunkTask->Submit(Context.GetComputeQueue(), ClearMaterialsCountPerChunkSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ClearTotalMaterialsCountSemaphore = ClearTotalMaterialsCountTask->Submit(Context.GetComputeQueue(), ClearMaterialsCountPerChunkSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+
+    auto CountMaterialsPerChunkSemaphore = CountMaterialsPerChunkTask->Submit(Context.GetComputeQueue(), ClearTotalMaterialsCountSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
     auto ComputeOffsetsSemaphore = ComputeOffsetsTask->Submit(Context.GetComputeQueue(), CountMaterialsPerChunkSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
@@ -429,8 +437,10 @@ int FRender::Render()
     }
 
     Context.WaitIdle();
-    auto Buffer = Context.ResourceAllocator->GetBuffer("CountedMaterialsPerChunkBuffer");
-    Context.SaveBufferUint(Buffer, TOTAL_MATERIALS, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), "Test.exr");
+    auto CountedMaterialsPerChunkBuffer = Context.ResourceAllocator->GetBuffer("CountedMaterialsPerChunkBuffer");
+    Context.SaveBufferUint(CountedMaterialsPerChunkBuffer, TOTAL_MATERIALS, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), "CountedMaterialsPerChunkBuffer.exr");
+    auto TotalCountedMaterialsBuffer = Context.ResourceAllocator->GetBuffer("TotalCountedMaterialsBuffer");
+    Context.SaveBufferUint(TotalCountedMaterialsBuffer, TOTAL_MATERIALS, 1, "TotalCountedMaterialsBuffer.exr");
 
     RenderFrameIndex++;
 

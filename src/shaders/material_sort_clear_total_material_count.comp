@@ -1,0 +1,16 @@
+#version 460
+
+#include "common_defines.h"
+
+layout (set = MATERIAL_SORT_CLEAR_TOTAL_MATERIALS_COUNT_LAYOUT_INDEX, binding = MATERIAL_SORT_CLEAR_TOTAL_MATERIALS_COUNT_BUFFER) buffer TotalMaterialCountBufferObject
+{
+    uint TotalMaterialCount[];
+};
+
+layout (local_size_x = TOTAL_MATERIALS, local_size_y = 1, local_size_z = 1) in;
+
+/// Here we reset total material count
+void main()
+{
+    TotalMaterialCount[gl_GlobalInvocationID.x] = 0;
+}
