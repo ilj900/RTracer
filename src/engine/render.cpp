@@ -307,6 +307,8 @@ int FRender::Cleanup()
     RayTraceTask = nullptr;
     ClearMaterialsCountPerChunkTask->Cleanup();
     ClearMaterialsCountPerChunkTask = nullptr;
+    ClearTotalMaterialsCountTask->Cleanup();
+    ClearTotalMaterialsCountTask = nullptr;
     ComputeOffsetsTask->Cleanup();
     ComputeOffsetsTask = nullptr;
     CountMaterialsPerChunkTask->Cleanup();
