@@ -259,6 +259,12 @@ int FRender::Init()
     ComputeOffsetsPerMaterialTask->UpdateDescriptorSets();
     ComputeOffsetsPerMaterialTask->RecordCommands();
 
+    SortMaterialsTask = std::make_shared<FSortMaterialsTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+
+    SortMaterialsTask->Init();
+    SortMaterialsTask->UpdateDescriptorSets();
+    SortMaterialsTask->RecordCommands();
+
     ShadeTask = std::make_shared<FShadeTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     ShadeTask->RegisterInput(0, RTColorImage);
     SetIBL("../../../resources/brown_photostudio_02_4k.exr");
@@ -321,6 +327,8 @@ int FRender::Cleanup()
     ComputeOffsetsPerMaterialTask = nullptr;
     CountMaterialsPerChunkTask->Cleanup();
     CountMaterialsPerChunkTask = nullptr;
+    SortMaterialsTask->Cleanup();
+    SortMaterialsTask = nullptr;
     ShadeTask->Cleanup();
     ShadeTask = nullptr;
     AccumulateTask->Cleanup();
@@ -422,7 +430,9 @@ int FRender::Render()
 
     auto ComputeOffsetsPerMaterialSemaphore = ComputeOffsetsPerMaterialTask->Submit(Context.GetComputeQueue(), ComputeOffsetsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ShadeSignalSemaphore = ShadeTask->Submit(Context.GetComputeQueue(), ComputeOffsetsPerMaterialSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto SortMaterialsSemaphore = SortMaterialsTask->Submit(Context.GetComputeQueue(), ComputeOffsetsPerMaterialSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+
+    auto ShadeSignalSemaphore = ShadeTask->Submit(Context.GetComputeQueue(), SortMaterialsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
     VkSemaphore AccumulateSignalSemaphore = VK_NULL_HANDLE;
 
@@ -448,15 +458,17 @@ int FRender::Render()
         return 1;
     }
 
-    Context.WaitIdle();
-    auto CountedMaterialsPerChunkBuffer = Context.ResourceAllocator->GetBuffer("CountedMaterialsPerChunkBuffer");
-    Context.SaveBufferUint(CountedMaterialsPerChunkBuffer, TOTAL_MATERIALS, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), "CountedMaterialsPerChunkBuffer.exr");
-    auto MaterialsOffsetsPerChunkBuffer = Context.ResourceAllocator->GetBuffer("MaterialsOffsetsPerChunkBuffer");
-    Context.SaveBufferUint(MaterialsOffsetsPerChunkBuffer, TOTAL_MATERIALS, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), "MaterialsOffsetsPerChunkBuffer.exr");
-    auto TotalCountedMaterialsBuffer = Context.ResourceAllocator->GetBuffer("TotalCountedMaterialsBuffer");
-    Context.SaveBufferUint(TotalCountedMaterialsBuffer, TOTAL_MATERIALS, 1, "TotalCountedMaterialsBuffer.exr");
-    auto MaterialsOffsetsPerMaterialBuffer = Context.ResourceAllocator->GetBuffer("MaterialsOffsetsPerMaterialBuffer");
-    Context.SaveBufferUint(MaterialsOffsetsPerMaterialBuffer, TOTAL_MATERIALS, 1, "MaterialsOffsetsPerMaterialBuffer.exr");
+//    Context.WaitIdle();
+//    auto CountedMaterialsPerChunkBuffer = Context.ResourceAllocator->GetBuffer("CountedMaterialsPerChunkBuffer");
+//    Context.SaveBufferUint(CountedMaterialsPerChunkBuffer, TOTAL_MATERIALS, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), "CountedMaterialsPerChunkBuffer.exr");
+//    auto MaterialsOffsetsPerChunkBuffer = Context.ResourceAllocator->GetBuffer("MaterialsOffsetsPerChunkBuffer");
+//    Context.SaveBufferUint(MaterialsOffsetsPerChunkBuffer, TOTAL_MATERIALS, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), "MaterialsOffsetsPerChunkBuffer.exr");
+//    auto TotalCountedMaterialsBuffer = Context.ResourceAllocator->GetBuffer("TotalCountedMaterialsBuffer");
+//    Context.SaveBufferUint(TotalCountedMaterialsBuffer, TOTAL_MATERIALS, 1, "TotalCountedMaterialsBuffer.exr");
+//    auto MaterialsOffsetsPerMaterialBuffer = Context.ResourceAllocator->GetBuffer("MaterialsOffsetsPerMaterialBuffer");
+//    Context.SaveBufferUint(MaterialsOffsetsPerMaterialBuffer, TOTAL_MATERIALS, 1, "MaterialsOffsetsPerMaterialBuffer.exr");
+//    auto SortedMaterialsIndexMapBuffer = Context.ResourceAllocator->GetBuffer("SortedMaterialsIndexMapBuffer");
+//    Context.SaveBufferUint(SortedMaterialsIndexMapBuffer, Width, Height, "SortedMaterialsIndexMapBuffer.exr");
 
     RenderFrameIndex++;
 

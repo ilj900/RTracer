@@ -13,5 +13,5 @@ void main()
     Hit.RenderableIndex = UINT_MAX;
     Hit.PrimitiveIndex = UINT_MAX;
     Hit.HitUV = vec2(0);
-    Hit.MaterialIndex = UINT_MAX;
+    Hit.MaterialIndex = TOTAL_MATERIALS - 1;
 }

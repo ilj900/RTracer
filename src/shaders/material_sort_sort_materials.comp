@@ -1,0 +1,50 @@
+#version 460
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+#include "common_defines.h"
+#include "common_structures.h"
+
+layout (set = MATERIAL_SORT_SORT_MATERIALS_LAYOUT_INDEX, binding = MATERIAL_SORT_SORT_MATERIALS_MATERIALS_OFFSETS_PER_CHUNK_BUFFER) buffer MaterialsOffsetsPerChunkBufferObject
+{
+    uint MaterialsOffsetsPerChunk[];
+};
+
+layout (set = MATERIAL_SORT_SORT_MATERIALS_LAYOUT_INDEX, binding = MATERIAL_SORT_SORT_MATERIALS_MATERIAL_OFFSETS_PER_MATERIAL_BUFFER) buffer MaterialsOffsetsPerMaterialBufferObject
+{
+    uint MaterialsOffsetsPerMaterial[];
+};
+
+layout (set = MATERIAL_SORT_SORT_MATERIALS_LAYOUT_INDEX, binding = MATERIAL_SORT_SORT_MATERIALS_UNSORTED_MATERIALS_BUFFER) buffer UnsortedMaterialsBufferObject
+{
+    uint UnsortedMaterials[];
+};
+
+layout (set = MATERIAL_SORT_SORT_MATERIALS_LAYOUT_INDEX, binding = MATERIAL_SORT_SORT_MATERIALS_SORTED_MATERIALS_INDEX_MAP_BUFFER) buffer SortedMaterialsIndexMapBufferObject
+{
+    uint SortedMaterialsIndexMap[];
+};
+
+layout (push_constant) uniform PushConstantsBlock
+{
+    FPushConstants PushConstants;
+};
+
+layout (local_size_x = BASIC_CHUNK_SIZE, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    uint PixelIndex = gl_GlobalInvocationID.x;
+    uint ChunkIndex = PixelIndex / BASIC_CHUNK_SIZE;
+
+    uint TotalSize = PushConstants.Width * PushConstants.Height;
+    if (PixelIndex >= TotalSize)
+    {
+        return;
+    }
+
+    uint OriginalMaterialIndex = UnsortedMaterials[PixelIndex];
+    uint NewRelativeIndex = atomicAdd(MaterialsOffsetsPerChunk[ChunkIndex * TOTAL_MATERIALS + OriginalMaterialIndex], 1);
+    uint NewRayIndex = MaterialsOffsetsPerMaterial[OriginalMaterialIndex] + NewRelativeIndex;
+    SortedMaterialsIndexMap[PixelIndex] = NewRayIndex;
+}
