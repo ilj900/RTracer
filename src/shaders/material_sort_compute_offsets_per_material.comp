@@ -1,0 +1,27 @@
+#version 460
+
+#include "common_defines.h"
+
+layout (set = MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_LAYOUT_INDEX, binding = MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_TOTAL_MATERIAL_COUNT_BUFFER) buffer TotalMaterialCountBufferObject
+{
+    uint TotalMaterialCount[];
+};
+
+layout (set = MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_LAYOUT_INDEX, binding = MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_MATERIAL_OFFSETS_BUFFER) buffer MaterialOffsetsBufferObject
+{
+    uint MaterialOffsets[];
+};
+
+layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    uint MaterialIndex = gl_GlobalInvocationID.x;
+
+    MaterialOffsets[0] = 0u;
+
+    for (uint i = 1u; i < TOTAL_MATERIALS; ++i)
+    {
+        MaterialOffsets[i] = MaterialOffsets[i - 1u] + TotalMaterialCount[i - 1u];
+    }
+}

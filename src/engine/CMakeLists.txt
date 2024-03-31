@@ -45,6 +45,7 @@ set(INCLUDE
         task_material_sort_clear_materials_count_per_chunk.h
         task_material_sort_clear_total_materials_count.h
         task_material_sort_compute_offsets.h
+        task_material_sort_compute_offsets_per_material.h
         task_material_sort_count_materials_per_chunk.h
         task_passthrough.h
         task_raytrace.h
@@ -61,6 +62,7 @@ set(SOURCE
         task_material_sort_clear_materials_count_per_chunk.cpp
         task_material_sort_clear_total_materials_count.cpp
         task_material_sort_compute_offsets.cpp
+        task_material_sort_compute_offsets_per_material.cpp
         task_material_sort_count_materials_per_chunk.cpp
         task_raytrace.cpp
         task_accumulate.cpp

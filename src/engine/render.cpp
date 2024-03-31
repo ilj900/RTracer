@@ -253,6 +253,12 @@ int FRender::Init()
     ComputeOffsetsTask->UpdateDescriptorSets();
     ComputeOffsetsTask->RecordCommands();
 
+    ComputeOffsetsPerMaterialTask = std::make_shared<FComputeOffsetsPerMaterialTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+
+    ComputeOffsetsPerMaterialTask->Init();
+    ComputeOffsetsPerMaterialTask->UpdateDescriptorSets();
+    ComputeOffsetsPerMaterialTask->RecordCommands();
+
     ShadeTask = std::make_shared<FShadeTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     ShadeTask->RegisterInput(0, RTColorImage);
     SetIBL("../../../resources/brown_photostudio_02_4k.exr");
@@ -311,6 +317,8 @@ int FRender::Cleanup()
     ClearTotalMaterialsCountTask = nullptr;
     ComputeOffsetsTask->Cleanup();
     ComputeOffsetsTask = nullptr;
+    ComputeOffsetsPerMaterialTask->Cleanup();
+    ComputeOffsetsPerMaterialTask = nullptr;
     CountMaterialsPerChunkTask->Cleanup();
     CountMaterialsPerChunkTask = nullptr;
     ShadeTask->Cleanup();
@@ -412,7 +420,9 @@ int FRender::Render()
 
     auto ComputeOffsetsSemaphore = ComputeOffsetsTask->Submit(Context.GetComputeQueue(), CountMaterialsPerChunkSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ShadeSignalSemaphore = ShadeTask->Submit(Context.GetComputeQueue(), ComputeOffsetsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ComputeOffsetsPerMaterialSemaphore = ComputeOffsetsPerMaterialTask->Submit(Context.GetComputeQueue(), ComputeOffsetsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+
+    auto ShadeSignalSemaphore = ShadeTask->Submit(Context.GetComputeQueue(), ComputeOffsetsPerMaterialSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
     VkSemaphore AccumulateSignalSemaphore = VK_NULL_HANDLE;
 
@@ -445,6 +455,8 @@ int FRender::Render()
     Context.SaveBufferUint(MaterialsOffsetsPerChunkBuffer, TOTAL_MATERIALS, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), "MaterialsOffsetsPerChunkBuffer.exr");
     auto TotalCountedMaterialsBuffer = Context.ResourceAllocator->GetBuffer("TotalCountedMaterialsBuffer");
     Context.SaveBufferUint(TotalCountedMaterialsBuffer, TOTAL_MATERIALS, 1, "TotalCountedMaterialsBuffer.exr");
+    auto MaterialsOffsetsPerMaterialBuffer = Context.ResourceAllocator->GetBuffer("MaterialsOffsetsPerMaterialBuffer");
+    Context.SaveBufferUint(MaterialsOffsetsPerMaterialBuffer, TOTAL_MATERIALS, 1, "MaterialsOffsetsPerMaterialBuffer.exr");
 
     RenderFrameIndex++;
 
