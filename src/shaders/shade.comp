@@ -46,6 +46,11 @@ layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_LIGHTS_BUFFER_INDE
     FLight Lights[];
 };
 
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_MATERIAL_INDEX_MAP) buffer MaterialIndexBufferObject
+{
+    uint MaterialsIndexMap[];
+};
+
 layout (buffer_reference, scalar) buffer Vertices
 {
     FVertex V[];
@@ -112,22 +117,24 @@ layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 void main()
 {
-    uint PixelIndex = gl_GlobalInvocationID.y * PushConstants.Width + gl_GlobalInvocationID.x;
+    uint OriginalPixelIndex = gl_GlobalInvocationID.y * PushConstants.Width + gl_GlobalInvocationID.x;
+    uint NewPixelIndex = MaterialsIndexMap[OriginalPixelIndex];
+    uvec2 NewPixelCoords = uvec2(NewPixelIndex % PushConstants.Width, NewPixelIndex / PushConstants.Width);
 
-    FHit Hit = FetchHit(PixelIndex);
+    FHit Hit = FetchHit(NewPixelIndex);
     FRenderable Renderable = FetchRenderable(Hit.RenderableIndex);
     FMaterial Material = FetchMaterial(Renderable.MaterialIndex);
 
     if (Hit.RenderableIndex == UINT_MAX)
     {
-        vec3 NormalizedDirection = FetchRayData(PixelIndex).Direction.xyz;
+        vec3 NormalizedDirection = FetchRayData(NewPixelIndex).Direction.xyz;
         float Tmp = atan(NormalizedDirection.z, NormalizedDirection.x);
         float Phi = Tmp < 0.f ? (Tmp + (2 * 3.14159265357)) : Tmp;
         float Theta = acos(NormalizedDirection.y);
         Phi /= 2.f * 3.14159265357;
         Theta /= 3.14159265357;
 
-        imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(vec3(texture(IBITextureSampler, vec2(Phi, Theta))), 1.f));
+        imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(vec3(texture(IBITextureSampler, vec2(Phi, Theta))), 1.f));
 
         return;
     }
@@ -186,5 +193,5 @@ void main()
 
     vec3 ColorOut = texture(sampler2D(Textures[Renderable.MaterialIndex], Sampler), TextureCoords).rgb;
 
-    imageStore(OutcomingImage, ivec2(gl_GlobalInvocationID.xy), vec4(ColorOut, 1.f));
+    imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(ColorOut, 1.f));
 }
