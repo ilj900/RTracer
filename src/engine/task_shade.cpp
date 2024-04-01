@@ -141,7 +141,7 @@ void FShadeTask::RecordCommands()
                 vkCmdDispatchIndirect(CommandBuffer, DispatchBuffer.Buffer, MaterialIndex * 3 * sizeof(uint32_t));
             }
 
-            /// For miss
+            /// For miss cases
             {
                 uint32_t MaterialIndex = TOTAL_MATERIALS - 1;
                 FPushConstants PushConstants = {Width, Height, 1.f / Width, 1.f / Height, Width * Height,
