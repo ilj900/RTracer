@@ -2,13 +2,11 @@
 
 #include "mesh_component.h"
 #include "device_mesh_component.h"
-#include "device_transform_component.h"
 #include "device_renderable_component.h"
 #include "acceleration_structure_component.h"
 #include "mesh_system.h"
 #include "renderable_system.h"
-#include "coordinator.h"
-#include "vk_context.h"
+
 
 namespace ECS
 {

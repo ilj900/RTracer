@@ -4,6 +4,7 @@
 #include "common_defines.h"
 #include "common_structures.h"
 
+#include "components/material_component.h"
 #include "systems/material_system.h"
 #include "systems/renderable_system.h"
 #include "systems/transform_system.h"
@@ -47,6 +48,8 @@ FShadeTask::FShadeTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Cont
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_MATERIAL_INDEX_MAP,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_MATERIAL_INDEX_AOV_MAP,
+                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
+    DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_MATERIALS_OFFSETS,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
     VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants)};
@@ -108,6 +111,7 @@ void FShadeTask::UpdateDescriptorSets()
         UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_LIGHTS_BUFFER_INDEX, i, LIGHT_SYSTEM()->DeviceBuffer);
         UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_MATERIAL_INDEX_MAP, i, Context->ResourceAllocator->GetBuffer("SortedMaterialsIndexMapBuffer"));
         UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_MATERIAL_INDEX_AOV_MAP, i, Context->ResourceAllocator->GetBuffer("MaterialIndicesAOVBuffer"));
+        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, RAYTRACE_SHADE_MATERIALS_OFFSETS, i, Context->ResourceAllocator->GetBuffer("MaterialsOffsetsPerMaterialBuffer"));
     }
 };
 
@@ -126,10 +130,27 @@ void FShadeTask::RecordCommands()
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &RayTracingDescriptorSet, 0, nullptr);
 
-            FPushConstants PushConstants = {Width, Height, 1.f / Width, 1.f / Height, Width * Height, 0};
-            vkCmdPushConstants(CommandBuffer, Context->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
+            auto DispatchBuffer = Context->ResourceAllocator->GetBuffer("TotalCountedMaterialsBuffer");
 
-            vkCmdDispatch(CommandBuffer, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), 1, 1);
+            for (auto& Material : *MATERIAL_SYSTEM())
+            {
+                uint32_t MaterialIndex = ECS::GetCoordinator().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
+                FPushConstants PushConstants = {Width, Height, 1.f / Width, 1.f / Height, Width * Height, MaterialIndex};
+                vkCmdPushConstants(CommandBuffer, Context->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
+
+                vkCmdDispatchIndirect(CommandBuffer, DispatchBuffer.Buffer, MaterialIndex * 3 * sizeof(uint32_t));
+            }
+
+            /// For miss
+            {
+                uint32_t MaterialIndex = TOTAL_MATERIALS - 1;
+                FPushConstants PushConstants = {Width, Height, 1.f / Width, 1.f / Height, Width * Height,
+                                                MaterialIndex};
+                vkCmdPushConstants(CommandBuffer, Context->DescriptorSetManager->GetPipelineLayout(Name),
+                                   VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
+
+                vkCmdDispatchIndirect(CommandBuffer, DispatchBuffer.Buffer, MaterialIndex * 3 * sizeof(uint32_t));
+            }
 
             Context->TimingManager->TimestampEnd(Name, CommandBuffer, i);
         });

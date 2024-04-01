@@ -56,6 +56,11 @@ layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_MATERIAL_INDE
     uint MaterialsIndexAOV[];
 };
 
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_MATERIALS_OFFSETS) buffer MaterialsOffsetsBufferObject
+{
+    uint MaterialsOffsets[];
+};
+
 layout (buffer_reference, scalar) buffer Vertices
 {
     FVertex V[];
@@ -122,7 +127,7 @@ layout (local_size_x = BASIC_CHUNK_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 void main()
 {
-    uint OriginalPixelIndex = gl_GlobalInvocationID.x;
+    uint OriginalPixelIndex = MaterialsOffsets[PushConstants.MaterialIndex] + gl_GlobalInvocationID.x;
 
     if (OriginalPixelIndex >= PushConstants.TotalSize)
     {
@@ -144,7 +149,7 @@ void main()
 
     FMaterial Material = FetchMaterial(MaterialIndex);
 
-    if (Hit.RenderableIndex == UINT_MAX)
+    if (MaterialIndex == (TOTAL_MATERIALS - 1))
     {
         vec3 NormalizedDirection = FetchRayData(NewPixelIndex).Direction.xyz;
         float Tmp = atan(NormalizedDirection.z, NormalizedDirection.x);
