@@ -12,5 +12,7 @@ layout (local_size_x = TOTAL_MATERIALS, local_size_y = 1, local_size_z = 1) in;
 /// Here we reset total material count
 void main()
 {
-    TotalMaterialCount[gl_GlobalInvocationID.x] = 0;
+    TotalMaterialCount[gl_GlobalInvocationID.x * 3] = 0;
+    TotalMaterialCount[gl_GlobalInvocationID.x * 3 + 1] = 1;
+    TotalMaterialCount[gl_GlobalInvocationID.x * 3 + 2] = 1;
 }

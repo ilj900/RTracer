@@ -22,6 +22,6 @@ void main()
 
     for (uint i = 1u; i < TOTAL_MATERIALS; ++i)
     {
-        MaterialOffsets[i] = MaterialOffsets[i - 1u] + TotalMaterialCount[i - 1u];
+        MaterialOffsets[i] = MaterialOffsets[i - 1u] + TotalMaterialCount[(i - 1u) * 3];
     }
 }

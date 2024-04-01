@@ -38,5 +38,5 @@ void main()
         MaterialsOffsetsPerChunk[(ChunkIndex * TOTAL_MATERIALS) + MaterialIndex] = MaterialsOffsetsPerChunk[(PreviousChunk * TOTAL_MATERIALS) + MaterialIndex] + MaterialsCountPerChunk[(PreviousChunk * TOTAL_MATERIALS) + MaterialIndex];
     }
 
-    MaterialOffsets[MaterialIndex] += MaterialsCountPerChunk[(ChunkIndex * TOTAL_MATERIALS) + MaterialIndex];
+    MaterialOffsets[MaterialIndex * 3] += MaterialsCountPerChunk[(ChunkIndex * TOTAL_MATERIALS) + MaterialIndex];
 }
