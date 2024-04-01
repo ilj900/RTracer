@@ -10,53 +10,53 @@
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_OUTPUT_IMAGE_INDEX, rgba32f) uniform image2D OutcomingImage;
 
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_MATERIAL_BUFFER_INDEX) buffer MaterialsBufferObject
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_MATERIAL_BUFFER_INDEX) buffer MaterialsBufferObject
 {
     FMaterial Materials[];
 };
 
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_RENDERABLE_BUFFER_INDEX) buffer FRenderablesBuffer
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_RENDERABLE_BUFFER_INDEX) buffer FRenderablesBuffer
 {
     FRenderable Renderables[];
 };
 
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_TRANSFORM_INDEX) buffer TransformsBufferObject
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_TRANSFORM_INDEX) buffer TransformsBufferObject
 {
     FMatrix4 Transforms[];
 };
 
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_HITS_BUFFER_INDEX) buffer HitsBufferObject
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_HITS_BUFFER_INDEX) buffer HitsBufferObject
 {
     FHit Hits[];
 };
 
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_RAYS_BUFFER_INDEX) buffer RaysBufferObject
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_RAYS_BUFFER_INDEX) buffer RaysBufferObject
 {
     FRayData RayData[];
 };
 
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_TEXTURE_SAMPLER) uniform sampler Sampler;
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_TEXTURE_SAMPLER) uniform sampler Sampler;
 
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_TEXTURE_ARRAY) uniform texture2D Textures[MAX_TEXTURES];
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_TEXTURE_ARRAY) uniform texture2D Textures[MAX_TEXTURES];
 
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_IBL_IMAGE_INDEX) uniform sampler2D IBITextureSampler;
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_IBL_IMAGE_INDEX) uniform sampler2D IBITextureSampler;
 
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_LIGHTS_BUFFER_INDEX) buffer LightsBufferObject
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_LIGHTS_BUFFER_INDEX) buffer LightsBufferObject
 {
     FLight Lights[];
 };
 
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_MATERIAL_INDEX_MAP) buffer MaterialIndexBufferObject
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_MATERIAL_INDEX_MAP) buffer MaterialIndexBufferObject
 {
     uint MaterialsIndexMap[];
 };
 
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_MATERIAL_INDEX_AOV_MAP) buffer MaterialIndexAOVBufferObject
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_MATERIAL_INDEX_AOV_MAP) buffer MaterialIndexAOVBufferObject
 {
     uint MaterialsIndexAOV[];
 };
 
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = RAYTRACE_SHADE_MATERIALS_OFFSETS) buffer MaterialsOffsetsBufferObject
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_MATERIALS_OFFSETS) buffer MaterialsOffsetsBufferObject
 {
     uint MaterialsOffsets[];
 };
