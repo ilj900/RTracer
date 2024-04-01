@@ -17,7 +17,7 @@ FCountMaterialsPerChunkTask::FCountMaterialsPerChunkTask(uint32_t WidthIn, uint3
 
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
-    DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_COUNT_MATERIALS_PER_CHUNK_INDEX, MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_INDEX_BUFFER,
+    DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_COUNT_MATERIALS_PER_CHUNK_INDEX, MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_INDICES_AOV_BUFFER,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
     DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_COUNT_MATERIALS_PER_CHUNK_INDEX, MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_COUNT_BUFFER,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
@@ -56,7 +56,7 @@ void FCountMaterialsPerChunkTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        UpdateDescriptorSet(MATERIAL_SORT_COUNT_MATERIALS_PER_CHUNK_INDEX, MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_INDEX_BUFFER, i, Context->ResourceAllocator->GetBuffer("MaterialIndexBuffer"));
+        UpdateDescriptorSet(MATERIAL_SORT_COUNT_MATERIALS_PER_CHUNK_INDEX, MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_INDICES_AOV_BUFFER, i, Context->ResourceAllocator->GetBuffer("MaterialIndicesAOVBuffer"));
         UpdateDescriptorSet(MATERIAL_SORT_COUNT_MATERIALS_PER_CHUNK_INDEX, MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_COUNT_BUFFER, i, Context->ResourceAllocator->GetBuffer("CountedMaterialsPerChunkBuffer"));
     }
 };

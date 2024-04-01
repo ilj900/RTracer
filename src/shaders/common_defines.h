@@ -64,7 +64,7 @@
 /// Task material sort count materials set layout defines
 #define MATERIAL_SORT_COUNT_MATERIALS_PER_CHUNK_INDEX 0u
 
-#define MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_INDEX_BUFFER 0u
+#define MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_INDICES_AOV_BUFFER 0u
 #define MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_COUNT_BUFFER 1u
 
 /// Task material sort clear materials count per chunk set layout defines
