@@ -1,0 +1,25 @@
+#version 460
+
+#include "common_defines.h"
+
+layout (set = MATERIAL_SORT_COMPUTE_PREFIX_SUMS_LAYOUT_INDEX, binding = MATERIAL_SORT_COMPUTE_PREFIX_SUMS_BUFFER_A) buffer BufferABufferObject
+{
+    uint BufferA[];
+};
+
+layout (set = MATERIAL_SORT_COMPUTE_PREFIX_SUMS_LAYOUT_INDEX, binding = MATERIAL_SORT_COMPUTE_PREFIX_SUMS_BUFFER_B) buffer BufferBBufferObject
+{
+    uint BufferB[];
+};
+
+layout (push_constant) uniform PushConstantsBlock
+{
+    uint ChunkIndex;
+};
+
+layout (local_size_x = TOTAL_MATERIALS, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    uint MaterialIndex = gl_GlobalInvocationID.x;
+}
