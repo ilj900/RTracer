@@ -13,6 +13,8 @@
 
 #include "texture_manager.h"
 
+#include "utils.h"
+
 #include "task_shade.h"
 
 FShadeTask::FShadeTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
@@ -124,10 +126,7 @@ void FShadeTask::RecordCommands()
             FPushConstants PushConstants = {Width, Height, 1.f / Width, 1.f / Height};
             vkCmdPushConstants(CommandBuffer, Context->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
 
-            int GroupSizeX = (Width % 8 == 0) ? (Width / 8) : (Width / 8) + 1;
-            int GroupSizeY = (Height % 8 == 0) ? (Height / 8) : (Height / 8) + 1;
-
-            vkCmdDispatch(CommandBuffer, GroupSizeX, GroupSizeY, 1);
+            vkCmdDispatch(CommandBuffer, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), 1, 1);
 
             Context->TimingManager->TimestampEnd(Name, CommandBuffer, i);
         });
