@@ -26,8 +26,8 @@ layout (local_size_x = BASIC_CHUNK_SIZE, local_size_y = 1, local_size_z = 1) in;
 void main()
 {
     uint PixelIndex = gl_GlobalInvocationID.x;
-    uint TotalSize = PushConstants.Width * PushConstants.Height;
-    if (PixelIndex >= TotalSize)
+    
+    if (PixelIndex >= PushConstants.TotalSize)
     {
         return;
     }

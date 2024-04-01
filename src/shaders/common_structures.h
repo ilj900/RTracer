@@ -146,6 +146,7 @@ struct FPushConstants
     uint32_t Height;
     float InvWidth;
     float InvHeight;
+    uint32_t TotalSize;
 };
 
 #endif // COMMON_STRUCTURES_H
