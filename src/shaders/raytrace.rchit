@@ -7,7 +7,7 @@
 #include "common_defines.h"
 #include "common_structures.h"
 
-layout (location = 0) rayPayloadInEXT FHit Hit;
+layout (location = 0) rayPayloadInEXT FHitPayload HitPayload;
 hitAttributeEXT vec2 HitAttributes;
 
 layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_RENDERABLE_BUFFER_INDEX) buffer RenderableBufferObject
@@ -24,8 +24,8 @@ void main()
 {
     FRenderable Renderable = FetchRenderable();
 
-    Hit.RenderableIndex = gl_InstanceCustomIndexEXT;
-    Hit.PrimitiveIndex = gl_PrimitiveID;
-    Hit.HitUV = HitAttributes;
-    Hit.MaterialIndex = Renderable.MaterialIndex;
+    HitPayload.RenderableIndex = gl_InstanceCustomIndexEXT;
+    HitPayload.PrimitiveIndex = gl_PrimitiveID;
+    HitPayload.HitUV = HitAttributes;
+    HitPayload.MaterialIndex = Renderable.MaterialIndex;
 }

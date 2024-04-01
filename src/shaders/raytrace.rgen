@@ -6,7 +6,7 @@
 #include "common_defines.h"
 #include "common_structures.h"
 
-layout (location = 0) rayPayloadEXT FHit Hit;
+layout (location = 0) rayPayloadEXT FHitPayload HitPayload;
 
 layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_TLAS_LAYOUT_INDEX) uniform accelerationStructureEXT TopLevelAS;
 
@@ -17,7 +17,6 @@ layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_RAYS_DATA_BUFFER) buffer
 
 layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_HIT_BUFFER) buffer HitBufferObject
 {
-//TODO: Possibly separate into HitDana and HitPayload
     FHit HitData[];
 };
 
@@ -33,6 +32,8 @@ void main()
 
     traceRayEXT(TopLevelAS, RayData.RayFlags, 0xFF, 0, 0, 0, RayData.Origin.xyz, RayData.TMin, RayData.Direction.xyz, RayData.TMax, 0);
 
-    HitData[RayIndex] = Hit;
-    MaterialIndicesAOV[RayIndex] = Hit.MaterialIndex;
+    HitData[RayIndex].RenderableIndex = HitPayload.RenderableIndex;
+    HitData[RayIndex].PrimitiveIndex = HitPayload.PrimitiveIndex;
+    HitData[RayIndex].HitUV = HitPayload.HitUV;
+    MaterialIndicesAOV[RayIndex] = HitPayload.MaterialIndex;
 }

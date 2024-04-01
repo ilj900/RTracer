@@ -6,12 +6,12 @@
 #include "common_defines.h"
 #include "common_structures.h"
 
-layout (location = 0) rayPayloadInEXT FHit Hit;
+layout (location = 0) rayPayloadInEXT FHitPayload HitPayload;
 
 void main()
 {
-    Hit.RenderableIndex = UINT_MAX;
-    Hit.PrimitiveIndex = UINT_MAX;
-    Hit.HitUV = vec2(0);
-    Hit.MaterialIndex = TOTAL_MATERIALS - 1;
+    HitPayload.RenderableIndex = UINT_MAX;
+    HitPayload.PrimitiveIndex = UINT_MAX;
+    HitPayload.HitUV = vec2(0);
+    HitPayload.MaterialIndex = TOTAL_MATERIALS - 1;
 }
