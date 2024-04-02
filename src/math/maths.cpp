@@ -448,3 +448,14 @@ FMatrix4 GetPerspective(float FOV, float AspectRatio, float NearDistance, float 
     return PerspectiveMatrix;
 
 }
+
+uint32_t Log2(uint32_t Integer)
+{
+    uint32_t Power = 0;
+    while (Integer >>= 1)
+    {
+        ++Power;
+    }
+
+    return Power;
+}

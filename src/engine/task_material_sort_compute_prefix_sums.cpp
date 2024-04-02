@@ -9,25 +9,54 @@
 
 #include "task_material_sort_compute_prefix_sums.h"
 
+#include <random>
+
 FComputePrefixSumsTask::FComputePrefixSumsTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
-    Name = "Material sort sort materials pipeline";
+    Name = "Material sort compute prefix sums pipeline";
 
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
     DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_BUFFER_A,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
-    DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_BUFFER_B,
-                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
-    FBuffer BufferA = Context->ResourceAllocator->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "BufferA");
+    std::random_device Dev;
+    std::mt19937 RNG(Dev());
+    RNG.seed(0);
+    std::uniform_int_distribution<std::mt19937::result_type> Dist32(0,31);
+
+    std::vector<uint32_t> TestData(TOTAL_MATERIALS * 8192, 0);
+    for (int i = 0; i < TestData.size(); ++i)
+    {
+        if (i % 8192 < (8100))
+        {
+            TestData[i] = Dist32(RNG);
+        }
+        else
+        {
+            TestData[i] = 0;
+        }
+    }
+
+    std::vector<uint32_t> TotalSum(TOTAL_MATERIALS, 0);
+    for (int i = 0; i < TotalSum.size(); ++i)
+    {
+        for (int j = 0; j < 8192; ++j)
+        {
+            TotalSum[i] += TestData[i * 8192 + j];
+        }
+    }
+
+    uint32_t GroupCount = CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE);
+    uint32_t TotalGroupCount = 2 << Log2(GroupCount);
+    uint32_t BufferSize = TotalGroupCount * TOTAL_MATERIALS * sizeof(uint32_t);
+    FBuffer BufferA = Context->ResourceAllocator->CreateBuffer(BufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT| VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "BufferA");
     Context->ResourceAllocator->RegisterBuffer(BufferA, "BufferA");
 
-    FBuffer BufferB = Context->ResourceAllocator->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "BufferB");
-    Context->ResourceAllocator->RegisterBuffer(BufferB, "BufferB");
+    Context->ResourceAllocator->LoadDataToBuffer(BufferA, {TestData.size() * sizeof(uint32_t)}, {0}, {TestData.data()});
 
-    VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants)};
+    VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstantsPrefixSums)};
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
     CreateSyncObjects();
@@ -37,7 +66,6 @@ FComputePrefixSumsTask::~FComputePrefixSumsTask()
 {
     FreeSyncObjects();
     Context->ResourceAllocator->UnregisterAndDestroyBuffer("BufferA");
-    Context->ResourceAllocator->UnregisterAndDestroyBuffer("BufferB");
 }
 
 void FComputePrefixSumsTask::Init()
@@ -64,7 +92,6 @@ void FComputePrefixSumsTask::UpdateDescriptorSets()
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
         UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_PREFIX_SUMS_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_BUFFER_A, i, Context->ResourceAllocator->GetBuffer("BufferA"));
-        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_PREFIX_SUMS_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_BUFFER_B, i, Context->ResourceAllocator->GetBuffer("BufferB"));
     }
 };
 
@@ -83,11 +110,26 @@ void FComputePrefixSumsTask::RecordCommands()
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &ComputeDescriptorSet, 0, nullptr);
 
-            FPushConstants PushConstants = {Width, Height, 1.f / Width, 1.f / Height, Width * Height, 0};
-            vkCmdPushConstants(CommandBuffer, Context->DescriptorSetManager->GetPipelineLayout(Name),
-                               VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
+            uint32_t GroupCount = CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE);
+            uint32_t DMax = Log2(GroupCount);
+            uint32_t TotalGroupCount = 2 << Log2(GroupCount);
+            FPushConstantsPrefixSums PushConstantsPrefixSums = {0, TotalGroupCount};
 
-            vkCmdDispatch(CommandBuffer, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), 1, 1);
+            for (int D = 0; D <= DMax; ++D)
+            {
+                PushConstantsPrefixSums.D = D;
+                vkCmdPushConstants(CommandBuffer, Context->DescriptorSetManager->GetPipelineLayout(Name),
+                                   VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstantsPrefixSums), &PushConstantsPrefixSums);
+                TotalGroupCount /= 2;
+                vkCmdDispatch(CommandBuffer, TotalGroupCount, 1, 1);
+
+                VkMemoryBarrier MemoryBarrier = {};
+                MemoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+                MemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+                MemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+                vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &MemoryBarrier, 0, nullptr, 0, nullptr);
+            }
 
             Context->TimingManager->TimestampEnd(Name, CommandBuffer, i);
         });

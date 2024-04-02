@@ -192,3 +192,5 @@ struct std::hash<FVector3>
         return hash;
     }
 };
+
+uint32_t Log2(uint32_t Integer);

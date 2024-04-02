@@ -1,25 +1,27 @@
 #version 460
 
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
 #include "common_defines.h"
+#include "common_structures.h"
 
 layout (set = MATERIAL_SORT_COMPUTE_PREFIX_SUMS_LAYOUT_INDEX, binding = MATERIAL_SORT_COMPUTE_PREFIX_SUMS_BUFFER_A) buffer BufferABufferObject
 {
     uint BufferA[];
 };
 
-layout (set = MATERIAL_SORT_COMPUTE_PREFIX_SUMS_LAYOUT_INDEX, binding = MATERIAL_SORT_COMPUTE_PREFIX_SUMS_BUFFER_B) buffer BufferBBufferObject
-{
-    uint BufferB[];
-};
-
 layout (push_constant) uniform PushConstantsBlock
 {
-    uint ChunkIndex;
+    FPushConstantsPrefixSums PushConstantsPrefixSums;
 };
 
 layout (local_size_x = TOTAL_MATERIALS, local_size_y = 1, local_size_z = 1) in;
 
 void main()
 {
-    uint MaterialIndex = gl_GlobalInvocationID.x;
+    uint HalfStep = 1 << PushConstantsPrefixSums.D;
+    uint FullStep = HalfStep << 1;
+    uint IndexToModify = (gl_GlobalInvocationID.x + 1) * FullStep - 1;
+    uint IndexToUse = IndexToModify - HalfStep;
+    BufferA[IndexToModify] += BufferA[IndexToUse];
 }

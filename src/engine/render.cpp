@@ -253,6 +253,12 @@ int FRender::Init()
     ComputeOffsetsTask->UpdateDescriptorSets();
     ComputeOffsetsTask->RecordCommands();
 
+    ComputePrefixSumsTask = std::make_shared<FComputePrefixSumsTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+
+    ComputePrefixSumsTask->Init();
+    ComputePrefixSumsTask->UpdateDescriptorSets();
+    ComputePrefixSumsTask->RecordCommands();
+
     ComputeOffsetsPerMaterialTask = std::make_shared<FComputeOffsetsPerMaterialTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
 
     ComputeOffsetsPerMaterialTask->Init();
@@ -428,7 +434,9 @@ int FRender::Render()
 
     auto ComputeOffsetsSemaphore = ComputeOffsetsTask->Submit(Context.GetComputeQueue(), CountMaterialsPerChunkSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ComputeOffsetsPerMaterialSemaphore = ComputeOffsetsPerMaterialTask->Submit(Context.GetComputeQueue(), ComputeOffsetsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ComputePrefixSumsSemaphore = ComputePrefixSumsTask->Submit(Context.GetComputeQueue(), ComputeOffsetsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+
+    auto ComputeOffsetsPerMaterialSemaphore = ComputeOffsetsPerMaterialTask->Submit(Context.GetComputeQueue(), ComputePrefixSumsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
     auto SortMaterialsSemaphore = SortMaterialsTask->Submit(Context.GetComputeQueue(), ComputeOffsetsPerMaterialSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
@@ -469,6 +477,8 @@ int FRender::Render()
 //    Context.SaveBufferUint(MaterialsOffsetsPerMaterialBuffer, TOTAL_MATERIALS, 1, "MaterialsOffsetsPerMaterialBuffer.exr");
 //    auto SortedMaterialsIndexMapBuffer = Context.ResourceAllocator->GetBuffer("SortedMaterialsIndexMapBuffer");
 //    Context.SaveBufferUint(SortedMaterialsIndexMapBuffer, Width, Height, "SortedMaterialsIndexMapBuffer.exr");
+    auto BufferA = Context.ResourceAllocator->GetBuffer("BufferA");
+    Context.SaveBufferUint(BufferA, 8192, TOTAL_MATERIALS, "BufferA.exr");
 
     RenderFrameIndex++;
 

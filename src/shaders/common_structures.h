@@ -154,4 +154,10 @@ struct FPushConstants
     uint32_t MaterialIndex;
 };
 
+struct FPushConstantsPrefixSums
+{
+    uint32_t D;
+    uint32_t TotalGroupCount;
+};
+
 #endif // COMMON_STRUCTURES_H

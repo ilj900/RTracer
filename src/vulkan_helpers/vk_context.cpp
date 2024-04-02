@@ -459,12 +459,12 @@ void FVulkanContext::SaveBufferFloat3(FBuffer& Buffer, uint32_t WidthIn, uint32_
 
 void FVulkanContext::SaveBufferUint(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name)
 {
-    if (WidthIn * HeightIn != (Buffer.BufferSize / sizeof(uint32_t)))
+    if (WidthIn * HeightIn > (Buffer.BufferSize / sizeof(uint32_t)))
     {
         throw std::runtime_error("You are trying to fetch data of the wrong size from buffer");
     }
 
-    auto Data = ResourceAllocator->DebugGetDataFromBuffer<uint32_t>(Buffer, Buffer.BufferSize, 0);
+    auto Data = ResourceAllocator->DebugGetDataFromBuffer<uint32_t>(Buffer, WidthIn * HeightIn * sizeof(uint32_t), 0);
     std::vector<float> NewData(Data.size());
     for (int i = 0; i < Data.size(); ++i)
     {
