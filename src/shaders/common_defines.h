@@ -100,9 +100,14 @@
 #define MATERIAL_SORT_SORT_MATERIALS_UNSORTED_MATERIALS_BUFFER 2u
 #define MATERIAL_SORT_SORT_MATERIALS_SORTED_MATERIALS_INDEX_MAP_BUFFER 3u
 
-/// Task material sort compute prefix sums set layout defines
+/// Task material sort compute prefix sums us sweep set layout defines
 #define MATERIAL_SORT_COMPUTE_PREFIX_SUMS_UP_SWEEP_LAYOUT_INDEX 0u
 
 #define MATERIAL_SORT_COMPUTE_PREFIX_SUMS_UP_SWEEP_BUFFER_A 0u
+
+/// Task material sort compute prefix sums zero out set layout defines
+#define MATERIAL_SORT_COMPUTE_PREFIX_SUMS_ZERO_OUT_LAYOUT_INDEX 0u
+
+#define MATERIAL_SORT_COMPUTE_PREFIX_SUMS_ZERO_OUT_BUFFER_A 0u
 
 #endif // COMMON_DEFINES_H

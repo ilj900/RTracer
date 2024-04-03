@@ -259,6 +259,12 @@ int FRender::Init()
     ComputePrefixSumsUpSweepTask->UpdateDescriptorSets();
     ComputePrefixSumsUpSweepTask->RecordCommands();
 
+    ComputePrefixSumsZeroOutTask = std::make_shared<FComputePrefixSumsZeroOutTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+
+    ComputePrefixSumsZeroOutTask->Init();
+    ComputePrefixSumsZeroOutTask->UpdateDescriptorSets();
+    ComputePrefixSumsZeroOutTask->RecordCommands();
+
     ComputeOffsetsPerMaterialTask = std::make_shared<FComputeOffsetsPerMaterialTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
 
     ComputeOffsetsPerMaterialTask->Init();
@@ -335,6 +341,10 @@ int FRender::Cleanup()
     CountMaterialsPerChunkTask = nullptr;
     SortMaterialsTask->Cleanup();
     SortMaterialsTask = nullptr;
+    ComputePrefixSumsUpSweepTask->Cleanup();
+    ComputePrefixSumsUpSweepTask = nullptr;
+    ComputePrefixSumsZeroOutTask->Cleanup();
+    ComputePrefixSumsZeroOutTask = nullptr;
     ShadeTask->Cleanup();
     ShadeTask = nullptr;
     AccumulateTask->Cleanup();
@@ -436,7 +446,9 @@ int FRender::Render()
 
     auto ComputePrefixSumsUpSweepSemaphore = ComputePrefixSumsUpSweepTask->Submit(Context.GetComputeQueue(), ComputeOffsetsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ComputeOffsetsPerMaterialSemaphore = ComputeOffsetsPerMaterialTask->Submit(Context.GetComputeQueue(), ComputePrefixSumsUpSweepSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ComputePrefixSumsZeroOutSemaphore = ComputePrefixSumsZeroOutTask->Submit(Context.GetComputeQueue(), ComputePrefixSumsUpSweepSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+
+    auto ComputeOffsetsPerMaterialSemaphore = ComputeOffsetsPerMaterialTask->Submit(Context.GetComputeQueue(), ComputePrefixSumsZeroOutSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
     auto SortMaterialsSemaphore = SortMaterialsTask->Submit(Context.GetComputeQueue(), ComputeOffsetsPerMaterialSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 

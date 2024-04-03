@@ -113,7 +113,7 @@ void FComputePrefixSumsUpSweepTask::RecordCommands()
             uint32_t GroupCount = CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE);
             uint32_t DMax = Log2(GroupCount);
             uint32_t TotalGroupCount = 2 << Log2(GroupCount);
-            FPushConstantsPrefixSums PushConstantsPrefixSums = {0, GroupCount};
+            FPushConstantsPrefixSums PushConstantsPrefixSums = {0, TotalGroupCount};
 
             for (int D = 0; D <= DMax; ++D)
             {
