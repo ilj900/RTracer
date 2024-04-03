@@ -27,7 +27,7 @@ layout (set = MATERIAL_SORT_SORT_MATERIALS_LAYOUT_INDEX, binding = MATERIAL_SORT
 
 layout (push_constant) uniform PushConstantsBlock
 {
-    FPushConstants PushConstants;
+    FPushConstantsCountMaterialsPerChunk PushConstantsCountMaterialsPerChunk;
 };
 
 layout (local_size_x = BASIC_CHUNK_SIZE, local_size_y = 1, local_size_z = 1) in;
@@ -36,7 +36,7 @@ void main()
 {
     uint PixelIndex = gl_GlobalInvocationID.x;
 
-    if (PixelIndex >= PushConstants.TotalSize)
+    if (PixelIndex >= PushConstantsCountMaterialsPerChunk.TotalSize)
     {
         return;
     }
@@ -44,7 +44,7 @@ void main()
     uint ChunkIndex = PixelIndex / BASIC_CHUNK_SIZE;
 
     uint OriginalMaterialIndex = UnsortedMaterials[PixelIndex];
-    uint NewRelativeIndex = atomicAdd(MaterialsOffsetsPerChunk[ChunkIndex * TOTAL_MATERIALS + OriginalMaterialIndex], 1);
+    uint NewRelativeIndex = atomicAdd(MaterialsOffsetsPerChunk[OriginalMaterialIndex * PushConstantsCountMaterialsPerChunk.MaxGroupSize + ChunkIndex], 1);
     uint NewRayIndex = MaterialsOffsetsPerMaterial[OriginalMaterialIndex] + NewRelativeIndex;
     SortedMaterialsIndexMap[NewRayIndex] = PixelIndex;
 }

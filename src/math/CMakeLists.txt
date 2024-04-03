@@ -7,3 +7,4 @@ set(SOURCE
 add_library(Math STATIC ${SOURCE} ${INCLUDE})
 
 target_include_directories(Vulkan_helpers PUBLIC .)
+target_include_directories(Utils PUBLIC .)

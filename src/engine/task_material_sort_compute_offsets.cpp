@@ -2,6 +2,7 @@
 #include "vk_debug.h"
 #include "vk_functions.h"
 #include "common_defines.h"
+#include "common_structures.h"
 #include "utils.h"
 
 #include "vk_shader_compiler.h"
@@ -22,10 +23,10 @@ FComputeOffsetsTask::FComputeOffsetsTask(uint32_t WidthIn, uint32_t HeightIn, FV
     DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, MATERIAL_SORT_MATERIALS_OFFSETS_PER_CHUNK_BUFFER,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
-    FBuffer MaterialsOffsetsPerChunkBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialsOffsetsPerChunkBuffer");
+    FBuffer MaterialsOffsetsPerChunkBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialsOffsetsPerChunkBuffer");
     Context->ResourceAllocator->RegisterBuffer(MaterialsOffsetsPerChunkBuffer, "MaterialsOffsetsPerChunkBuffer");
 
-    VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t)};
+    VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstantsOffsets)};
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
     CreateSyncObjects();
@@ -81,10 +82,12 @@ void FComputeOffsetsTask::RecordCommands()
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &ComputeDescriptorSet, 0, nullptr);
 
-            for (int i = 0; i < CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE); ++i)
+            FPushConstantsOffsets PushConstantsOffsets = {0, CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE)};
+            for (int i = 0; i < CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE); ++i)
             {
+                PushConstantsOffsets.GroupIndex = i;
                 vkCmdPushConstants(CommandBuffer, Context->DescriptorSetManager->GetPipelineLayout(Name),
-                                   VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &i);
+                                   VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(PushConstantsOffsets), &PushConstantsOffsets);
 
                 vkCmdDispatch(CommandBuffer, 1, 1, 1);
 

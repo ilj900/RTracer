@@ -17,7 +17,7 @@ layout (set = MATERIAL_SORT_COUNT_MATERIALS_PER_CHUNK_INDEX, binding = MATERIAL_
 
 layout (push_constant) uniform PushConstantsBlock
 {
-    FPushConstants PushConstants;
+    FPushConstantsCountMaterialsPerChunk PushConstantsCountMaterialsPerChunk;
 };
 
 layout (local_size_x = BASIC_CHUNK_SIZE, local_size_y = 1, local_size_z = 1) in;
@@ -27,20 +27,15 @@ void main()
 {
     uint PixelIndex = gl_GlobalInvocationID.x;
     
-    if (PixelIndex >= PushConstants.TotalSize)
+    if (PixelIndex >= PushConstantsCountMaterialsPerChunk.TotalSize)
     {
         return;
     }
-    uint ChunkIndex = PixelIndex / BASIC_CHUNK_SIZE;
+
     uint MaterialIndex = MaterialIndicesAOV[PixelIndex];
 
-    if (MaterialIndex == UINT_MAX)
-    {
-        /// Last material represents miss (IBL material)
-        atomicAdd(MaterialCount[(ChunkIndex * TOTAL_MATERIALS) + TOTAL_MATERIALS - 1], 1);
-    }
-    else
-    {
-        atomicAdd(MaterialCount[(ChunkIndex * TOTAL_MATERIALS) + MaterialIndex], 1);
-    }
+    uint XPos = PixelIndex / BASIC_CHUNK_SIZE;
+    uint YPos = (MaterialIndex == UINT_MAX) ? (TOTAL_MATERIALS - 1) : MaterialIndex;
+    uint BufferIndex = YPos * PushConstantsCountMaterialsPerChunk.MaxGroupSize + XPos;
+    atomicAdd(MaterialCount[BufferIndex], 1);
 }

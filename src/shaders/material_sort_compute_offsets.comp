@@ -1,6 +1,9 @@
 #version 460
 
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
 #include "common_defines.h"
+#include "common_structures.h"
 
 layout (set = MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, binding = MATERIAL_SORT_MATERIALS_COUNT_PER_CHUNK_BUFFER) buffer MaterialsCountPerChunkBufferObject
 {
@@ -19,7 +22,7 @@ layout (set = MATERIAL_SORT_COMPUTE_OFFSETS_LAYOUT_INDEX, binding = MATERIAL_SOR
 
 layout (push_constant) uniform PushConstantsBlock
 {
-    uint ChunkIndex;
+    FPushConstantsOffsets PushConstantsOffsets;
 };
 
 layout (local_size_x = TOTAL_MATERIALS, local_size_y = 1, local_size_z = 1) in;
@@ -27,16 +30,17 @@ layout (local_size_x = TOTAL_MATERIALS, local_size_y = 1, local_size_z = 1) in;
 void main()
 {
     uint MaterialIndex = gl_GlobalInvocationID.x;
+    uint CurrentIndex = MaterialIndex * PushConstantsOffsets.MaxGroupSize + PushConstantsOffsets.GroupIndex;
 
-    if (ChunkIndex == 0)
+    if (PushConstantsOffsets.GroupIndex == 0)
     {
-        MaterialsOffsetsPerChunk[MaterialIndex] = 0u;
+        MaterialsOffsetsPerChunk[MaterialIndex * PushConstantsOffsets.MaxGroupSize] = 0u;
     }
     else
     {
-        uint PreviousChunk = ChunkIndex - 1;
-        MaterialsOffsetsPerChunk[(ChunkIndex * TOTAL_MATERIALS) + MaterialIndex] = MaterialsOffsetsPerChunk[(PreviousChunk * TOTAL_MATERIALS) + MaterialIndex] + MaterialsCountPerChunk[(PreviousChunk * TOTAL_MATERIALS) + MaterialIndex];
+        uint PreviousIndex = CurrentIndex - 1;
+        MaterialsOffsetsPerChunk[CurrentIndex] = MaterialsOffsetsPerChunk[PreviousIndex] + MaterialsCountPerChunk[PreviousIndex];
     }
 
-    MaterialOffsets[MaterialIndex * 3] += MaterialsCountPerChunk[(ChunkIndex * TOTAL_MATERIALS) + MaterialIndex];
+    MaterialOffsets[MaterialIndex * 3] += MaterialsCountPerChunk[CurrentIndex];
 }

@@ -154,6 +154,19 @@ struct FPushConstants
     uint32_t MaterialIndex;
 };
 
+struct FPushConstantsCountMaterialsPerChunk
+{
+    uint32_t TotalSize;
+    uint32_t GroupSize;
+    uint32_t MaxGroupSize;
+};
+
+struct FPushConstantsOffsets
+{
+    uint32_t GroupIndex;
+    uint32_t MaxGroupSize;
+};
+
 struct FPushConstantsPrefixSums
 {
     uint32_t D;

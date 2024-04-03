@@ -490,17 +490,22 @@ int FRender::Render()
 
 //    Context.WaitIdle();
 //    auto CountedMaterialsPerChunkBuffer = Context.ResourceAllocator->GetBuffer("CountedMaterialsPerChunkBuffer");
-//    Context.SaveBufferUint(CountedMaterialsPerChunkBuffer, TOTAL_MATERIALS, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), "CountedMaterialsPerChunkBuffer.exr");
+//    Context.SaveBufferUint(CountedMaterialsPerChunkBuffer, CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE), TOTAL_MATERIALS, "CountedMaterialsPerChunkBuffer.exr");
+//
 //    auto MaterialsOffsetsPerChunkBuffer = Context.ResourceAllocator->GetBuffer("MaterialsOffsetsPerChunkBuffer");
-//    Context.SaveBufferUint(MaterialsOffsetsPerChunkBuffer, TOTAL_MATERIALS, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), "MaterialsOffsetsPerChunkBuffer.exr");
+//    Context.SaveBufferUint(MaterialsOffsetsPerChunkBuffer, CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE), TOTAL_MATERIALS, "MaterialsOffsetsPerChunkBuffer.exr");
+//
 //    auto TotalCountedMaterialsBuffer = Context.ResourceAllocator->GetBuffer("TotalCountedMaterialsBuffer");
 //    Context.SaveBufferUint(TotalCountedMaterialsBuffer, TOTAL_MATERIALS * 3, 1, "TotalCountedMaterialsBuffer.exr");
+//
 //    auto MaterialsOffsetsPerMaterialBuffer = Context.ResourceAllocator->GetBuffer("MaterialsOffsetsPerMaterialBuffer");
 //    Context.SaveBufferUint(MaterialsOffsetsPerMaterialBuffer, TOTAL_MATERIALS, 1, "MaterialsOffsetsPerMaterialBuffer.exr");
+//
 //    auto SortedMaterialsIndexMapBuffer = Context.ResourceAllocator->GetBuffer("SortedMaterialsIndexMapBuffer");
 //    Context.SaveBufferUint(SortedMaterialsIndexMapBuffer, Width, Height, "SortedMaterialsIndexMapBuffer.exr");
-    auto BufferA = Context.ResourceAllocator->GetBuffer("BufferA");
-    Context.SaveBufferUint(BufferA, 8192, TOTAL_MATERIALS, "BufferA.exr");
+//
+//    auto BufferA = Context.ResourceAllocator->GetBuffer("BufferA");
+//    Context.SaveBufferUint(BufferA, 8192, TOTAL_MATERIALS, "BufferA.exr");
 
     RenderFrameIndex++;
 
