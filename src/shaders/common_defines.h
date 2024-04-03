@@ -110,4 +110,9 @@
 
 #define MATERIAL_SORT_COMPUTE_PREFIX_SUMS_ZERO_OUT_BUFFER_A 0u
 
+/// Task material sort compute prefix sums down sweep set layout defines
+#define MATERIAL_SORT_COMPUTE_PREFIX_SUMS_DOWN_SWEEP_LAYOUT_INDEX 0u
+
+#define MATERIAL_SORT_COMPUTE_PREFIX_SUMS_DOWN_SWEEP_BUFFER_A 0u
+
 #endif // COMMON_DEFINES_H
