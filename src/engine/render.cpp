@@ -247,12 +247,6 @@ int FRender::Init()
     CountMaterialsPerChunkTask->UpdateDescriptorSets();
     CountMaterialsPerChunkTask->RecordCommands();
 
-    ComputeOffsetsTask = std::make_shared<FComputeOffsetsTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
-
-    ComputeOffsetsTask->Init();
-    ComputeOffsetsTask->UpdateDescriptorSets();
-    ComputeOffsetsTask->RecordCommands();
-
     ComputePrefixSumsUpSweepTask = std::make_shared<FComputePrefixSumsUpSweepTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
 
     ComputePrefixSumsUpSweepTask->Init();
@@ -339,8 +333,6 @@ int FRender::Cleanup()
     ClearMaterialsCountPerChunkTask = nullptr;
     ClearTotalMaterialsCountTask->Cleanup();
     ClearTotalMaterialsCountTask = nullptr;
-    ComputeOffsetsTask->Cleanup();
-    ComputeOffsetsTask = nullptr;
     ComputeOffsetsPerMaterialTask->Cleanup();
     ComputeOffsetsPerMaterialTask = nullptr;
     CountMaterialsPerChunkTask->Cleanup();
@@ -450,9 +442,7 @@ int FRender::Render()
 
     auto CountMaterialsPerChunkSemaphore = CountMaterialsPerChunkTask->Submit(Context.GetComputeQueue(), ClearTotalMaterialsCountSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ComputeOffsetsSemaphore = ComputeOffsetsTask->Submit(Context.GetComputeQueue(), CountMaterialsPerChunkSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
-
-    auto ComputePrefixSumsUpSweepSemaphore = ComputePrefixSumsUpSweepTask->Submit(Context.GetComputeQueue(), ComputeOffsetsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ComputePrefixSumsUpSweepSemaphore = ComputePrefixSumsUpSweepTask->Submit(Context.GetComputeQueue(), CountMaterialsPerChunkSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
     auto ComputePrefixSumsZeroOutSemaphore = ComputePrefixSumsZeroOutTask->Submit(Context.GetComputeQueue(), ComputePrefixSumsUpSweepSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
@@ -492,9 +482,6 @@ int FRender::Render()
 //    auto CountedMaterialsPerChunkBuffer = Context.ResourceAllocator->GetBuffer("CountedMaterialsPerChunkBuffer");
 //    Context.SaveBufferUint(CountedMaterialsPerChunkBuffer, CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE), TOTAL_MATERIALS, "CountedMaterialsPerChunkBuffer.exr");
 //
-//    auto MaterialsOffsetsPerChunkBuffer = Context.ResourceAllocator->GetBuffer("MaterialsOffsetsPerChunkBuffer");
-//    Context.SaveBufferUint(MaterialsOffsetsPerChunkBuffer, CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE), TOTAL_MATERIALS, "MaterialsOffsetsPerChunkBuffer.exr");
-//
 //    auto TotalCountedMaterialsBuffer = Context.ResourceAllocator->GetBuffer("TotalCountedMaterialsBuffer");
 //    Context.SaveBufferUint(TotalCountedMaterialsBuffer, TOTAL_MATERIALS * 3, 1, "TotalCountedMaterialsBuffer.exr");
 //
@@ -503,9 +490,6 @@ int FRender::Render()
 //
 //    auto SortedMaterialsIndexMapBuffer = Context.ResourceAllocator->GetBuffer("SortedMaterialsIndexMapBuffer");
 //    Context.SaveBufferUint(SortedMaterialsIndexMapBuffer, Width, Height, "SortedMaterialsIndexMapBuffer.exr");
-//
-//    auto BufferA = Context.ResourceAllocator->GetBuffer("BufferA");
-//    Context.SaveBufferUint(BufferA, 8192, TOTAL_MATERIALS, "BufferA.exr");
 
     RenderFrameIndex++;
 

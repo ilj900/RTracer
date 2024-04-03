@@ -10,6 +10,11 @@ layout (set = MATERIAL_SORT_COMPUTE_PREFIX_SUMS_ZERO_OUT_LAYOUT_INDEX, binding =
     uint BufferA[];
 };
 
+layout (set = MATERIAL_SORT_COMPUTE_PREFIX_SUMS_ZERO_OUT_LAYOUT_INDEX, binding = MATERIAL_SORT_TOTAL_MATERIAL_OFFSETS_BUFFER) buffer MaterialsOffsetsBufferObject
+{
+    uint MaterialOffsets[];
+};
+
 layout (push_constant) uniform PushConstantsBlock
 {
     FPushConstantsPrefixSums PushConstantsPrefixSums;
@@ -20,5 +25,6 @@ layout (local_size_x = TOTAL_MATERIALS, local_size_y = 1, local_size_z = 1) in;
 void main()
 {
     uint IndexToModify = (PushConstantsPrefixSums.TotalGroupCount * (gl_GlobalInvocationID.x + 1)) - 1;
+    MaterialOffsets[gl_GlobalInvocationID.x * 3] = BufferA[IndexToModify];
     BufferA[IndexToModify] = 0;
 }

@@ -20,6 +20,8 @@ FComputePrefixSumsZeroOutTask::FComputePrefixSumsZeroOutTask(uint32_t WidthIn, u
 
     DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_ZERO_OUT_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_ZERO_OUT_BUFFER_A,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
+    DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_ZERO_OUT_LAYOUT_INDEX, MATERIAL_SORT_TOTAL_MATERIAL_OFFSETS_BUFFER,
+                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
     VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstantsPrefixSums)};
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
@@ -55,7 +57,8 @@ void FComputePrefixSumsZeroOutTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_PREFIX_SUMS_ZERO_OUT_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_ZERO_OUT_BUFFER_A, i, Context->ResourceAllocator->GetBuffer("BufferA"));
+        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_PREFIX_SUMS_ZERO_OUT_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_ZERO_OUT_BUFFER_A, i, Context->ResourceAllocator->GetBuffer("CountedMaterialsPerChunkBuffer"));
+        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_PREFIX_SUMS_ZERO_OUT_LAYOUT_INDEX, MATERIAL_SORT_TOTAL_MATERIAL_OFFSETS_BUFFER, i, Context->ResourceAllocator->GetBuffer("TotalCountedMaterialsBuffer"));
     }
 };
 

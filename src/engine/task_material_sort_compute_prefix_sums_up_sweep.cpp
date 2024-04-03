@@ -21,41 +21,6 @@ FComputePrefixSumsUpSweepTask::FComputePrefixSumsUpSweepTask(uint32_t WidthIn, u
     DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_UP_SWEEP_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_UP_SWEEP_BUFFER_A,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
-    std::random_device Dev;
-    std::mt19937 RNG(Dev());
-    RNG.seed(0);
-    std::uniform_int_distribution<std::mt19937::result_type> Dist32(0,31);
-
-    std::vector<uint32_t> TestData(TOTAL_MATERIALS * 8192, 0);
-    for (int i = 0; i < TestData.size(); ++i)
-    {
-        if (i % 8192 < (8100))
-        {
-            TestData[i] = Dist32(RNG);
-        }
-        else
-        {
-            TestData[i] = 0;
-        }
-    }
-
-    std::vector<uint32_t> TotalSum(TOTAL_MATERIALS, 0);
-    for (int i = 0; i < TotalSum.size(); ++i)
-    {
-        for (int j = 0; j < 8192; ++j)
-        {
-            TotalSum[i] += TestData[i * 8192 + j];
-        }
-    }
-
-    uint32_t GroupCount = CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE);
-    uint32_t TotalGroupCount = 2 << Log2(GroupCount);
-    uint32_t BufferSize = TotalGroupCount * TOTAL_MATERIALS * sizeof(uint32_t);
-    FBuffer BufferA = Context->ResourceAllocator->CreateBuffer(BufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT| VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "BufferA");
-    Context->ResourceAllocator->RegisterBuffer(BufferA, "BufferA");
-
-    Context->ResourceAllocator->LoadDataToBuffer(BufferA, {TestData.size() * sizeof(uint32_t)}, {0}, {TestData.data()});
-
     VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstantsPrefixSums)};
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
@@ -65,7 +30,6 @@ FComputePrefixSumsUpSweepTask::FComputePrefixSumsUpSweepTask(uint32_t WidthIn, u
 FComputePrefixSumsUpSweepTask::~FComputePrefixSumsUpSweepTask()
 {
     FreeSyncObjects();
-    Context->ResourceAllocator->UnregisterAndDestroyBuffer("BufferA");
 }
 
 void FComputePrefixSumsUpSweepTask::Init()
@@ -91,7 +55,7 @@ void FComputePrefixSumsUpSweepTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_PREFIX_SUMS_UP_SWEEP_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_UP_SWEEP_BUFFER_A, i, Context->ResourceAllocator->GetBuffer("BufferA"));
+        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_PREFIX_SUMS_UP_SWEEP_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_UP_SWEEP_BUFFER_A, i, Context->ResourceAllocator->GetBuffer("CountedMaterialsPerChunkBuffer"));
     }
 };
 
