@@ -157,7 +157,7 @@ struct FPushConstants
 struct FPushConstantsPrefixSums
 {
     uint32_t D;
-    uint32_t TotalGroupCount;
+    uint32_t GroupCount;
 };
 
 #endif // COMMON_STRUCTURES_H

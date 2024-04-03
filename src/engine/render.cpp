@@ -253,11 +253,11 @@ int FRender::Init()
     ComputeOffsetsTask->UpdateDescriptorSets();
     ComputeOffsetsTask->RecordCommands();
 
-    ComputePrefixSumsTask = std::make_shared<FComputePrefixSumsTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    ComputePrefixSumsUpSweepTask = std::make_shared<FComputePrefixSumsUpSweepTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
 
-    ComputePrefixSumsTask->Init();
-    ComputePrefixSumsTask->UpdateDescriptorSets();
-    ComputePrefixSumsTask->RecordCommands();
+    ComputePrefixSumsUpSweepTask->Init();
+    ComputePrefixSumsUpSweepTask->UpdateDescriptorSets();
+    ComputePrefixSumsUpSweepTask->RecordCommands();
 
     ComputeOffsetsPerMaterialTask = std::make_shared<FComputeOffsetsPerMaterialTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
 
@@ -434,9 +434,9 @@ int FRender::Render()
 
     auto ComputeOffsetsSemaphore = ComputeOffsetsTask->Submit(Context.GetComputeQueue(), CountMaterialsPerChunkSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ComputePrefixSumsSemaphore = ComputePrefixSumsTask->Submit(Context.GetComputeQueue(), ComputeOffsetsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ComputePrefixSumsUpSweepSemaphore = ComputePrefixSumsUpSweepTask->Submit(Context.GetComputeQueue(), ComputeOffsetsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ComputeOffsetsPerMaterialSemaphore = ComputeOffsetsPerMaterialTask->Submit(Context.GetComputeQueue(), ComputePrefixSumsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ComputeOffsetsPerMaterialSemaphore = ComputeOffsetsPerMaterialTask->Submit(Context.GetComputeQueue(), ComputePrefixSumsUpSweepSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
     auto SortMaterialsSemaphore = SortMaterialsTask->Submit(Context.GetComputeQueue(), ComputeOffsetsPerMaterialSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 

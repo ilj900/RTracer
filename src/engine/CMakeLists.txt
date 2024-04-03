@@ -48,7 +48,7 @@ set(INCLUDE
         task_material_sort_compute_offsets_per_material.h
         task_material_sort_count_materials_per_chunk.h
         task_material_sort_sort_materials.h
-        task_material_sort_compute_prefix_sums.h
+        task_material_sort_compute_prefix_sums_up_sweep.h
         task_passthrough.h
         task_raytrace.h
         task_shade.h
@@ -67,7 +67,7 @@ set(SOURCE
         task_material_sort_compute_offsets_per_material.cpp
         task_material_sort_count_materials_per_chunk.cpp
         task_material_sort_sort_materials.cpp
-        task_material_sort_compute_prefix_sums.cpp
+        task_material_sort_compute_prefix_sums_up_sweep.cpp
         task_raytrace.cpp
         task_accumulate.cpp
         task_clear_image.cpp

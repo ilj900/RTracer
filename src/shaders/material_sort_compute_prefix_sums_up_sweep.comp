@@ -5,7 +5,7 @@
 #include "common_defines.h"
 #include "common_structures.h"
 
-layout (set = MATERIAL_SORT_COMPUTE_PREFIX_SUMS_LAYOUT_INDEX, binding = MATERIAL_SORT_COMPUTE_PREFIX_SUMS_BUFFER_A) buffer BufferABufferObject
+layout (set = MATERIAL_SORT_COMPUTE_PREFIX_SUMS_UP_SWEEP_LAYOUT_INDEX, binding = MATERIAL_SORT_COMPUTE_PREFIX_SUMS_UP_SWEEP_BUFFER_A) buffer BufferABufferObject
 {
     uint BufferA[];
 };

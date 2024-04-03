@@ -17,7 +17,7 @@
 #include "task_material_sort_compute_offsets_per_material.h"
 #include "task_material_sort_count_materials_per_chunk.h"
 #include "task_material_sort_sort_materials.h"
-#include "task_material_sort_compute_prefix_sums.h"
+#include "task_material_sort_compute_prefix_sums_up_sweep.h"
 #include "task_shade.h"
 #include "task_accumulate.h"
 #include "task_passthrough.h"
@@ -77,7 +77,7 @@ public:
     std::shared_ptr<FComputeOffsetsPerMaterialTask> ComputeOffsetsPerMaterialTask = nullptr;
     std::shared_ptr<FCountMaterialsPerChunkTask> CountMaterialsPerChunkTask = nullptr;
     std::shared_ptr<FSortMaterialsTask> SortMaterialsTask = nullptr;
-    std::shared_ptr<FComputePrefixSumsTask> ComputePrefixSumsTask = nullptr;
+    std::shared_ptr<FComputePrefixSumsUpSweepTask> ComputePrefixSumsUpSweepTask = nullptr;
     std::shared_ptr<FShadeTask> ShadeTask = nullptr;
     std::shared_ptr<FAccumulateTask> AccumulateTask = nullptr;
     std::shared_ptr<FPassthroughTask> PassthroughTask = nullptr;

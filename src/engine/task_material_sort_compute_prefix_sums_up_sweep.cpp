@@ -7,18 +7,18 @@
 
 #include "vk_shader_compiler.h"
 
-#include "task_material_sort_compute_prefix_sums.h"
+#include "task_material_sort_compute_prefix_sums_up_sweep.h"
 
 #include <random>
 
-FComputePrefixSumsTask::FComputePrefixSumsTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+FComputePrefixSumsUpSweepTask::FComputePrefixSumsUpSweepTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
-    Name = "Material sort compute prefix sums pipeline";
+    Name = "Material sort compute prefix sums up-sweep pipeline";
 
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
-    DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_BUFFER_A,
+    DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_UP_SWEEP_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_UP_SWEEP_BUFFER_A,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
     std::random_device Dev;
@@ -62,40 +62,40 @@ FComputePrefixSumsTask::FComputePrefixSumsTask(uint32_t WidthIn, uint32_t Height
     CreateSyncObjects();
 }
 
-FComputePrefixSumsTask::~FComputePrefixSumsTask()
+FComputePrefixSumsUpSweepTask::~FComputePrefixSumsUpSweepTask()
 {
     FreeSyncObjects();
     Context->ResourceAllocator->UnregisterAndDestroyBuffer("BufferA");
 }
 
-void FComputePrefixSumsTask::Init()
+void FComputePrefixSumsUpSweepTask::Init()
 {
     Context->TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
 
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
-    auto MaterialCountShader = FShader("../../../src/shaders/material_sort_compute_prefix_sums.comp");
+    auto MaterialCountShader = FShader("../../../src/shaders/material_sort_compute_prefix_sums_up_sweep.comp");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
     Pipeline = Context->CreateComputePipeline(MaterialCountShader(), PipelineLayout);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-    DescriptorSetManager->ReserveDescriptorSet(Name, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
+    DescriptorSetManager->ReserveDescriptorSet(Name, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_UP_SWEEP_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
 
     DescriptorSetManager->ReserveDescriptorPool(Name);
 
     DescriptorSetManager->AllocateAllDescriptorSets(Name);
 };
 
-void FComputePrefixSumsTask::UpdateDescriptorSets()
+void FComputePrefixSumsUpSweepTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_PREFIX_SUMS_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_BUFFER_A, i, Context->ResourceAllocator->GetBuffer("BufferA"));
+        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_PREFIX_SUMS_UP_SWEEP_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_UP_SWEEP_BUFFER_A, i, Context->ResourceAllocator->GetBuffer("BufferA"));
     }
 };
 
-void FComputePrefixSumsTask::RecordCommands()
+void FComputePrefixSumsUpSweepTask::RecordCommands()
 {
     CommandBuffers.resize(NumberOfSimultaneousSubmits);
 
@@ -106,14 +106,14 @@ void FComputePrefixSumsTask::RecordCommands()
             Context->TimingManager->TimestampStart(Name, CommandBuffer, i);
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
-            auto ComputeDescriptorSet = Context->DescriptorSetManager->GetSet(Name, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_LAYOUT_INDEX, i);
+            auto ComputeDescriptorSet = Context->DescriptorSetManager->GetSet(Name, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_UP_SWEEP_LAYOUT_INDEX, i);
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &ComputeDescriptorSet, 0, nullptr);
 
             uint32_t GroupCount = CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE);
             uint32_t DMax = Log2(GroupCount);
             uint32_t TotalGroupCount = 2 << Log2(GroupCount);
-            FPushConstantsPrefixSums PushConstantsPrefixSums = {0, TotalGroupCount};
+            FPushConstantsPrefixSums PushConstantsPrefixSums = {0, GroupCount};
 
             for (int D = 0; D <= DMax; ++D)
             {
@@ -134,11 +134,11 @@ void FComputePrefixSumsTask::RecordCommands()
             Context->TimingManager->TimestampEnd(Name, CommandBuffer, i);
         });
 
-        V::SetName(LogicalDevice, CommandBuffers[i], "V::MaterialSort_Sort_Materials_Command_Buffer");
+        V::SetName(LogicalDevice, CommandBuffers[i], "V::MaterialSort_Compute_Prefix_Sums_Up_Sweep_Command_Buffer");
     }
 };
 
-void FComputePrefixSumsTask::Cleanup()
+void FComputePrefixSumsUpSweepTask::Cleanup()
 {
     Inputs.clear();
     Outputs.clear();
@@ -154,7 +154,7 @@ void FComputePrefixSumsTask::Cleanup()
     Context->DescriptorSetManager->Reset(Name);
 };
 
-VkSemaphore FComputePrefixSumsTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
+VkSemaphore FComputePrefixSumsUpSweepTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
 {
     return FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, WaitFence, SignalFence, IterationIndex);
 };

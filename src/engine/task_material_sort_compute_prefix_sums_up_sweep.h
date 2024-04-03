@@ -2,11 +2,11 @@
 
 #include "executable_task.h"
 
-class FComputePrefixSumsTask : public FExecutableTask
+class FComputePrefixSumsUpSweepTask : public FExecutableTask
 {
 public:
-    FComputePrefixSumsTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
-    ~FComputePrefixSumsTask();
+    FComputePrefixSumsUpSweepTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+    ~FComputePrefixSumsUpSweepTask();
 
     void Init() override;
     void UpdateDescriptorSets() override;
