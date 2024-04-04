@@ -87,7 +87,7 @@ target_include_directories(RTracer PUBLIC .)
 
 target_link_libraries(Renderer
         Vulkan::Vulkan
-        Vulkan::shaderc_combined
+        optimized Vulkan::shaderc_combined
         Utils
         ECS
         tinyexr
