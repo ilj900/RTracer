@@ -478,19 +478,6 @@ int FRender::Render()
         return 1;
     }
 
-//    Context.WaitIdle();
-//    auto CountedMaterialsPerChunkBuffer = Context.ResourceAllocator->GetBuffer("CountedMaterialsPerChunkBuffer");
-//    Context.SaveBufferUint(CountedMaterialsPerChunkBuffer, CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE), TOTAL_MATERIALS, "CountedMaterialsPerChunkBuffer.exr");
-//
-//    auto TotalCountedMaterialsBuffer = Context.ResourceAllocator->GetBuffer("TotalCountedMaterialsBuffer");
-//    Context.SaveBufferUint(TotalCountedMaterialsBuffer, TOTAL_MATERIALS * 3, 1, "TotalCountedMaterialsBuffer.exr");
-//
-//    auto MaterialsOffsetsPerMaterialBuffer = Context.ResourceAllocator->GetBuffer("MaterialsOffsetsPerMaterialBuffer");
-//    Context.SaveBufferUint(MaterialsOffsetsPerMaterialBuffer, TOTAL_MATERIALS, 1, "MaterialsOffsetsPerMaterialBuffer.exr");
-//
-//    auto SortedMaterialsIndexMapBuffer = Context.ResourceAllocator->GetBuffer("SortedMaterialsIndexMapBuffer");
-//    Context.SaveBufferUint(SortedMaterialsIndexMapBuffer, Width, Height, "SortedMaterialsIndexMapBuffer.exr");
-
     RenderFrameIndex++;
 
     glfwPollEvents();
