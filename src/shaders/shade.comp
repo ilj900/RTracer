@@ -39,8 +39,6 @@ layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_TEXTURE_SAMPLE
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_TEXTURE_ARRAY) uniform texture2D Textures[MAX_TEXTURES];
 
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_IBL_IMAGE_INDEX) uniform sampler2D IBITextureSampler;
-
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_LIGHTS_BUFFER_INDEX) buffer LightsBufferObject
 {
     FLight Lights[];
@@ -148,21 +146,6 @@ void main()
     FRenderable Renderable = FetchRenderable(Hit.RenderableIndex);
 
     FMaterial Material = FetchMaterial(MaterialIndex);
-
-    if (MaterialIndex == (TOTAL_MATERIALS - 1))
-    {
-        vec3 NormalizedDirection = FetchRayData(NewPixelIndex).Direction.xyz;
-        float Tmp = atan(NormalizedDirection.z, NormalizedDirection.x);
-        float Phi = Tmp < 0.f ? (Tmp + (2 * 3.14159265357)) : Tmp;
-        float Theta = acos(NormalizedDirection.y);
-        Phi /= 2.f * 3.14159265357;
-        Theta /= 3.14159265357;
-
-        imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(vec3(texture(IBITextureSampler, vec2(Phi, Theta))), 1.f));
-
-        return;
-    }
-
     Vertices Verts = Vertices(Renderable.VertexBufferAddress);
     Indices Inds = Indices(Renderable.IndexBufferAddress);
     mat4 Transform = FetchTransform(Renderable.TransformIndex);

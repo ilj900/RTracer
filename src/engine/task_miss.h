@@ -2,11 +2,11 @@
 
 #include "executable_task.h"
 
-class FShadeTask : public FExecutableTask
+class FMissTask : public FExecutableTask
 {
 public:
-    FShadeTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
-    ~FShadeTask();
+    FMissTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+    ~FMissTask();
 
     void Init() override;
     void UpdateDescriptorSets() override;
@@ -17,5 +17,5 @@ public:
     VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
     VkPipeline Pipeline = VK_NULL_HANDLE;
 
-    VkSampler MaterialTextureSampler = VK_NULL_HANDLE;
+    VkSampler IBLImageSampler = VK_NULL_HANDLE;
 };

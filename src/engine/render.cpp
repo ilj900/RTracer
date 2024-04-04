@@ -279,10 +279,16 @@ int FRender::Init()
 
     ShadeTask = std::make_shared<FShadeTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     ShadeTask->RegisterInput(0, RTColorImage);
-    SetIBL("../../../resources/brown_photostudio_02_4k.exr");
     ShadeTask->Init();
     ShadeTask->UpdateDescriptorSets();
     ShadeTask->RecordCommands();
+
+    MissTask = std::make_shared<FMissTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    MissTask->RegisterInput(0, RTColorImage);
+    SetIBL("../../../resources/brown_photostudio_02_4k.exr");
+    MissTask->Init();
+    MissTask->UpdateDescriptorSets();
+    MissTask->RecordCommands();
 
     AccumulateTask = std::make_shared<FAccumulateTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     AccumulateTask->RegisterInput(0, RTColorImage);
@@ -347,6 +353,8 @@ int FRender::Cleanup()
     ComputePrefixSumsDownSweepTask = nullptr;
     ShadeTask->Cleanup();
     ShadeTask = nullptr;
+    MissTask->Cleanup();
+    MissTask = nullptr;
     AccumulateTask->Cleanup();
     AccumulateTask = nullptr;
     ClearImageTask->Cleanup();
@@ -454,16 +462,18 @@ int FRender::Render()
 
     auto ShadeSignalSemaphore = ShadeTask->Submit(Context.GetComputeQueue(), SortMaterialsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
+    auto MissSignalSemaphore = MissTask->Submit(Context.GetComputeQueue(), ShadeSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+
     VkSemaphore AccumulateSignalSemaphore = VK_NULL_HANDLE;
 
     if (NeedUpdate)
     {
-        auto ClearAccumulatorSemaphore = ClearImageTask->Submit(Context.GetComputeQueue(), ShadeSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+        auto ClearAccumulatorSemaphore = ClearImageTask->Submit(Context.GetComputeQueue(), MissSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
         AccumulateSignalSemaphore = AccumulateTask->Submit(Context.GetComputeQueue(), ClearAccumulatorSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
     }
     else
     {
-        AccumulateSignalSemaphore = AccumulateTask->Submit(Context.GetComputeQueue(), ShadeSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+        AccumulateSignalSemaphore = AccumulateTask->Submit(Context.GetComputeQueue(), MissSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
     }
 
     auto PassthroughSignalSemaphore = PassthroughTask->Submit(Context.GetGraphicsQueue(), AccumulateSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
@@ -583,7 +593,7 @@ int FRender::SetIBL(const std::string& Path)
 {
     ImagePtr IBLImage = GetContext().CreateEXRImageFromFile(Path, "V::IBL_Image");
     IBLImage->Transition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    ShadeTask->RegisterInput(1, IBLImage);
+    MissTask->RegisterInput(1, IBLImage);
 
     return 0;
 }

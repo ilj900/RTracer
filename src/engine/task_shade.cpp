@@ -37,8 +37,6 @@ FShadeTask::FShadeTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Cont
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_RAYS_BUFFER_INDEX,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
-    DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_IBL_IMAGE_INDEX,
-                                              {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,  VK_SHADER_STAGE_COMPUTE_BIT});
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_TEXTURE_SAMPLER,
                                               {VK_DESCRIPTOR_TYPE_SAMPLER,  VK_SHADER_STAGE_COMPUTE_BIT});
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_TEXTURE_ARRAY,
@@ -60,7 +58,6 @@ FShadeTask::FShadeTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Cont
 
 FShadeTask::~FShadeTask()
 {
-    vkDestroySampler(LogicalDevice, IBLImageSampler, nullptr);
     vkDestroySampler(LogicalDevice, MaterialTextureSampler, nullptr);
 
     FreeSyncObjects();
@@ -78,7 +75,6 @@ void FShadeTask::Init()
 
     Pipeline = Context->CreateComputePipeline(ShadeShader(), PipelineLayout);
 
-    IBLImageSampler = Context->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT);
     MaterialTextureSampler = Context->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
@@ -99,7 +95,6 @@ void FShadeTask::UpdateDescriptorSets()
         UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_HITS_BUFFER_INDEX, i, Context->ResourceAllocator->GetBuffer("HitsBuffer"));
         UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_TRANSFORM_INDEX, i, TRANSFORM_SYSTEM()->DeviceBuffer);
         UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_RAYS_BUFFER_INDEX, i, Context->ResourceAllocator->GetBuffer("InitialRaysBuffer"));
-        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_IBL_IMAGE_INDEX, i, Inputs[1], IBLImageSampler);
 
         VkDescriptorImageInfo MaterialTextureSamplerInfo{};
         MaterialTextureSamplerInfo.sampler = MaterialTextureSampler;
@@ -137,17 +132,6 @@ void FShadeTask::RecordCommands()
                 uint32_t MaterialIndex = ECS::GetCoordinator().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
                 FPushConstants PushConstants = {Width, Height, 1.f / Width, 1.f / Height, Width * Height, MaterialIndex};
                 vkCmdPushConstants(CommandBuffer, Context->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
-
-                vkCmdDispatchIndirect(CommandBuffer, DispatchBuffer.Buffer, MaterialIndex * 3 * sizeof(uint32_t));
-            }
-
-            /// For miss cases
-            {
-                uint32_t MaterialIndex = TOTAL_MATERIALS - 1;
-                FPushConstants PushConstants = {Width, Height, 1.f / Width, 1.f / Height, Width * Height,
-                                                MaterialIndex};
-                vkCmdPushConstants(CommandBuffer, Context->DescriptorSetManager->GetPipelineLayout(Name),
-                                   VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
 
                 vkCmdDispatchIndirect(CommandBuffer, DispatchBuffer.Buffer, MaterialIndex * 3 * sizeof(uint32_t));
             }
