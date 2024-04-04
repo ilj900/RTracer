@@ -8,14 +8,9 @@
 #include "common_defines.h"
 #include "common_structures.h"
 
-FMaterial GetMaterial();
+FDeviceMaterial GetMaterial();
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_OUTPUT_IMAGE_INDEX, rgba32f) uniform image2D OutcomingImage;
-
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_MATERIAL_BUFFER_INDEX) buffer MaterialsBufferObject
-{
-    FMaterial Materials[];
-};
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_RENDERABLE_BUFFER_INDEX) buffer FRenderablesBuffer
 {
@@ -142,7 +137,7 @@ void main()
     FHit Hit = FetchHit(NewPixelIndex);
     FRenderable Renderable = FetchRenderable(Hit.RenderableIndex);
 
-    FMaterial Material = GetMaterial();
+    FDeviceMaterial Material = GetMaterial();
     Vertices Verts = Vertices(Renderable.VertexBufferAddress);
     Indices Inds = Indices(Renderable.IndexBufferAddress);
     mat4 Transform = FetchTransform(Renderable.TransformIndex);

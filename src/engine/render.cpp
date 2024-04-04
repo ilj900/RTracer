@@ -178,7 +178,6 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     CAMERA_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     RENDERABLE_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     MESH_SYSTEM()->Init();
-    MATERIAL_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     LIGHT_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     TRANSFORM_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
     ACCELERATION_STRUCTURE_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
@@ -436,7 +435,6 @@ int FRender::Render()
     CAMERA_SYSTEM()->Update();
     TRANSFORM_SYSTEM()->Update();
     RENDERABLE_SYSTEM()->Update();
-    MATERIAL_SYSTEM()->Update();
     LIGHT_SYSTEM()->Update();
     ACCELERATION_STRUCTURE_SYSTEM()->Update();
 

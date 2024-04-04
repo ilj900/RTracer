@@ -4,25 +4,25 @@
 
 #include "gpu_bufferable_system.h"
 #include "coordinator.h"
+#include "common_defines.h"
 
 namespace ECS
 {
     namespace SYSTEMS
     {
-        class FMaterialSystem : public FGPUBufferableSystem
+        class FMaterialSystem : public FSystem
         {
         public:
-            void Init(int NumberOfSimultaneousSubmits) override;
-            void Update() override;
-            void Update(int Index) override;
-
             FEntity CreateMaterial();
             FMaterialSystem& SetBaseColor(FEntity MaterialEntity, float Red, float Green, float Blue);
+            FMaterialSystem& SetBaseColor(FEntity MaterialEntity, ImagePtr Image);
             FMaterialSystem& SetDiffuseRoughness(FEntity MaterialEntity, float DiffuseRoughness);
+            FMaterialSystem& SetDiffuseRoughness(FEntity MaterialEntity, ImagePtr Image);
             FMaterialSystem& SetSpecularIOR(FEntity MaterialEntity, float SpecularIOR);
+            FMaterialSystem& SetSpecularIOR(FEntity MaterialEntity, ImagePtr Image);
             std::string GenerateMaterialCode(FEntity MaterialEntity);
 
-            const uint32_t MAX_MATERIALS = 32;
+            const uint32_t MAX_MATERIALS = TOTAL_MATERIALS - 1;
         };
     }
 }

@@ -5,22 +5,6 @@ namespace ECS
 {
     namespace SYSTEMS
     {
-        void FMaterialSystem::Init(int NumberOfSimultaneousSubmits)
-        {
-            FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(ECS::COMPONENTS::FMaterialComponent) * MAX_MATERIALS,
-                                       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Material_Buffer");
-        }
-
-        void FMaterialSystem::Update()
-        {
-            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FMaterialComponent>();
-        }
-
-        void FMaterialSystem::Update(int Index)
-        {
-            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FMaterialComponent>(Index);
-        }
-
         FEntity FMaterialSystem::CreateMaterial()
         {
             auto& Coordinator = GetCoordinator();
@@ -33,7 +17,6 @@ namespace ECS
         {
             auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
             MaterialComponent.BaseColor = FVector3(Red, Green, Blue);
-            MarkDirty(MaterialEntity);
             return *this;
         }
 
@@ -41,7 +24,6 @@ namespace ECS
         {
             auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
             MaterialComponent.DiffuseRoughness = DiffuseRoughness;
-            MarkDirty(MaterialEntity);
             return *this;
         }
 
@@ -49,7 +31,21 @@ namespace ECS
         {
             auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
             MaterialComponent.SpecularIOR = SpecularIOR;
-            MarkDirty(MaterialEntity);
+            return *this;
+        }
+
+        FMaterialSystem& FMaterialSystem::SetBaseColor(FEntity MaterialEntity, ImagePtr Image)
+        {
+            return *this;
+        }
+
+        FMaterialSystem& FMaterialSystem::SetDiffuseRoughness(FEntity MaterialEntity, ImagePtr Image)
+        {
+            return *this;
+        }
+
+        FMaterialSystem& FMaterialSystem::SetSpecularIOR(FEntity MaterialEntity, ImagePtr Image)
+        {
             return *this;
         }
 
@@ -59,9 +55,9 @@ namespace ECS
 
             auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
 
-            Result += "FMaterial GetMaterial()\r\n";
+            Result += "FDeviceMaterial GetMaterial()\r\n";
             Result += "{\r\n";
-            Result += "    FMaterial Material;\r\n";
+            Result += "    FDeviceMaterial Material;\r\n";
 
             Result += "    Material.BaseWeight = " + std::to_string(MaterialComponent.BaseWeight) + ";\r\n";
             Result += "    Material.BaseColor = " + MaterialComponent.BaseColor.ToString() + ";\r\n";

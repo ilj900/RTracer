@@ -65,7 +65,7 @@ struct FLight
     float dummy_3;
 };
 
-struct FMaterial
+struct FDeviceMaterial
 {
     float BaseWeight;
     FVector3 BaseColor;

@@ -7,7 +7,7 @@ namespace ECS
 {
     namespace COMPONENTS
     {
-        struct FMaterialComponent : FMaterial
+        struct FMaterialComponent : FDeviceMaterial
         {
             FMaterialComponent()
             {
