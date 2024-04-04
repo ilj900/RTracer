@@ -69,11 +69,17 @@ void FShadeTask::Init()
 
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
-    auto ShadeShader = FShader("../../../src/shaders/shade.comp");
-
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
 
-    Pipeline = Context->CreateComputePipeline(ShadeShader(), PipelineLayout);
+    for (auto& Material : *MATERIAL_SYSTEM())
+    {
+        auto MaterialCode = MATERIAL_SYSTEM()->GenerateMaterialCode(Material);
+        FCompileDefinitions CompileDefinitions;
+        CompileDefinitions.Push("FMaterial GetMaterial();", MaterialCode);
+        auto ShadeShader = FShader("../../../src/shaders/shade.comp", &CompileDefinitions);
+        uint32_t MaterialIndex = ECS::GetCoordinator().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
+        MaterialIndexToPipelineMap[MaterialIndex] = Context->CreateComputePipeline(ShadeShader(), PipelineLayout);
+    }
 
     MaterialTextureSampler = Context->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT);
 
@@ -120,16 +126,17 @@ void FShadeTask::RecordCommands()
         {
             Context->TimingManager->TimestampStart(Name, CommandBuffer, i);
 
-            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
-            auto RayTracingDescriptorSet = Context->DescriptorSetManager->GetSet(Name, COMPUTE_SHADE_LAYOUT_INDEX, i);
-            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context->DescriptorSetManager->GetPipelineLayout(Name),
-                                    0, 1, &RayTracingDescriptorSet, 0, nullptr);
-
             auto DispatchBuffer = Context->ResourceAllocator->GetBuffer("TotalCountedMaterialsBuffer");
 
             for (auto& Material : *MATERIAL_SYSTEM())
             {
                 uint32_t MaterialIndex = ECS::GetCoordinator().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
+
+                vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, MaterialIndexToPipelineMap[MaterialIndex]);
+                auto RayTracingDescriptorSet = Context->DescriptorSetManager->GetSet(Name, COMPUTE_SHADE_LAYOUT_INDEX, i);
+                vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context->DescriptorSetManager->GetPipelineLayout(Name),
+                                        0, 1, &RayTracingDescriptorSet, 0, nullptr);
+
                 FPushConstants PushConstants = {Width, Height, 1.f / Width, 1.f / Height, Width * Height, MaterialIndex};
                 vkCmdPushConstants(CommandBuffer, Context->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
 
@@ -154,7 +161,12 @@ void FShadeTask::Cleanup()
     }
 
     Context->DescriptorSetManager->DestroyPipelineLayout(Name);
-    vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
+    for (auto& Entry : MaterialIndexToPipelineMap)
+    {
+        vkDestroyPipeline(LogicalDevice, Entry.second, nullptr);
+    }
+
+    MaterialIndexToPipelineMap.clear();
 
     Context->DescriptorSetManager->Reset(Name);
 };

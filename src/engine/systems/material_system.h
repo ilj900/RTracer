@@ -20,6 +20,7 @@ namespace ECS
             FMaterialSystem& SetBaseColor(FEntity MaterialEntity, float Red, float Green, float Blue);
             FMaterialSystem& SetDiffuseRoughness(FEntity MaterialEntity, float DiffuseRoughness);
             FMaterialSystem& SetSpecularIOR(FEntity MaterialEntity, float SpecularIOR);
+            std::string GenerateMaterialCode(FEntity MaterialEntity);
 
             const uint32_t MAX_MATERIALS = 32;
         };

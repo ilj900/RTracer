@@ -11,11 +11,16 @@
 #include <map>
 
 shaderc_shader_kind GetShaderType(const std::string& Path);
-std::vector<uint32_t> CompileShaderToSpirVData(const std::string &Path);
+std::vector<uint32_t> CompileShaderToSpirVData(const std::string &Path,  const FCompileDefinitions* CompileDefinitions);
 
-FShader::FShader(const std::string &Path)
+void FCompileDefinitions::Push(const std::string& Define, const std::string& Value)
 {
-    auto SPIRVData = CompileShaderToSpirVData(Path);
+    Defines.push_back(std::pair<std::string, std::string>(Define, Value));
+}
+
+FShader::FShader(const std::string &Path, const FCompileDefinitions* CompileDefinitions)
+{
+    auto SPIRVData = CompileShaderToSpirVData(Path, CompileDefinitions);
 
     VkShaderModuleCreateInfo CreateInfo{};
     CreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -66,10 +71,23 @@ shaderc_shader_kind GetShaderType(const std::string& Path)
     return ExtensionToShaderTypeMap[Extension];
 }
 
-std::vector<uint32_t> CompileShaderToSpirVData(const std::string &Path)
+std::vector<uint32_t> CompileShaderToSpirVData(const std::string &Path,  const FCompileDefinitions* CompileDefinitions)
 {
     auto ShaderType = GetShaderType(Path);
     auto ShaderCode = ReadFileToString(Path);
+
+    if (CompileDefinitions)
+    {
+        for (auto &Define: CompileDefinitions->Defines)
+        {
+            auto StartingIndex = FindString(ShaderCode, Define.first);
+            if (StartingIndex != std::string::npos) {
+                ReplaceString(ShaderCode, Define.first, Define.second, StartingIndex);
+            }
+            /// TODO: What if Define was not found? looks like an error...
+        }
+    }
+
     auto StartingIndex = FindString(ShaderCode, "#include \"");
 
     while (StartingIndex != std::string::npos)

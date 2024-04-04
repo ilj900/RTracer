@@ -1,5 +1,7 @@
 #include "maths.h"
 
+#include <string>
+
 ///****************************************************************
 ///FQuaternion and it's operations
 ///****************************************************************
@@ -196,6 +198,16 @@ float FVector3::Length()
 float FVector3::Length2()
 {
     return X * X + Y * Y + Z * Z;
+}
+
+std::string FVector3::ToString()
+{
+    std::string Result = "FVector3(";
+    Result += std::to_string(X) + ", ";
+    Result += std::to_string(Y) + ", ";
+    Result += std::to_string(Z) + ")";
+
+    return Result;
 }
 
 bool operator==(const FVector3& A, const FVector3& B)

@@ -89,6 +89,7 @@ struct FVector3
     FVector3& SelfRotateY(float Angle);
     float Length();
     float Length2();
+    std::string ToString();
 
     /// Data
     float X;

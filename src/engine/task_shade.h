@@ -15,7 +15,8 @@ public:
     VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex);
 
     VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
-    VkPipeline Pipeline = VK_NULL_HANDLE;
 
     VkSampler MaterialTextureSampler = VK_NULL_HANDLE;
+
+    std::unordered_map<uint32_t , VkPipeline> MaterialIndexToPipelineMap;
 };
