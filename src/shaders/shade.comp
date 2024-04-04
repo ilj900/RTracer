@@ -197,5 +197,5 @@ void main()
 
     vec3 ColorOut = texture(sampler2D(Textures[Renderable.MaterialIndex], Sampler), TextureCoords).rgb;
 
-    imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(Material.BaseColor, 1.f));
+    imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(Material.BaseColor * Luminance, 1.f));
 }

@@ -124,12 +124,6 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::Begin("Info", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar);
-    ImGui::SetWindowPos({0.f, 0.f});
-    ImGui::SetWindowSize({600, 300});
-    ImGui::TextColored({0.f, 1.f, 0.f, 1.f}, "Test text");
-    ImGui::End();
-
     auto StringToColor = [](const std::string& String)
     {
         static std::hash<std::string> HashingFunction;
