@@ -11,7 +11,8 @@ public:
     FTextureManager();
     ~FTextureManager();
 
-    int RegiseterTexture(ImagePtr ImagePointer, VkImageLayout ImageLayout);
+    uint32_t RegiseterTexture(ImagePtr ImagePointer, VkImageLayout ImageLayout);
+    ImagePtr GetTexture(uint32_t TextureIndex);
     VkDescriptorImageInfo* GetDescriptorImageInfos();
 
 private:

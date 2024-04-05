@@ -62,66 +62,55 @@ namespace ECS
                 ThinWalled = false;
             };
 
-            FMaterialComponent(float BaseWeightIn, FVector3 BaseColorIn, float DiffuseRoughnessIn, float MetalnessIn, FVector3 NormalIn,
-            float SpecularWeightIn, FVector3 SpecularColorIn, float SpecularRoughnessIn, float SpecularIORIn, float SpecularAnisotropyIn, float SpecularRotationIn,
-            float TransmissionWeightIn, FVector3 TransmissionColorIn, float TransmissionDepthIn, FVector3 TransmissionScatterIn, float TransmissionAnisotropyIn, float TransmissionDispersionIn, float TransmissionRoughnessIn,
-            float SubsurfaceWeightIn, FVector3 SubsurfaceColorIn, FVector3 SubsurfaceRadiusIn, float SubsurfaceScaleIn, float SubsurfaceAnisotropyIn,
-            float SheenWeightIn, FVector3 SheenColorIn, float SheenRoughnessIn,
-            float CoatWeightIn, FVector3 CoatColorIn, float CoatRoughnessIn, float CoatAnisotropyIn, float CoatRotationIn, float CoatIORIn, FVector3 CoatNormalIn, float CoatAffectColorIn, float CoatAffectRoughnessIn,
-            float ThinFilmThicknessIn, float ThinFilmIORIn,
-            float EmissionIn, FVector3 EmissionColorIn,
-            FVector3 OpacityIn, uint32_t ThinWalledIn)
-            {
-                BaseWeight = BaseWeightIn;
-                BaseColor = BaseColorIn;
-                DiffuseRoughness = DiffuseRoughnessIn;
-                Metalness = MetalnessIn;
-                Normal = NormalIn;
+            uint32_t BaseWeightTexture = UINT32_MAX;
+            uint32_t BaseColorTexture = UINT32_MAX;
+            uint32_t DiffuseRoughnessTexture = UINT32_MAX;
+            uint32_t MetalnessTexture = UINT32_MAX;
+            uint32_t NormalTexture = UINT32_MAX;
 
-                SpecularWeight = SpecularWeightIn;
-                SpecularColor = SpecularColorIn;
-                SpecularRoughness = SpecularRoughnessIn;
-                SpecularIOR = SpecularIORIn;
-                SpecularAnisotropy = SpecularAnisotropyIn;
-                SpecularRotation = SpecularRotationIn;
+            uint32_t SpecularWeightTexture = UINT32_MAX;
+            uint32_t SpecularColorTexture = UINT32_MAX;
+            uint32_t SpecularRoughnessTexture = UINT32_MAX;
+            uint32_t SpecularIORTexture = UINT32_MAX;
+            uint32_t SpecularAnisotropyTexture = UINT32_MAX;
+            uint32_t SpecularRotationTexture = UINT32_MAX;
 
-                TransmissionWeight = TransmissionWeightIn;
-                TransmissionColor = TransmissionColorIn;
-                TransmissionDepth = TransmissionDepthIn;
-                TransmissionScatter = TransmissionScatterIn;
-                TransmissionAnisotropy = TransmissionAnisotropyIn;
-                TransmissionDispersion = TransmissionDispersionIn;
-                TransmissionRoughness = TransmissionRoughnessIn;
+            uint32_t TransmissionWeightTexture = UINT32_MAX;
+            uint32_t TransmissionColorTexture = UINT32_MAX;
+            uint32_t TransmissionDepthTexture = UINT32_MAX;
+            uint32_t TransmissionScatterTexture = UINT32_MAX;
+            uint32_t TransmissionAnisotropyTexture = UINT32_MAX;
+            uint32_t TransmissionDispersionTexture = UINT32_MAX;
+            uint32_t TransmissionRoughnessTexture = UINT32_MAX;
 
-                SubsurfaceWeight = SubsurfaceWeightIn;
-                SubsurfaceColor = SubsurfaceColorIn;
-                SubsurfaceRadius = SubsurfaceRadiusIn;
-                SubsurfaceScale = SubsurfaceScaleIn;
-                SubsurfaceAnisotropy = SubsurfaceAnisotropyIn;
+            uint32_t SubsurfaceWeightTexture = UINT32_MAX;
+            uint32_t SubsurfaceColorTexture = UINT32_MAX;
+            uint32_t SubsurfaceRadiusTexture = UINT32_MAX;
+            uint32_t SubsurfaceScaleTexture = UINT32_MAX;
+            uint32_t SubsurfaceAnisotropyTexture = UINT32_MAX;
 
-                SheenWeight = SheenWeightIn;
-                SheenColor = SheenColorIn;
-                SheenRoughness = SheenRoughnessIn;
+            uint32_t SheenWeightTexture = UINT32_MAX;
+            uint32_t SheenColorTexture = UINT32_MAX;
+            uint32_t SheenRoughnessTexture = UINT32_MAX;
 
-                CoatWeight = CoatWeightIn;
-                CoatColor = CoatColorIn;
-                CoatRoughness = CoatRoughnessIn;
-                CoatAnisotropy = CoatAnisotropyIn;
-                CoatRotation = CoatRotationIn;
-                CoatIOR = CoatIORIn;
-                CoatNormal = CoatNormalIn;
-                CoatAffectColor = CoatAffectColorIn;
-                CoatAffectRoughness = CoatAffectRoughnessIn;
+            uint32_t CoatWeightTexture = UINT32_MAX;
+            uint32_t CoatColorTexture = UINT32_MAX;
+            uint32_t CoatRoughnessTexture = UINT32_MAX;
+            uint32_t CoatAnisotropyTexture = UINT32_MAX;
+            uint32_t CoatRotationTexture = UINT32_MAX;
+            uint32_t CoatIORTexture = UINT32_MAX;
+            uint32_t CoatNormalTexture = UINT32_MAX;
+            uint32_t CoatAffectColorTexture = UINT32_MAX;
+            uint32_t CoatAffectRoughnessTexture = UINT32_MAX;
 
-                ThinFilmThickness = ThinFilmThicknessIn;
-                ThinFilmIOR = ThinFilmIORIn;
+            uint32_t ThinFilmThicknessTexture = UINT32_MAX;
+            uint32_t ThinFilmIORTexture = UINT32_MAX;
 
-                Emission = EmissionIn;
-                EmissionColor = EmissionColorIn;
+            uint32_t EmissionTexture = UINT32_MAX;
+            uint32_t EmissionColorTexture = UINT32_MAX;
 
-                Opacity = OpacityIn;
-                ThinWalled = ThinWalledIn;
-            };
+            uint32_t OpacityTexture = UINT32_MAX;
+            uint32_t ThinWalledTexture = UINT32_MAX;
         };
     }
 }

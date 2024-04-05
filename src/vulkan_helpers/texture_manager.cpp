@@ -46,15 +46,20 @@ FTextureManager::~FTextureManager()
     Images.clear();
 }
 
-int FTextureManager::RegiseterTexture(ImagePtr ImagePointer, VkImageLayout ImageLayout)
+uint32_t FTextureManager::RegiseterTexture(ImagePtr ImagePointer, VkImageLayout ImageLayout)
 {
-    int Index = Images.size();
+    uint32_t Index = Images.size();
     Images.push_back(ImagePointer);
     DescriptorImageInfos[Index].imageLayout = ImageLayout;
     DescriptorImageInfos[Index].imageView = ImagePointer->View;
     DescriptorImageInfos[Index].sampler = VK_NULL_HANDLE;
 
     return Index;
+}
+
+ImagePtr FTextureManager::GetTexture(uint32_t TextureIndex)
+{
+    return Images[TextureIndex];
 }
 
 VkDescriptorImageInfo* FTextureManager::GetDescriptorImageInfos()

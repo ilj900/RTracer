@@ -8,8 +8,6 @@
 #include "common_defines.h"
 #include "common_structures.h"
 
-FDeviceMaterial GetMaterial();
-
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_OUTPUT_IMAGE_INDEX, rgba32f) uniform image2D OutcomingImage;
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_RENDERABLE_BUFFER_INDEX) buffer FRenderablesBuffer
@@ -108,6 +106,18 @@ bool IsIndexed(FRenderable Renderable)
     return CheckFlag(Renderable.RenderablePropertyMask, RENDERABLE_IS_INDEXED);
 }
 
+vec3 SampleVec3(uint TextureIndex, vec2 TextureCoords)
+{
+    return texture(sampler2D(Textures[TextureIndex], Sampler), TextureCoords).rgb;
+}
+
+float SampleFloat(uint TextureIndex, vec2 TextureCoords)
+{
+    return texture(sampler2D(Textures[TextureIndex], Sampler), TextureCoords).r;
+}
+
+FDeviceMaterial GetMaterial(vec2 TextureCoords);
+
 layout (push_constant) uniform PushConstantsBlock
 {
     FPushConstants PushConstants;
@@ -137,7 +147,6 @@ void main()
     FHit Hit = FetchHit(NewPixelIndex);
     FRenderable Renderable = FetchRenderable(Hit.RenderableIndex);
 
-    FDeviceMaterial Material = GetMaterial();
     Vertices Verts = Vertices(Renderable.VertexBufferAddress);
     Indices Inds = Indices(Renderable.IndexBufferAddress);
     mat4 Transform = FetchTransform(Renderable.TransformIndex);
@@ -181,6 +190,8 @@ void main()
     const vec3 Barycentrics = vec3(1.0 - Hit.HitUV.x - Hit.HitUV.y, Hit.HitUV.x, Hit.HitUV.y);
     vec2 TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
 
+    FDeviceMaterial Material = GetMaterial(TextureCoords);
+
     vec3 PointOfIntersectionInLocalSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
     vec3 PointOfIntersectionInWorldSpace = vec3(Transform * vec4(PointOfIntersectionInLocalSpace, 1.f));
     
@@ -190,7 +201,7 @@ void main()
     float Distance2 = dot(PointOfIntersectioToLightDirection, PointOfIntersectioToLightDirection);
     float Luminance = Light.Intensity * CosNormalToLightAngle / Distance2;
 
-    vec3 ColorOut = texture(sampler2D(Textures[Renderable.MaterialIndex], Sampler), TextureCoords).rgb;
+    vec3 ColorOut = Material.BaseColor * Luminance;
 
-    imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(Material.BaseColor * Luminance, 1.f));
+    imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(ColorOut, 1.f));
 }

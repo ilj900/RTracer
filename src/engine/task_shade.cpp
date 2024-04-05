@@ -73,7 +73,7 @@ void FShadeTask::Init()
     {
         auto MaterialCode = MATERIAL_SYSTEM()->GenerateMaterialCode(Material);
         FCompileDefinitions CompileDefinitions;
-        CompileDefinitions.Push("FDeviceMaterial GetMaterial();", MaterialCode);
+        CompileDefinitions.Push("FDeviceMaterial GetMaterial(vec2 TextureCoords);", MaterialCode);
         auto ShadeShader = FShader("../../../src/shaders/shade.comp", &CompileDefinitions);
         uint32_t MaterialIndex = ECS::GetCoordinator().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
         MaterialIndexToPipelineMap[MaterialIndex] = Context->CreateComputePipeline(ShadeShader(), PipelineLayout);

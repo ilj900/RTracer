@@ -1,5 +1,8 @@
 #include "material_component.h"
 #include "material_system.h"
+#include "texture_component.h"
+
+#include "texture_manager.h"
 
 namespace ECS
 {
@@ -34,18 +37,27 @@ namespace ECS
             return *this;
         }
 
-        FMaterialSystem& FMaterialSystem::SetBaseColor(FEntity MaterialEntity, ImagePtr Image)
+        FMaterialSystem& FMaterialSystem::SetBaseColor(FEntity MaterialEntity, FEntity TextureEntity)
         {
+            auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
+            auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+            MaterialComponent.BaseColorTexture = TextureComponent.TextureIndex;
             return *this;
         }
 
-        FMaterialSystem& FMaterialSystem::SetDiffuseRoughness(FEntity MaterialEntity, ImagePtr Image)
+        FMaterialSystem& FMaterialSystem::SetDiffuseRoughness(FEntity MaterialEntity, FEntity TextureEntity)
         {
+            auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
+            auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+            MaterialComponent.DiffuseRoughnessTexture = TextureComponent.TextureIndex;
             return *this;
         }
 
-        FMaterialSystem& FMaterialSystem::SetSpecularIOR(FEntity MaterialEntity, ImagePtr Image)
+        FMaterialSystem& FMaterialSystem::SetSpecularIOR(FEntity MaterialEntity, FEntity TextureEntity)
         {
+            auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
+            auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+            MaterialComponent.SpecularIORTexture = TextureComponent.TextureIndex;
             return *this;
         }
 
@@ -55,50 +67,83 @@ namespace ECS
 
             auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
 
-            Result += "FDeviceMaterial GetMaterial()\r\n";
+            auto GenerateGetFunctionFloat = [](const std::string& ParameterName, uint32_t TextureIndex, float FallbackValue)
+            {
+                std::string Result = "    " + ParameterName;
+
+                if (UINT32_MAX == TextureIndex)
+                {
+                    Result += " = " + std::to_string(FallbackValue) + ";\r\n";
+                }
+                else
+                {
+                    Result += " = SampleFloat(" + std::to_string(TextureIndex) + ", TextureCoords);\r\n";
+                }
+
+                return Result;
+            };
+
+            auto GenerateGetFunctionVector3 = [](const std::string& ParameterName, uint32_t TextureIndex, FVector3 FallbackValue)
+            {
+                std::string Result = "    " + ParameterName;
+
+                if (UINT32_MAX == TextureIndex)
+                {
+                    Result += " = " + FallbackValue.ToString() + ";\r\n";
+                }
+                else
+                {
+                    Result += " = SampleVec3(" + std::to_string(TextureIndex) + ", TextureCoords);\r\n";
+                }
+
+                return Result;
+            };
+
+            Result += "FDeviceMaterial GetMaterial(vec2 TextureCoords)\r\n";
             Result += "{\r\n";
             Result += "    FDeviceMaterial Material;\r\n";
 
-            Result += "    Material.BaseWeight = " + std::to_string(MaterialComponent.BaseWeight) + ";\r\n";
-            Result += "    Material.BaseColor = " + MaterialComponent.BaseColor.ToString() + ";\r\n";
-            Result += "    Material.DiffuseRoughness = " + std::to_string(MaterialComponent.DiffuseRoughness) + ";\r\n";
-            Result += "    Material.Metalness = " + std::to_string(MaterialComponent.Metalness) + ";\r\n";
-            Result += "    Material.Normal = " + MaterialComponent.Normal.ToString() + ";\r\n";
-            Result += "    Material.SpecularWeight = " + std::to_string(MaterialComponent.SpecularWeight) + ";\r\n";
-            Result += "    Material.SpecularColor = " + MaterialComponent.SpecularColor.ToString() + ";\r\n";
-            Result += "    Material.SpecularRoughness = " + std::to_string(MaterialComponent.SpecularRoughness) + ";\r\n";
-            Result += "    Material.SpecularIOR = " + std::to_string(MaterialComponent.SpecularIOR) + ";\r\n";
-            Result += "    Material.SpecularAnisotropy = " + std::to_string(MaterialComponent.SpecularAnisotropy) + ";\r\n";
-            Result += "    Material.SpecularRotation = " + std::to_string(MaterialComponent.SpecularRotation) + ";\r\n";
-            Result += "    Material.TransmissionWeight = " + std::to_string(MaterialComponent.TransmissionWeight) + ";\r\n";
-            Result += "    Material.TransmissionColor = " + MaterialComponent.TransmissionColor.ToString() + ";\r\n";
-            Result += "    Material.TransmissionDepth = " + std::to_string(MaterialComponent.TransmissionDepth) + ";\r\n";
-            Result += "    Material.TransmissionScatter = " + MaterialComponent.TransmissionScatter.ToString() + ";\r\n";
-            Result += "    Material.TransmissionAnisotropy = " + std::to_string(MaterialComponent.TransmissionAnisotropy) + ";\r\n";
-            Result += "    Material.TransmissionDispersion = " + std::to_string(MaterialComponent.TransmissionDispersion) + ";\r\n";
-            Result += "    Material.TransmissionRoughness = " + std::to_string(MaterialComponent.TransmissionRoughness) + ";\r\n";
-            Result += "    Material.SubsurfaceWeight = " + std::to_string(MaterialComponent.SubsurfaceWeight) + ";\r\n";
-            Result += "    Material.SubsurfaceColor = " + MaterialComponent.SubsurfaceColor.ToString() + ";\r\n";
-            Result += "    Material.SubsurfaceRadius = " + MaterialComponent.SubsurfaceRadius.ToString() + ";\r\n";
-            Result += "    Material.SubsurfaceScale = " + std::to_string(MaterialComponent.SubsurfaceScale) + ";\r\n";
-            Result += "    Material.SubsurfaceAnisotropy = " + std::to_string(MaterialComponent.SubsurfaceAnisotropy) + ";\r\n";
-            Result += "    Material.SheenWeight = " + std::to_string(MaterialComponent.SheenWeight) + ";\r\n";
-            Result += "    Material.SheenColor = " + MaterialComponent.SheenColor.ToString() + ";\r\n";
-            Result += "    Material.SheenRoughness = " + std::to_string(MaterialComponent.SheenRoughness) + ";\r\n";
-            Result += "    Material.CoatWeight = " + std::to_string(MaterialComponent.CoatWeight) + ";\r\n";
-            Result += "    Material.CoatColor = " + MaterialComponent.CoatColor.ToString() + ";\r\n";
-            Result += "    Material.CoatRoughness = " + std::to_string(MaterialComponent.CoatRoughness) + ";\r\n";
-            Result += "    Material.CoatAnisotropy = " + std::to_string(MaterialComponent.CoatAnisotropy) + ";\r\n";
-            Result += "    Material.CoatRotation = " + std::to_string(MaterialComponent.CoatRotation) + ";\r\n";
-            Result += "    Material.CoatIOR = " + std::to_string(MaterialComponent.CoatIOR) + ";\r\n";
-            Result += "    Material.CoatNormal = " + MaterialComponent.CoatNormal.ToString() + ";\r\n";
-            Result += "    Material.CoatAffectColor = " + std::to_string(MaterialComponent.CoatAffectColor) + ";\r\n";
-            Result += "    Material.CoatAffectRoughness = " + std::to_string(MaterialComponent.CoatAffectRoughness) + ";\r\n";
-            Result += "    Material.ThinFilmThickness = " + std::to_string(MaterialComponent.ThinFilmThickness) + ";\r\n";
-            Result += "    Material.ThinFilmIOR = " + std::to_string(MaterialComponent.ThinFilmIOR) + ";\r\n";
-            Result += "    Material.Emission = " + std::to_string(MaterialComponent.Emission) + ";\r\n";
-            Result += "    Material.EmissionColor = " + MaterialComponent.EmissionColor.ToString() + ";\r\n";
-            Result += "    Material.Opacity = " + MaterialComponent.Opacity.ToString() + ";\r\n";
+            Result += GenerateGetFunctionFloat("Material.BaseWeight", MaterialComponent.BaseWeightTexture, MaterialComponent.BaseWeight);
+            Result += GenerateGetFunctionVector3("Material.BaseColor", MaterialComponent.BaseColorTexture, MaterialComponent.BaseColor);
+            Result += GenerateGetFunctionFloat("Material.DiffuseRoughness", MaterialComponent.DiffuseRoughnessTexture, MaterialComponent.DiffuseRoughness);
+            Result += GenerateGetFunctionFloat("Material.Metalness", MaterialComponent.MetalnessTexture, MaterialComponent.Metalness);
+            Result += GenerateGetFunctionVector3("Material.Normal", MaterialComponent.NormalTexture, MaterialComponent.Normal);
+            Result += GenerateGetFunctionFloat("Material.SpecularWeight", MaterialComponent.SpecularWeightTexture, MaterialComponent.SpecularWeight);
+            Result += GenerateGetFunctionVector3("Material.SpecularColor", MaterialComponent.SpecularColorTexture, MaterialComponent.SpecularColor);
+            Result += GenerateGetFunctionFloat("Material.SpecularRoughness", MaterialComponent.SpecularRoughnessTexture, MaterialComponent.SpecularRoughness);
+            Result += GenerateGetFunctionFloat("Material.SpecularIOR", MaterialComponent.SpecularIORTexture, MaterialComponent.SpecularIOR);
+            Result += GenerateGetFunctionFloat("Material.SpecularAnisotropy", MaterialComponent.SpecularAnisotropyTexture, MaterialComponent.SpecularAnisotropy);
+            Result += GenerateGetFunctionFloat("Material.SpecularRotation", MaterialComponent.SpecularRotationTexture, MaterialComponent.SpecularRotation);
+            Result += GenerateGetFunctionFloat("Material.TransmissionWeight", MaterialComponent.TransmissionWeightTexture, MaterialComponent.TransmissionWeight);
+            Result += GenerateGetFunctionVector3("Material.TransmissionColor", MaterialComponent.TransmissionColorTexture, MaterialComponent.TransmissionColor);
+            Result += GenerateGetFunctionFloat("Material.TransmissionDepth", MaterialComponent.TransmissionDepthTexture, MaterialComponent.TransmissionDepth);
+            Result += GenerateGetFunctionVector3("Material.TransmissionScatter", MaterialComponent.TransmissionScatterTexture, MaterialComponent.TransmissionScatter);
+            Result += GenerateGetFunctionFloat("Material.TransmissionAnisotropy", MaterialComponent.TransmissionAnisotropyTexture, MaterialComponent.TransmissionAnisotropy);
+            Result += GenerateGetFunctionFloat("Material.TransmissionDispersion", MaterialComponent.TransmissionDispersionTexture, MaterialComponent.TransmissionDispersion);
+            Result += GenerateGetFunctionFloat("Material.TransmissionRoughness", MaterialComponent.TransmissionRoughnessTexture, MaterialComponent.TransmissionRoughness);
+            Result += GenerateGetFunctionFloat("Material.SubsurfaceWeight", MaterialComponent.SubsurfaceWeightTexture, MaterialComponent.SubsurfaceWeight);
+            Result += GenerateGetFunctionVector3("Material.SubsurfaceColor", MaterialComponent.SubsurfaceColorTexture, MaterialComponent.SubsurfaceColor);
+            Result += GenerateGetFunctionVector3("Material.SubsurfaceRadius", MaterialComponent.SubsurfaceRadiusTexture, MaterialComponent.SubsurfaceRadius);
+            Result += GenerateGetFunctionFloat("Material.SubsurfaceScale", MaterialComponent.SubsurfaceScaleTexture, MaterialComponent.SubsurfaceScale);
+            Result += GenerateGetFunctionFloat("Material.SubsurfaceAnisotropy", MaterialComponent.SubsurfaceAnisotropyTexture, MaterialComponent.SubsurfaceAnisotropy);
+            Result += GenerateGetFunctionFloat("Material.SheenWeight", MaterialComponent.SheenWeightTexture, MaterialComponent.SheenWeight);
+            Result += GenerateGetFunctionVector3("Material.SheenColor", MaterialComponent.SheenColorTexture, MaterialComponent.SheenColor);
+            Result += GenerateGetFunctionFloat("Material.SheenRoughness", MaterialComponent.SheenRoughnessTexture, MaterialComponent.SheenRoughness);
+            Result += GenerateGetFunctionFloat("Material.CoatWeight", MaterialComponent.CoatWeightTexture, MaterialComponent.CoatWeight);
+            Result += GenerateGetFunctionVector3("Material.CoatColor", MaterialComponent.CoatColorTexture, MaterialComponent.CoatColor);
+            Result += GenerateGetFunctionFloat("Material.CoatRoughness", MaterialComponent.CoatRoughnessTexture, MaterialComponent.CoatRoughness);
+            Result += GenerateGetFunctionFloat("Material.CoatAnisotropy", MaterialComponent.CoatAnisotropyTexture, MaterialComponent.CoatAnisotropy);
+            Result += GenerateGetFunctionFloat("Material.CoatRotation", MaterialComponent.CoatRotationTexture, MaterialComponent.CoatRotation);
+            Result += GenerateGetFunctionFloat("Material.CoatIOR", MaterialComponent.CoatIORTexture, MaterialComponent.CoatIOR);
+            Result += GenerateGetFunctionVector3("Material.CoatNormal", MaterialComponent.CoatNormalTexture, MaterialComponent.CoatNormal);
+            Result += GenerateGetFunctionFloat("Material.CoatAffectColor", MaterialComponent.CoatAffectColorTexture, MaterialComponent.CoatAffectColor);
+            Result += GenerateGetFunctionFloat("Material.CoatAffectRoughness", MaterialComponent.CoatAffectRoughnessTexture, MaterialComponent.CoatAffectRoughness);
+            Result += GenerateGetFunctionFloat("Material.ThinFilmThickness", MaterialComponent.ThinFilmThicknessTexture, MaterialComponent.ThinFilmThickness);
+            Result += GenerateGetFunctionFloat("Material.ThinFilmIOR", MaterialComponent.ThinFilmIORTexture, MaterialComponent.ThinFilmIOR);
+            Result += GenerateGetFunctionFloat("Material.Emission", MaterialComponent.EmissionTexture, MaterialComponent.Emission);
+            Result += GenerateGetFunctionVector3("Material.EmissionColor", MaterialComponent.EmissionColorTexture, MaterialComponent.EmissionColor);
+            Result += GenerateGetFunctionVector3("Material.Opacity", MaterialComponent.OpacityTexture, MaterialComponent.Opacity);
+            //TODO: Add uint textures
             Result += "    Material.ThinWalled = " + std::to_string(MaterialComponent.ThinWalled) + ";\r\n";
 
             Result += "    return Material;\r\n";

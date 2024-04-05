@@ -12,6 +12,7 @@ set(ECS_INCLUDE
         components/material_component.h
         components/mesh_component.h
         components/transform_component.h
+        components/texture_component.h
 
         systems/acceleration_structure_system.h
         systems/camera_system.h
@@ -20,6 +21,7 @@ set(ECS_INCLUDE
         systems/material_system.h
         systems/mesh_system.h
         systems/renderable_system.h
+        systems/texture_system.h
         systems/transform_system.h)
 
 set(ECS_SOURCE
@@ -32,6 +34,7 @@ set(ECS_SOURCE
         systems/material_system.cpp
         systems/mesh_system.cpp
         systems/renderable_system.cpp
+        systems/texture_system.cpp
         systems/transform_system.cpp
         )
 
@@ -87,7 +90,7 @@ target_include_directories(RTracer PUBLIC .)
 
 target_link_libraries(Renderer
         Vulkan::Vulkan
-        optimized Vulkan::shaderc_combined
+        Vulkan::shaderc_combined
         Utils
         ECS
         tinyexr

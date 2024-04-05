@@ -5,8 +5,8 @@
 #include "transform_system.h"
 #include "renderable_system.h"
 #include "camera_system.h"
-#include "material_system.h"
 #include "light_system.h"
+#include "texture_system.h"
 
 #include "acceleration_structure_component.h"
 #include "mesh_component.h"
@@ -18,6 +18,8 @@
 #include "material_component.h"
 #include "light_component.h"
 #include "camera_component.h"
+#include "texture_component.h"
+#include "material_system.h"
 
 #include "vk_functions.h"
 #include "render.h"
@@ -36,17 +38,18 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     Coordinator.Init();
 
     /// Register components
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FAccelerationStructureComponent>();
     Coordinator.RegisterComponent<ECS::COMPONENTS::FCameraComponent>();
     Coordinator.RegisterComponent<ECS::COMPONENTS::FDeviceCameraComponent>();
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FTransformComponent>();
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FDeviceTransformComponent>();
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FDeviceRenderableComponent>();
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FMaterialComponent>();
     Coordinator.RegisterComponent<ECS::COMPONENTS::FDeviceMeshComponent>();
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FMeshComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FDeviceRenderableComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FDeviceTransformComponent>();
     Coordinator.RegisterComponent<ECS::COMPONENTS::FLightComponent>();
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FAccelerationStructureComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FMaterialComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FMeshComponent>();
     Coordinator.RegisterComponent<ECS::COMPONENTS::FMeshInstanceComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FTransformComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FTextureComponent>();
 
     /// Register systems
     auto CameraSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FCameraSystem>();
@@ -56,6 +59,7 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     auto MeshSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FMeshSystem>();
     auto LightSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FLightSystem>();
     auto AccelerationSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FAccelerationStructureSystem>();
+    auto TextureSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FTextureSystem>();
 
     /// Set camera system signature
     ECS::FSignature CameraSystemSignature;
@@ -95,6 +99,10 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     ECS::FSignature AccelerationStructureSignature;
     AccelerationStructureSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FMeshInstanceComponent>());
     Coordinator.SetSystemSignature<ECS::SYSTEMS::FAccelerationStructureSystem>(AccelerationStructureSignature);
+
+    ECS::FSignature TextureSignature;
+    TextureSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FTextureComponent>());
+    Coordinator.SetSystemSignature<ECS::SYSTEMS::FTextureSystem>(TextureSignature);
 
     auto& Context = GetContext();
 
@@ -528,6 +536,15 @@ int FRender::LoadScene(const std::string& Path)
     auto GreenMaterial = CreateMaterial({0, 1, 0});
     auto BlueMaterial = CreateMaterial({0, 0, 1});
 
+    auto WoodAlbedoTexture = CreateTexture("../../../resources/Wood/Wood_8K_Albedo.jpg");
+    auto WoodAOTexture = CreateTexture("../../../resources/Wood/Wood_8K_AO.jpg");
+    auto ModelTexture = CreateTexture("../../../models/viking_room/viking_room.png");
+    auto WoodRoughnessTexture = CreateTexture("../../../resources/Wood/Wood_8K_Roughness.jpg");
+    auto WoodNormalTexture = CreateTexture("../../../resources/Wood/Wood_8K_Normal.jpg");
+
+    MaterialSetBaseColor(MagentaMaterial, WoodAlbedoTexture);
+    MaterialSetBaseColor(VikingRoomMaterial, ModelTexture);
+
     auto PlaneInstance = CreateInstance(Plane, {-5.f, 0.f, -2.f});
     auto PyramidInstance = CreateInstance(Pyramid, {-3.f, 0.f, -2.f});
     auto VikingRoomInstance = CreateInstance(VikingRoom, {-1.f, 0.f, -2.f});
@@ -550,25 +567,16 @@ int FRender::LoadScene(const std::string& Path)
     ShapeSetMaterial(CubeInstance, RedMaterial);
     ShapeSetMaterial(ShaderballInstance, BlueMaterial);
 
-    auto& Context = GetContext();
-    auto WoodAlbedoTexture = Context.LoadImageFromFile("../../../resources/Wood/Wood_8K_Albedo.jpg", "V_Wood_8K_Albedo");
-    auto WoodAOTexture = Context.LoadImageFromFile("../../../resources/Wood/Wood_8K_AO.jpg", "V_Wood_8K_AO");
-    auto ModelTexture = Context.LoadImageFromFile("../../../models/viking_room/viking_room.png", "V_viking_room");
-    auto WoodRoughnessTexture = Context.LoadImageFromFile("../../../resources/Wood/Wood_8K_Roughness.jpg", "V_Wood_8K_Roughness");
-    auto WoodNormalTexture = Context.LoadImageFromFile("../../../resources/Wood/Wood_8K_Normal.jpg", "V_Wood_8K_Normal");
-
-    auto TextureManager = GetTextureManager();
-    TextureManager->RegiseterTexture(WoodAlbedoTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    TextureManager->RegiseterTexture(WoodAOTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    TextureManager->RegiseterTexture(ModelTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    TextureManager->RegiseterTexture(WoodRoughnessTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    TextureManager->RegiseterTexture(WoodNormalTexture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
     CreateLight({5, 5, 5});
 
     TRANSFORM_SYSTEM()->Update();
 
     return 0;
+}
+
+ECS::FEntity FRender::CreateTexture(const std::string& FilePath)
+{
+    return TEXTURE_SYSTEM()->CreateTextureFromFile(FilePath);
 }
 
 ECS::FEntity FRender::CreateMaterial(const FVector3& BaseColor)
@@ -585,6 +593,26 @@ ECS::FEntity FRender::ShapeSetMaterial(ECS::FEntity Shape, ECS::FEntity Material
     RENDERABLE_SYSTEM()->SetMaterial(Shape, Material);
 
     return Shape;
+}
+
+void FRender::MaterialSetBaseColor(ECS::FEntity Material, ECS::FEntity Image)
+{
+    MATERIAL_SYSTEM()->SetBaseColor(Material, Image);
+}
+
+void FRender::MaterialSetBaseColor(ECS::FEntity Material, const FVector3& Value)
+{
+    MATERIAL_SYSTEM()->SetBaseColor(Material, Value.X, Value.Y, Value.Z);
+}
+
+void FRender::MaterialSetDiffuseRoughness(ECS::FEntity Material, ECS::FEntity Image)
+{
+    MATERIAL_SYSTEM()->SetDiffuseRoughness(Material, Image);
+}
+
+void FRender::MaterialSetDiffuseRoughness(ECS::FEntity Material, float Value)
+{
+    MATERIAL_SYSTEM()->SetDiffuseRoughness(Material, Value);
 }
 
 int FRender::SetIBL(const std::string& Path)
@@ -661,24 +689,15 @@ ECS::FEntity FRender::CreatePyramid()
 
 ECS::FEntity FRender::CreateInstance(ECS::FEntity BaseModel,  const FVector3& Position)
 {
-    //FTimer Timer("Creating Instance time: ");
     auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(BaseModel, Position);
-    //Timer("Setting renderable device address time: ");
     RENDERABLE_SYSTEM()->SetRenderableDeviceAddress(MeshInstance, MESH_SYSTEM()->GetVertexBufferAddress(MeshInstance), MESH_SYSTEM()->GetIndexBufferAddress(MeshInstance));
-
-    //Timer("Setting transform time: ");
     TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
-    //Timer("Syncing transform time: ");
     RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
-    //Timer("Fetch mesh component time: ");
     auto& MeshComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FMeshComponent>(BaseModel);
-    //Timer("Checking indexed time: ");
     if (MeshComponent.Indexed)
     {
-        //Timer("Set indexed time: ");
         RENDERABLE_SYSTEM()->SetIndexed(MeshInstance);
     }
-    //Timer("Returning time: ");
     return MeshInstance;
 }
 

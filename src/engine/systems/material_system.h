@@ -15,11 +15,11 @@ namespace ECS
         public:
             FEntity CreateMaterial();
             FMaterialSystem& SetBaseColor(FEntity MaterialEntity, float Red, float Green, float Blue);
-            FMaterialSystem& SetBaseColor(FEntity MaterialEntity, ImagePtr Image);
+            FMaterialSystem& SetBaseColor(FEntity MaterialEntity, FEntity TextureEntity);
             FMaterialSystem& SetDiffuseRoughness(FEntity MaterialEntity, float DiffuseRoughness);
-            FMaterialSystem& SetDiffuseRoughness(FEntity MaterialEntity, ImagePtr Image);
+            FMaterialSystem& SetDiffuseRoughness(FEntity MaterialEntity, FEntity TextureEntity);
             FMaterialSystem& SetSpecularIOR(FEntity MaterialEntity, float SpecularIOR);
-            FMaterialSystem& SetSpecularIOR(FEntity MaterialEntity, ImagePtr Image);
+            FMaterialSystem& SetSpecularIOR(FEntity MaterialEntity, FEntity TextureEntity);
             std::string GenerateMaterialCode(FEntity MaterialEntity);
 
             const uint32_t MAX_MATERIALS = TOTAL_MATERIALS - 1;
