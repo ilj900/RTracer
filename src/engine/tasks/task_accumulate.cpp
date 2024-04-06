@@ -24,8 +24,6 @@ FAccumulateTask::FAccumulateTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanCon
     DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-
-    CreateSyncObjects();
 }
 
 void FAccumulateTask::Init()

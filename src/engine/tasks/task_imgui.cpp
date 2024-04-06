@@ -92,7 +92,6 @@ void FImguiTask::Init()
     InitInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
     InitInfo.CheckVkResultFn = CheckResultFunction;
     ImGui_ImplVulkan_Init(&InitInfo);
-    CreateSyncObjects();
 }
 
 void FImguiTask::UpdateDescriptorSets()

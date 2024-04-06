@@ -8,6 +8,7 @@ FExecutableTask::FExecutableTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanCon
         Width(WidthIn), Height(HeightIn), Context(Context),
         NumberOfSimultaneousSubmits(NumberOfSimultaneousSubmits), LogicalDevice(LogicalDevice)
 {
+    CreateSyncObjects();
 }
 
 FExecutableTask::~FExecutableTask()

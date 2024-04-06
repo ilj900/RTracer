@@ -24,8 +24,6 @@ FClearTotalMaterialsCountTask::FClearTotalMaterialsCountTask(uint32_t WidthIn, u
     Context->ResourceAllocator->RegisterBuffer(TotalCountedMaterialsBuffer, "TotalCountedMaterialsBuffer");
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-
-    CreateSyncObjects();
 }
 
 FClearTotalMaterialsCountTask::~FClearTotalMaterialsCountTask()

@@ -25,8 +25,6 @@ FComputePrefixSumsDownSweepTask::FComputePrefixSumsDownSweepTask(uint32_t WidthI
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-
-    CreateSyncObjects();
 }
 
 void FComputePrefixSumsDownSweepTask::Init()

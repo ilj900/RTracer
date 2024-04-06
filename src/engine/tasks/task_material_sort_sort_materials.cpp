@@ -32,8 +32,6 @@ FSortMaterialsTask::FSortMaterialsTask(uint32_t WidthIn, uint32_t HeightIn, FVul
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-
-    CreateSyncObjects();
 }
 
 FSortMaterialsTask::~FSortMaterialsTask()

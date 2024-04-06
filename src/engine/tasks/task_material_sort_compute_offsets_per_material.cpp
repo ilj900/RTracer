@@ -26,8 +26,6 @@ FComputeOffsetsPerMaterialTask::FComputeOffsetsPerMaterialTask(uint32_t WidthIn,
     Context->ResourceAllocator->RegisterBuffer(MaterialsOffsetsPerMaterialBuffer, "MaterialsOffsetsPerMaterialBuffer");
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-
-    CreateSyncObjects();
 }
 
 FComputeOffsetsPerMaterialTask::~FComputeOffsetsPerMaterialTask()

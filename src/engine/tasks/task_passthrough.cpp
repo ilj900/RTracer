@@ -29,7 +29,7 @@ FPassthroughTask::~FPassthroughTask()
     {
         vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
     }
-    
+
     vkDestroySampler(LogicalDevice, Sampler, nullptr);
     vkDestroyRenderPass(LogicalDevice, RenderPass, nullptr);
 }
@@ -63,8 +63,6 @@ void FPassthroughTask::Init()
     DescriptorSetManager->ReserveDescriptorPool(Name);
 
     DescriptorSetManager->AllocateAllDescriptorSets(Name);
-
-    CreateSyncObjects();
 }
 
 void FPassthroughTask::UpdateDescriptorSets()

@@ -38,8 +38,6 @@ FRaytraceTask::FRaytraceTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext
     DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
 
     PipelineStageFlags = VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
-
-    CreateSyncObjects();
 }
 
 FRaytraceTask::~FRaytraceTask()

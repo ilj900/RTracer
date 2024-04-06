@@ -36,8 +36,6 @@ FMissTask::FMissTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Contex
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-
-    CreateSyncObjects();
 }
 
 FMissTask::~FMissTask()
