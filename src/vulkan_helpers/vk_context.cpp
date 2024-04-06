@@ -784,7 +784,7 @@ void FVulkanContext::GetDeviceQueues(VkSurfaceKHR Surface)
     }
     CheckDeviceQueuePresentSupport(PhysicalDevice, PresentQueue.QueueIndex, Surface);
     vkGetDeviceQueue(LogicalDevice, PresentQueue.QueueIndex, 0, &PresentQueue.Queue);
-    V::SetName(LogicalDevice, PresentQueue.Queue, "V::Present_Queue");
+    V::SetName(LogicalDevice, PresentQueue.Queue, "Present");
 }
 
 std::vector<VkDeviceQueueCreateInfo> FVulkanContext::GetDeviceQueueCreateInfo(VkPhysicalDevice PhysicalDevice, std::set<uint32_t> UniqueQueueFamilies)
@@ -880,7 +880,7 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
                                               VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, DebugImageName);
 
     V::SetName(LogicalDevice, Image->Image, DebugImageName);
-    V::SetName(LogicalDevice, Image->View, (std::string(DebugImageName) + "_ImageView").c_str());
+    V::SetName(LogicalDevice, Image->View, DebugImageName);
 
     Image->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     ResourceAllocator->LoadDataToImage(*Image, Width * Height * 4 * sizeof(float), Out);
@@ -910,7 +910,7 @@ ImagePtr FVulkanContext::LoadImageFromFile(const std::string& Path, const std::s
                  VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, DebugImageName);
 
     V::SetName(LogicalDevice, Image->Image, DebugImageName);
-    V::SetName(LogicalDevice, Image->View, (std::string(DebugImageName) + "_ImageView").c_str());
+    V::SetName(LogicalDevice, Image->View, DebugImageName);
 
     Image->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     ResourceAllocator->LoadDataToImage(*Image, ImageSize, Pixels);

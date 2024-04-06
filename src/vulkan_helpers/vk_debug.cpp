@@ -2,16 +2,42 @@
 #include "vk_debug.h"
 
 #include <cassert>
+#include <unordered_map>
 
 namespace V
 {
     void SetName(VkDevice Device, uint64_t Object, VkObjectType ObjectType, const std::string& Name) {
 #ifndef NDEBUG
+        std::unordered_map<VkObjectType, std::string> TypeToPostfixMap =
+        {
+                {VK_OBJECT_TYPE_BUFFER, " Buffer"},
+                {VK_OBJECT_TYPE_BUFFER_VIEW, " Buffer View"},
+                {VK_OBJECT_TYPE_COMMAND_BUFFER, " Command Buffer"},
+                {VK_OBJECT_TYPE_COMMAND_POOL, " Command Pool"},
+                {VK_OBJECT_TYPE_DESCRIPTOR_POOL, " Descriptor Pool"},
+                {VK_OBJECT_TYPE_DESCRIPTOR_SET, " Descriptor Set"},
+                {VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, " Descriptor Set Layout"},
+                {VK_OBJECT_TYPE_DEVICE_MEMORY, " Device Memory"},
+                {VK_OBJECT_TYPE_FRAMEBUFFER, " Framebuffer"},
+                {VK_OBJECT_TYPE_IMAGE, " Image"},
+                {VK_OBJECT_TYPE_IMAGE_VIEW, " Image View"},
+                {VK_OBJECT_TYPE_PIPELINE, " Pipeline"},
+                {VK_OBJECT_TYPE_PIPELINE_LAYOUT, " Pipeline Layout"},
+                {VK_OBJECT_TYPE_QUERY_POOL, " Query Pool"},
+                {VK_OBJECT_TYPE_QUEUE, " Queue"},
+                {VK_OBJECT_TYPE_RENDER_PASS, " Render Pass"},
+                {VK_OBJECT_TYPE_SAMPLER, " Sampler"},
+                {VK_OBJECT_TYPE_SEMAPHORE, " Semaphore"},
+                {VK_OBJECT_TYPE_SHADER_MODULE, " Shader module"},
+                {VK_OBJECT_TYPE_SWAPCHAIN_KHR, " Swapchain KHR"},
+                {VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR, " Acceleration structure KHR"},
+        };
+        std::string FullName = "V::" + Name + TypeToPostfixMap[ObjectType];
         VkDebugUtilsObjectNameInfoEXT DebugUtilsObjectNameInfo{};
         DebugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
         DebugUtilsObjectNameInfo.objectType = ObjectType;
         DebugUtilsObjectNameInfo.objectHandle = Object;
-        DebugUtilsObjectNameInfo.pObjectName = Name.c_str();
+        DebugUtilsObjectNameInfo.pObjectName = FullName.c_str();
 
         VkResult Result = vkSetDebugUtilsObjectNameEXT(Device, &DebugUtilsObjectNameInfo);
         assert((Result == VK_SUCCESS) && "Failed to give a name to a vulkan object!");

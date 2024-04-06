@@ -54,7 +54,7 @@ void FPipelineDescriptorSetLayout::CreateDescriptorSetLayout(VkDevice LogicalDev
             throw std::runtime_error("Failed to create descriptor set layout!");
         }
 
-        V::SetName(LogicalDevice, DescriptorSetLayout, "V::DescriptorSetLayout_Pipeline:_" + PipelineDebugName + "_SetLayoutIndex:_" + std::to_string(SetIndex));
+        V::SetName(LogicalDevice, DescriptorSetLayout, PipelineDebugName);
 
         VkDescriptorSetLayouts[SetIndex] = DescriptorSetLayout;
     }

@@ -108,6 +108,6 @@ void FPassthroughTask::RecordCommands()
             Context->TimingManager->TimestampEnd(Name, CommandBuffer, i);
         });
 
-        V::SetName(LogicalDevice, CommandBuffers[i], "V_PassthroughCommandBuffers" + std::to_string(i));
+        V::SetName(LogicalDevice, CommandBuffers[i], Name);
     }
 }

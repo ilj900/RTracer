@@ -95,6 +95,6 @@ void FSortMaterialsTask::RecordCommands()
             Context->TimingManager->TimestampEnd(Name, CommandBuffer, i);
         });
 
-        V::SetName(LogicalDevice, CommandBuffers[i], "V::MaterialSort_Sort_Materials_Command_Buffer");
+        V::SetName(LogicalDevice, CommandBuffers[i], Name);
     }
 };

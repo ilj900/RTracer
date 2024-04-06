@@ -246,7 +246,7 @@ void FImage::CreateImageView()
         throw std::runtime_error("Failed to create texture image view!");
     }
 
-    V::SetName(Device, View, DebugName + "View");
+    V::SetName(Device, View, DebugName);
 }
 
 void FImage::GenerateMipMaps()

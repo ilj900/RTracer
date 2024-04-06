@@ -158,6 +158,6 @@ void FRaytraceTask::RecordCommands()
             Context->TimingManager->TimestampEnd(Name, CommandBuffer, i);
         });
 
-        V::SetName(LogicalDevice, CommandBuffers[i], "V::RayTracing_Command_Buffer");
+        V::SetName(LogicalDevice, CommandBuffers[i], Name);
     }
 };

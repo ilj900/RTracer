@@ -10,7 +10,7 @@
 FAccumulateTask::FAccumulateTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
-    Name = "Accumulate pipeline";
+    Name = "Task Accumulate";
 
     auto& DescriptorSetManager = Context->DescriptorSetManager;
 
@@ -79,6 +79,6 @@ void FAccumulateTask::RecordCommands()
             Context->TimingManager->TimestampEnd(Name, CommandBuffer, i);
         });
 
-        V::SetName(LogicalDevice, CommandBuffers[i], "V::Accumulator_Command_Buffer");
+        V::SetName(LogicalDevice, CommandBuffers[i], Name);
     }
 };

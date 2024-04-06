@@ -83,6 +83,6 @@ void FComputePrefixSumsZeroOutTask::RecordCommands()
             Context->TimingManager->TimestampEnd(Name, CommandBuffer, i);
         });
 
-        V::SetName(LogicalDevice, CommandBuffers[i], "V::MaterialSort_Compute_Prefix_Sums_Zero_Out_Command_Buffer");
+        V::SetName(LogicalDevice, CommandBuffers[i], Name);
     }
 };

@@ -82,6 +82,6 @@ void FComputeOffsetsPerMaterialTask::RecordCommands()
             Context->TimingManager->TimestampEnd(Name, CommandBuffer, i);
         });
 
-        V::SetName(LogicalDevice, CommandBuffers[i], "V::MaterialSort_Compute_Offsets_Per_Material_Command_Buffer");
+        V::SetName(LogicalDevice, CommandBuffers[i], Name);
     }
 };

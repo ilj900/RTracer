@@ -65,7 +65,7 @@ VkCommandBuffer FCommandBufferManager::BeginCommand() {
 VkCommandBuffer FCommandBufferManager::BeginSingleTimeCommand(const std::string CommandDescription)
 {
     VkCommandBuffer CommandBuffer = AllocateCommandBuffer();
-    V::SetName(Device, CommandBuffer, CommandDescription + "_Command_Buffer");
+    V::SetName(Device, CommandBuffer, CommandDescription);
 
     VkCommandBufferBeginInfo BeginInfo{};
     BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

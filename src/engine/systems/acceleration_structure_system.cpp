@@ -19,7 +19,7 @@ namespace ECS
         void FAccelerationStructureSystem::Init(int NumberOfSimultaneousSubmits)
         {
             FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(COMPONENTS::FMeshInstanceComponent) * MAX_INSTANCE_COUNT,
-                                       VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Acceleration_Structure_Buffer");
+                                       VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Acceleration_Structure");
 
             for (uint32_t i = 0; i < MAX_INSTANCE_COUNT; ++i)
             {

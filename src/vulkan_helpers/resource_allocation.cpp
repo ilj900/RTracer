@@ -100,7 +100,7 @@ FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags U
 
     Buffer.MemoryRegion = AllocateMemory(Size, MemRequirements, Properties, bDeviceAddressRequired);
 
-    V::SetName(Device, Buffer.MemoryRegion.Memory, DebugName + "_Memmory");
+    V::SetName(Device, Buffer.MemoryRegion.Memory, DebugName);
 
     /// Bind Buffer Memory
     vkBindBufferMemory(Device, Buffer.Buffer, Buffer.MemoryRegion.Memory, 0);

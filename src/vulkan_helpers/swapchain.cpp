@@ -115,7 +115,7 @@ FSwapchain::FSwapchain(uint32_t Width, uint32_t Height, VkPhysicalDevice Physica
         throw std::runtime_error("Failed to create swap chain!");
     }
 
-    V::SetName(LogicalDevice, Swapchain, "V_Swapchain");
+    V::SetName(LogicalDevice, Swapchain, "");
 
 
     /// Queue SwapChain for it's images

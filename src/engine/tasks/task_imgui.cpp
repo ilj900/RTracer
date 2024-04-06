@@ -46,13 +46,13 @@ void FImguiTask::Init()
     ImguiPipelineOptions.RegisterColorAttachment(0, Outputs[0], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
     RenderPass = Context.CreateRenderpass(LogicalDevice, ImguiPipelineOptions);
 
-    V::SetName(LogicalDevice, RenderPass, "V_ImGuiRenderPass");
+    V::SetName(LogicalDevice, RenderPass, Name);
 
     ImguiFramebuffers.resize(NumberOfSimultaneousSubmits);
 
     for(int i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        ImguiFramebuffers[i] = Context.CreateFramebuffer(Width, Height, {Outputs[i]}, RenderPass, "V_Imgui_fb_" + std::to_string(i));
+        ImguiFramebuffers[i] = Context.CreateFramebuffer(Width, Height, {Outputs[i]}, RenderPass, Name);
     }
 
     std::map<VkDescriptorType, uint32_t> PoolSizes =
@@ -145,7 +145,7 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipel
 
     CommandBuffers[IterationIndex] = Context.CommandBufferManager->BeginSingleTimeCommand();
 
-    V::SetName(LogicalDevice, CommandBuffers[IterationIndex], "V_ImguiCommandBuffer" + std::to_string(IterationIndex % NumberOfSimultaneousSubmits));
+    V::SetName(LogicalDevice, CommandBuffers[IterationIndex], Name);
 
     Context.CommandBufferManager->RecordCommand([&, this](VkCommandBuffer)
     {

@@ -38,7 +38,7 @@ void FExecutableTask::CreateSyncObjects()
     for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
         SignalSemaphores.push_back(Context->CreateSemaphore());
-        V::SetName(LogicalDevice, SignalSemaphores.back(), "V_" + Name + "_Semaphore_" + std::to_string(i));
+        V::SetName(LogicalDevice, SignalSemaphores.back(), Name);
     }
 }
 
