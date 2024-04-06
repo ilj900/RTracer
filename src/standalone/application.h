@@ -1,5 +1,3 @@
-#pragma once
-
 #include "render.h"
 #include "controller.h"
 
