@@ -446,45 +446,48 @@ int FRender::Render()
     LIGHT_SYSTEM()->Update();
     ACCELERATION_STRUCTURE_SYSTEM()->Update();
 
-    auto GenerateRaysSemaphore = GenerateRaysTask->Submit(Context.GetComputeQueue(), ImageAvailableSemaphores[CurrentFrame], ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
+    auto GenerateRaysSemaphore = GenerateRaysTask->Submit(Context.GetComputeQueue(), ImageAvailableSemaphores[CurrentFrame], VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
 
-    auto RayTraceSignalSemaphore = RayTraceTask->Submit(Context.GetGraphicsQueue(), GenerateRaysSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto RayTraceSignalSemaphore = RayTraceTask->Submit(Context.GetGraphicsQueue(), GenerateRaysSemaphore, GenerateRaysTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ClearMaterialsCountPerChunkSemaphore = ClearMaterialsCountPerChunkTask->Submit(Context.GetComputeQueue(), RayTraceSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ClearMaterialsCountPerChunkSemaphore = ClearMaterialsCountPerChunkTask->Submit(Context.GetComputeQueue(), RayTraceSignalSemaphore, RayTraceTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ClearTotalMaterialsCountSemaphore = ClearTotalMaterialsCountTask->Submit(Context.GetComputeQueue(), ClearMaterialsCountPerChunkSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ClearTotalMaterialsCountSemaphore = ClearTotalMaterialsCountTask->Submit(Context.GetComputeQueue(), ClearMaterialsCountPerChunkSemaphore, ClearMaterialsCountPerChunkTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto CountMaterialsPerChunkSemaphore = CountMaterialsPerChunkTask->Submit(Context.GetComputeQueue(), ClearTotalMaterialsCountSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto CountMaterialsPerChunkSemaphore = CountMaterialsPerChunkTask->Submit(Context.GetComputeQueue(), ClearTotalMaterialsCountSemaphore, ClearTotalMaterialsCountTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ComputePrefixSumsUpSweepSemaphore = ComputePrefixSumsUpSweepTask->Submit(Context.GetComputeQueue(), CountMaterialsPerChunkSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ComputePrefixSumsUpSweepSemaphore = ComputePrefixSumsUpSweepTask->Submit(Context.GetComputeQueue(), CountMaterialsPerChunkSemaphore, CountMaterialsPerChunkTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ComputePrefixSumsZeroOutSemaphore = ComputePrefixSumsZeroOutTask->Submit(Context.GetComputeQueue(), ComputePrefixSumsUpSweepSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ComputePrefixSumsZeroOutSemaphore = ComputePrefixSumsZeroOutTask->Submit(Context.GetComputeQueue(), ComputePrefixSumsUpSweepSemaphore, ComputePrefixSumsUpSweepTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ComputePrefixSumsDownSweepSemaphore = ComputePrefixSumsDownSweepTask->Submit(Context.GetComputeQueue(), ComputePrefixSumsZeroOutSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ComputePrefixSumsDownSweepSemaphore = ComputePrefixSumsDownSweepTask->Submit(Context.GetComputeQueue(), ComputePrefixSumsZeroOutSemaphore, ComputePrefixSumsZeroOutTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ComputeOffsetsPerMaterialSemaphore = ComputeOffsetsPerMaterialTask->Submit(Context.GetComputeQueue(), ComputePrefixSumsDownSweepSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ComputeOffsetsPerMaterialSemaphore = ComputeOffsetsPerMaterialTask->Submit(Context.GetComputeQueue(), ComputePrefixSumsDownSweepSemaphore, ComputePrefixSumsDownSweepTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto SortMaterialsSemaphore = SortMaterialsTask->Submit(Context.GetComputeQueue(), ComputeOffsetsPerMaterialSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto SortMaterialsSemaphore = SortMaterialsTask->Submit(Context.GetComputeQueue(), ComputeOffsetsPerMaterialSemaphore, ComputeOffsetsPerMaterialTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ShadeSignalSemaphore = ShadeTask->Submit(Context.GetComputeQueue(), SortMaterialsSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ShadeSignalSemaphore = ShadeTask->Submit(Context.GetComputeQueue(), SortMaterialsSemaphore, SortMaterialsTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto MissSignalSemaphore = MissTask->Submit(Context.GetComputeQueue(), ShadeSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto MissSignalSemaphore = MissTask->Submit(Context.GetComputeQueue(), ShadeSignalSemaphore, ShadeTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
     VkSemaphore AccumulateSignalSemaphore = VK_NULL_HANDLE;
+    VkPipelineStageFlags PipelineStageFlags = 0;
 
     if (NeedUpdate)
     {
-        auto ClearAccumulatorSemaphore = ClearImageTask->Submit(Context.GetComputeQueue(), MissSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
-        AccumulateSignalSemaphore = AccumulateTask->Submit(Context.GetComputeQueue(), ClearAccumulatorSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+        auto ClearAccumulatorSemaphore = ClearImageTask->Submit(Context.GetComputeQueue(), MissSignalSemaphore, MissTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+        AccumulateSignalSemaphore = AccumulateTask->Submit(Context.GetComputeQueue(), ClearAccumulatorSemaphore, ClearImageTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+        PipelineStageFlags = ClearImageTask->GetPipelineStageFlags();
     }
     else
     {
-        AccumulateSignalSemaphore = AccumulateTask->Submit(Context.GetComputeQueue(), MissSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+        AccumulateSignalSemaphore = AccumulateTask->Submit(Context.GetComputeQueue(), MissSignalSemaphore, MissTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+        PipelineStageFlags = AccumulateTask->GetPipelineStageFlags();
     }
 
-    auto PassthroughSignalSemaphore = PassthroughTask->Submit(Context.GetGraphicsQueue(), AccumulateSignalSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto PassthroughSignalSemaphore = PassthroughTask->Submit(Context.GetGraphicsQueue(), AccumulateSignalSemaphore, PipelineStageFlags, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ImguiFinishedSemaphore = ImguiTask->Submit(Context.GetGraphicsQueue(), PassthroughSignalSemaphore, VK_NULL_HANDLE, ImagesInFlight[ImageIndex], CurrentFrame);
+    auto ImguiFinishedSemaphore = ImguiTask->Submit(Context.GetGraphicsQueue(), PassthroughSignalSemaphore, PassthroughTask->GetPipelineStageFlags(), VK_NULL_HANDLE, ImagesInFlight[ImageIndex], CurrentFrame);
 
     Result = Context.Present(Swapchain->GetSwapchain(), ImguiFinishedSemaphore, CurrentFrame);
 

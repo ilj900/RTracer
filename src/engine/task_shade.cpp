@@ -51,6 +51,8 @@ FShadeTask::FShadeTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Cont
     VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants)};
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
+    PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
     CreateSyncObjects();
 }
 
@@ -166,9 +168,4 @@ void FShadeTask::Cleanup()
     MaterialIndexToPipelineMap.clear();
 
     Context->DescriptorSetManager->Reset(Name);
-};
-
-VkSemaphore FShadeTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
-{
-    return FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, WaitFence, SignalFence, IterationIndex);
 };

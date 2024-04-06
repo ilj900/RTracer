@@ -1,4 +1,6 @@
 #include "executable_task.h"
+
+#include <utility>
 #include "vk_context.h"
 #include "vk_debug.h"
 
@@ -41,7 +43,7 @@ void FExecutableTask::RegisterInput(int Index, ImagePtr Image)
     {
         Inputs.resize(Index + 1);
     }
-    Inputs[Index] = Image;
+    Inputs[Index] = std::move(Image);
 }
 
 void FExecutableTask::RegisterOutput(int Index, ImagePtr Image)
@@ -50,13 +52,13 @@ void FExecutableTask::RegisterOutput(int Index, ImagePtr Image)
     {
         Outputs.resize(Index + 1);
     }
-    Outputs[Index] = Image;
+    Outputs[Index] = std::move(Image);
 }
 
-VkSemaphore FExecutableTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipelineStageFlags PipelineStageFlags, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
+VkSemaphore FExecutableTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipelineStageFlags PipelineStageFlagsIn, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
 {
     VkSemaphore WaitSemaphores[] = {WaitSemaphore};
-    VkPipelineStageFlags WaitStages[] = {PipelineStageFlags};
+    VkPipelineStageFlags WaitStages[] = {PipelineStageFlagsIn};
     VkSubmitInfo SubmitInfo{};
     SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     SubmitInfo.waitSemaphoreCount = 1;
@@ -112,6 +114,11 @@ void FExecutableTask::UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t Layo
     ImageInfo.imageView = Image->View;
     ImageInfo.sampler = Sampler;
     Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, LayoutSetIndex, LayoutIndex, FrameIndex, &ImageInfo);
+}
+
+VkPipelineStageFlags FExecutableTask::GetPipelineStageFlags()
+{
+    return PipelineStageFlags;
 }
 
 ImagePtr FExecutableTask::GetInput(int Index)

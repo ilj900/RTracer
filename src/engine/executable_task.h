@@ -15,13 +15,14 @@ public:
     virtual void UpdateDescriptorSets() = 0;
     virtual void RecordCommands() = 0;
     virtual void Cleanup() = 0;
-    VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipelineStageFlags PipelineStageFlags, VkFence WaitFence, VkFence SignalFence, int IterationIndex);
+    virtual VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipelineStageFlags PipelineStageFlagsIn, VkFence WaitFence, VkFence SignalFence, int IterationIndex);
 
     void RegisterInput(int Index, ImagePtr Image);
     void RegisterOutput(int Index, ImagePtr Image);
     void UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t LayoutIndex, int FrameIndex, const FBuffer& Buffer);
     void UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t LayoutIndex, int FrameIndex, ImagePtr Image);
     void UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t LayoutIndex, int FrameIndex, ImagePtr Image, VkSampler Sampler);
+    VkPipelineStageFlags GetPipelineStageFlags();
     ImagePtr GetInput(int Index);
     ImagePtr GetOutput(int Index);
 
@@ -40,6 +41,7 @@ public:
     FVulkanContext* Context = nullptr;
     int NumberOfSimultaneousSubmits;
     VkDevice LogicalDevice = VK_NULL_HANDLE;
+    VkPipelineStageFlags PipelineStageFlags;
 
 protected:
     void CreateSyncObjects();

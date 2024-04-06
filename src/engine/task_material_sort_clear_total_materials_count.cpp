@@ -23,6 +23,8 @@ FClearTotalMaterialsCountTask::FClearTotalMaterialsCountTask(uint32_t WidthIn, u
     FBuffer TotalCountedMaterialsBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * 3, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "TotalCountedMaterialsBuffer");
     Context->ResourceAllocator->RegisterBuffer(TotalCountedMaterialsBuffer, "TotalCountedMaterialsBuffer");
 
+    PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
     CreateSyncObjects();
 }
 
@@ -97,9 +99,4 @@ void FClearTotalMaterialsCountTask::Cleanup()
     vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
 
     Context->DescriptorSetManager->Reset(Name);
-};
-
-VkSemaphore FClearTotalMaterialsCountTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
-{
-    return FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, WaitFence, SignalFence, IterationIndex);
 };

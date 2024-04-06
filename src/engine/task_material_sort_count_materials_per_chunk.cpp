@@ -25,6 +25,8 @@ FCountMaterialsPerChunkTask::FCountMaterialsPerChunkTask(uint32_t WidthIn, uint3
     VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstantsCountMaterialsPerChunk)};
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
+    PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
     CreateSyncObjects();
 }
 
@@ -102,9 +104,4 @@ void FCountMaterialsPerChunkTask::Cleanup()
     vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
 
     Context->DescriptorSetManager->Reset(Name);
-};
-
-VkSemaphore FCountMaterialsPerChunkTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
-{
-    return FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, WaitFence, SignalFence, IterationIndex);
 };

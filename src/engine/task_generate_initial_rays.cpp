@@ -31,6 +31,8 @@ FGenerateInitialRays::FGenerateInitialRays(uint32_t WidthIn, uint32_t HeightIn, 
     FBuffer InitialRaysBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(FRayData) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Name);
     Context->ResourceAllocator->RegisterBuffer(InitialRaysBuffer, "InitialRaysBuffer");
 
+    PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
     CreateSyncObjects();
 }
 
@@ -109,9 +111,4 @@ void FGenerateInitialRays::Cleanup()
     vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
 
     Context->DescriptorSetManager->Reset(Name);
-};
-
-VkSemaphore FGenerateInitialRays::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
-{
-    return FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, WaitFence, SignalFence, IterationIndex);
 };

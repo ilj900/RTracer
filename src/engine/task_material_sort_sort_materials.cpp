@@ -31,6 +31,8 @@ FSortMaterialsTask::FSortMaterialsTask(uint32_t WidthIn, uint32_t HeightIn, FVul
     VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstantsCountMaterialsPerChunk)};
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
+    PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
     CreateSyncObjects();
 }
 
@@ -114,9 +116,4 @@ void FSortMaterialsTask::Cleanup()
     vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
 
     Context->DescriptorSetManager->Reset(Name);
-};
-
-VkSemaphore FSortMaterialsTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
-{
-    return FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, WaitFence, SignalFence, IterationIndex);
 };

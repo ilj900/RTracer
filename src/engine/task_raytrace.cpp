@@ -37,6 +37,8 @@ FRaytraceTask::FRaytraceTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext
 
     DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
 
+    PipelineStageFlags = VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+
     CreateSyncObjects();
 }
 
@@ -178,9 +180,4 @@ void FRaytraceTask::Cleanup()
     Context->DescriptorSetManager->Reset(Name);
 
     GetResourceAllocator()->DestroyBuffer(SBTBuffer);
-};
-
-VkSemaphore FRaytraceTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
-{
-    return FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, WaitFence, SignalFence, IterationIndex);
 };

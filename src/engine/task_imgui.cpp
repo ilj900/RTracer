@@ -15,6 +15,8 @@ FImguiTask::FImguiTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Cont
         FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
 {
     Name = "Imgui pipeline";
+
+    PipelineStageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 }
 
 FImguiTask::~FImguiTask()
@@ -118,7 +120,7 @@ void FImguiTask::Cleanup()
     vkDestroyDescriptorPool(LogicalDevice, DescriptorPool, nullptr);
 }
 
-VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
+VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipelineStageFlags PipelineStageFlags, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
 {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -193,5 +195,5 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence
 
     PreviousIterationIndex = IterationIndex;
 
-    return FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, WaitFence, SignalFence, IterationIndex);
+    return FExecutableTask::Submit(Queue, WaitSemaphore, PipelineStageFlags, WaitFence, SignalFence, IterationIndex);
 }

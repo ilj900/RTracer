@@ -23,6 +23,8 @@ FAccumulateTask::FAccumulateTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanCon
 
     DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
 
+    PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
     CreateSyncObjects();
 }
 
@@ -102,9 +104,4 @@ void FAccumulateTask::Cleanup()
     vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
 
     Context->DescriptorSetManager->Reset(Name);
-};
-
-VkSemaphore FAccumulateTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
-{
-    return FExecutableTask::Submit(Queue, WaitSemaphore, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, WaitFence, SignalFence, IterationIndex);
 };
