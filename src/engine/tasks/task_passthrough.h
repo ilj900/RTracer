@@ -15,13 +15,11 @@ public:
     void Init() override;
     void UpdateDescriptorSets() override;
     void RecordCommands() override;
-    void Cleanup() override;
 
     VkSampler Sampler = VK_NULL_HANDLE;
 
     FGraphicsPipelineOptions GraphicsPipelineOptions;
 
-    VkPipeline Pipeline = VK_NULL_HANDLE;
     VkRenderPass RenderPass = VK_NULL_HANDLE;
 
     std::vector<VkFramebuffer> PassthroughFramebuffers;

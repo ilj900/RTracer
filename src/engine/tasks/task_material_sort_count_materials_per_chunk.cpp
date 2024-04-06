@@ -30,11 +30,6 @@ FCountMaterialsPerChunkTask::FCountMaterialsPerChunkTask(uint32_t WidthIn, uint3
     CreateSyncObjects();
 }
 
-FCountMaterialsPerChunkTask::~FCountMaterialsPerChunkTask()
-{
-    FreeSyncObjects();
-}
-
 void FCountMaterialsPerChunkTask::Init()
 {
     Context->TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
@@ -88,20 +83,4 @@ void FCountMaterialsPerChunkTask::RecordCommands()
 
         V::SetName(LogicalDevice, CommandBuffers[i], "V::MaterialSort_Count_Materials_Per_Chunk_Command_Buffer");
     }
-};
-
-void FCountMaterialsPerChunkTask::Cleanup()
-{
-    Inputs.clear();
-    Outputs.clear();
-
-    for (auto& CommandBuffer : CommandBuffers)
-    {
-        Context->CommandBufferManager->FreeCommandBuffer(CommandBuffer);
-    }
-
-    Context->DescriptorSetManager->DestroyPipelineLayout(Name);
-    vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
-
-    Context->DescriptorSetManager->Reset(Name);
 };

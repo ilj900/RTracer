@@ -31,9 +31,8 @@ FClearMaterialsCountPerChunkTask::FClearMaterialsCountPerChunkTask(uint32_t Widt
 
 FClearMaterialsCountPerChunkTask::~FClearMaterialsCountPerChunkTask()
 {
-    FreeSyncObjects();
     Context->ResourceAllocator->UnregisterAndDestroyBuffer("CountedMaterialsPerChunkBuffer");
-}
+};
 
 void FClearMaterialsCountPerChunkTask::Init()
 {
@@ -87,20 +86,4 @@ void FClearMaterialsCountPerChunkTask::RecordCommands()
 
         V::SetName(LogicalDevice, CommandBuffers[i], "V::MaterialSort_Clear_Materials_Count_Per_Chunk_Command_Buffer");
     }
-};
-
-void FClearMaterialsCountPerChunkTask::Cleanup()
-{
-    Inputs.clear();
-    Outputs.clear();
-
-    for (auto& CommandBuffer : CommandBuffers)
-    {
-        Context->CommandBufferManager->FreeCommandBuffer(CommandBuffer);
-    }
-
-    Context->DescriptorSetManager->DestroyPipelineLayout(Name);
-    vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
-
-    Context->DescriptorSetManager->Reset(Name);
 };

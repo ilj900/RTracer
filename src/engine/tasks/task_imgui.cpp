@@ -21,9 +21,18 @@ FImguiTask::FImguiTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Cont
 
 FImguiTask::~FImguiTask()
 {
+    ImGui_ImplVulkan_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
-    FreeSyncObjects();
+    for (auto Framebuffer : ImguiFramebuffers)
+    {
+        vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
+    }
+
+    vkDestroyRenderPass(LogicalDevice, RenderPass, nullptr);
+
+    vkDestroyDescriptorPool(LogicalDevice, DescriptorPool, nullptr);
 }
 
 void FImguiTask::Init()
@@ -93,31 +102,6 @@ void FImguiTask::UpdateDescriptorSets()
 void FImguiTask::RecordCommands()
 {
     CommandBuffers.resize(NumberOfSimultaneousSubmits);
-}
-
-void FImguiTask::Cleanup()
-{
-    Inputs.clear();
-    Outputs.clear();
-
-    ImGui_ImplVulkan_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-
-    for (auto Framebuffer : ImguiFramebuffers)
-    {
-        vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
-    }
-
-    for (auto& CommandBuffer : CommandBuffers)
-    {
-        Context->CommandBufferManager->FreeCommandBuffer(CommandBuffer);
-    }
-
-    vkDestroyRenderPass(LogicalDevice, RenderPass, nullptr);
-
-    Context->DescriptorSetManager->Reset(Name);
-
-    vkDestroyDescriptorPool(LogicalDevice, DescriptorPool, nullptr);
 }
 
 VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipelineStageFlags PipelineStageFlags, VkFence WaitFence, VkFence SignalFence, int IterationIndex)

@@ -38,9 +38,8 @@ FSortMaterialsTask::FSortMaterialsTask(uint32_t WidthIn, uint32_t HeightIn, FVul
 
 FSortMaterialsTask::~FSortMaterialsTask()
 {
-    FreeSyncObjects();
     Context->ResourceAllocator->UnregisterAndDestroyBuffer("SortedMaterialsIndexMapBuffer");
-}
+};
 
 void FSortMaterialsTask::Init()
 {
@@ -100,20 +99,4 @@ void FSortMaterialsTask::RecordCommands()
 
         V::SetName(LogicalDevice, CommandBuffers[i], "V::MaterialSort_Sort_Materials_Command_Buffer");
     }
-};
-
-void FSortMaterialsTask::Cleanup()
-{
-    Inputs.clear();
-    Outputs.clear();
-
-    for (auto& CommandBuffer : CommandBuffers)
-    {
-        Context->CommandBufferManager->FreeCommandBuffer(CommandBuffer);
-    }
-
-    Context->DescriptorSetManager->DestroyPipelineLayout(Name);
-    vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
-
-    Context->DescriptorSetManager->Reset(Name);
 };

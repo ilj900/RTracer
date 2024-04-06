@@ -338,37 +338,21 @@ int FRender::Init()
 
 int FRender::Cleanup()
 {
-    GenerateRaysTask->Cleanup();
     GenerateRaysTask = nullptr;
-    RayTraceTask->Cleanup();
     RayTraceTask = nullptr;
-    ClearMaterialsCountPerChunkTask->Cleanup();
     ClearMaterialsCountPerChunkTask = nullptr;
-    ClearTotalMaterialsCountTask->Cleanup();
     ClearTotalMaterialsCountTask = nullptr;
-    ComputeOffsetsPerMaterialTask->Cleanup();
     ComputeOffsetsPerMaterialTask = nullptr;
-    CountMaterialsPerChunkTask->Cleanup();
     CountMaterialsPerChunkTask = nullptr;
-    SortMaterialsTask->Cleanup();
     SortMaterialsTask = nullptr;
-    ComputePrefixSumsUpSweepTask->Cleanup();
     ComputePrefixSumsUpSweepTask = nullptr;
-    ComputePrefixSumsZeroOutTask->Cleanup();
     ComputePrefixSumsZeroOutTask = nullptr;
-    ComputePrefixSumsDownSweepTask->Cleanup();
     ComputePrefixSumsDownSweepTask = nullptr;
-    ShadeTask->Cleanup();
     ShadeTask = nullptr;
-    MissTask->Cleanup();
     MissTask = nullptr;
-    AccumulateTask->Cleanup();
     AccumulateTask = nullptr;
-    ClearImageTask->Cleanup();
     ClearImageTask = nullptr;
-    PassthroughTask->Cleanup();
     PassthroughTask = nullptr;
-    ImguiTask->Cleanup();
     ImguiTask = nullptr;
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)

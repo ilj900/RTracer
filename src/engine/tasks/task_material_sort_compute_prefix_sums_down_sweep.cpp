@@ -29,11 +29,6 @@ FComputePrefixSumsDownSweepTask::FComputePrefixSumsDownSweepTask(uint32_t WidthI
     CreateSyncObjects();
 }
 
-FComputePrefixSumsDownSweepTask::~FComputePrefixSumsDownSweepTask()
-{
-    FreeSyncObjects();
-}
-
 void FComputePrefixSumsDownSweepTask::Init()
 {
     Context->TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
@@ -103,20 +98,4 @@ void FComputePrefixSumsDownSweepTask::RecordCommands()
 
         V::SetName(LogicalDevice, CommandBuffers[i], "V::MaterialSort_Compute_Prefix_Sums_Down_Sweep_Command_Buffer");
     }
-};
-
-void FComputePrefixSumsDownSweepTask::Cleanup()
-{
-    Inputs.clear();
-    Outputs.clear();
-
-    for (auto& CommandBuffer : CommandBuffers)
-    {
-        Context->CommandBufferManager->FreeCommandBuffer(CommandBuffer);
-    }
-
-    Context->DescriptorSetManager->DestroyPipelineLayout(Name);
-    vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
-
-    Context->DescriptorSetManager->Reset(Name);
 };

@@ -32,9 +32,8 @@ FComputeOffsetsPerMaterialTask::FComputeOffsetsPerMaterialTask(uint32_t WidthIn,
 
 FComputeOffsetsPerMaterialTask::~FComputeOffsetsPerMaterialTask()
 {
-    FreeSyncObjects();
     Context->ResourceAllocator->UnregisterAndDestroyBuffer("MaterialsOffsetsPerMaterialBuffer");
-}
+};
 
 void FComputeOffsetsPerMaterialTask::Init()
 {
@@ -87,20 +86,4 @@ void FComputeOffsetsPerMaterialTask::RecordCommands()
 
         V::SetName(LogicalDevice, CommandBuffers[i], "V::MaterialSort_Compute_Offsets_Per_Material_Command_Buffer");
     }
-};
-
-void FComputeOffsetsPerMaterialTask::Cleanup()
-{
-    Inputs.clear();
-    Outputs.clear();
-
-    for (auto& CommandBuffer : CommandBuffers)
-    {
-        Context->CommandBufferManager->FreeCommandBuffer(CommandBuffer);
-    }
-
-    Context->DescriptorSetManager->DestroyPipelineLayout(Name);
-    vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
-
-    Context->DescriptorSetManager->Reset(Name);
 };

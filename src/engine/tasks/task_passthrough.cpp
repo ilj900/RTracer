@@ -25,7 +25,13 @@ FPassthroughTask::FPassthroughTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanC
 
 FPassthroughTask::~FPassthroughTask()
 {
-    FreeSyncObjects();
+    for (auto Framebuffer : PassthroughFramebuffers)
+    {
+        vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
+    }
+    
+    vkDestroySampler(LogicalDevice, Sampler, nullptr);
+    vkDestroyRenderPass(LogicalDevice, RenderPass, nullptr);
 }
 
 void FPassthroughTask::Init()
@@ -106,29 +112,4 @@ void FPassthroughTask::RecordCommands()
 
         V::SetName(LogicalDevice, CommandBuffers[i], "V_PassthroughCommandBuffers" + std::to_string(i));
     }
-}
-
-void FPassthroughTask::Cleanup()
-{
-    Inputs.clear();
-    Outputs.clear();
-
-    vkDestroySampler(LogicalDevice, Sampler, nullptr);
-
-    for (auto Framebuffer : PassthroughFramebuffers)
-    {
-        vkDestroyFramebuffer(LogicalDevice, Framebuffer, nullptr);
-    }
-
-    for (auto& CommandBuffer : CommandBuffers)
-    {
-        Context->CommandBufferManager->FreeCommandBuffer(CommandBuffer);
-    }
-
-    vkDestroyRenderPass(LogicalDevice, RenderPass, nullptr);
-
-    Context->DescriptorSetManager->DestroyPipelineLayout(Name);
-    vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
-
-    Context->DescriptorSetManager->Reset(Name);
 }

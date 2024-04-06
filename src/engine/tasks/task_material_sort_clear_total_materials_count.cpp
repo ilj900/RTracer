@@ -30,9 +30,8 @@ FClearTotalMaterialsCountTask::FClearTotalMaterialsCountTask(uint32_t WidthIn, u
 
 FClearTotalMaterialsCountTask::~FClearTotalMaterialsCountTask()
 {
-    FreeSyncObjects();
     Context->ResourceAllocator->UnregisterAndDestroyBuffer("TotalCountedMaterialsBuffer");
-}
+};
 
 void FClearTotalMaterialsCountTask::Init()
 {
@@ -83,20 +82,4 @@ void FClearTotalMaterialsCountTask::RecordCommands()
 
         V::SetName(LogicalDevice, CommandBuffers[i], "V::MaterialSort_Clear_Materials_Total_Count_Command_Buffer");
     }
-};
-
-void FClearTotalMaterialsCountTask::Cleanup()
-{
-    Inputs.clear();
-    Outputs.clear();
-
-    for (auto& CommandBuffer : CommandBuffers)
-    {
-        Context->CommandBufferManager->FreeCommandBuffer(CommandBuffer);
-    }
-
-    Context->DescriptorSetManager->DestroyPipelineLayout(Name);
-    vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
-
-    Context->DescriptorSetManager->Reset(Name);
 };

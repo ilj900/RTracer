@@ -44,10 +44,10 @@ FRaytraceTask::FRaytraceTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext
 
 FRaytraceTask::~FRaytraceTask()
 {
-    FreeSyncObjects();
     Context->ResourceAllocator->UnregisterAndDestroyBuffer("HitsBuffer");
     Context->ResourceAllocator->UnregisterAndDestroyBuffer("MaterialIndicesAOVBuffer");
-}
+    GetResourceAllocator()->DestroyBuffer(SBTBuffer);
+};
 
 void FRaytraceTask::Init()
 {
@@ -162,22 +162,4 @@ void FRaytraceTask::RecordCommands()
 
         V::SetName(LogicalDevice, CommandBuffers[i], "V::RayTracing_Command_Buffer");
     }
-};
-
-void FRaytraceTask::Cleanup()
-{
-    Inputs.clear();
-    Outputs.clear();
-
-    for (auto& CommandBuffer : CommandBuffers)
-    {
-        Context->CommandBufferManager->FreeCommandBuffer(CommandBuffer);
-    }
-
-    Context->DescriptorSetManager->DestroyPipelineLayout(Name);
-    vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
-
-    Context->DescriptorSetManager->Reset(Name);
-
-    GetResourceAllocator()->DestroyBuffer(SBTBuffer);
 };

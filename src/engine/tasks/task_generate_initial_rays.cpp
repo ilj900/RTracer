@@ -38,9 +38,8 @@ FGenerateInitialRays::FGenerateInitialRays(uint32_t WidthIn, uint32_t HeightIn, 
 
 FGenerateInitialRays::~FGenerateInitialRays()
 {
-    FreeSyncObjects();
     Context->ResourceAllocator->UnregisterAndDestroyBuffer("InitialRaysBuffer");
-}
+};
 
 void FGenerateInitialRays::Init()
 {
@@ -95,20 +94,4 @@ void FGenerateInitialRays::RecordCommands()
 
         V::SetName(LogicalDevice, CommandBuffers[i], "V::RayTracing_Command_Buffer");
     }
-};
-
-void FGenerateInitialRays::Cleanup()
-{
-    Inputs.clear();
-    Outputs.clear();
-
-    for (auto& CommandBuffer : CommandBuffers)
-    {
-        Context->CommandBufferManager->FreeCommandBuffer(CommandBuffer);
-    }
-
-    Context->DescriptorSetManager->DestroyPipelineLayout(Name);
-    vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
-
-    Context->DescriptorSetManager->Reset(Name);
 };

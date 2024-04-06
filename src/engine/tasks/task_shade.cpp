@@ -58,9 +58,14 @@ FShadeTask::FShadeTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Cont
 
 FShadeTask::~FShadeTask()
 {
-    vkDestroySampler(LogicalDevice, MaterialTextureSampler, nullptr);
+    for (auto& Entry : MaterialIndexToPipelineMap)
+    {
+        vkDestroyPipeline(LogicalDevice, Entry.second, nullptr);
+    }
 
-    FreeSyncObjects();
+    MaterialIndexToPipelineMap.clear();
+
+    vkDestroySampler(LogicalDevice, MaterialTextureSampler, nullptr);
 }
 
 void FShadeTask::Init()
@@ -136,7 +141,7 @@ void FShadeTask::RecordCommands()
                 vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context->DescriptorSetManager->GetPipelineLayout(Name),
                                         0, 1, &RayTracingDescriptorSet, 0, nullptr);
 
-                FPushConstants PushConstants = {Width, Height, 1.f / Width, 1.f / Height, Width * Height, MaterialIndex};
+                FPushConstants PushConstants = {Width, Height, 1.f / float(Width), 1.f / float(Height), Width * Height, MaterialIndex};
                 vkCmdPushConstants(CommandBuffer, Context->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
 
                 vkCmdDispatchIndirect(CommandBuffer, DispatchBuffer.Buffer, MaterialIndex * 3 * sizeof(uint32_t));
@@ -147,25 +152,4 @@ void FShadeTask::RecordCommands()
 
         V::SetName(LogicalDevice, CommandBuffers[i], "V::Shade_Command_Buffer");
     }
-};
-
-void FShadeTask::Cleanup()
-{
-    Inputs.clear();
-    Outputs.clear();
-
-    for (auto& CommandBuffer : CommandBuffers)
-    {
-        Context->CommandBufferManager->FreeCommandBuffer(CommandBuffer);
-    }
-
-    Context->DescriptorSetManager->DestroyPipelineLayout(Name);
-    for (auto& Entry : MaterialIndexToPipelineMap)
-    {
-        vkDestroyPipeline(LogicalDevice, Entry.second, nullptr);
-    }
-
-    MaterialIndexToPipelineMap.clear();
-
-    Context->DescriptorSetManager->Reset(Name);
 };

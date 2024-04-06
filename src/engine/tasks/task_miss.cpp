@@ -43,9 +43,7 @@ FMissTask::FMissTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Contex
 FMissTask::~FMissTask()
 {
     vkDestroySampler(LogicalDevice, IBLImageSampler, nullptr);
-
-    FreeSyncObjects();
-}
+};
 
 void FMissTask::Init()
 {
@@ -111,20 +109,4 @@ void FMissTask::RecordCommands()
 
         V::SetName(LogicalDevice, CommandBuffers[i], "V::Miss_Command_Buffer");
     }
-};
-
-void FMissTask::Cleanup()
-{
-    Inputs.clear();
-    Outputs.clear();
-
-    for (auto& CommandBuffer : CommandBuffers)
-    {
-        Context->CommandBufferManager->FreeCommandBuffer(CommandBuffer);
-    }
-
-    Context->DescriptorSetManager->DestroyPipelineLayout(Name);
-    vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
-
-    Context->DescriptorSetManager->Reset(Name);
 };

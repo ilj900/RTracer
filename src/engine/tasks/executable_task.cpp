@@ -12,6 +12,24 @@ FExecutableTask::FExecutableTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanCon
 
 FExecutableTask::~FExecutableTask()
 {
+    Inputs.clear();
+    Outputs.clear();
+
+    for (auto& CommandBuffer : CommandBuffers)
+    {
+        Context->CommandBufferManager->FreeCommandBuffer(CommandBuffer);
+    }
+
+    Context->DescriptorSetManager->DestroyPipelineLayout(Name);
+
+    if (Pipeline != VK_NULL_HANDLE)
+    {
+        vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
+    }
+
+    Context->DescriptorSetManager->Reset(Name);
+
+    FreeSyncObjects();
 }
 
 void FExecutableTask::CreateSyncObjects()
