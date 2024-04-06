@@ -50,6 +50,8 @@ public:
     void MaterialSetBaseColor(ECS::FEntity Material, const FVector3& Value);
     void MaterialSetDiffuseRoughness(ECS::FEntity Material, ECS::FEntity Image);
     void MaterialSetDiffuseRoughness(ECS::FEntity Material, float Value);
+    void MaterialSetNormal(ECS::FEntity Material, const FVector3& Value);
+    void MaterialSetNormal(ECS::FEntity Material, ECS::FEntity Image);
     ECS::FEntity CreatePlane();
     ECS::FEntity CreatePyramid();
     ECS::FEntity CreateCube();

@@ -37,6 +37,13 @@ namespace ECS
             return *this;
         }
 
+        FMaterialSystem& FMaterialSystem::SetNormal(FEntity MaterialEntity, FVector3 Normal)
+        {
+            auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+            MaterialComponent.Normal = Normal;
+            return *this;
+        }
+
         FMaterialSystem& FMaterialSystem::SetBaseColor(FEntity MaterialEntity, FEntity TextureEntity)
         {
             auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
@@ -58,6 +65,14 @@ namespace ECS
             auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
             auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
             MaterialComponent.SpecularIORTexture = TextureComponent.TextureIndex;
+            return *this;
+        }
+
+        FMaterialSystem& FMaterialSystem::SetNormal(FEntity MaterialEntity, FEntity TextureEntity)
+        {
+            auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
+            auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+            MaterialComponent.NormalTexture = TextureComponent.TextureIndex;
             return *this;
         }
 

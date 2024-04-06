@@ -529,20 +529,22 @@ int FRender::LoadScene(const std::string& Path)
     auto Sphere = CreateSphere(3);
     auto Shaderball = CreateModel("../../../models/Shaderball.obj");
 
-    auto MagentaMaterial = CreateMaterial({1, 0, 1});
+    auto WoodMaterial = CreateMaterial({1, 0, 1});
     auto YellowMaterial = CreateMaterial({1, 1, 0});
     auto VikingRoomMaterial = CreateMaterial({0, 1, 1});
     auto RedMaterial = CreateMaterial({1, 0, 0});
     auto GreenMaterial = CreateMaterial({0, 1, 0});
     auto BlueMaterial = CreateMaterial({0, 0, 1});
 
+    auto ModelTexture = CreateTexture("../../../models/viking_room/viking_room.png");
     auto WoodAlbedoTexture = CreateTexture("../../../resources/Wood/Wood_8K_Albedo.jpg");
     auto WoodAOTexture = CreateTexture("../../../resources/Wood/Wood_8K_AO.jpg");
-    auto ModelTexture = CreateTexture("../../../models/viking_room/viking_room.png");
     auto WoodRoughnessTexture = CreateTexture("../../../resources/Wood/Wood_8K_Roughness.jpg");
     auto WoodNormalTexture = CreateTexture("../../../resources/Wood/Wood_8K_Normal.jpg");
 
-    MaterialSetBaseColor(MagentaMaterial, WoodAlbedoTexture);
+    MaterialSetBaseColor(WoodMaterial, WoodAlbedoTexture);
+    MaterialSetDiffuseRoughness(WoodMaterial, WoodRoughnessTexture);
+    MaterialSetNormal(WoodMaterial, WoodNormalTexture);
     MaterialSetBaseColor(VikingRoomMaterial, ModelTexture);
 
     auto PlaneInstance = CreateInstance(Plane, {-5.f, 0.f, -2.f});
@@ -561,7 +563,7 @@ int FRender::LoadScene(const std::string& Path)
     }
 
 
-    ShapeSetMaterial(PlaneInstance, MagentaMaterial);
+    ShapeSetMaterial(PlaneInstance, WoodMaterial);
     ShapeSetMaterial(PyramidInstance, YellowMaterial);
     ShapeSetMaterial(VikingRoomInstance, VikingRoomMaterial);
     ShapeSetMaterial(CubeInstance, RedMaterial);
@@ -613,6 +615,16 @@ void FRender::MaterialSetDiffuseRoughness(ECS::FEntity Material, ECS::FEntity Im
 void FRender::MaterialSetDiffuseRoughness(ECS::FEntity Material, float Value)
 {
     MATERIAL_SYSTEM()->SetDiffuseRoughness(Material, Value);
+}
+
+void FRender::MaterialSetNormal(ECS::FEntity Material, const FVector3& Value)
+{
+    MATERIAL_SYSTEM()->SetNormal(Material, Value);
+}
+
+void FRender::MaterialSetNormal(ECS::FEntity Material, ECS::FEntity Image)
+{
+    MATERIAL_SYSTEM()->SetNormal(Material, Image);
 }
 
 int FRender::SetIBL(const std::string& Path)

@@ -20,6 +20,8 @@ namespace ECS
             FMaterialSystem& SetDiffuseRoughness(FEntity MaterialEntity, FEntity TextureEntity);
             FMaterialSystem& SetSpecularIOR(FEntity MaterialEntity, float SpecularIOR);
             FMaterialSystem& SetSpecularIOR(FEntity MaterialEntity, FEntity TextureEntity);
+            FMaterialSystem& SetNormal(FEntity MaterialEntity, FVector3 Normal);
+            FMaterialSystem& SetNormal(FEntity MaterialEntity, FEntity TextureEntity);
             std::string GenerateMaterialCode(FEntity MaterialEntity);
 
             const uint32_t MAX_MATERIALS = TOTAL_MATERIALS - 1;
