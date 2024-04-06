@@ -1,6 +1,8 @@
 include_directories(
         components
-        systems)
+        systems
+        tasks
+        .)
 
 set(ECS_INCLUDE
         components/acceleration_structure_component.h
@@ -40,48 +42,48 @@ set(ECS_SOURCE
 
 set(INCLUDE
         controller.h
-        executable_task.h
         render.h
-        task_accumulate.h
-        task_clear_image.h
-        task_imgui.h
-        task_material_sort_clear_materials_count_per_chunk.h
-        task_material_sort_clear_total_materials_count.h
-        task_material_sort_compute_offsets_per_material.h
-        task_material_sort_count_materials_per_chunk.h
-        task_material_sort_sort_materials.h
-        task_material_sort_compute_prefix_sums_down_sweep.h
-        task_material_sort_compute_prefix_sums_up_sweep.h
-        task_material_sort_compute_prefix_sums_zero_out.h
-        task_miss.h
-        task_passthrough.h
-        task_raytrace.h
-        task_shade.h
         window_manager.h
+        tasks/executable_task.h
+        tasks/task_accumulate.h
+        tasks/task_clear_image.h
+        tasks/task_imgui.h
+        tasks/task_material_sort_clear_materials_count_per_chunk.h
+        tasks/task_material_sort_clear_total_materials_count.h
+        tasks/task_material_sort_compute_offsets_per_material.h
+        tasks/task_material_sort_count_materials_per_chunk.h
+        tasks/task_material_sort_sort_materials.h
+        tasks/task_material_sort_compute_prefix_sums_down_sweep.h
+        tasks/task_material_sort_compute_prefix_sums_up_sweep.h
+        tasks/task_material_sort_compute_prefix_sums_zero_out.h
+        tasks/task_miss.h
+        tasks/task_passthrough.h
+        tasks/task_raytrace.h
+        tasks/task_shade.h
+        tasks/task_generate_initial_rays.h
         ${ECS_INCLUDE})
 
 set(SOURCE
         controller.cpp
-        executable_task.cpp
-        task_generate_initial_rays.h
-        task_passthrough.cpp
-        task_imgui.cpp
-        task_material_sort_clear_materials_count_per_chunk.cpp
-        task_material_sort_clear_total_materials_count.cpp
-        task_material_sort_compute_offsets_per_material.cpp
-        task_material_sort_count_materials_per_chunk.cpp
-        task_material_sort_sort_materials.cpp
-        task_material_sort_compute_prefix_sums_down_sweep.cpp
-        task_material_sort_compute_prefix_sums_up_sweep.cpp
-        task_material_sort_compute_prefix_sums_zero_out.cpp
-        task_miss.cpp
-        task_raytrace.cpp
-        task_accumulate.cpp
-        task_clear_image.cpp
-        task_shade.cpp
-        task_generate_initial_rays.cpp
         render.cpp
         window_manager.cpp
+        tasks/executable_task.cpp
+        tasks/task_passthrough.cpp
+        tasks/task_imgui.cpp
+        tasks/task_material_sort_clear_materials_count_per_chunk.cpp
+        tasks/task_material_sort_clear_total_materials_count.cpp
+        tasks/task_material_sort_compute_offsets_per_material.cpp
+        tasks/task_material_sort_count_materials_per_chunk.cpp
+        tasks/task_material_sort_sort_materials.cpp
+        tasks/task_material_sort_compute_prefix_sums_down_sweep.cpp
+        tasks/task_material_sort_compute_prefix_sums_up_sweep.cpp
+        tasks/task_material_sort_compute_prefix_sums_zero_out.cpp
+        tasks/task_miss.cpp
+        tasks/task_raytrace.cpp
+        tasks/task_accumulate.cpp
+        tasks/task_clear_image.cpp
+        tasks/task_shade.cpp
+        tasks/task_generate_initial_rays.cpp
         ${ECS_SOURCE})
 
 add_library(Renderer ${SOURCE} ${INCLUDE})

@@ -1,6 +1,6 @@
 #include "task_passthrough.h"
 
-#include "components/mesh_component.h"
+#include "mesh_component.h"
 
 #include "vk_context.h"
 #include "vk_shader_compiler.h"
