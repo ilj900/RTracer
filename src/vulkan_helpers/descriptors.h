@@ -23,7 +23,7 @@ struct FPipelineDescriptorSetLayout
     void AddDescriptorLayout(uint32_t DescriptorSetLayoutIndex, uint32_t DescriptorLayoutIndex, const FDescriptor& Descriptor);
     void CreateDescriptorSetLayout(VkDevice LogicalDevice, const std::vector<VkPushConstantRange>& PushConstantRangeVector, const std::string& PipelineDebugName);
     VkDescriptorSetLayout GetVkDescriptorSetLayout(uint32_t DescriptorSetLayoutIndex);
-    VkPipelineLayout GetPipelineLayout();
+    VkPipelineLayout GetPipelineLayout() const;
 
     void ReserveDescriptorSet(uint32_t DescriptorSetLayoutIndex, uint32_t Count);
     void ReserveDescriptorPool(VkDevice LogicalDevice);
@@ -35,11 +35,11 @@ struct FPipelineDescriptorSetLayout
     VkDescriptorSet GetSet(uint32_t SetIndex, uint32_t Index);
 
     void DestroyDescriptorSetLayout(VkDevice LogicalDevice, uint32_t DescriptorSetLayoutIndex);
-    void DestroyPipelineLayout(VkDevice LogicalDevice);
+    void DestroyPipelineLayout(VkDevice LogicalDevice) const;
 
     void CleanAll(VkDevice LogicalDevice);
 
-    void FreeDescriptorPool(VkDevice LogicalDevice);
+    void FreeDescriptorPool(VkDevice LogicalDevice) const;
     void Reset(VkDevice LogicalDevice);
 
     using SetIndex = uint32_t;

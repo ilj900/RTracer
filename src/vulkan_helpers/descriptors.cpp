@@ -23,7 +23,7 @@ void FPipelineDescriptorSetLayout::AddDescriptorLayout(uint32_t DescriptorSetLay
 
 void FPipelineDescriptorSetLayout::CreateDescriptorSetLayout(VkDevice LogicalDevice, const std::vector<VkPushConstantRange>& PushConstantRangeVector, const std::string& PipelineDebugName)
 {
-    for (auto Entry : PipelineDescriptorSets)
+    for (const auto& Entry : PipelineDescriptorSets)
     {
         auto SetIndex = Entry.first;
         auto Layouts = Entry.second;
@@ -61,6 +61,8 @@ void FPipelineDescriptorSetLayout::CreateDescriptorSetLayout(VkDevice LogicalDev
 
     std::vector<VkDescriptorSetLayout> DescriptorSetLayouts;
 
+    DescriptorSetLayouts.reserve(VkDescriptorSetLayouts.size());
+
     for  (auto Entry : VkDescriptorSetLayouts)
     {
         DescriptorSetLayouts.push_back(Entry.second);
@@ -71,7 +73,7 @@ void FPipelineDescriptorSetLayout::CreateDescriptorSetLayout(VkDevice LogicalDev
     PipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(DescriptorSetLayouts.size());
     PipelineLayoutInfo.pSetLayouts = DescriptorSetLayouts.data();
     PipelineLayoutInfo.pushConstantRangeCount = PushConstantRangeVector.size();
-    PipelineLayoutInfo.pPushConstantRanges = (PushConstantRangeVector.size() == 0) ? nullptr : PushConstantRangeVector.data();
+    PipelineLayoutInfo.pPushConstantRanges = (PushConstantRangeVector.empty()) ? nullptr : PushConstantRangeVector.data();
 
     if (vkCreatePipelineLayout(LogicalDevice, &PipelineLayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
     {
@@ -84,7 +86,7 @@ VkDescriptorSetLayout FPipelineDescriptorSetLayout::GetVkDescriptorSetLayout(uin
     return VkDescriptorSetLayouts[DescriptorSetLayoutIndex];
 }
 
-VkPipelineLayout FPipelineDescriptorSetLayout::GetPipelineLayout()
+VkPipelineLayout FPipelineDescriptorSetLayout::GetPipelineLayout() const
 {
     return PipelineLayout;
 }
@@ -94,7 +96,7 @@ void FPipelineDescriptorSetLayout::DestroyDescriptorSetLayout(VkDevice LogicalDe
     vkDestroyDescriptorSetLayout(LogicalDevice, VkDescriptorSetLayouts[DescriptorSetLayoutIndex], nullptr);
 }
 
-void FPipelineDescriptorSetLayout::DestroyPipelineLayout(VkDevice LogicalDevice)
+void FPipelineDescriptorSetLayout::DestroyPipelineLayout(VkDevice LogicalDevice) const
 {
     vkDestroyPipelineLayout(LogicalDevice, PipelineLayout, nullptr);
 }
@@ -227,7 +229,7 @@ VkDescriptorSet FPipelineDescriptorSetLayout::GetSet(uint32_t SetIndex, uint32_t
     return VkDescriptorSets[SetIndex][Index];
 }
 
-void FPipelineDescriptorSetLayout::FreeDescriptorPool(VkDevice LogicalDevice)
+void FPipelineDescriptorSetLayout::FreeDescriptorPool(VkDevice LogicalDevice) const
 {
     vkDestroyDescriptorPool(LogicalDevice, DescriptorPool, nullptr);
 }
