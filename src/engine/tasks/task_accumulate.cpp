@@ -4,6 +4,7 @@
 #include "common_defines.h"
 
 #include "vk_shader_compiler.h"
+#include "texture_manager.h"
 
 #include "task_accumulate.h"
 
@@ -22,6 +23,14 @@ FAccumulateTask::FAccumulateTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanCon
                                               {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_COMPUTE_BIT});
 
     DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
+
+    auto AccumulatorImage = GetTextureManager()->CreateStorageImage(Width, Height,"AccumulatorImage");
+    GetTextureManager()->RegisterFramebuffer(AccumulatorImage, "AccumulatorImage");
+    AccumulatorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+    auto EstimatedImage = GetTextureManager()->CreateSampledStorageImage(Width, Height, "EstimatedImage");
+    GetTextureManager()->RegisterFramebuffer(EstimatedImage, "EstimatedImage");
+    EstimatedImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 }
@@ -50,9 +59,9 @@ void FAccumulateTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, Inputs[0]);
-        UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, ACCUMULATE_IMAGE_INDEX, i, Outputs[0]);
-        UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, ESTIMATED_IMAGE_INDEX, i, Outputs[1]);
+        UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, GetTextureManager()->GetFramebufferImage("RayTracingColorImage"));
+        UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, ACCUMULATE_IMAGE_INDEX, i, GetTextureManager()->GetFramebufferImage("AccumulatorImage"));
+        UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, ESTIMATED_IMAGE_INDEX, i, GetTextureManager()->GetFramebufferImage("EstimatedImage"));
     }
 };
 

@@ -210,21 +210,6 @@ int FRender::Init()
         ImagesInFlight.push_back(Context.CreateSignalledFence());
     }
 
-    auto RTColorImage = Context.CreateImage2D(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
-                                              VK_IMAGE_USAGE_STORAGE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                              VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_RayTracingColorImage");
-    RTColorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-    auto AccumulatorImage = Context.CreateImage2D(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
-                                                  VK_IMAGE_USAGE_STORAGE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                  VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_AccumulatorImage");
-    AccumulatorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-    auto EstimatedImage = Context.CreateImage2D(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
-                                                  VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                  VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_EstimatedImage");
-    EstimatedImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
     GenerateRaysTask = std::make_shared<FGenerateInitialRays>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
     GenerateRaysTask->Init();
     GenerateRaysTask->UpdateDescriptorSets();
@@ -285,36 +270,27 @@ int FRender::Init()
     SortMaterialsTask->RecordCommands();
 
     ShadeTask = std::make_shared<FShadeTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
-    ShadeTask->RegisterInput(0, RTColorImage);
     ShadeTask->Init();
     ShadeTask->UpdateDescriptorSets();
     ShadeTask->RecordCommands();
 
     MissTask = std::make_shared<FMissTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
-    MissTask->RegisterInput(0, RTColorImage);
     SetIBL("../../../resources/brown_photostudio_02_4k.exr");
     MissTask->Init();
     MissTask->UpdateDescriptorSets();
     MissTask->RecordCommands();
 
     AccumulateTask = std::make_shared<FAccumulateTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
-    AccumulateTask->RegisterInput(0, RTColorImage);
-    AccumulateTask->RegisterOutput(0, AccumulatorImage);
-    AccumulateTask->RegisterOutput(1, EstimatedImage);
-
     AccumulateTask->Init();
     AccumulateTask->UpdateDescriptorSets();
     AccumulateTask->RecordCommands();
 
     ClearImageTask = std::make_shared<FClearImageTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
-    ClearImageTask->RegisterOutput(0, AccumulatorImage);
-
     ClearImageTask->Init();
     ClearImageTask->UpdateDescriptorSets();
     ClearImageTask->RecordCommands();
 
     PassthroughTask = std::make_shared<FPassthroughTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
-    PassthroughTask->RegisterInput(0, EstimatedImage);
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
         PassthroughTask->RegisterOutput(i, Swapchain->Images[i]);
@@ -377,6 +353,47 @@ int FRender::SetSize(int WidthIn, int HeightIn)
     Height = HeightIn;
     bShouldRecreateSwapchain = true;
     return 0;
+}
+
+ECS::FEntity FRender::CreateCamera()
+{
+    auto& Coordinator = ECS::GetCoordinator();
+
+    ECS::FEntity Camera = Coordinator.CreateEntity();
+    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera, {});
+    Coordinator.AddComponent<ECS::COMPONENTS::FCameraComponent>(Camera, {});
+
+    return Camera;
+}
+
+ECS::FEntity FRender::CreateFramebuffer(int WidthIn, int HeightIn, const std::string& DebugName)
+{
+    auto& Coordinator = ECS::GetCoordinator();
+
+    ECS::FEntity Framebuffer = Coordinator.CreateEntity();
+
+    // TODO;
+    return Framebuffer;
+}
+
+void FRender::SetMainCamera(ECS::FEntity Camera)
+{
+
+}
+
+void FRender::SetOutput(OutputType OutputTYpeIn, ECS::FEntity Framebuffer)
+{
+
+}
+
+void FRender::SaveFramebuffer(ECS::FEntity Framebuffer)
+{
+
+}
+
+void FRender::GetFramebufferData(ECS::FEntity)
+{
+
 }
 
 int FRender::Destroy()

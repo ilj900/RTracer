@@ -3,6 +3,7 @@
 #include "vk_functions.h"
 
 #include "vk_shader_compiler.h"
+#include "texture_manager.h"
 
 #include "task_clear_image.h"
 #include "common_defines.h"
@@ -46,7 +47,7 @@ void FClearImageTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        UpdateDescriptorSet(CLEAR_IMAGE_LAYOUT_INDEX, IMAGE_TO_CLEAR, i, Outputs[0]);
+        UpdateDescriptorSet(CLEAR_IMAGE_LAYOUT_INDEX, IMAGE_TO_CLEAR, i, GetTextureManager()->GetFramebufferImage("AccumulatorImage"));
     }
 };
 

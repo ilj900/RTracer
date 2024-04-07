@@ -29,6 +29,7 @@
 #include <string>
 #include <vector>
 
+enum class OutputType {Color, Normal, UV};
 class FRender
 {
 public:
@@ -38,6 +39,13 @@ public:
     int Cleanup();
     int Destroy();
     int SetSize(int WidthIn, int HeightIn);
+
+    ECS::FEntity CreateCamera();
+    ECS::FEntity CreateFramebuffer(int WidthIn, int HeightIn, const std::string& DebugName = "");
+    void SetMainCamera(ECS::FEntity Camera);
+    void SetOutput(OutputType OutputTYpeIn, ECS::FEntity Framebuffer);
+    void SaveFramebuffer(ECS::FEntity Framebuffer);
+    void GetFramebufferData(ECS::FEntity);
 
     int Render();
     int Update();

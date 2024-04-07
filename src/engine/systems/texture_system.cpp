@@ -12,8 +12,9 @@ namespace ECS
         {
             auto& Coordinator = GetCoordinator();
             FEntity Texture = Coordinator.CreateEntity();
-            auto Image = GetContext().LoadImageFromFile(FilePath, ExtractFileName(FilePath));
-            uint32_t ImageIndex = GetTextureManager()->RegiseterTexture(Image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            auto FileName = ExtractFileName(FilePath);
+            auto Image = GetContext().LoadImageFromFile(FilePath, FileName);
+            uint32_t ImageIndex = GetTextureManager()->RegisterTexture(Image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, FileName);
             Coordinator.AddComponent<ECS::COMPONENTS::FTextureComponent>(Texture, {ImageIndex});
             return Texture;
         }
