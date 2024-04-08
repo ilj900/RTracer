@@ -172,3 +172,5 @@ public:
 
 FVulkanContext& GetContext();
 std::shared_ptr<FResourceAllocator> GetResourceAllocator();
+
+#define VK_CONTEXT() GetContext()

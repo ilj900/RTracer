@@ -5,7 +5,7 @@
 class FClearMaterialsCountPerChunkTask : public FExecutableTask
 {
 public:
-    FClearMaterialsCountPerChunkTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+    FClearMaterialsCountPerChunkTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
     ~FClearMaterialsCountPerChunkTask() override;
 
     void Init() override;

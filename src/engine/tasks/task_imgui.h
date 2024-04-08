@@ -8,7 +8,7 @@ class FVulkanContext;
 class FImguiTask : public FExecutableTask
 {
 public:
-    FImguiTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+    FImguiTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
     ~FImguiTask() override;
 
     void Init() override;

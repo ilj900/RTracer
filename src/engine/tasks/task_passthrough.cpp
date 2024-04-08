@@ -9,12 +9,12 @@
 
 #include "common_defines.h"
 
-FPassthroughTask::FPassthroughTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
-        FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
+FPassthroughTask::FPassthroughTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+        FExecutableTask(WidthIn, HeightIn, NumberOfSimultaneousSubmits, LogicalDevice)
 {
     Name = "Passthrough pipeline";
 
-    auto& DescriptorSetManager = Context->DescriptorSetManager;
+    auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
 
     DescriptorSetManager->AddDescriptorLayout(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX,
                                               {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
@@ -37,11 +37,11 @@ FPassthroughTask::~FPassthroughTask()
 
 void FPassthroughTask::Init()
 {
-    Context->TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+    VK_CONTEXT().TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
 
-    auto& DescriptorSetManager = Context->DescriptorSetManager;
+    auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
 
-    Sampler = Context->CreateTextureSampler(Context->MipLevels);
+    Sampler = VK_CONTEXT().CreateTextureSampler(VK_CONTEXT().MipLevels);
 
     auto VertexShader = FShader("../../../src/shaders/passthrough.vert");
     auto FragmentShader = FShader("../../../src/shaders/passthrough.frag");
@@ -49,13 +49,13 @@ void FPassthroughTask::Init()
     GraphicsPipelineOptions.RegisterColorAttachment(0, Outputs[0], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
     GraphicsPipelineOptions.SetPipelineLayout(DescriptorSetManager->GetPipelineLayout(Name));
 
-    Pipeline = Context->CreateGraphicsPipeline(VertexShader(), FragmentShader(), Width, Height, GraphicsPipelineOptions);
+    Pipeline = VK_CONTEXT().CreateGraphicsPipeline(VertexShader(), FragmentShader(), Width, Height, GraphicsPipelineOptions);
     RenderPass = GraphicsPipelineOptions.RenderPass;
 
     PassthroughFramebuffers.resize(NumberOfSimultaneousSubmits);
     for (std::size_t i = 0; i < PassthroughFramebuffers.size(); ++i)
     {
-        PassthroughFramebuffers[i] = Context->CreateFramebuffer(Width, Height, {Outputs[i]}, RenderPass, "V_Passthrough_fb_" + std::to_string(i));
+        PassthroughFramebuffers[i] = VK_CONTEXT().CreateFramebuffer(Width, Height, {Outputs[i]}, RenderPass, "V_Passthrough_fb_" + std::to_string(i));
     }
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
@@ -80,9 +80,9 @@ void FPassthroughTask::RecordCommands()
 
     for (int i = 0; i < CommandBuffers.size(); ++i)
     {
-        CommandBuffers[i] = Context->CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
+        CommandBuffers[i] = VK_CONTEXT().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
-            Context->TimingManager->TimestampStart(Name, CommandBuffer, i);
+            VK_CONTEXT().TimingManager->TimestampStart(Name, CommandBuffer, i);
 
             VkRenderPassBeginInfo RenderPassInfo{};
             RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -99,14 +99,14 @@ void FPassthroughTask::RecordCommands()
 
             vkCmdBeginRenderPass(CommandBuffer, &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
-            auto PassthroughDescriptorSet = Context->DescriptorSetManager->GetSet(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, i);
-            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context->DescriptorSetManager->GetPipelineLayout(Name),
+            auto PassthroughDescriptorSet = VK_CONTEXT().DescriptorSetManager->GetSet(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, i);
+            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, VK_CONTEXT().DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &PassthroughDescriptorSet, 0, nullptr);
 
             vkCmdDraw(CommandBuffer, 3, 1, 0, 0);
             vkCmdEndRenderPass(CommandBuffer);
 
-            Context->TimingManager->TimestampEnd(Name, CommandBuffer, i);
+            VK_CONTEXT().TimingManager->TimestampEnd(Name, CommandBuffer, i);
         });
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name);

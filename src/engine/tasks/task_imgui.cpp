@@ -11,8 +11,8 @@
 
 #include <iostream>
 
-FImguiTask::FImguiTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
-        FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
+FImguiTask::FImguiTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+        FExecutableTask(WidthIn, HeightIn, NumberOfSimultaneousSubmits, LogicalDevice)
 {
     Name = "Imgui pipeline";
 
@@ -37,14 +37,13 @@ FImguiTask::~FImguiTask()
 
 void FImguiTask::Init()
 {
-    Context->TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+    VK_CONTEXT().TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
     bFirstCall = true;
 
-    auto& Context = GetContext();
     FGraphicsPipelineOptions ImguiPipelineOptions;
 
     ImguiPipelineOptions.RegisterColorAttachment(0, Outputs[0], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
-    RenderPass = Context.CreateRenderpass(LogicalDevice, ImguiPipelineOptions);
+    RenderPass = VK_CONTEXT().CreateRenderpass(LogicalDevice, ImguiPipelineOptions);
 
     V::SetName(LogicalDevice, RenderPass, Name);
 
@@ -52,7 +51,7 @@ void FImguiTask::Init()
 
     for(int i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        ImguiFramebuffers[i] = Context.CreateFramebuffer(Width, Height, {Outputs[i]}, RenderPass, Name);
+        ImguiFramebuffers[i] = VK_CONTEXT().CreateFramebuffer(Width, Height, {Outputs[i]}, RenderPass, Name);
     }
 
     std::map<VkDescriptorType, uint32_t> PoolSizes =
@@ -60,7 +59,7 @@ void FImguiTask::Init()
                     { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
             };
 
-    DescriptorPool = Context.CreateFreeableDescriptorPool(PoolSizes, LogicalDevice, "V_ImGuiDescriptorPool");
+    DescriptorPool = VK_CONTEXT().CreateFreeableDescriptorPool(PoolSizes, LogicalDevice, "V_ImGuiDescriptorPool");
 
     auto CheckResultFunction = [](VkResult Err)
     {
@@ -80,11 +79,11 @@ void FImguiTask::Init()
 
     ImGui_ImplGlfw_InitForVulkan(WINDOW(), true);
     ImGui_ImplVulkan_InitInfo InitInfo{};
-    InitInfo.Instance = Context.GetInstance();
-    InitInfo.PhysicalDevice = Context.GetPhysicalDevice();
+    InitInfo.Instance = VK_CONTEXT().GetInstance();
+    InitInfo.PhysicalDevice = VK_CONTEXT().GetPhysicalDevice();
     InitInfo.Device = LogicalDevice;
-    InitInfo.QueueFamily = Context.GetGraphicsQueueIndex();
-    InitInfo.Queue = Context.GetGraphicsQueue();
+    InitInfo.QueueFamily = VK_CONTEXT().GetGraphicsQueueIndex();
+    InitInfo.Queue = VK_CONTEXT().GetGraphicsQueue();
     InitInfo.DescriptorPool = DescriptorPool;
     InitInfo.RenderPass = RenderPass;
     InitInfo.MinImageCount = NumberOfSimultaneousSubmits;
@@ -123,7 +122,7 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipel
         std::vector<std::string> Names;
         std::vector<float> Timings;
         float DeltaTime = 0;
-        Context->TimingManager->GetAllTimings(Names, Timings, DeltaTime, PreviousIterationIndex);
+        VK_CONTEXT().TimingManager->GetAllTimings(Names, Timings, DeltaTime, PreviousIterationIndex);
         std::vector<legit::ProfilerTask> GPUTasks(Timings.size());
 
         float StartTime = 0.f;
@@ -141,16 +140,14 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipel
         ProfilerData.Render();
     }
 
-    auto& Context = GetContext();
-
-    CommandBuffers[IterationIndex] = Context.CommandBufferManager->BeginSingleTimeCommand();
+    CommandBuffers[IterationIndex] = VK_CONTEXT().CommandBufferManager->BeginSingleTimeCommand();
 
     V::SetName(LogicalDevice, CommandBuffers[IterationIndex], Name);
 
-    Context.CommandBufferManager->RecordCommand([&, this](VkCommandBuffer)
+    VK_CONTEXT().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer)
     {
         {
-            Context.TimingManager->TimestampStart(Name, CommandBuffers[IterationIndex], IterationIndex);
+            VK_CONTEXT().TimingManager->TimestampStart(Name, CommandBuffers[IterationIndex], IterationIndex);
 
             VkRenderPassBeginInfo RenderPassBeginInfo{};
             RenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -161,7 +158,7 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipel
             RenderPassBeginInfo.clearValueCount = 0;
             vkCmdBeginRenderPass(CommandBuffers[IterationIndex], &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            Context.TimingManager->TimestampEnd(Name, CommandBuffers[IterationIndex], IterationIndex);
+            VK_CONTEXT().TimingManager->TimestampEnd(Name, CommandBuffers[IterationIndex], IterationIndex);
         }
 
         ImGui::Render();

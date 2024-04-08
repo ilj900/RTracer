@@ -6,14 +6,13 @@
 #include "texture_manager.h"
 
 #include "task_clear_image.h"
-#include "common_defines.h"
 
-FClearImageTask::FClearImageTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
-        FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
+FClearImageTask::FClearImageTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+        FExecutableTask(WidthIn, HeightIn, NumberOfSimultaneousSubmits, LogicalDevice)
 {
     Name = "Clear image pipeline";
 
-    auto& DescriptorSetManager = Context->DescriptorSetManager;
+    auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
 
     DescriptorSetManager->AddDescriptorLayout(Name, CLEAR_IMAGE_LAYOUT_INDEX, IMAGE_TO_CLEAR,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_COMPUTE_BIT});
@@ -25,15 +24,15 @@ FClearImageTask::FClearImageTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanCon
 
 void FClearImageTask::Init()
 {
-    Context->TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+    VK_CONTEXT().TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
 
-    auto& DescriptorSetManager = Context->DescriptorSetManager;
+    auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
 
     auto ClearImageShader = FShader("../../../src/shaders/clear_image.comp");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
 
-    Pipeline = Context->CreateComputePipeline(ClearImageShader(), PipelineLayout);
+    Pipeline = VK_CONTEXT().CreateComputePipeline(ClearImageShader(), PipelineLayout);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
     DescriptorSetManager->ReserveDescriptorSet(Name, CLEAR_IMAGE_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
@@ -57,13 +56,13 @@ void FClearImageTask::RecordCommands()
 
     for (std::size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        CommandBuffers[i] = GetContext().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
+        CommandBuffers[i] = VK_CONTEXT().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
-            Context->TimingManager->TimestampStart(Name, CommandBuffer, i);
+            VK_CONTEXT().TimingManager->TimestampStart(Name, CommandBuffer, i);
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
-            auto RayTracingDescriptorSet = Context->DescriptorSetManager->GetSet(Name, CLEAR_IMAGE_LAYOUT_INDEX, i);
-            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context->DescriptorSetManager->GetPipelineLayout(Name),
+            auto RayTracingDescriptorSet = VK_CONTEXT().DescriptorSetManager->GetSet(Name, CLEAR_IMAGE_LAYOUT_INDEX, i);
+            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT().DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &RayTracingDescriptorSet, 0, nullptr);
 
             int GroupSizeX = (Width % 8 == 0) ? (Width / 8) : (Width / 8) + 1;
@@ -71,7 +70,7 @@ void FClearImageTask::RecordCommands()
 
             vkCmdDispatch(CommandBuffer, GroupSizeX, GroupSizeY, 1);
 
-            Context->TimingManager->TimestampEnd(Name, CommandBuffer, i);
+            VK_CONTEXT().TimingManager->TimestampEnd(Name, CommandBuffer, i);
         });
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name);

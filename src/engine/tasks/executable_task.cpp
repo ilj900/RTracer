@@ -4,8 +4,8 @@
 #include "vk_context.h"
 #include "vk_debug.h"
 
-FExecutableTask::FExecutableTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
-        Width(WidthIn), Height(HeightIn), Context(Context),
+FExecutableTask::FExecutableTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+        Width(WidthIn), Height(HeightIn),
         NumberOfSimultaneousSubmits(NumberOfSimultaneousSubmits), LogicalDevice(LogicalDevice)
 {
     CreateSyncObjects();
@@ -18,17 +18,17 @@ FExecutableTask::~FExecutableTask()
 
     for (auto& CommandBuffer : CommandBuffers)
     {
-        Context->CommandBufferManager->FreeCommandBuffer(CommandBuffer);
+        VK_CONTEXT().CommandBufferManager->FreeCommandBuffer(CommandBuffer);
     }
 
-    Context->DescriptorSetManager->DestroyPipelineLayout(Name);
+    VK_CONTEXT().DescriptorSetManager->DestroyPipelineLayout(Name);
 
     if (Pipeline != VK_NULL_HANDLE)
     {
         vkDestroyPipeline(LogicalDevice, Pipeline, nullptr);
     }
 
-    Context->DescriptorSetManager->Reset(Name);
+    VK_CONTEXT().DescriptorSetManager->Reset(Name);
 
     FreeSyncObjects();
 }
@@ -37,7 +37,7 @@ void FExecutableTask::CreateSyncObjects()
 {
     for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        SignalSemaphores.push_back(Context->CreateSemaphore());
+        SignalSemaphores.push_back(VK_CONTEXT().CreateSemaphore());
         V::SetName(LogicalDevice, SignalSemaphores.back(), Name);
     }
 }
@@ -115,7 +115,7 @@ void FExecutableTask::UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t Layo
     BufferInfo.buffer = Buffer.Buffer;
     BufferInfo.offset = 0;
     BufferInfo.range = Buffer.BufferSize;
-    Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, LayoutSetIndex, LayoutIndex, FrameIndex, &BufferInfo);
+    VK_CONTEXT().DescriptorSetManager->UpdateDescriptorSetInfo(Name, LayoutSetIndex, LayoutIndex, FrameIndex, &BufferInfo);
 }
 
 void FExecutableTask::UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t LayoutIndex, int FrameIndex, ImagePtr Image)
@@ -123,7 +123,7 @@ void FExecutableTask::UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t Layo
     VkDescriptorImageInfo ImageInfo{};
     ImageInfo.imageLayout = Image->CurrentLayout;
     ImageInfo.imageView = Image->View;
-    Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, LayoutSetIndex, LayoutIndex, FrameIndex, &ImageInfo);
+    VK_CONTEXT().DescriptorSetManager->UpdateDescriptorSetInfo(Name, LayoutSetIndex, LayoutIndex, FrameIndex, &ImageInfo);
 }
 
 void FExecutableTask::UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t LayoutIndex, int FrameIndex, ImagePtr Image, VkSampler Sampler)
@@ -132,7 +132,7 @@ void FExecutableTask::UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t Layo
     ImageInfo.imageLayout = Image->CurrentLayout;
     ImageInfo.imageView = Image->View;
     ImageInfo.sampler = Sampler;
-    Context->DescriptorSetManager->UpdateDescriptorSetInfo(Name, LayoutSetIndex, LayoutIndex, FrameIndex, &ImageInfo);
+    VK_CONTEXT().DescriptorSetManager->UpdateDescriptorSetInfo(Name, LayoutSetIndex, LayoutIndex, FrameIndex, &ImageInfo);
 }
 
 VkPipelineStageFlags FExecutableTask::GetPipelineStageFlags()

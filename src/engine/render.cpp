@@ -105,8 +105,6 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     TextureSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FTextureComponent>());
     COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FTextureSystem>(TextureSignature);
 
-    auto& Context = GetContext();
-
     /// Fill in vulkan context creation options
     FVulkanContextOptions VulkanContextOptions;
     VulkanContextOptions.AddInstanceLayer("VK_LAYER_KHRONOS_validation");
@@ -116,7 +114,7 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     DebugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     DebugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
     DebugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    DebugCreateInfo.pfnUserCallback = Context.DebugCallback;
+    DebugCreateInfo.pfnUserCallback = VK_CONTEXT().DebugCallback;
     VulkanContextOptions.AddInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, &DebugCreateInfo, sizeof(VkDebugUtilsMessengerCreateInfoEXT));
 #endif
 
@@ -158,32 +156,32 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     VulkanContextOptions.AddDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
     /// Create Vulkan instance
-    Instance = Context.CreateVkInstance("Hello Triangle", {1, 3, 0}, "No Engine", {1, 3, 0}, VK_API_VERSION_1_3, VulkanContextOptions);
-    Context.SetInstance(Instance);
+    Instance = VK_CONTEXT().CreateVkInstance("Hello Triangle", {1, 3, 0}, "No Engine", {1, 3, 0}, VK_API_VERSION_1_3, VulkanContextOptions);
+    VK_CONTEXT().SetInstance(Instance);
 
     /// Load Vulkan options
     V::LoadVkFunctions(Instance);
 
 #ifndef NDEBUG
     /// Create debug messenger
-    VkDebugUtilsMessengerEXT DebugUtilsMessengerEXT = Context.CreateDebugMessenger(VulkanContextOptions);
-    Context.SetDebugUtilsMessengerEXT(DebugUtilsMessengerEXT);
+    VkDebugUtilsMessengerEXT DebugUtilsMessengerEXT = VK_CONTEXT().CreateDebugMessenger(VulkanContextOptions);
+    VK_CONTEXT().SetDebugUtilsMessengerEXT(DebugUtilsMessengerEXT);
 #endif
     /// Create Surface
-    Surface = Context.CreateSurface(WINDOW());
-    Context.SetSurface(Surface);
+    Surface = VK_CONTEXT().CreateSurface(WINDOW());
+    VK_CONTEXT().SetSurface(Surface);
 
     /// Pick Physical device
-    PhysicalDevice = Context.PickPhysicalDevice(VulkanContextOptions, Surface);
-    Context.SetPhysicalDevice(PhysicalDevice);
+    PhysicalDevice = VK_CONTEXT().PickPhysicalDevice(VulkanContextOptions, Surface);
+    VK_CONTEXT().SetPhysicalDevice(PhysicalDevice);
 
     /// Create Logical device
-    LogicalDevice = Context.CreateLogicalDevice(PhysicalDevice, VulkanContextOptions);
-    Context.SetLogicalDevice(LogicalDevice);
+    LogicalDevice = VK_CONTEXT().CreateLogicalDevice(PhysicalDevice, VulkanContextOptions);
+    VK_CONTEXT().SetLogicalDevice(LogicalDevice);
 
-    Context.GetDeviceQueues(Surface);
+    VK_CONTEXT().GetDeviceQueues(Surface);
 
-    Context.InitManagerResources();
+    VK_CONTEXT().InitManagerResources();
     CAMERA_SYSTEM()->Init(MaxFramesInFlight);
     RENDERABLE_SYSTEM()->Init(MaxFramesInFlight);
     MESH_SYSTEM()->Init();
@@ -205,9 +203,7 @@ void FRender::SetMaxFramesInFlight(uint32_t MaxFramesInFlightIn)
 
 int FRender::Init()
 {
-    auto& Context = GetContext();
-
-    Swapchain = std::make_shared<FSwapchain>(Width, Height, PhysicalDevice, LogicalDevice, Surface, Context.GetGraphicsQueueIndex(), Context.GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
+    Swapchain = std::make_shared<FSwapchain>(Width, Height, PhysicalDevice, LogicalDevice, Surface, VK_CONTEXT().GetGraphicsQueueIndex(), VK_CONTEXT().GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
     SetMaxFramesInFlight(Swapchain->Size());
     for (int i = 0; i < MaxFramesInFlight; ++i)
     {
@@ -217,91 +213,91 @@ int FRender::Init()
 
     for (int i = 0; i < MaxFramesInFlight; ++i)
     {
-        ImageAvailableSemaphores.push_back(Context.CreateSemaphore());
-        ImagesInFlight.push_back(Context.CreateSignalledFence());
+        ImageAvailableSemaphores.push_back(VK_CONTEXT().CreateSemaphore());
+        ImagesInFlight.push_back(VK_CONTEXT().CreateSignalledFence());
     }
 
-    GenerateRaysTask = std::make_shared<FGenerateInitialRays>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
+    GenerateRaysTask = std::make_shared<FGenerateInitialRays>(Width, Height, MaxFramesInFlight, LogicalDevice);
     GenerateRaysTask->Init();
     GenerateRaysTask->UpdateDescriptorSets();
     GenerateRaysTask->RecordCommands();
 
-    RayTraceTask = std::make_shared<FRaytraceTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
+    RayTraceTask = std::make_shared<FRaytraceTask>(Width, Height, MaxFramesInFlight, LogicalDevice);
 
     RayTraceTask->Init();
     RayTraceTask->UpdateDescriptorSets();
     RayTraceTask->RecordCommands();
 
-    ClearMaterialsCountPerChunkTask = std::make_shared<FClearMaterialsCountPerChunkTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
+    ClearMaterialsCountPerChunkTask = std::make_shared<FClearMaterialsCountPerChunkTask>(Width, Height, MaxFramesInFlight, LogicalDevice);
 
     ClearMaterialsCountPerChunkTask->Init();
     ClearMaterialsCountPerChunkTask->UpdateDescriptorSets();
     ClearMaterialsCountPerChunkTask->RecordCommands();
 
-    ClearTotalMaterialsCountTask = std::make_shared<FClearTotalMaterialsCountTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
+    ClearTotalMaterialsCountTask = std::make_shared<FClearTotalMaterialsCountTask>(Width, Height, MaxFramesInFlight, LogicalDevice);
 
     ClearTotalMaterialsCountTask->Init();
     ClearTotalMaterialsCountTask->UpdateDescriptorSets();
     ClearTotalMaterialsCountTask->RecordCommands();
 
-    CountMaterialsPerChunkTask = std::make_shared<FCountMaterialsPerChunkTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
+    CountMaterialsPerChunkTask = std::make_shared<FCountMaterialsPerChunkTask>(Width, Height, MaxFramesInFlight, LogicalDevice);
 
     CountMaterialsPerChunkTask->Init();
     CountMaterialsPerChunkTask->UpdateDescriptorSets();
     CountMaterialsPerChunkTask->RecordCommands();
 
-    ComputePrefixSumsUpSweepTask = std::make_shared<FComputePrefixSumsUpSweepTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
+    ComputePrefixSumsUpSweepTask = std::make_shared<FComputePrefixSumsUpSweepTask>(Width, Height, MaxFramesInFlight, LogicalDevice);
 
     ComputePrefixSumsUpSweepTask->Init();
     ComputePrefixSumsUpSweepTask->UpdateDescriptorSets();
     ComputePrefixSumsUpSweepTask->RecordCommands();
 
-    ComputePrefixSumsZeroOutTask = std::make_shared<FComputePrefixSumsZeroOutTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
+    ComputePrefixSumsZeroOutTask = std::make_shared<FComputePrefixSumsZeroOutTask>(Width, Height, MaxFramesInFlight, LogicalDevice);
 
     ComputePrefixSumsZeroOutTask->Init();
     ComputePrefixSumsZeroOutTask->UpdateDescriptorSets();
     ComputePrefixSumsZeroOutTask->RecordCommands();
 
-    ComputePrefixSumsDownSweepTask = std::make_shared<FComputePrefixSumsDownSweepTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
+    ComputePrefixSumsDownSweepTask = std::make_shared<FComputePrefixSumsDownSweepTask>(Width, Height, MaxFramesInFlight, LogicalDevice);
 
     ComputePrefixSumsDownSweepTask->Init();
     ComputePrefixSumsDownSweepTask->UpdateDescriptorSets();
     ComputePrefixSumsDownSweepTask->RecordCommands();
 
-    ComputeOffsetsPerMaterialTask = std::make_shared<FComputeOffsetsPerMaterialTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
+    ComputeOffsetsPerMaterialTask = std::make_shared<FComputeOffsetsPerMaterialTask>(Width, Height, MaxFramesInFlight, LogicalDevice);
 
     ComputeOffsetsPerMaterialTask->Init();
     ComputeOffsetsPerMaterialTask->UpdateDescriptorSets();
     ComputeOffsetsPerMaterialTask->RecordCommands();
 
-    SortMaterialsTask = std::make_shared<FSortMaterialsTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
+    SortMaterialsTask = std::make_shared<FSortMaterialsTask>(Width, Height, MaxFramesInFlight, LogicalDevice);
 
     SortMaterialsTask->Init();
     SortMaterialsTask->UpdateDescriptorSets();
     SortMaterialsTask->RecordCommands();
 
-    ShadeTask = std::make_shared<FShadeTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
+    ShadeTask = std::make_shared<FShadeTask>(Width, Height, MaxFramesInFlight, LogicalDevice);
     ShadeTask->Init();
     ShadeTask->UpdateDescriptorSets();
     ShadeTask->RecordCommands();
 
-    MissTask = std::make_shared<FMissTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
+    MissTask = std::make_shared<FMissTask>(Width, Height, MaxFramesInFlight, LogicalDevice);
     SetIBL("../../../resources/brown_photostudio_02_4k.exr");
     MissTask->Init();
     MissTask->UpdateDescriptorSets();
     MissTask->RecordCommands();
 
-    AccumulateTask = std::make_shared<FAccumulateTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
+    AccumulateTask = std::make_shared<FAccumulateTask>(Width, Height, MaxFramesInFlight, LogicalDevice);
     AccumulateTask->Init();
     AccumulateTask->UpdateDescriptorSets();
     AccumulateTask->RecordCommands();
 
-    ClearImageTask = std::make_shared<FClearImageTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
+    ClearImageTask = std::make_shared<FClearImageTask>(Width, Height, MaxFramesInFlight, LogicalDevice);
     ClearImageTask->Init();
     ClearImageTask->UpdateDescriptorSets();
     ClearImageTask->RecordCommands();
 
-    PassthroughTask = std::make_shared<FPassthroughTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
+    PassthroughTask = std::make_shared<FPassthroughTask>(Width, Height, MaxFramesInFlight, LogicalDevice);
     for (int i = 0; i < MaxFramesInFlight; ++i)
     {
         auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(OutputToFramebufferMap[OutputType(i)]);
@@ -311,7 +307,7 @@ int FRender::Init()
     PassthroughTask->UpdateDescriptorSets();
     PassthroughTask->RecordCommands();
 
-    ImguiTask = std::make_shared<FImguiTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
+    ImguiTask = std::make_shared<FImguiTask>(Width, Height, MaxFramesInFlight, LogicalDevice);
     for (int i = 0; i < MaxFramesInFlight; ++i)
     {
         auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(OutputToFramebufferMap[OutputType(i)]);
@@ -346,9 +342,9 @@ int FRender::Cleanup()
 
     for (int i = 0; i < MaxFramesInFlight; ++i)
     {
-        vkDestroySemaphore(GetContext().LogicalDevice, ImageAvailableSemaphores[i], nullptr);
+        vkDestroySemaphore(VK_CONTEXT().LogicalDevice, ImageAvailableSemaphores[i], nullptr);
         ImageAvailableSemaphores[i] = VK_NULL_HANDLE;
-        vkDestroyFence(GetContext().LogicalDevice, ImagesInFlight[i], nullptr);
+        vkDestroyFence(VK_CONTEXT().LogicalDevice, ImagesInFlight[i], nullptr);
         ImagesInFlight[i] = VK_NULL_HANDLE;
     }
 
@@ -419,7 +415,7 @@ ECS::FEntity FRender::GetOutput(OutputType OutputTypeIn)
 void FRender::SaveFramebuffer(ECS::FEntity Framebuffer)
 {
     auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);
-    GetContext().SaveImage(*GetTextureManager()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex));
+    VK_CONTEXT().SaveImage(*GetTextureManager()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex));
 }
 
 void FRender::GetFramebufferData(ECS::FEntity Framebuffer)
@@ -428,18 +424,18 @@ void FRender::GetFramebufferData(ECS::FEntity Framebuffer)
     auto Image = GetTextureManager()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex);
     std::vector<char> Data;
 
-    GetContext().FetchImageData(*Image, Data);
+    VK_CONTEXT().FetchImageData(*Image, Data);
 }
 
 int FRender::Destroy()
 {
-    GetContext().WaitIdle();
+    VK_CONTEXT().WaitIdle();
     Cleanup();
 
     ACCELERATION_STRUCTURE_SYSTEM()->Terminate();
     MESH_SYSTEM()->Terminate();
 
-    GetContext().CleanUp();
+    VK_CONTEXT().CleanUp();
 
     return 0;
 }
@@ -451,14 +447,12 @@ int FRender::Render()
         return 1;
     }
 
-    auto& Context = GetContext();
-
-    Context.TimingManager->NewTime();
+    VK_CONTEXT().TimingManager->NewTime();
 
     uint32_t CurrentFrame = RenderFrameIndex % MaxFramesInFlight;
 
     /// Previous rendering iteration of the frame might still be in use, so we wait for it
-    vkWaitForFences(Context.LogicalDevice, 1, &ImagesInFlight[CurrentFrame], VK_TRUE, UINT64_MAX);
+    vkWaitForFences(VK_CONTEXT().LogicalDevice, 1, &ImagesInFlight[CurrentFrame], VK_TRUE, UINT64_MAX);
 
     /// Acquire next image from swapchain, also it's index and provide semaphore to signal when image is ready to be used
     uint32_t ImageIndex = 0;
@@ -482,50 +476,50 @@ int FRender::Render()
     LIGHT_SYSTEM()->Update();
     ACCELERATION_STRUCTURE_SYSTEM()->Update();
 
-    auto GenerateRaysSemaphore = GenerateRaysTask->Submit(Context.GetComputeQueue(), ImageAvailableSemaphores[CurrentFrame], VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
+    auto GenerateRaysSemaphore = GenerateRaysTask->Submit(VK_CONTEXT().GetComputeQueue(), ImageAvailableSemaphores[CurrentFrame], VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
 
-    auto RayTraceSignalSemaphore = RayTraceTask->Submit(Context.GetGraphicsQueue(), GenerateRaysSemaphore, GenerateRaysTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto RayTraceSignalSemaphore = RayTraceTask->Submit(VK_CONTEXT().GetGraphicsQueue(), GenerateRaysSemaphore, GenerateRaysTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ClearMaterialsCountPerChunkSemaphore = ClearMaterialsCountPerChunkTask->Submit(Context.GetComputeQueue(), RayTraceSignalSemaphore, RayTraceTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ClearMaterialsCountPerChunkSemaphore = ClearMaterialsCountPerChunkTask->Submit(VK_CONTEXT().GetComputeQueue(), RayTraceSignalSemaphore, RayTraceTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ClearTotalMaterialsCountSemaphore = ClearTotalMaterialsCountTask->Submit(Context.GetComputeQueue(), ClearMaterialsCountPerChunkSemaphore, ClearMaterialsCountPerChunkTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ClearTotalMaterialsCountSemaphore = ClearTotalMaterialsCountTask->Submit(VK_CONTEXT().GetComputeQueue(), ClearMaterialsCountPerChunkSemaphore, ClearMaterialsCountPerChunkTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto CountMaterialsPerChunkSemaphore = CountMaterialsPerChunkTask->Submit(Context.GetComputeQueue(), ClearTotalMaterialsCountSemaphore, ClearTotalMaterialsCountTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto CountMaterialsPerChunkSemaphore = CountMaterialsPerChunkTask->Submit(VK_CONTEXT().GetComputeQueue(), ClearTotalMaterialsCountSemaphore, ClearTotalMaterialsCountTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ComputePrefixSumsUpSweepSemaphore = ComputePrefixSumsUpSweepTask->Submit(Context.GetComputeQueue(), CountMaterialsPerChunkSemaphore, CountMaterialsPerChunkTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ComputePrefixSumsUpSweepSemaphore = ComputePrefixSumsUpSweepTask->Submit(VK_CONTEXT().GetComputeQueue(), CountMaterialsPerChunkSemaphore, CountMaterialsPerChunkTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ComputePrefixSumsZeroOutSemaphore = ComputePrefixSumsZeroOutTask->Submit(Context.GetComputeQueue(), ComputePrefixSumsUpSweepSemaphore, ComputePrefixSumsUpSweepTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ComputePrefixSumsZeroOutSemaphore = ComputePrefixSumsZeroOutTask->Submit(VK_CONTEXT().GetComputeQueue(), ComputePrefixSumsUpSweepSemaphore, ComputePrefixSumsUpSweepTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ComputePrefixSumsDownSweepSemaphore = ComputePrefixSumsDownSweepTask->Submit(Context.GetComputeQueue(), ComputePrefixSumsZeroOutSemaphore, ComputePrefixSumsZeroOutTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ComputePrefixSumsDownSweepSemaphore = ComputePrefixSumsDownSweepTask->Submit(VK_CONTEXT().GetComputeQueue(), ComputePrefixSumsZeroOutSemaphore, ComputePrefixSumsZeroOutTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ComputeOffsetsPerMaterialSemaphore = ComputeOffsetsPerMaterialTask->Submit(Context.GetComputeQueue(), ComputePrefixSumsDownSweepSemaphore, ComputePrefixSumsDownSweepTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ComputeOffsetsPerMaterialSemaphore = ComputeOffsetsPerMaterialTask->Submit(VK_CONTEXT().GetComputeQueue(), ComputePrefixSumsDownSweepSemaphore, ComputePrefixSumsDownSweepTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto SortMaterialsSemaphore = SortMaterialsTask->Submit(Context.GetComputeQueue(), ComputeOffsetsPerMaterialSemaphore, ComputeOffsetsPerMaterialTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto SortMaterialsSemaphore = SortMaterialsTask->Submit(VK_CONTEXT().GetComputeQueue(), ComputeOffsetsPerMaterialSemaphore, ComputeOffsetsPerMaterialTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ShadeSignalSemaphore = ShadeTask->Submit(Context.GetComputeQueue(), SortMaterialsSemaphore, SortMaterialsTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto ShadeSignalSemaphore = ShadeTask->Submit(VK_CONTEXT().GetComputeQueue(), SortMaterialsSemaphore, SortMaterialsTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto MissSignalSemaphore = MissTask->Submit(Context.GetComputeQueue(), ShadeSignalSemaphore, ShadeTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto MissSignalSemaphore = MissTask->Submit(VK_CONTEXT().GetComputeQueue(), ShadeSignalSemaphore, ShadeTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
     VkSemaphore AccumulateSignalSemaphore = VK_NULL_HANDLE;
     VkPipelineStageFlags PipelineStageFlags = 0;
 
     if (NeedUpdate)
     {
-        auto ClearAccumulatorSemaphore = ClearImageTask->Submit(Context.GetComputeQueue(), MissSignalSemaphore, MissTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
-        AccumulateSignalSemaphore = AccumulateTask->Submit(Context.GetComputeQueue(), ClearAccumulatorSemaphore, ClearImageTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+        auto ClearAccumulatorSemaphore = ClearImageTask->Submit(VK_CONTEXT().GetComputeQueue(), MissSignalSemaphore, MissTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+        AccumulateSignalSemaphore = AccumulateTask->Submit(VK_CONTEXT().GetComputeQueue(), ClearAccumulatorSemaphore, ClearImageTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
         PipelineStageFlags = ClearImageTask->GetPipelineStageFlags();
     }
     else
     {
-        AccumulateSignalSemaphore = AccumulateTask->Submit(Context.GetComputeQueue(), MissSignalSemaphore, MissTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+        AccumulateSignalSemaphore = AccumulateTask->Submit(VK_CONTEXT().GetComputeQueue(), MissSignalSemaphore, MissTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
         PipelineStageFlags = AccumulateTask->GetPipelineStageFlags();
     }
 
-    auto PassthroughSignalSemaphore = PassthroughTask->Submit(Context.GetGraphicsQueue(), AccumulateSignalSemaphore, PipelineStageFlags, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto PassthroughSignalSemaphore = PassthroughTask->Submit(VK_CONTEXT().GetGraphicsQueue(), AccumulateSignalSemaphore, PipelineStageFlags, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ImguiFinishedSemaphore = ImguiTask->Submit(Context.GetGraphicsQueue(), PassthroughSignalSemaphore, PassthroughTask->GetPipelineStageFlags(), VK_NULL_HANDLE, ImagesInFlight[ImageIndex], CurrentFrame);
+    auto ImguiFinishedSemaphore = ImguiTask->Submit(VK_CONTEXT().GetGraphicsQueue(), PassthroughSignalSemaphore, PassthroughTask->GetPipelineStageFlags(), VK_NULL_HANDLE, ImagesInFlight[ImageIndex], CurrentFrame);
 
-    Result = Context.Present(Swapchain->GetSwapchain(), ImguiFinishedSemaphore, CurrentFrame);
+    Result = VK_CONTEXT().Present(Swapchain->GetSwapchain(), ImguiFinishedSemaphore, CurrentFrame);
 
     if (Result == VK_ERROR_OUT_OF_DATE_KHR || Result == VK_SUBOPTIMAL_KHR)
     {
@@ -548,7 +542,7 @@ int FRender::Update()
 
     if (bShouldRecreateSwapchain)
     {
-        GetContext().WaitIdle();
+        VK_CONTEXT().WaitIdle();
         Cleanup();
         Init();
         bShouldRecreateSwapchain = false;
@@ -667,7 +661,7 @@ void FRender::MaterialSetNormal(ECS::FEntity Material, ECS::FEntity Image)
 
 int FRender::SetIBL(const std::string& Path)
 {
-    ImagePtr IBLImage = GetContext().CreateEXRImageFromFile(Path, "V::IBL_Image");
+    ImagePtr IBLImage = VK_CONTEXT().CreateEXRImageFromFile(Path, "V::IBL_Image");
     IBLImage->Transition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     MissTask->RegisterInput(1, IBLImage);
 

@@ -8,12 +8,12 @@
 
 #include "task_material_sort_compute_offsets_per_material.h"
 
-FComputeOffsetsPerMaterialTask::FComputeOffsetsPerMaterialTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
-        FExecutableTask(WidthIn, HeightIn, Context, NumberOfSimultaneousSubmits, LogicalDevice)
+FComputeOffsetsPerMaterialTask::FComputeOffsetsPerMaterialTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+        FExecutableTask(WidthIn, HeightIn, NumberOfSimultaneousSubmits, LogicalDevice)
 {
     Name = "Material sort compute offsets per material pipeline";
 
-    auto& DescriptorSetManager = Context->DescriptorSetManager;
+    auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
 
     DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_TOTAL_MATERIAL_COUNT_BUFFER,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
@@ -22,27 +22,27 @@ FComputeOffsetsPerMaterialTask::FComputeOffsetsPerMaterialTask(uint32_t WidthIn,
 
     DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
 
-    FBuffer MaterialsOffsetsPerMaterialBuffer = Context->ResourceAllocator->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialsOffsetsPerMaterialBuffer");
-    Context->ResourceAllocator->RegisterBuffer(MaterialsOffsetsPerMaterialBuffer, "MaterialsOffsetsPerMaterialBuffer");
+    FBuffer MaterialsOffsetsPerMaterialBuffer = VK_CONTEXT().ResourceAllocator->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialsOffsetsPerMaterialBuffer");
+    VK_CONTEXT().ResourceAllocator->RegisterBuffer(MaterialsOffsetsPerMaterialBuffer, "MaterialsOffsetsPerMaterialBuffer");
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 }
 
 FComputeOffsetsPerMaterialTask::~FComputeOffsetsPerMaterialTask()
 {
-    Context->ResourceAllocator->UnregisterAndDestroyBuffer("MaterialsOffsetsPerMaterialBuffer");
+    VK_CONTEXT().ResourceAllocator->UnregisterAndDestroyBuffer("MaterialsOffsetsPerMaterialBuffer");
 };
 
 void FComputeOffsetsPerMaterialTask::Init()
 {
-    Context->TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+    VK_CONTEXT().TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
 
-    auto& DescriptorSetManager = Context->DescriptorSetManager;
+    auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
 
     auto MaterialCountShader = FShader("../../../src/shaders/material_sort_compute_offsets_per_material.comp");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
-    Pipeline = Context->CreateComputePipeline(MaterialCountShader(), PipelineLayout);
+    Pipeline = VK_CONTEXT().CreateComputePipeline(MaterialCountShader(), PipelineLayout);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
     DescriptorSetManager->ReserveDescriptorSet(Name, MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
@@ -56,8 +56,8 @@ void FComputeOffsetsPerMaterialTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_TOTAL_MATERIAL_COUNT_BUFFER, i, Context->ResourceAllocator->GetBuffer("TotalCountedMaterialsBuffer"));
-        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_MATERIAL_OFFSETS_BUFFER, i, Context->ResourceAllocator->GetBuffer("MaterialsOffsetsPerMaterialBuffer"));
+        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_TOTAL_MATERIAL_COUNT_BUFFER, i, VK_CONTEXT().ResourceAllocator->GetBuffer("TotalCountedMaterialsBuffer"));
+        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_MATERIAL_OFFSETS_BUFFER, i, VK_CONTEXT().ResourceAllocator->GetBuffer("MaterialsOffsetsPerMaterialBuffer"));
     }
 };
 
@@ -67,19 +67,19 @@ void FComputeOffsetsPerMaterialTask::RecordCommands()
 
     for (std::size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        CommandBuffers[i] = GetContext().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
+        CommandBuffers[i] = VK_CONTEXT().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
-            Context->TimingManager->TimestampStart(Name, CommandBuffer, i);
+            VK_CONTEXT().TimingManager->TimestampStart(Name, CommandBuffer, i);
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
-            auto ComputeDescriptorSet = Context->DescriptorSetManager->GetSet(Name, MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_LAYOUT_INDEX, i);
-            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context->DescriptorSetManager->GetPipelineLayout(Name),
+            auto ComputeDescriptorSet = VK_CONTEXT().DescriptorSetManager->GetSet(Name, MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_LAYOUT_INDEX, i);
+            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT().DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &ComputeDescriptorSet, 0, nullptr);
 
             vkCmdDispatch(CommandBuffer, 1, 1, 1);
 
 
-            Context->TimingManager->TimestampEnd(Name, CommandBuffer, i);
+            VK_CONTEXT().TimingManager->TimestampEnd(Name, CommandBuffer, i);
         });
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name);

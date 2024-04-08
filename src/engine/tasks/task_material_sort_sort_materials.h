@@ -5,7 +5,7 @@
 class FSortMaterialsTask : public FExecutableTask
 {
 public:
-    FSortMaterialsTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+    FSortMaterialsTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
     ~FSortMaterialsTask() override;
 
     void Init() override;

@@ -5,7 +5,7 @@
 class FGenerateInitialRays : public FExecutableTask
 {
 public:
-    FGenerateInitialRays(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+    FGenerateInitialRays(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
     ~FGenerateInitialRays() override;
 
     void Init() override;

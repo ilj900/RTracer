@@ -8,7 +8,7 @@ class FVulkanContext;
 class FExecutableTask
 {
 public:
-    FExecutableTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+    FExecutableTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
     virtual ~FExecutableTask();
 
     virtual void Init() = 0;
@@ -37,7 +37,6 @@ public:
     uint32_t Width = 0;
     uint32_t Height = 0;
 
-    FVulkanContext* Context = nullptr;
     int NumberOfSimultaneousSubmits;
     VkDevice LogicalDevice = VK_NULL_HANDLE;
     VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;

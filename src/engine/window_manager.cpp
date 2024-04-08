@@ -86,7 +86,6 @@ void FWindowManager::KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, i
         {
             if (Action == GLFW_PRESS)
             {
-                auto& Context = GetContext();
             }
             break;
         }

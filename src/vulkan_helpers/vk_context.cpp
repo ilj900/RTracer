@@ -837,7 +837,6 @@ void FVulkanContext::FetchImageData(const FImage& Image, std::vector<T>& Data)
         }
     }
 
-    auto& Context = GetContext();
     uint32_t Size = Image.Height * Image.Width * NumberOfComponents * sizeof(T);
     FBuffer Buffer = GetResourceAllocator()->CreateBuffer(Size, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Tmp_Save_Image_Buffer");
     Context.ResourceAllocator->CopyImageToBuffer(Image, Buffer);

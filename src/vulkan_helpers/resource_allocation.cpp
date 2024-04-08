@@ -273,7 +273,7 @@ FMemoryRegion FResourceAllocator::LoadDataToImage(FImage& Image, VkDeviceSize Si
 
 void FResourceAllocator::CopyBuffer(const FBuffer &SrcBuffer, FBuffer &DstBuffer, std::vector<VkDeviceSize> Sizes, std::vector<VkDeviceSize> SourceOffsets, std::vector<VkDeviceSize> DestinationOffsets)
 {
-    Context->CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    VK_CONTEXT().CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
     {
         std::vector<VkBufferCopy> CopyRegions(Sizes.size());
 
@@ -302,7 +302,7 @@ void FResourceAllocator::Unmap(FBuffer& Buffer)
 
 void FResourceAllocator::CopyBufferToImage(FBuffer &SrcBuffer, FImage &DstImage)
 {
-    Context->CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    VK_CONTEXT().CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
     {
         VkBufferImageCopy Region{};
         Region.bufferOffset = 0;
@@ -324,7 +324,7 @@ void FResourceAllocator::CopyBufferToImage(FBuffer &SrcBuffer, FImage &DstImage)
 
 void FResourceAllocator::CopyImageToBuffer(const FImage& SrcImage, FBuffer& DstBuffer)
 {
-    Context->CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    VK_CONTEXT().CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
     {
         VkBufferImageCopy Region{};
         Region.bufferOffset = 0;

@@ -126,7 +126,7 @@ FSwapchain::FSwapchain(uint32_t Width, uint32_t Height, VkPhysicalDevice Physica
 
     for (uint32_t i = 0; i < SwapchainImages.size(); ++i)
     {
-        Images[i] = GetContext().Wrap(SwapchainImages[i], SurfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_SwapchainImage");
+        Images[i] = VK_CONTEXT().Wrap(SwapchainImages[i], SurfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, "V_SwapchainImage");
     }
 }
 
@@ -173,7 +173,7 @@ VkSwapchainKHR FSwapchain::GetSwapchain()
 
 VkResult FSwapchain::GetNextImage(ImagePtr Image, VkSemaphore &Semaphore, uint32_t& ImageIndex)
 {
-    VkResult Result = vkAcquireNextImageKHR(GetContext().LogicalDevice, Swapchain, UINT64_MAX, Semaphore, VK_NULL_HANDLE, &ImageIndex);
+    VkResult Result = vkAcquireNextImageKHR(VK_CONTEXT().LogicalDevice, Swapchain, UINT64_MAX, Semaphore, VK_NULL_HANDLE, &ImageIndex);
     if (Image != nullptr)
     {
         Image = Images[ImageIndex];

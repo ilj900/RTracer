@@ -5,7 +5,7 @@
 class FShadeTask : public FExecutableTask
 {
 public:
-    FShadeTask(uint32_t WidthIn, uint32_t HeightIn, FVulkanContext* Context, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+    FShadeTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
     ~FShadeTask() override;
 
     void Init() override;

@@ -52,9 +52,7 @@ FImage::~FImage()
 
 void FImage::Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout)
 {
-    auto& Context = GetContext();
-
-    Context.CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    VK_CONTEXT().CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
     {
         VkImageMemoryBarrier Barrier{};
         Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -71,7 +69,7 @@ void FImage::Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout)
         if (NewLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
             Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 
-            if (Context.HasStensilComponent(Format)) {
+            if (VK_CONTEXT().HasStensilComponent(Format)) {
                 Barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
             }
         } else {
@@ -220,7 +218,7 @@ void FImage::AllocateMemory()
 
     Size = MemRequirements.size;
 
-    MemoryRegion = GetContext().ResourceAllocator->AllocateMemory(MemRequirements.size, MemRequirements, Properties);
+    MemoryRegion = VK_CONTEXT().ResourceAllocator->AllocateMemory(MemRequirements.size, MemRequirements, Properties);
 }
 
 void FImage::BindMemoryToImage()
@@ -251,16 +249,15 @@ void FImage::CreateImageView()
 
 void FImage::GenerateMipMaps()
 {
-    auto& Context = GetContext();
     VkFormatProperties FormatProperties;
-    vkGetPhysicalDeviceFormatProperties(Context.PhysicalDevice, Format, &FormatProperties);
+    vkGetPhysicalDeviceFormatProperties(VK_CONTEXT().PhysicalDevice, Format, &FormatProperties);
 
     if (!(FormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
     {
         throw std::runtime_error("Texture image format does not support linear blitting!");
     }
 
-    Context.CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer& CommandBuffer)
+    VK_CONTEXT().CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer& CommandBuffer)
     {
         VkImageMemoryBarrier Barrier{};
         Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -338,9 +335,7 @@ void FImage::Resolve(FImage& ImageToResolveTo)
         throw std::runtime_error("Failed to resolve image because formats are different.");
     }
 
-    auto& Context = GetContext();
-
-    Context.CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer& CommandBuffer)
+    VK_CONTEXT().CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer& CommandBuffer)
     {
         VkImageResolve ImageResolve{};
         ImageResolve.srcOffset = {0, 0, 0};
