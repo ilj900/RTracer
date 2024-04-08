@@ -137,7 +137,6 @@ public:
     VkQueue GetQueue(VkQueueFlagBits QueueFlagBits);
     uint32_t GetQueueIndex(VkQueueFlagBits QueueFlagBits);
 
-    std::shared_ptr<FResourceAllocator> ResourceAllocator = nullptr;
     std::shared_ptr<FCommandBufferManager> CommandBufferManager = nullptr;
 
     VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT;
@@ -170,6 +169,5 @@ public:
 };
 
 FVulkanContext& GetContext();
-std::shared_ptr<FResourceAllocator> GetResourceAllocator();
 
 #define VK_CONTEXT() GetContext()

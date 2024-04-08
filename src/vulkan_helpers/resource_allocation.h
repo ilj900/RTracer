@@ -11,7 +11,7 @@ class FVulkanContext;
 class FResourceAllocator
 {
 public:
-    FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice Device, FVulkanContext* Context);
+    FResourceAllocator();
     ~FResourceAllocator();
 
     FBuffer CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags Usage, VkMemoryPropertyFlags Properties, const std::string& DebugName = "");
@@ -60,11 +60,14 @@ public:
     VkDeviceSize StagingBufferSize = uint64_t(256) * 1024 * 1024;
     FBuffer StagingBuffer;
 
-    VkDevice Device = VK_NULL_HANDLE;
-    FVulkanContext *Context = nullptr;
-
     VkPhysicalDeviceMemoryProperties MemProperties{};
 
 private:
     std::map<std::string, FBuffer> Buffers;
 };
+
+FResourceAllocator* GetResourceAllocator();
+void FreeResourceAllocator();
+
+#define RESOURCE_ALLOCATOR() GetResourceAllocator()
+#define FREE_RESOURCE_ALLOCATOR() FreeResourceAllocator()

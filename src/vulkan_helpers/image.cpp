@@ -218,7 +218,7 @@ void FImage::AllocateMemory()
 
     Size = MemRequirements.size;
 
-    MemoryRegion = VK_CONTEXT().ResourceAllocator->AllocateMemory(MemRequirements.size, MemRequirements, Properties);
+    MemoryRegion = RESOURCE_ALLOCATOR()->AllocateMemory(MemRequirements.size, MemRequirements, Properties);
 }
 
 void FImage::BindMemoryToImage()

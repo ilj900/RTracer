@@ -25,8 +25,8 @@ FSortMaterialsTask::FSortMaterialsTask(uint32_t WidthIn, uint32_t HeightIn, int 
     DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_SORT_MATERIALS_LAYOUT_INDEX, MATERIAL_SORT_SORT_MATERIALS_SORTED_MATERIALS_INDEX_MAP_BUFFER,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
-    FBuffer SortedMaterialsIndexMapBuffer = VK_CONTEXT().ResourceAllocator->CreateBuffer(sizeof(uint32_t) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "SortedMaterialsIndexMapBuffer");
-    VK_CONTEXT().ResourceAllocator->RegisterBuffer(SortedMaterialsIndexMapBuffer, "SortedMaterialsIndexMapBuffer");
+    FBuffer SortedMaterialsIndexMapBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "SortedMaterialsIndexMapBuffer");
+    RESOURCE_ALLOCATOR()->RegisterBuffer(SortedMaterialsIndexMapBuffer, "SortedMaterialsIndexMapBuffer");
 
     VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstantsCountMaterialsPerChunk)};
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
@@ -36,7 +36,7 @@ FSortMaterialsTask::FSortMaterialsTask(uint32_t WidthIn, uint32_t HeightIn, int 
 
 FSortMaterialsTask::~FSortMaterialsTask()
 {
-    VK_CONTEXT().ResourceAllocator->UnregisterAndDestroyBuffer("SortedMaterialsIndexMapBuffer");
+    RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("SortedMaterialsIndexMapBuffer");
 };
 
 void FSortMaterialsTask::Init()
@@ -62,10 +62,10 @@ void FSortMaterialsTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        UpdateDescriptorSet(MATERIAL_SORT_SORT_MATERIALS_LAYOUT_INDEX, MATERIAL_SORT_SORT_MATERIALS_MATERIALS_OFFSETS_PER_CHUNK_BUFFER, i, VK_CONTEXT().ResourceAllocator->GetBuffer("CountedMaterialsPerChunkBuffer"));
-        UpdateDescriptorSet(MATERIAL_SORT_SORT_MATERIALS_LAYOUT_INDEX, MATERIAL_SORT_SORT_MATERIALS_MATERIAL_OFFSETS_PER_MATERIAL_BUFFER, i, VK_CONTEXT().ResourceAllocator->GetBuffer("MaterialsOffsetsPerMaterialBuffer"));
-        UpdateDescriptorSet(MATERIAL_SORT_SORT_MATERIALS_LAYOUT_INDEX, MATERIAL_SORT_SORT_MATERIALS_UNSORTED_MATERIALS_BUFFER, i, VK_CONTEXT().ResourceAllocator->GetBuffer("MaterialIndicesAOVBuffer"));
-        UpdateDescriptorSet(MATERIAL_SORT_SORT_MATERIALS_LAYOUT_INDEX, MATERIAL_SORT_SORT_MATERIALS_SORTED_MATERIALS_INDEX_MAP_BUFFER, i, VK_CONTEXT().ResourceAllocator->GetBuffer("SortedMaterialsIndexMapBuffer"));
+        UpdateDescriptorSet(MATERIAL_SORT_SORT_MATERIALS_LAYOUT_INDEX, MATERIAL_SORT_SORT_MATERIALS_MATERIALS_OFFSETS_PER_CHUNK_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("CountedMaterialsPerChunkBuffer"));
+        UpdateDescriptorSet(MATERIAL_SORT_SORT_MATERIALS_LAYOUT_INDEX, MATERIAL_SORT_SORT_MATERIALS_MATERIAL_OFFSETS_PER_MATERIAL_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("MaterialsOffsetsPerMaterialBuffer"));
+        UpdateDescriptorSet(MATERIAL_SORT_SORT_MATERIALS_LAYOUT_INDEX, MATERIAL_SORT_SORT_MATERIALS_UNSORTED_MATERIALS_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("MaterialIndicesAOVBuffer"));
+        UpdateDescriptorSet(MATERIAL_SORT_SORT_MATERIALS_LAYOUT_INDEX, MATERIAL_SORT_SORT_MATERIALS_SORTED_MATERIALS_INDEX_MAP_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("SortedMaterialsIndexMapBuffer"));
     }
 };
 

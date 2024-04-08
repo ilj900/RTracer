@@ -21,15 +21,15 @@ FClearMaterialsCountPerChunkTask::FClearMaterialsCountPerChunkTask(uint32_t Widt
     VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t)};
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
-    FBuffer CountedMaterialsPerChunkBuffer = VK_CONTEXT().ResourceAllocator->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "CountedMaterialsPerChunkBuffer");
-    VK_CONTEXT().ResourceAllocator->RegisterBuffer(CountedMaterialsPerChunkBuffer, "CountedMaterialsPerChunkBuffer");
+    FBuffer CountedMaterialsPerChunkBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "CountedMaterialsPerChunkBuffer");
+    RESOURCE_ALLOCATOR()->RegisterBuffer(CountedMaterialsPerChunkBuffer, "CountedMaterialsPerChunkBuffer");
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 }
 
 FClearMaterialsCountPerChunkTask::~FClearMaterialsCountPerChunkTask()
 {
-    VK_CONTEXT().ResourceAllocator->UnregisterAndDestroyBuffer("CountedMaterialsPerChunkBuffer");
+    RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("CountedMaterialsPerChunkBuffer");
 };
 
 void FClearMaterialsCountPerChunkTask::Init()
@@ -55,7 +55,7 @@ void FClearMaterialsCountPerChunkTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        UpdateDescriptorSet(MATERIAL_SORT_CLEAR_MATERIALS_COUNT_PER_CHUNK_LAYOUT_INDEX, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_PER_CHUNK_BUFFER, i, VK_CONTEXT().ResourceAllocator->GetBuffer("CountedMaterialsPerChunkBuffer"));
+        UpdateDescriptorSet(MATERIAL_SORT_CLEAR_MATERIALS_COUNT_PER_CHUNK_LAYOUT_INDEX, MATERIAL_SORT_CLEAR_MATERIALS_COUNT_PER_CHUNK_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("CountedMaterialsPerChunkBuffer"));
     }
 };
 

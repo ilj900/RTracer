@@ -28,15 +28,15 @@ FGenerateInitialRays::FGenerateInitialRays(uint32_t WidthIn, uint32_t HeightIn, 
     VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants)};
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
-    FBuffer InitialRaysBuffer = VK_CONTEXT().ResourceAllocator->CreateBuffer(sizeof(FRayData) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Name);
-    VK_CONTEXT().ResourceAllocator->RegisterBuffer(InitialRaysBuffer, "InitialRaysBuffer");
+    FBuffer InitialRaysBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FRayData) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Name);
+    RESOURCE_ALLOCATOR()->RegisterBuffer(InitialRaysBuffer, "InitialRaysBuffer");
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 }
 
 FGenerateInitialRays::~FGenerateInitialRays()
 {
-    VK_CONTEXT().ResourceAllocator->UnregisterAndDestroyBuffer("InitialRaysBuffer");
+    RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("InitialRaysBuffer");
 };
 
 void FGenerateInitialRays::Init()
@@ -62,7 +62,7 @@ void FGenerateInitialRays::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        UpdateDescriptorSet(GENERATE_RAYS_LAYOUT_INDEX, CAMERA_RAYS_BUFFER, i, VK_CONTEXT().ResourceAllocator->GetBuffer("InitialRaysBuffer"));
+        UpdateDescriptorSet(GENERATE_RAYS_LAYOUT_INDEX, CAMERA_RAYS_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("InitialRaysBuffer"));
         UpdateDescriptorSet(GENERATE_RAYS_LAYOUT_INDEX, CAMERA_POSITION_BUFFER, i, CAMERA_SYSTEM()->DeviceBuffer);
     }
 };

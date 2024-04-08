@@ -21,11 +21,6 @@ FVulkanContext& GetContext()
     return Context;
 }
 
-std::shared_ptr<FResourceAllocator> GetResourceAllocator()
-{
-    return Context.ResourceAllocator;
-}
-
 VKAPI_ATTR VkBool32 VKAPI_CALL FVulkanContext::DebugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT MessageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT MessageType,
@@ -159,7 +154,7 @@ VkPhysicalDeviceRayTracingPipelinePropertiesKHR FVulkanContext::GetRTProperties(
 
 void FVulkanContext::InitManagerResources()
 {
-    ResourceAllocator = std::make_shared<FResourceAllocator>(PhysicalDevice, LogicalDevice, this);
+    RESOURCE_ALLOCATOR();
 
     DescriptorSetManager = std::make_shared<FDescriptorSetManager>(LogicalDevice);
 
@@ -438,7 +433,7 @@ void FVulkanContext::SaveBufferFloat(FBuffer& Buffer, uint32_t WidthIn, uint32_t
         throw std::runtime_error("You are trying to fetch data of the wrong size from buffer");
     }
 
-    auto Data = ResourceAllocator->DebugGetDataFromBuffer<float>(Buffer, Buffer.BufferSize, 0);
+    auto Data = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<float>(Buffer, Buffer.BufferSize, 0);
 
     const char* Err = NULL;
     SaveEXR(Data.data(), WidthIn, HeightIn, 1, false, Name.c_str(), &Err);
@@ -451,7 +446,7 @@ void FVulkanContext::SaveBufferFloat3(FBuffer& Buffer, uint32_t WidthIn, uint32_
         throw std::runtime_error("You are trying to fetch data of the wrong size from buffer");
     }
 
-    auto Data = ResourceAllocator->DebugGetDataFromBuffer<float>(Buffer, Buffer.BufferSize * 3, 0);
+    auto Data = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<float>(Buffer, Buffer.BufferSize * 3, 0);
 
     const char* Err = NULL;
     SaveEXR(Data.data(), WidthIn, HeightIn, 3, false, Name.c_str(), &Err);
@@ -464,7 +459,7 @@ void FVulkanContext::SaveBufferUint(FBuffer& Buffer, uint32_t WidthIn, uint32_t 
         throw std::runtime_error("You are trying to fetch data of the wrong size from buffer");
     }
 
-    auto Data = ResourceAllocator->DebugGetDataFromBuffer<uint32_t>(Buffer, WidthIn * HeightIn * sizeof(uint32_t), 0);
+    auto Data = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<uint32_t>(Buffer, WidthIn * HeightIn * sizeof(uint32_t), 0);
     std::vector<float> NewData(Data.size());
     for (int i = 0; i < Data.size(); ++i)
     {
@@ -482,7 +477,7 @@ void FVulkanContext::SaveBufferUint3(FBuffer& Buffer, uint32_t WidthIn, uint32_t
         throw std::runtime_error("You are trying to fetch data of the wrong size from buffer");
     }
 
-    auto Data = ResourceAllocator->DebugGetDataFromBuffer<uint32_t>(Buffer, Buffer.BufferSize, 0);
+    auto Data = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<uint32_t>(Buffer, Buffer.BufferSize, 0);
     std::vector<float> NewData(Data.size());
     for (int i = 0; i < Data.size(); ++i)
     {
@@ -498,7 +493,7 @@ FAccelerationStructure FVulkanContext::CreateAccelerationStructure(VkDeviceSize 
     FAccelerationStructure AccelerationStructure;
     AccelerationStructure.Type = Type;
 
-    AccelerationStructure.Buffer = ResourceAllocator->CreateBuffer(Size, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, DebugName + "_Buffer");
+    AccelerationStructure.Buffer = RESOURCE_ALLOCATOR()->CreateBuffer(Size, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, DebugName + "_Buffer");
 
     VkAccelerationStructureCreateInfoKHR AccelerationStructureCreateInfoKHR{};
     AccelerationStructureCreateInfoKHR.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
@@ -515,7 +510,7 @@ FAccelerationStructure FVulkanContext::CreateAccelerationStructure(VkDeviceSize 
 void FVulkanContext::DestroyAccelerationStructure(FAccelerationStructure &AccelerationStructure)
 {
     V::vkDestroyAccelerationStructureKHR(LogicalDevice, AccelerationStructure.AccelerationStructure, nullptr);
-    ResourceAllocator->DestroyBuffer(AccelerationStructure.Buffer);
+    RESOURCE_ALLOCATOR()->DestroyBuffer(AccelerationStructure.Buffer);
 }
 
 VkDeviceAddress FVulkanContext::GetBufferDeviceAddressInfo(const FBuffer& Buffer)
@@ -608,7 +603,7 @@ FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuff
 
     FAccelerationStructure NotCompactedBLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR, "NotCompactedBLAS");
 
-    FBuffer ScratchBuffer = ResourceAllocator->CreateBuffer(AccelerationStructureBuildSizesInfo.buildScratchSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    FBuffer ScratchBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(AccelerationStructureBuildSizesInfo.buildScratchSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     V::SetName(LogicalDevice, ScratchBuffer.Buffer, "ScratchBuffer");
     auto ScratchAddress = GetBufferDeviceAddressInfo(ScratchBuffer);
 
@@ -700,7 +695,7 @@ FAccelerationStructure FVulkanContext::GenerateTlas(const FBuffer& BlasInstanceB
         AccelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
         V::vkGetAccelerationStructureBuildSizesKHR(LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &AccelerationStructureBuildGeometry, &CountInstances, &AccelerationStructureBuildSizesInfo);
         TLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR, "V::TLAS");
-        ScratchBuffer = ResourceAllocator->CreateBuffer(AccelerationStructureBuildSizesInfo.buildScratchSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V::TLAS_Scratch_Buffer");
+        ScratchBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(AccelerationStructureBuildSizesInfo.buildScratchSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V::TLAS_Scratch_Buffer");
         AccelerationStructureBuildGeometry.srcAccelerationStructure = TLAS.AccelerationStructure;
         AccelerationStructureBuildGeometry.dstAccelerationStructure = TLAS.AccelerationStructure;
         AccelerationStructureBuildGeometry.scratchData.deviceAddress = GetBufferDeviceAddressInfo(ScratchBuffer);
@@ -710,7 +705,7 @@ FAccelerationStructure FVulkanContext::GenerateTlas(const FBuffer& BlasInstanceB
         V::vkCmdBuildAccelerationStructuresKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometry, &AccelerationStructureBuildRangeInfoPtr);
     });
 
-    ResourceAllocator->DestroyBuffer(ScratchBuffer);
+    RESOURCE_ALLOCATOR()->DestroyBuffer(ScratchBuffer);
 
     return TLAS;
 }
@@ -839,7 +834,7 @@ void FVulkanContext::FetchImageData(const FImage& Image, std::vector<T>& Data)
 
     uint32_t Size = Image.Height * Image.Width * NumberOfComponents * sizeof(T);
     FBuffer Buffer = GetResourceAllocator()->CreateBuffer(Size, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Tmp_Save_Image_Buffer");
-    Context.ResourceAllocator->CopyImageToBuffer(Image, Buffer);
+    RESOURCE_ALLOCATOR()->CopyImageToBuffer(Image, Buffer);
 
     Data.resize(Size);
 
@@ -882,7 +877,7 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
     V::SetName(LogicalDevice, Image->View, DebugImageName);
 
     Image->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    ResourceAllocator->LoadDataToImage(*Image, Width * Height * 4 * sizeof(float), Out);
+    RESOURCE_ALLOCATOR()->LoadDataToImage(*Image, Width * Height * 4 * sizeof(float), Out);
 
     free(Out);
 
@@ -912,7 +907,7 @@ ImagePtr FVulkanContext::LoadImageFromFile(const std::string& Path, const std::s
     V::SetName(LogicalDevice, Image->View, DebugImageName);
 
     Image->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    ResourceAllocator->LoadDataToImage(*Image, ImageSize, Pixels);
+    RESOURCE_ALLOCATOR()->LoadDataToImage(*Image, ImageSize, Pixels);
     /// Generate MipMaps only after we loaded image data
     Image->GenerateMipMaps();
 
@@ -1487,7 +1482,7 @@ void FVulkanContext::CleanUp()
 
     DescriptorSetManager = nullptr;
     CommandBufferManager = nullptr;
-    ResourceAllocator = nullptr;
+    FREE_RESOURCE_ALLOCATOR();
     FREE_TIMING_MANAGER();
 
     vkDestroyDevice(LogicalDevice, nullptr);

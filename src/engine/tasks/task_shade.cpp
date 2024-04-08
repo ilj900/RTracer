@@ -104,9 +104,9 @@ void FShadeTask::UpdateDescriptorSets()
     {
         UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_OUTPUT_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("RayTracingColorImage"));
         UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_RENDERABLE_BUFFER_INDEX, i, RENDERABLE_SYSTEM()->DeviceBuffer);
-        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_HITS_BUFFER_INDEX, i, VK_CONTEXT().ResourceAllocator->GetBuffer("HitsBuffer"));
+        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_HITS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer("HitsBuffer"));
         UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_TRANSFORM_INDEX, i, TRANSFORM_SYSTEM()->DeviceBuffer);
-        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_RAYS_BUFFER_INDEX, i, VK_CONTEXT().ResourceAllocator->GetBuffer("InitialRaysBuffer"));
+        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_RAYS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer("InitialRaysBuffer"));
 
         VkDescriptorImageInfo MaterialTextureSamplerInfo{};
         MaterialTextureSamplerInfo.sampler = MaterialTextureSampler;
@@ -116,9 +116,9 @@ void FShadeTask::UpdateDescriptorSets()
         VK_CONTEXT().DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_TEXTURE_ARRAY, i, TextureSampler);
 
         UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_LIGHTS_BUFFER_INDEX, i, LIGHT_SYSTEM()->DeviceBuffer);
-        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_MATERIAL_INDEX_MAP, i, VK_CONTEXT().ResourceAllocator->GetBuffer("SortedMaterialsIndexMapBuffer"));
-        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_MATERIAL_INDEX_AOV_MAP, i, VK_CONTEXT().ResourceAllocator->GetBuffer("MaterialIndicesAOVBuffer"));
-        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_MATERIALS_OFFSETS, i, VK_CONTEXT().ResourceAllocator->GetBuffer("MaterialsOffsetsPerMaterialBuffer"));
+        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_MATERIAL_INDEX_MAP, i, RESOURCE_ALLOCATOR()->GetBuffer("SortedMaterialsIndexMapBuffer"));
+        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_MATERIAL_INDEX_AOV_MAP, i, RESOURCE_ALLOCATOR()->GetBuffer("MaterialIndicesAOVBuffer"));
+        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_MATERIALS_OFFSETS, i, RESOURCE_ALLOCATOR()->GetBuffer("MaterialsOffsetsPerMaterialBuffer"));
     }
 };
 
@@ -132,7 +132,7 @@ void FShadeTask::RecordCommands()
         {
             TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
 
-            auto DispatchBuffer = VK_CONTEXT().ResourceAllocator->GetBuffer("TotalCountedMaterialsBuffer");
+            auto DispatchBuffer = RESOURCE_ALLOCATOR()->GetBuffer("TotalCountedMaterialsBuffer");
 
             for (auto& Material : *MATERIAL_SYSTEM())
             {

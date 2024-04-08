@@ -29,11 +29,11 @@ FRaytraceTask::FRaytraceTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSi
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_MATERIAL_INDEX_BUFFER,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 
-    FBuffer HitsBuffer = VK_CONTEXT().ResourceAllocator->CreateBuffer(sizeof(FHit) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "HitsBuffer");
-    VK_CONTEXT().ResourceAllocator->RegisterBuffer(HitsBuffer, "HitsBuffer");
+    FBuffer HitsBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FHit) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "HitsBuffer");
+    RESOURCE_ALLOCATOR()->RegisterBuffer(HitsBuffer, "HitsBuffer");
 
-    FBuffer MaterialIndicesAOVBuffer = VK_CONTEXT().ResourceAllocator->CreateBuffer(sizeof(uint32_t) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialIndicesAOVBuffer");
-    VK_CONTEXT().ResourceAllocator->RegisterBuffer(MaterialIndicesAOVBuffer, "MaterialIndicesAOVBuffer");
+    FBuffer MaterialIndicesAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialIndicesAOVBuffer");
+    RESOURCE_ALLOCATOR()->RegisterBuffer(MaterialIndicesAOVBuffer, "MaterialIndicesAOVBuffer");
 
     DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
 
@@ -42,8 +42,8 @@ FRaytraceTask::FRaytraceTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSi
 
 FRaytraceTask::~FRaytraceTask()
 {
-    VK_CONTEXT().ResourceAllocator->UnregisterAndDestroyBuffer("HitsBuffer");
-    VK_CONTEXT().ResourceAllocator->UnregisterAndDestroyBuffer("MaterialIndicesAOVBuffer");
+    RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("HitsBuffer");
+    RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("MaterialIndicesAOVBuffer");
     GetResourceAllocator()->DestroyBuffer(SBTBuffer);
 };
 
@@ -98,7 +98,7 @@ void FRaytraceTask::Init()
     assert(Result == VK_SUCCESS && "Failed to get handles for SBT");
 
     VkDeviceSize SBTSize = RGenRegion.size + RMissRegion.size + RHitRegion.size;
-    SBTBuffer = VK_CONTEXT().ResourceAllocator->CreateBuffer(SBTSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
+    SBTBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(SBTSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "V::SBT_Buffer");
 
     auto SBTBufferAddress = VK_CONTEXT().GetBufferDeviceAddressInfo(SBTBuffer);
@@ -111,7 +111,7 @@ void FRaytraceTask::Init()
         return Handles.data() + i * HandleSize;
     };
 
-    auto* SBTBufferPtr = reinterpret_cast<uint8_t*>(VK_CONTEXT().ResourceAllocator->Map(SBTBuffer));
+    auto* SBTBufferPtr = reinterpret_cast<uint8_t*>(RESOURCE_ALLOCATOR()->Map(SBTBuffer));
     uint8_t* DataPtr{nullptr};
     uint32_t HandleIndex{0};
 
@@ -124,7 +124,7 @@ void FRaytraceTask::Init()
     DataPtr = SBTBufferPtr + RGenRegion.size + RMissRegion.size;
     memcpy(DataPtr, GetHandle(HandleIndex++), HandleSize);
 
-    VK_CONTEXT().ResourceAllocator->Unmap(SBTBuffer);
+    RESOURCE_ALLOCATOR()->Unmap(SBTBuffer);
 };
 
 void FRaytraceTask::UpdateDescriptorSets()
@@ -132,10 +132,10 @@ void FRaytraceTask::UpdateDescriptorSets()
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
         VK_CONTEXT().DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_LAYOUT_INDEX, i, &ACCELERATION_STRUCTURE_SYSTEM()->TLAS.AccelerationStructure);
-        UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_RAYS_DATA_BUFFER, i, VK_CONTEXT().ResourceAllocator->GetBuffer("InitialRaysBuffer"));
+        UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_RAYS_DATA_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("InitialRaysBuffer"));
         UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_RENDERABLE_BUFFER_INDEX, i, RENDERABLE_SYSTEM()->DeviceBuffer);
-        UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_HIT_BUFFER, i, VK_CONTEXT().ResourceAllocator->GetBuffer("HitsBuffer"));
-        UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_MATERIAL_INDEX_BUFFER, i, VK_CONTEXT().ResourceAllocator->GetBuffer("MaterialIndicesAOVBuffer"));
+        UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_HIT_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("HitsBuffer"));
+        UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_MATERIAL_INDEX_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("MaterialIndicesAOVBuffer"));
     }
 };
 

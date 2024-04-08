@@ -58,7 +58,7 @@ namespace ECS
                             Data.push_back(COORDINATOR().Data<T>(Entity));
                         }
                     }
-                    VK_CONTEXT().ResourceAllocator->LoadDataToBuffer(DeviceBuffer, Sizes, Offsets, Data);
+                    RESOURCE_ALLOCATOR()->LoadDataToBuffer(DeviceBuffer, Sizes, Offsets, Data);
 
                     BufferPartThatNeedsUpdate[Index] = false;
                 }

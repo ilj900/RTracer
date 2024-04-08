@@ -20,15 +20,15 @@ FClearTotalMaterialsCountTask::FClearTotalMaterialsCountTask(uint32_t WidthIn, u
 
     DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
 
-    FBuffer TotalCountedMaterialsBuffer = VK_CONTEXT().ResourceAllocator->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * 3, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "TotalCountedMaterialsBuffer");
-    VK_CONTEXT().ResourceAllocator->RegisterBuffer(TotalCountedMaterialsBuffer, "TotalCountedMaterialsBuffer");
+    FBuffer TotalCountedMaterialsBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * 3, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "TotalCountedMaterialsBuffer");
+    RESOURCE_ALLOCATOR()->RegisterBuffer(TotalCountedMaterialsBuffer, "TotalCountedMaterialsBuffer");
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 }
 
 FClearTotalMaterialsCountTask::~FClearTotalMaterialsCountTask()
 {
-    VK_CONTEXT().ResourceAllocator->UnregisterAndDestroyBuffer("TotalCountedMaterialsBuffer");
+    RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("TotalCountedMaterialsBuffer");
 };
 
 void FClearTotalMaterialsCountTask::Init()
@@ -54,7 +54,7 @@ void FClearTotalMaterialsCountTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        UpdateDescriptorSet(MATERIAL_SORT_CLEAR_TOTAL_MATERIALS_COUNT_LAYOUT_INDEX, MATERIAL_SORT_CLEAR_TOTAL_MATERIALS_COUNT_BUFFER, i, VK_CONTEXT().ResourceAllocator->GetBuffer("TotalCountedMaterialsBuffer"));
+        UpdateDescriptorSet(MATERIAL_SORT_CLEAR_TOTAL_MATERIALS_COUNT_LAYOUT_INDEX, MATERIAL_SORT_CLEAR_TOTAL_MATERIALS_COUNT_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("TotalCountedMaterialsBuffer"));
     }
 };
 

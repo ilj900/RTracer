@@ -58,12 +58,12 @@ namespace ECS
 
             DeviceMeshComponent.VertexPtr = VertexBufferChunk;
 
-            VK_CONTEXT().ResourceAllocator->LoadDataToBuffer(VertexBuffer, {DeviceMeshComponent.VertexPtr.Size}, {DeviceMeshComponent.VertexPtr.Offset}, {MeshComponent.Vertices.data()});
+            RESOURCE_ALLOCATOR()->LoadDataToBuffer(VertexBuffer, {DeviceMeshComponent.VertexPtr.Size}, {DeviceMeshComponent.VertexPtr.Offset}, {MeshComponent.Vertices.data()});
 
             if (MeshComponent.Indexed)
             {
                 DeviceMeshComponent.IndexPtr = IndexBufferChunk;
-                VK_CONTEXT().ResourceAllocator->LoadDataToBuffer(IndexBuffer, {DeviceMeshComponent.IndexPtr.Size}, {DeviceMeshComponent.IndexPtr.Offset}, {MeshComponent.Indices.data()});
+                RESOURCE_ALLOCATOR()->LoadDataToBuffer(IndexBuffer, {DeviceMeshComponent.IndexPtr.Size}, {DeviceMeshComponent.IndexPtr.Offset}, {MeshComponent.Indices.data()});
             }
         }
 

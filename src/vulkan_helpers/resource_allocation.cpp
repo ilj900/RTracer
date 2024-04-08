@@ -5,11 +5,27 @@
 
 #include <stdexcept>
 
-FResourceAllocator::FResourceAllocator(VkPhysicalDevice PhysicalDevice, VkDevice Device, FVulkanContext* Context)
-    :Device(Device),
-     Context(Context)
+FResourceAllocator* ResourceAllocator = nullptr;
+
+FResourceAllocator* GetResourceAllocator()
 {
-    vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &MemProperties);
+    if (ResourceAllocator == nullptr)
+    {
+        ResourceAllocator = new FResourceAllocator();
+    }
+
+    return ResourceAllocator;
+}
+
+void FreeResourceAllocator()
+{
+    delete ResourceAllocator;
+}
+
+
+FResourceAllocator::FResourceAllocator()
+{
+    vkGetPhysicalDeviceMemoryProperties(VK_CONTEXT().PhysicalDevice, &MemProperties);
 
     /// Create staging buffer
     StagingBuffer = CreateBuffer(StagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Staging_Buffer");
@@ -43,7 +59,7 @@ FMemoryRegion FResourceAllocator::AllocateMemory(VkDeviceSize Size, VkMemoryRequ
         AllocInfo.pNext = &MemoryAllocateFlagsInfo;
     }
 
-    if (vkAllocateMemory(Device, &AllocInfo, nullptr, &MemoryRegion.Memory) != VK_SUCCESS)
+    if (vkAllocateMemory(VK_CONTEXT().LogicalDevice, &AllocInfo, nullptr, &MemoryRegion.Memory) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to allocate buffer memory!");
     }
@@ -86,24 +102,24 @@ FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags U
     BufferInfo.usage = Usage;
     BufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    if (vkCreateBuffer(Device, &BufferInfo, nullptr, &Buffer.Buffer) != VK_SUCCESS)
+    if (vkCreateBuffer(VK_CONTEXT().LogicalDevice, &BufferInfo, nullptr, &Buffer.Buffer) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create buffer!");
     }
 
-    V::SetName(Device, Buffer.Buffer, DebugName);
+    V::SetName(VK_CONTEXT().LogicalDevice, Buffer.Buffer, DebugName);
 
     VkMemoryRequirements MemRequirements;
-    vkGetBufferMemoryRequirements(Device, Buffer.Buffer, &MemRequirements);
+    vkGetBufferMemoryRequirements(VK_CONTEXT().LogicalDevice, Buffer.Buffer, &MemRequirements);
 
     bool bDeviceAddressRequired = (Usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) == VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
     Buffer.MemoryRegion = AllocateMemory(Size, MemRequirements, Properties, bDeviceAddressRequired);
 
-    V::SetName(Device, Buffer.MemoryRegion.Memory, DebugName);
+    V::SetName(VK_CONTEXT().LogicalDevice, Buffer.MemoryRegion.Memory, DebugName);
 
     /// Bind Buffer Memory
-    vkBindBufferMemory(Device, Buffer.Buffer, Buffer.MemoryRegion.Memory, 0);
+    vkBindBufferMemory(VK_CONTEXT().LogicalDevice, Buffer.Buffer, Buffer.MemoryRegion.Memory, 0);
 
     return Buffer;
 }
@@ -235,7 +251,7 @@ void FResourceAllocator::LoadDataToStagingBuffer(std::vector<VkDeviceSize> Sizes
     }
 
     void *StagingData;
-    vkMapMemory(Device, StagingBuffer.MemoryRegion.Memory, 0, VK_WHOLE_SIZE, 0, &StagingData);
+    vkMapMemory(VK_CONTEXT().LogicalDevice, StagingBuffer.MemoryRegion.Memory, 0, VK_WHOLE_SIZE, 0, &StagingData);
 
     VkDeviceSize CurrentOffset = 0;
     for (int i = 0; i < Sizes.size(); ++i)
@@ -244,7 +260,7 @@ void FResourceAllocator::LoadDataToStagingBuffer(std::vector<VkDeviceSize> Sizes
         CurrentOffset += Sizes[i];
     }
 
-    vkUnmapMemory(Device, StagingBuffer.MemoryRegion.Memory);
+    vkUnmapMemory(VK_CONTEXT().LogicalDevice, StagingBuffer.MemoryRegion.Memory);
 }
 
 void FResourceAllocator::LoadDataFromStagingBuffer(VkDeviceSize Size, void* Data, VkDeviceSize Offset)
@@ -252,9 +268,9 @@ void FResourceAllocator::LoadDataFromStagingBuffer(VkDeviceSize Size, void* Data
     if (Offset + Size <= StagingBufferSize)
     {
         void *StagingData;
-        vkMapMemory(Device, StagingBuffer.MemoryRegion.Memory, Offset, Size, 0, &StagingData);
+        vkMapMemory(VK_CONTEXT().LogicalDevice, StagingBuffer.MemoryRegion.Memory, Offset, Size, 0, &StagingData);
         memcpy(Data, StagingData, (std::size_t) Size);
-        vkUnmapMemory(Device, StagingBuffer.MemoryRegion.Memory);
+        vkUnmapMemory(VK_CONTEXT().LogicalDevice, StagingBuffer.MemoryRegion.Memory);
 
         return;
     }
@@ -291,13 +307,13 @@ void FResourceAllocator::CopyBuffer(const FBuffer &SrcBuffer, FBuffer &DstBuffer
 void* FResourceAllocator::Map(FBuffer& Buffer)
 {
     void* Data;
-    vkMapMemory(Device, Buffer.MemoryRegion.Memory, 0, Buffer.BufferSize, 0, &Data);
+    vkMapMemory(VK_CONTEXT().LogicalDevice, Buffer.MemoryRegion.Memory, 0, Buffer.BufferSize, 0, &Data);
     return Data;
 }
 
 void FResourceAllocator::Unmap(FBuffer& Buffer)
 {
-    vkUnmapMemory(Device, Buffer.MemoryRegion.Memory);
+    vkUnmapMemory(VK_CONTEXT().LogicalDevice, Buffer.MemoryRegion.Memory);
 }
 
 void FResourceAllocator::CopyBufferToImage(FBuffer &SrcBuffer, FImage &DstImage)
@@ -351,8 +367,8 @@ void FResourceAllocator::GetImageData(FImage& SrcImage, void* Data)
 
 void FResourceAllocator::DestroyBuffer(FBuffer& Buffer)
 {
-    vkDestroyBuffer(Device, Buffer.Buffer, nullptr);
-    vkFreeMemory(Device, Buffer.MemoryRegion.Memory, nullptr);
+    vkDestroyBuffer(VK_CONTEXT().LogicalDevice, Buffer.Buffer, nullptr);
+    vkFreeMemory(VK_CONTEXT().LogicalDevice, Buffer.MemoryRegion.Memory, nullptr);
     Buffer.Buffer = VK_NULL_HANDLE;
     Buffer.MemoryRegion.Memory = VK_NULL_HANDLE;
 }
