@@ -10,11 +10,9 @@ FController* FController::Controller = nullptr;
 
 FController::FController()
 {
-    auto& Coordinator = ECS::GetCoordinator();
-
-    Camera = Coordinator.CreateEntity();
-    Coordinator.AddComponent<ECS::COMPONENTS::FCameraComponent>(Camera, ECS::COMPONENTS::FCameraComponent());
-    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera, {});
+    Camera = COORDINATOR().CreateEntity();
+    COORDINATOR().AddComponent<ECS::COMPONENTS::FCameraComponent>(Camera, ECS::COMPONENTS::FCameraComponent());
+    COORDINATOR().AddComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera, {});
 }
 
 void FController::SetWindow(GLFWwindow* WindowIn)

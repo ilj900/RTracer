@@ -23,7 +23,7 @@ namespace ECS
 
         FLightSystem& FLightSystem::SetLightPosition(FEntity LightEntity, float X, float Y, float Z)
         {
-            auto& Coordinator = GetCoordinator();
+            auto& Coordinator = COORDINATOR();
             auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(LightEntity);
             LightComponent.Position = FVector3(X, Y, Z);
             MarkDirty(LightEntity);
@@ -33,7 +33,7 @@ namespace ECS
 
         FLightSystem& FLightSystem::SetLightPosition(FEntity LightEntity, const FVector3& Position)
         {
-            auto& Coordinator = GetCoordinator();
+            auto& Coordinator = COORDINATOR();
             auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(LightEntity);
             LightComponent.Position = Position;
             MarkDirty(LightEntity);
@@ -43,7 +43,7 @@ namespace ECS
 
         FLightSystem& FLightSystem::SetLightDirection(FEntity LightEntity, const FVector3& Direction)
         {
-            auto& Coordinator = GetCoordinator();
+            auto& Coordinator = COORDINATOR();
             auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(LightEntity);
             LightComponent.Direction = Direction;
             MarkDirty(LightEntity);
@@ -53,7 +53,7 @@ namespace ECS
 
         FLightSystem& FLightSystem::SetLightColor(FEntity LightEntity, const FVector3& Color)
         {
-            auto& Coordinator = GetCoordinator();
+            auto& Coordinator = COORDINATOR();
             auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(LightEntity);
             LightComponent.Color = Color;
             MarkDirty(LightEntity);
@@ -63,7 +63,7 @@ namespace ECS
 
         FLightSystem& FLightSystem::SetLightIntensity(FEntity LightEntity, float Intensity)
         {
-            auto& Coordinator = GetCoordinator();
+            auto& Coordinator = COORDINATOR();
             auto& LightComponent = Coordinator.GetComponent<COMPONENTS::FLightComponent>(LightEntity);
             LightComponent.Intensity = Intensity;
             MarkDirty(LightEntity);
@@ -73,7 +73,7 @@ namespace ECS
 
         FEntity FLightSystem::CreatePointLight(const FVector3& Position, const FVector3& Color, float Intensity)
         {
-            auto& Coordinator = GetCoordinator();
+            auto& Coordinator = COORDINATOR();
             auto Light = Coordinator.CreateEntity();
             Coordinator.AddComponent<ECS::COMPONENTS::FLightComponent>(Light, {});
 
@@ -89,7 +89,7 @@ namespace ECS
 
         FEntity FLightSystem::CreateDirectionalLight(const FVector3& Direction, const FVector3& Color, float Intensity)
         {
-            auto& Coordinator = GetCoordinator();
+            auto& Coordinator = COORDINATOR();
             auto Light = Coordinator.CreateEntity();
             Coordinator.AddComponent<ECS::COMPONENTS::FLightComponent>(Light, {});
 
@@ -105,7 +105,7 @@ namespace ECS
 
         FEntity FLightSystem::CreateSpotLight(const FVector3& Position, const FVector3& Color, float Intensity, float OuterAngle, float InnerAngle)
         {
-            auto& Coordinator = GetCoordinator();
+            auto& Coordinator = COORDINATOR();
             auto Light = Coordinator.CreateEntity();
             Coordinator.AddComponent<ECS::COMPONENTS::FLightComponent>(Light, {});
 

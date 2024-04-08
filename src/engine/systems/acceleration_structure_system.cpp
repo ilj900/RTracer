@@ -48,7 +48,7 @@ namespace ECS
 
         FEntity FAccelerationStructureSystem::CreateInstance(FEntity Entity, const FVector3& Position)
         {
-            auto& Coordinator = GetCoordinator();
+            auto& Coordinator = COORDINATOR();
             FEntity NewMeshInstance = Coordinator.CreateEntity();
 
             Coordinator.AddComponent<ECS::COMPONENTS::FTransformComponent>(NewMeshInstance, {Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f}});

@@ -10,7 +10,7 @@ namespace ECS
     {
         FEntity FTextureSystem::CreateTextureFromFile(const std::string& FilePath)
         {
-            auto& Coordinator = GetCoordinator();
+            auto& Coordinator = COORDINATOR();
             FEntity Texture = Coordinator.CreateEntity();
             auto FileName = ExtractFileName(FilePath);
             auto Image = GetContext().LoadImageFromFile(FilePath, FileName);

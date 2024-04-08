@@ -135,3 +135,5 @@ namespace ECS
     /// Coordinator can be accessed from all around the code
     FCoordinator& GetCoordinator();
 }
+
+#define COORDINATOR() ECS::GetCoordinator()

@@ -18,7 +18,7 @@ namespace ECS
             {
                 for (auto Entity : Entry)
                 {
-                    auto& Coordinator = GetCoordinator();
+                    auto& Coordinator = COORDINATOR();
                     auto& DeviceCameraComponent = Coordinator.GetComponent<COMPONENTS::FDeviceCameraComponent>(Entity);
                     auto& CameraComponent = Coordinator.GetComponent<COMPONENTS::FCameraComponent>(Entity);
                     DeviceCameraComponent.ViewMatrix = LookAt(CameraComponent.Position, CameraComponent.Position + CameraComponent.Direction, CameraComponent.Up);
@@ -40,7 +40,7 @@ namespace ECS
             {
                 for (auto Entity : Entry)
                 {
-                    auto& Coordinator = GetCoordinator();
+                    auto& Coordinator = COORDINATOR();
                     auto& DeviceCameraComponent = Coordinator.GetComponent<COMPONENTS::FDeviceCameraComponent>(Entity);
                     auto& CameraComponent = Coordinator.GetComponent<COMPONENTS::FCameraComponent>(Entity);
                     DeviceCameraComponent.ViewMatrix = LookAt(CameraComponent.Position, CameraComponent.Position + CameraComponent.Direction, CameraComponent.Up);

@@ -35,7 +35,7 @@ FRender* FRender::RenderInstance = nullptr;
 
 FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(HeightIn)
 {
-    auto& Coordinator = ECS::GetCoordinator();
+    auto& Coordinator = COORDINATOR();
     Coordinator.Init();
 
     /// Register components
@@ -305,7 +305,7 @@ int FRender::Init()
     PassthroughTask = std::make_shared<FPassthroughTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
     for (int i = 0; i < MaxFramesInFlight; ++i)
     {
-        auto& FramebufferComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(OutputToFramebufferMap[OutputType(i)]);
+        auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(OutputToFramebufferMap[OutputType(i)]);
         PassthroughTask->RegisterOutput(i, GetTextureManager()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex));
     }
     PassthroughTask->Init();
@@ -315,7 +315,7 @@ int FRender::Init()
     ImguiTask = std::make_shared<FImguiTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
     for (int i = 0; i < MaxFramesInFlight; ++i)
     {
-        auto& FramebufferComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(OutputToFramebufferMap[OutputType(i)]);
+        auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(OutputToFramebufferMap[OutputType(i)]);
         ImguiTask->RegisterOutput(i, GetTextureManager()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex));
     }
     ImguiTask->Init();
@@ -371,7 +371,7 @@ int FRender::SetSize(int WidthIn, int HeightIn)
 
 ECS::FEntity FRender::CreateCamera()
 {
-    auto& Coordinator = ECS::GetCoordinator();
+    auto& Coordinator = COORDINATOR();
 
     ECS::FEntity Camera = Coordinator.CreateEntity();
     Coordinator.AddComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera, {});
@@ -386,7 +386,7 @@ ECS::FEntity FRender::CreateFramebuffer(int WidthIn, int HeightIn, const std::st
     static int Counter = 0;
     auto FramebufferImageIndex = GetTextureManager()->RegisterFramebuffer(FramebufferImage, (DebugName == "") ? ("Unnamed Framebuffer " + std::to_string(Counter++)) : DebugName);
 
-    auto& Coordinator = ECS::GetCoordinator();
+    auto& Coordinator = COORDINATOR();
     ECS::FEntity Framebuffer = Coordinator.CreateEntity();
     Coordinator.AddComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer, {FramebufferImageIndex});
 
@@ -399,7 +399,7 @@ ECS::FEntity FRender::CreateFramebufferFromExternalImage(ImagePtr ImageIn, const
     static int Counter = 0;
     auto FramebufferImageIndex = GetTextureManager()->RegisterFramebuffer(ImageIn, (DebugName == "") ? ("Unnamed Framebuffer From External Image " + std::to_string(Counter++)) : DebugName);
 
-    auto& Coordinator = ECS::GetCoordinator();
+    auto& Coordinator = COORDINATOR();
     ECS::FEntity Framebuffer = Coordinator.CreateEntity();
     Coordinator.AddComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer, {FramebufferImageIndex});
 
@@ -423,13 +423,13 @@ ECS::FEntity FRender::GetOutput(OutputType OutputTypeIn)
 
 void FRender::SaveFramebuffer(ECS::FEntity Framebuffer)
 {
-    auto& FramebufferComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);
+    auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);
     GetContext().SaveImage(*GetTextureManager()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex));
 }
 
 void FRender::GetFramebufferData(ECS::FEntity Framebuffer)
 {
-    auto& FramebufferComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);
+    auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);
     auto Image = GetTextureManager()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex);
     std::vector<char> Data;
 
@@ -547,7 +547,7 @@ int FRender::Render()
 
 int FRender::Update()
 {
-    auto& Coordinator = ECS::GetCoordinator();
+    auto& Coordinator = COORDINATOR();
     auto& LightComponent = Coordinator.GetComponent<ECS::COMPONENTS::FLightComponent>(Lights.back());
     LightComponent.Position.SelfRotateY(0.025f);
     LIGHT_SYSTEM()->SetLightPosition(Lights.back(), LightComponent.Position.X, LightComponent.Position.Y, LightComponent.Position.Z);
@@ -749,7 +749,7 @@ ECS::FEntity FRender::CreateInstance(ECS::FEntity BaseModel,  const FVector3& Po
     RENDERABLE_SYSTEM()->SetRenderableDeviceAddress(MeshInstance, MESH_SYSTEM()->GetVertexBufferAddress(MeshInstance), MESH_SYSTEM()->GetIndexBufferAddress(MeshInstance));
     TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
     RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
-    auto& MeshComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FMeshComponent>(BaseModel);
+    auto& MeshComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FMeshComponent>(BaseModel);
     if (MeshComponent.Indexed)
     {
         RENDERABLE_SYSTEM()->SetIndexed(MeshInstance);
@@ -759,7 +759,7 @@ ECS::FEntity FRender::CreateInstance(ECS::FEntity BaseModel,  const FVector3& Po
 
 int FRender::CreateLight(const FVector3& Position)
 {
-    auto& Coordinator = ECS::GetCoordinator();
+    auto& Coordinator = COORDINATOR();
     auto LightSystem = Coordinator.GetSystem<ECS::SYSTEMS::FLightSystem>();
 
     Lights.push_back(Coordinator.CreateEntity());
@@ -771,7 +771,7 @@ int FRender::CreateLight(const FVector3& Position)
 
 ECS::FEntity FRender::CreateEmptyModel()
 {
-    auto& Coordinator = ECS::GetCoordinator();
+    auto& Coordinator = COORDINATOR();
 
     ECS::FEntity EmptyModel = Coordinator.CreateEntity();
     Coordinator.AddComponent<ECS::COMPONENTS::FMeshComponent>(EmptyModel, {});

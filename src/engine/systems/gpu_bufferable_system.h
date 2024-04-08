@@ -45,7 +45,7 @@ namespace ECS
                     std::vector<VkDeviceSize> Offsets;
                     std::vector<void*> Data;
 
-                    auto& Coordinator = GetCoordinator();
+                    auto& Coordinator = COORDINATOR();
 
                     for (auto Entity : EntitiesToUpdate[Index])
                     {

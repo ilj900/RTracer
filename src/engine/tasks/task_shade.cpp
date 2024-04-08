@@ -84,7 +84,7 @@ void FShadeTask::Init()
         FCompileDefinitions CompileDefinitions;
         CompileDefinitions.Push("FDeviceMaterial GetMaterial(vec2 TextureCoords);", MaterialCode);
         auto ShadeShader = FShader("../../../src/shaders/shade.comp", &CompileDefinitions);
-        uint32_t MaterialIndex = ECS::GetCoordinator().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
+        uint32_t MaterialIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
         MaterialIndexToPipelineMap[MaterialIndex] = Context->CreateComputePipeline(ShadeShader(), PipelineLayout);
     }
 
@@ -136,7 +136,7 @@ void FShadeTask::RecordCommands()
 
             for (auto& Material : *MATERIAL_SYSTEM())
             {
-                uint32_t MaterialIndex = ECS::GetCoordinator().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
+                uint32_t MaterialIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
 
                 vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, MaterialIndexToPipelineMap[MaterialIndex]);
                 auto RayTracingDescriptorSet = Context->DescriptorSetManager->GetSet(Name, COMPUTE_SHADE_LAYOUT_INDEX, i);

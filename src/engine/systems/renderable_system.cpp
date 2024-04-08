@@ -81,7 +81,7 @@ namespace ECS
         void FRenderableSystem::SetMaterial(FEntity Renderable, FEntity Material)
         {
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Renderable);
-            RenderableComponent.MaterialIndex = GetCoordinator().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
+            RenderableComponent.MaterialIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
             MarkDirty(Renderable);
         }
 
@@ -96,7 +96,7 @@ namespace ECS
         {
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Entity);
             TRANSFORM_SYSTEM()->SyncTransform(Entity);
-            RenderableComponent.TransformIndex = GetCoordinator().GetIndex<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
+            RenderableComponent.TransformIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
             MarkDirty(Entity);
         }
 
