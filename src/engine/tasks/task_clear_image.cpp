@@ -46,7 +46,7 @@ void FClearImageTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        UpdateDescriptorSet(CLEAR_IMAGE_LAYOUT_INDEX, IMAGE_TO_CLEAR, i, GetTextureManager()->GetFramebufferImage("AccumulatorImage"));
+        UpdateDescriptorSet(CLEAR_IMAGE_LAYOUT_INDEX, IMAGE_TO_CLEAR, i, TEXTURE_MANAGER()->GetFramebufferImage("AccumulatorImage"));
     }
 };
 

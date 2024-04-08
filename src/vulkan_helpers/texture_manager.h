@@ -34,3 +34,6 @@ private:
 
 FTextureManager* GetTextureManager();
 void FreeTextureManager();
+
+#define TEXTURE_MANAGER() GetTextureManager()
+#define FREE_TEXTURE_MANAGER() FreeTextureManager()

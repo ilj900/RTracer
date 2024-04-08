@@ -68,7 +68,7 @@ void FPassthroughTask::UpdateDescriptorSets()
 {
     for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        UpdateDescriptorSet(PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX, i, GetTextureManager()->GetFramebufferImage("EstimatedImage"), Sampler);
+        UpdateDescriptorSet(PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("EstimatedImage"), Sampler);
     }
 }
 

@@ -24,12 +24,12 @@ FAccumulateTask::FAccumulateTask(uint32_t WidthIn, uint32_t HeightIn, int Number
 
     DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
 
-    auto AccumulatorImage = GetTextureManager()->CreateStorageImage(Width, Height,"AccumulatorImage");
-    GetTextureManager()->RegisterFramebuffer(AccumulatorImage, "AccumulatorImage");
+    auto AccumulatorImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height,"AccumulatorImage");
+    TEXTURE_MANAGER()->RegisterFramebuffer(AccumulatorImage, "AccumulatorImage");
     AccumulatorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-    auto EstimatedImage = GetTextureManager()->CreateSampledStorageImage(Width, Height, "EstimatedImage");
-    GetTextureManager()->RegisterFramebuffer(EstimatedImage, "EstimatedImage");
+    auto EstimatedImage = TEXTURE_MANAGER()->CreateSampledStorageImage(Width, Height, "EstimatedImage");
+    TEXTURE_MANAGER()->RegisterFramebuffer(EstimatedImage, "EstimatedImage");
     EstimatedImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
@@ -59,9 +59,9 @@ void FAccumulateTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, GetTextureManager()->GetFramebufferImage("RayTracingColorImage"));
-        UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, ACCUMULATE_IMAGE_INDEX, i, GetTextureManager()->GetFramebufferImage("AccumulatorImage"));
-        UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, ESTIMATED_IMAGE_INDEX, i, GetTextureManager()->GetFramebufferImage("EstimatedImage"));
+        UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("RayTracingColorImage"));
+        UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, ACCUMULATE_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("AccumulatorImage"));
+        UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, ESTIMATED_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("EstimatedImage"));
     }
 };
 

@@ -1483,7 +1483,7 @@ void FVulkanContext::DestroyDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT& Deb
 
 void FVulkanContext::CleanUp()
 {
-    FreeTextureManager();
+    FREE_TEXTURE_MANAGER();
 
     DescriptorSetManager = nullptr;
     CommandBufferManager = nullptr;
