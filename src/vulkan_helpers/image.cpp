@@ -52,7 +52,7 @@ FImage::~FImage()
 
 void FImage::Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout)
 {
-    VK_CONTEXT().CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    COMMAND_BUFFER_MANAGER()->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
     {
         VkImageMemoryBarrier Barrier{};
         Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -132,7 +132,7 @@ void FImage::Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout)
 
         vkCmdPipelineBarrier(CommandBuffer, SourceStage, DestinationStage, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
 
-    }, "Transitioning_Image_Layout");
+    }, VK_QUEUE_GRAPHICS_BIT, "Transitioning_Image_Layout");
 
     CurrentLayout = NewLayout;
 }
@@ -257,7 +257,7 @@ void FImage::GenerateMipMaps()
         throw std::runtime_error("Texture image format does not support linear blitting!");
     }
 
-    VK_CONTEXT().CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer& CommandBuffer)
+    COMMAND_BUFFER_MANAGER()->RunSingletimeCommand([&, this](VkCommandBuffer& CommandBuffer)
     {
         VkImageMemoryBarrier Barrier{};
         Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -325,7 +325,7 @@ void FImage::GenerateMipMaps()
         vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,
                              nullptr, 0, nullptr, 1, &Barrier);
 
-    }, "Generating_MipMaps");
+    }, VK_QUEUE_GRAPHICS_BIT, "Generating_MipMaps");
 }
 
 void FImage::Resolve(FImage& ImageToResolveTo)
@@ -335,7 +335,7 @@ void FImage::Resolve(FImage& ImageToResolveTo)
         throw std::runtime_error("Failed to resolve image because formats are different.");
     }
 
-    VK_CONTEXT().CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer& CommandBuffer)
+    COMMAND_BUFFER_MANAGER()->RunSingletimeCommand([&, this](VkCommandBuffer& CommandBuffer)
     {
         VkImageResolve ImageResolve{};
         ImageResolve.srcOffset = {0, 0, 0};
@@ -354,7 +354,7 @@ void FImage::Resolve(FImage& ImageToResolveTo)
 
         vkCmdResolveImage(CommandBuffer, Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, ImageToResolveTo.Image,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &ImageResolve);
-    }, "Resolving_Image");
+    }, VK_QUEUE_GRAPHICS_BIT, "Resolving_Image");
 }
 
 size_t FImage::GetHash()

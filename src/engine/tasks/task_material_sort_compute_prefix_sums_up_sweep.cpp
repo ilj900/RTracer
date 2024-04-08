@@ -25,6 +25,7 @@ FComputePrefixSumsUpSweepTask::FComputePrefixSumsUpSweepTask(uint32_t WidthIn, u
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+    QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
 }
 
 void FComputePrefixSumsUpSweepTask::Init()
@@ -60,7 +61,7 @@ void FComputePrefixSumsUpSweepTask::RecordCommands()
 
     for (std::size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        CommandBuffers[i] = VK_CONTEXT().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
+        CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
             TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
 
@@ -91,7 +92,7 @@ void FComputePrefixSumsUpSweepTask::RecordCommands()
             }
 
             TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
-        });
+        }, QueueFlagsBits);
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name);
     }

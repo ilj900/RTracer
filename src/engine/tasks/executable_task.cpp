@@ -18,7 +18,7 @@ FExecutableTask::~FExecutableTask()
 
     for (auto& CommandBuffer : CommandBuffers)
     {
-        VK_CONTEXT().CommandBufferManager->FreeCommandBuffer(CommandBuffer);
+        COMMAND_BUFFER_MANAGER()->FreeCommandBuffer(CommandBuffer, QueueFlagsBits);
     }
 
     VK_CONTEXT().DescriptorSetManager->DestroyPipelineLayout(Name);

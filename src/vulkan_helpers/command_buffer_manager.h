@@ -4,6 +4,7 @@
 
 #include <functional>
 #include <string>
+#include <unordered_map>
 
 class FVulkanContext;
 
@@ -14,35 +15,36 @@ class FVulkanContext;
 class FCommandBufferManager
 {
 public:
-    FCommandBufferManager(VkDevice Device, VkQueue Queue, uint32_t QueueIndex);
+    FCommandBufferManager() = default;
+    ~FCommandBufferManager();
 
-    VkCommandBuffer AllocateCommandBuffer();
-    void FreeCommandBuffer(VkCommandBuffer& CommandBuffer);
-    VkCommandBuffer BeginCommand();
-    VkCommandBuffer BeginSingleTimeCommand(const std::string CommandDescription = "DefaultCommandBufferDescription");
+    VkCommandBuffer AllocateCommandBuffer(VkQueueFlagBits QueueType);
+    void FreeCommandBuffer(VkCommandBuffer& CommandBuffer, VkQueueFlagBits QueueType);
+    VkCommandBuffer BeginCommand(VkQueueFlagBits QueueType);
+    VkCommandBuffer BeginSingleTimeCommand(VkQueueFlagBits QueueType, const std::string& CommandDescription = "DefaultCommandBufferDescription");
     void EndCommand(VkCommandBuffer &CommandBuffer);
-    void SubmitCommandBuffer(VkCommandBuffer &CommandBuffer);
+    void SubmitCommandBuffer(VkCommandBuffer &CommandBuffer, VkQueueFlagBits QueueType);
     /**
      * Record command that later could be submited for execution more that one time
      * @param Lambda - [&, this](VkCommandBuffer CommandBuffer){}; type lambda that will be executed after the command buffer allocated, created, begun and before it ended
      * @return
      */
-    VkCommandBuffer RecordCommand(const std::function<void(VkCommandBuffer&)> & Lambda);
+    VkCommandBuffer RecordCommand(const std::function<void(VkCommandBuffer&)> & Lambda, VkQueueFlagBits QueueType);
     /**
      * Run a single time command buffer
      * @param Lambda - [&, this](VkCommandBuffer CommandBuffer){}; type lambda that will be executed after the command buffer allocated, created, begun and before it ended
      */
-    void RunSingletimeCommand(const std::function<void(VkCommandBuffer&)> & Lambda, const std::string CommandDescription = "DefaultCommandBufferDescription");
-
-    ~FCommandBufferManager();
-private:
-    void CreateCommandPool();
+    void RunSingletimeCommand(const std::function<void(VkCommandBuffer&)> & Lambda, VkQueueFlagBits QueueType, const std::string& CommandDescription = "DefaultCommandBufferDescription");
 
 private:
-    VkDevice Device = VK_NULL_HANDLE;
-    FVulkanContext *Context = nullptr;
-    VkQueue Queue;
-    uint32_t QueueIndex;
+    void CreateCommandPool(VkQueueFlagBits QueueType);
 
-    VkCommandPool CommandPool = VK_NULL_HANDLE;
+private:
+    std::unordered_map<VkQueueFlagBits, VkCommandPool> QueueTypeToCommandPoolIndexMap;
 };
+
+FCommandBufferManager* GetCommandBufferManager();
+void FreeCommandBufferManager();
+
+#define COMMAND_BUFFER_MANAGER() GetCommandBufferManager()
+#define FREE_COMMAND_BUFFER_MANAGER() FreeCommandBufferManager()

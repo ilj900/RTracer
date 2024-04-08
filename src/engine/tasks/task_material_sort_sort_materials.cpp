@@ -32,6 +32,7 @@ FSortMaterialsTask::FSortMaterialsTask(uint32_t WidthIn, uint32_t HeightIn, int 
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+    QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
 }
 
 FSortMaterialsTask::~FSortMaterialsTask()
@@ -75,7 +76,7 @@ void FSortMaterialsTask::RecordCommands()
 
     for (std::size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        CommandBuffers[i] = VK_CONTEXT().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
+        CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
             TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
 
@@ -93,7 +94,7 @@ void FSortMaterialsTask::RecordCommands()
             vkCmdDispatch(CommandBuffer, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), 1, 1);
 
             TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
-        });
+        }, QueueFlagsBits);
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name);
     }

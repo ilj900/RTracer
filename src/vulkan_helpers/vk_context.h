@@ -137,8 +137,6 @@ public:
     VkQueue GetQueue(VkQueueFlagBits QueueFlagBits);
     uint32_t GetQueueIndex(VkQueueFlagBits QueueFlagBits);
 
-    std::shared_ptr<FCommandBufferManager> CommandBufferManager = nullptr;
-
     VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
     int TimestampPeriod = 1;
@@ -154,8 +152,10 @@ public:
         uint32_t QueueIndex = UINT32_MAX;
         VkQueue Queue = VK_NULL_HANDLE;
     };
-    std::map <VkQueueFlagBits, IndexQueue> Queues = {{VK_QUEUE_GRAPHICS_BIT, {UINT32_MAX, VK_NULL_HANDLE}},
-                                                  {VK_QUEUE_COMPUTE_BIT,  {UINT32_MAX, VK_NULL_HANDLE}},};
+    std::map <VkQueueFlagBits, IndexQueue> Queues = {
+            {VK_QUEUE_GRAPHICS_BIT, {UINT32_MAX, VK_NULL_HANDLE}},
+            {VK_QUEUE_COMPUTE_BIT,  {UINT32_MAX, VK_NULL_HANDLE}},
+            {VK_QUEUE_TRANSFER_BIT,  {UINT32_MAX, VK_NULL_HANDLE}},};
     IndexQueue PresentQueue;
 
 #ifndef NDEBUG

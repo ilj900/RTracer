@@ -289,7 +289,7 @@ FMemoryRegion FResourceAllocator::LoadDataToImage(FImage& Image, VkDeviceSize Si
 
 void FResourceAllocator::CopyBuffer(const FBuffer &SrcBuffer, FBuffer &DstBuffer, std::vector<VkDeviceSize> Sizes, std::vector<VkDeviceSize> SourceOffsets, std::vector<VkDeviceSize> DestinationOffsets)
 {
-    VK_CONTEXT().CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    COMMAND_BUFFER_MANAGER()->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
     {
         std::vector<VkBufferCopy> CopyRegions(Sizes.size());
 
@@ -301,7 +301,7 @@ void FResourceAllocator::CopyBuffer(const FBuffer &SrcBuffer, FBuffer &DstBuffer
         }
 
         vkCmdCopyBuffer(CommandBuffer, SrcBuffer.Buffer, DstBuffer.Buffer, CopyRegions.size(), CopyRegions.data());
-    });
+    }, VK_QUEUE_TRANSFER_BIT);
 }
 
 void* FResourceAllocator::Map(FBuffer& Buffer)
@@ -318,7 +318,7 @@ void FResourceAllocator::Unmap(FBuffer& Buffer)
 
 void FResourceAllocator::CopyBufferToImage(FBuffer &SrcBuffer, FImage &DstImage)
 {
-    VK_CONTEXT().CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    COMMAND_BUFFER_MANAGER()->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
     {
         VkBufferImageCopy Region{};
         Region.bufferOffset = 0;
@@ -335,12 +335,12 @@ void FResourceAllocator::CopyBufferToImage(FBuffer &SrcBuffer, FImage &DstImage)
 
 
         vkCmdCopyBufferToImage(CommandBuffer, SrcBuffer.Buffer, DstImage.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &Region);
-    });
+    }, VK_QUEUE_TRANSFER_BIT);
 }
 
 void FResourceAllocator::CopyImageToBuffer(const FImage& SrcImage, FBuffer& DstBuffer)
 {
-    VK_CONTEXT().CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    COMMAND_BUFFER_MANAGER()->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
     {
         VkBufferImageCopy Region{};
         Region.bufferOffset = 0;
@@ -356,7 +356,7 @@ void FResourceAllocator::CopyImageToBuffer(const FImage& SrcImage, FBuffer& DstB
         Region.imageExtent = {SrcImage.Width, SrcImage.Height, 1};
 
         vkCmdCopyImageToBuffer(CommandBuffer, SrcImage.Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, DstBuffer.Buffer, 1, &Region);
-    });
+    }, VK_QUEUE_TRANSFER_BIT);
 }
 
 void FResourceAllocator::GetImageData(FImage& SrcImage, void* Data)

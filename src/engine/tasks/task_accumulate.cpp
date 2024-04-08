@@ -33,6 +33,7 @@ FAccumulateTask::FAccumulateTask(uint32_t WidthIn, uint32_t HeightIn, int Number
     EstimatedImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+    QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
 }
 
 void FAccumulateTask::Init()
@@ -71,7 +72,7 @@ void FAccumulateTask::RecordCommands()
 
     for (std::size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        CommandBuffers[i] = VK_CONTEXT().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
+        CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
             TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
 
@@ -86,7 +87,7 @@ void FAccumulateTask::RecordCommands()
             vkCmdDispatch(CommandBuffer, GroupSizeX, GroupSizeY, 1);
 
             TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
-        });
+        }, QueueFlagsBits);
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name);
     }

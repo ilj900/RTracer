@@ -24,6 +24,7 @@ FClearTotalMaterialsCountTask::FClearTotalMaterialsCountTask(uint32_t WidthIn, u
     RESOURCE_ALLOCATOR()->RegisterBuffer(TotalCountedMaterialsBuffer, "TotalCountedMaterialsBuffer");
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+    QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
 }
 
 FClearTotalMaterialsCountTask::~FClearTotalMaterialsCountTask()
@@ -64,7 +65,7 @@ void FClearTotalMaterialsCountTask::RecordCommands()
 
     for (std::size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        CommandBuffers[i] = VK_CONTEXT().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
+        CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
             TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
 
@@ -76,7 +77,7 @@ void FClearTotalMaterialsCountTask::RecordCommands()
             vkCmdDispatch(CommandBuffer, 1, 1, 1);
 
             TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
-        });
+        }, QueueFlagsBits);
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name);
     }

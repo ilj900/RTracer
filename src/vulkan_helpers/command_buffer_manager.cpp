@@ -1,43 +1,70 @@
 #include "command_buffer_manager.h"
 #include "vk_debug.h"
+#include "vk_context.h"
 
 #include <stdexcept>
 
-FCommandBufferManager::FCommandBufferManager(VkDevice Device, VkQueue Queue, uint32_t QueueIndex) :
-    Device(Device), Context(Context), Queue(Queue), QueueIndex(QueueIndex)
+FCommandBufferManager* CommandBufferManager = nullptr;
+
+FCommandBufferManager* GetCommandBufferManager()
 {
-    CreateCommandPool();
+    if (CommandBufferManager == nullptr)
+    {
+        CommandBufferManager = new FCommandBufferManager();
+    }
+
+    return CommandBufferManager;
+}
+
+void FreeCommandBufferManager()
+{
+    if (CommandBufferManager != nullptr);
+    {
+        delete CommandBufferManager;
+        CommandBufferManager = nullptr;
+    }
 }
 
 FCommandBufferManager::~FCommandBufferManager()
 {
-    vkDestroyCommandPool(Device, CommandPool, nullptr);
-}
-
-void FCommandBufferManager::CreateCommandPool()
-{
-    VkCommandPoolCreateInfo PoolInfo{};
-    PoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    PoolInfo.queueFamilyIndex = QueueIndex;
-    PoolInfo.flags = 0;
-
-    if (vkCreateCommandPool(Device, &PoolInfo, nullptr, &CommandPool) != VK_SUCCESS)
+    for (auto Entry : QueueTypeToCommandPoolIndexMap)
     {
-        throw std::runtime_error("Failed to create command pool!");
+        vkDestroyCommandPool(VK_CONTEXT().LogicalDevice, Entry.second, nullptr);
     }
 }
 
-VkCommandBuffer FCommandBufferManager::AllocateCommandBuffer()
+void FCommandBufferManager::CreateCommandPool(VkQueueFlagBits QueueType)
 {
+    VkCommandPoolCreateInfo PoolInfo{};
+    PoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    PoolInfo.queueFamilyIndex = VK_CONTEXT().GetQueueIndex(QueueType);
+    PoolInfo.flags = 0;
+
+    VkCommandPool CommandPool = VK_NULL_HANDLE;
+
+    if (vkCreateCommandPool(VK_CONTEXT().LogicalDevice, &PoolInfo, nullptr, &CommandPool) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create command pool!");
+    }
+
+    QueueTypeToCommandPoolIndexMap[QueueType] = CommandPool;
+}
+
+VkCommandBuffer FCommandBufferManager::AllocateCommandBuffer(VkQueueFlagBits QueueType)
+{
+    if (QueueTypeToCommandPoolIndexMap.find(QueueType) == QueueTypeToCommandPoolIndexMap.end())
+    {
+        CreateCommandPool(QueueType);
+    }
+
     VkCommandBuffer CommandBuffer;
 
     VkCommandBufferAllocateInfo AllocInfo{};
     AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    AllocInfo.commandPool = CommandPool;
+    AllocInfo.commandPool = QueueTypeToCommandPoolIndexMap[QueueType];
     AllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     AllocInfo.commandBufferCount = 1u;
 
-    if (vkAllocateCommandBuffers(Device, &AllocInfo, &CommandBuffer) != VK_SUCCESS)
+    if (vkAllocateCommandBuffers(VK_CONTEXT().LogicalDevice, &AllocInfo, &CommandBuffer) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to allocate command buffers!");
     }
@@ -45,13 +72,13 @@ VkCommandBuffer FCommandBufferManager::AllocateCommandBuffer()
     return CommandBuffer;
 }
 
-void FCommandBufferManager::FreeCommandBuffer(VkCommandBuffer& CommandBuffer)
+void FCommandBufferManager::FreeCommandBuffer(VkCommandBuffer& CommandBuffer, VkQueueFlagBits QueueType)
 {
-    vkFreeCommandBuffers(Device, CommandPool, 1u, &CommandBuffer);
+    vkFreeCommandBuffers(VK_CONTEXT().LogicalDevice, QueueTypeToCommandPoolIndexMap[QueueType], 1u, &CommandBuffer);
 }
 
-VkCommandBuffer FCommandBufferManager::BeginCommand() {
-    VkCommandBuffer CommandBuffer = AllocateCommandBuffer();
+VkCommandBuffer FCommandBufferManager::BeginCommand(VkQueueFlagBits QueueType) {
+    VkCommandBuffer CommandBuffer = AllocateCommandBuffer(QueueType);
 
     VkCommandBufferBeginInfo BeginInfo{};
     BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -62,10 +89,10 @@ VkCommandBuffer FCommandBufferManager::BeginCommand() {
     return CommandBuffer;
 }
 
-VkCommandBuffer FCommandBufferManager::BeginSingleTimeCommand(const std::string CommandDescription)
+VkCommandBuffer FCommandBufferManager::BeginSingleTimeCommand(VkQueueFlagBits QueueType, const std::string& CommandDescription)
 {
-    VkCommandBuffer CommandBuffer = AllocateCommandBuffer();
-    V::SetName(Device, CommandBuffer, CommandDescription);
+    VkCommandBuffer CommandBuffer = AllocateCommandBuffer(QueueType);
+    V::SetName(VK_CONTEXT().LogicalDevice, CommandBuffer, CommandDescription);
 
     VkCommandBufferBeginInfo BeginInfo{};
     BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -81,31 +108,31 @@ void FCommandBufferManager::EndCommand(VkCommandBuffer &CommandBuffer)
     vkEndCommandBuffer(CommandBuffer);
 }
 
-void FCommandBufferManager::SubmitCommandBuffer(VkCommandBuffer &CommandBuffer)
+void FCommandBufferManager::SubmitCommandBuffer(VkCommandBuffer &CommandBuffer, VkQueueFlagBits QueueType)
 {
     VkSubmitInfo SubmitInfo{};
     SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     SubmitInfo.commandBufferCount = 1;
     SubmitInfo.pCommandBuffers = &CommandBuffer;
 
-    vkQueueSubmit(Queue, 1, &SubmitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(Queue);
+    vkQueueSubmit(VK_CONTEXT().GetQueue(QueueType), 1, &SubmitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(VK_CONTEXT().GetQueue(QueueType));
 
-    vkFreeCommandBuffers(Device, CommandPool, 1, &CommandBuffer);
+    vkFreeCommandBuffers(VK_CONTEXT().LogicalDevice, QueueTypeToCommandPoolIndexMap[QueueType], 1, &CommandBuffer);
 }
 
-VkCommandBuffer FCommandBufferManager::RecordCommand(const std::function<void(VkCommandBuffer&)> & Lambda)
+VkCommandBuffer FCommandBufferManager::RecordCommand(const std::function<void(VkCommandBuffer&)> & Lambda, VkQueueFlagBits QueueType)
 {
-    auto CommandBuffer = BeginCommand();
+    auto CommandBuffer = BeginCommand(QueueType);
     Lambda(CommandBuffer);
     vkEndCommandBuffer(CommandBuffer);
     return CommandBuffer;
 }
 
-void FCommandBufferManager::RunSingletimeCommand(const std::function<void(VkCommandBuffer&)> & Lambda, const std::string CommandDescription)
+void FCommandBufferManager::RunSingletimeCommand(const std::function<void(VkCommandBuffer&)> & Lambda, VkQueueFlagBits QueueType, const std::string& CommandDescription)
 {
-    auto CommandBuffer = BeginSingleTimeCommand(CommandDescription);
+    auto CommandBuffer = BeginSingleTimeCommand(QueueType, CommandDescription);
     Lambda(CommandBuffer);
     EndCommand(CommandBuffer);
-    SubmitCommandBuffer(CommandBuffer);
+    SubmitCommandBuffer(CommandBuffer, QueueType);
 }

@@ -158,8 +158,7 @@ void FVulkanContext::InitManagerResources()
 
     DescriptorSetManager = std::make_shared<FDescriptorSetManager>(LogicalDevice);
 
-    CommandBufferManager = std::make_shared<FCommandBufferManager>(LogicalDevice, GetQueue(VK_QUEUE_GRAPHICS_BIT),
-                                                                   GetQueueIndex(VK_QUEUE_GRAPHICS_BIT));
+    COMMAND_BUFFER_MANAGER();
     TIMING_MANAGER();
 }
 
@@ -619,7 +618,7 @@ FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuff
 
     vkResetQueryPool(LogicalDevice, QueryPool, 0, 1);
 
-    CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    COMMAND_BUFFER_MANAGER()->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
     {
         V::vkCmdBuildAccelerationStructuresKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometryInfo, &VkAccelerationStructureBuildRangeInfoKHRPtr);
 
@@ -631,14 +630,14 @@ FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuff
                              0, 1, &Barrier, 0, nullptr, 0, nullptr);
 
         V::vkCmdWriteAccelerationStructuresPropertiesKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometryInfo.dstAccelerationStructure, VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR, QueryPool, 0);
-    });
+    }, VK_QUEUE_COMPUTE_BIT);
 
     FAccelerationStructure CompactedBLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR, "CompactedBLAS");
 
     VkDeviceSize CompactedSize = 0;
     vkGetQueryPoolResults(LogicalDevice, QueryPool, 0, 1, sizeof(VkDeviceSize), &CompactedSize, sizeof(VkDeviceSize), VK_QUERY_RESULT_WAIT_BIT);
 
-    CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    COMMAND_BUFFER_MANAGER()->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
     {
         VkCopyAccelerationStructureInfoKHR CopyAccelerationStructureInfo{};
         CopyAccelerationStructureInfo.sType = VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR;
@@ -647,7 +646,7 @@ FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuff
         CopyAccelerationStructureInfo.mode = VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR;
 
         V::vkCmdCopyAccelerationStructureKHR(CommandBuffer, &CopyAccelerationStructureInfo);
-    });
+    }, VK_QUEUE_COMPUTE_BIT);
 
     DestroyAccelerationStructure(NotCompactedBLAS);
     GetResourceAllocator()->DestroyBuffer(ScratchBuffer);
@@ -667,7 +666,7 @@ FAccelerationStructure FVulkanContext::GenerateTlas(const FBuffer& BlasInstanceB
     FAccelerationStructure TLAS;
     FBuffer ScratchBuffer;
 
-    CommandBufferManager->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
+    COMMAND_BUFFER_MANAGER()->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
     {
         VkMemoryBarrier MemoryBarrier{};
         MemoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
@@ -703,7 +702,7 @@ FAccelerationStructure FVulkanContext::GenerateTlas(const FBuffer& BlasInstanceB
         AccelerationStructureBuildRangeInfo.primitiveCount = CountInstances;
         const VkAccelerationStructureBuildRangeInfoKHR* AccelerationStructureBuildRangeInfoPtr = &AccelerationStructureBuildRangeInfo;
         V::vkCmdBuildAccelerationStructuresKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometry, &AccelerationStructureBuildRangeInfoPtr);
-    });
+    }, VK_QUEUE_COMPUTE_BIT);
 
     RESOURCE_ALLOCATOR()->DestroyBuffer(ScratchBuffer);
 
@@ -1481,7 +1480,7 @@ void FVulkanContext::CleanUp()
     FREE_TEXTURE_MANAGER();
 
     DescriptorSetManager = nullptr;
-    CommandBufferManager = nullptr;
+    FREE_COMMAND_BUFFER_MANAGER();
     FREE_RESOURCE_ALLOCATOR();
     FREE_TIMING_MANAGER();
 

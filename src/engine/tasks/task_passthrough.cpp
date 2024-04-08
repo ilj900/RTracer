@@ -17,9 +17,10 @@ FPassthroughTask::FPassthroughTask(uint32_t WidthIn, uint32_t HeightIn, int Numb
     DescriptorSetManager->AddDescriptorLayout(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX,
                                               {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
 
-    PipelineStageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
     DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
+
+    PipelineStageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    QueueFlagsBits = VK_QUEUE_GRAPHICS_BIT;
 }
 
 FPassthroughTask::~FPassthroughTask()
@@ -78,7 +79,7 @@ void FPassthroughTask::RecordCommands()
 
     for (int i = 0; i < CommandBuffers.size(); ++i)
     {
-        CommandBuffers[i] = VK_CONTEXT().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
+        CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
             TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
 
@@ -105,7 +106,7 @@ void FPassthroughTask::RecordCommands()
             vkCmdEndRenderPass(CommandBuffer);
 
             TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
-        });
+        }, QueueFlagsBits);
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name);
     }

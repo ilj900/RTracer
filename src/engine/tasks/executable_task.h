@@ -42,6 +42,7 @@ public:
     VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
     VkPipeline Pipeline = VK_NULL_HANDLE;
     VkPipelineStageFlags PipelineStageFlags;
+    VkQueueFlagBits QueueFlagsBits;
 
 protected:
     void CreateSyncObjects();

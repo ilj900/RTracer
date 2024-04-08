@@ -17,6 +17,7 @@ FImguiTask::FImguiTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultan
     Name = "Imgui pipeline";
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    QueueFlagsBits = VK_QUEUE_GRAPHICS_BIT;
 }
 
 FImguiTask::~FImguiTask()
@@ -140,11 +141,11 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipel
         ProfilerData.Render();
     }
 
-    CommandBuffers[IterationIndex] = VK_CONTEXT().CommandBufferManager->BeginSingleTimeCommand();
+    CommandBuffers[IterationIndex] = COMMAND_BUFFER_MANAGER()->BeginSingleTimeCommand(QueueFlagsBits);
 
     V::SetName(LogicalDevice, CommandBuffers[IterationIndex], Name);
 
-    VK_CONTEXT().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer)
+    COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer)
     {
         {
             TIMING_MANAGER()->TimestampStart(Name, CommandBuffers[IterationIndex], IterationIndex);
@@ -166,7 +167,7 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipel
 
         vkCmdEndRenderPass(CommandBuffers[IterationIndex]);
         vkEndCommandBuffer(CommandBuffers[IterationIndex]);
-    });
+    }, QueueFlagsBits);
 
     if (bFirstCall)
     {
