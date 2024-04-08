@@ -10,6 +10,7 @@
 
 #include "acceleration_structure_component.h"
 #include "mesh_component.h"
+#include "framebuffer_component.h"
 #include "device_mesh_component.h"
 #include "device_renderable_component.h"
 #include "transform_component.h"
@@ -50,6 +51,7 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     Coordinator.RegisterComponent<ECS::COMPONENTS::FMeshInstanceComponent>();
     Coordinator.RegisterComponent<ECS::COMPONENTS::FTransformComponent>();
     Coordinator.RegisterComponent<ECS::COMPONENTS::FTextureComponent>();
+    Coordinator.RegisterComponent<ECS::COMPONENTS::FFramebufferComponent>();
 
     /// Register systems
     auto CameraSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FCameraSystem>();
@@ -183,12 +185,12 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     Context.GetDeviceQueues(Surface);
 
     Context.InitManagerResources();
-    CAMERA_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
-    RENDERABLE_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
+    CAMERA_SYSTEM()->Init(MaxFramesInFlight);
+    RENDERABLE_SYSTEM()->Init(MaxFramesInFlight);
     MESH_SYSTEM()->Init();
-    LIGHT_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
-    TRANSFORM_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
-    ACCELERATION_STRUCTURE_SYSTEM()->Init(MAX_FRAMES_IN_FLIGHT);
+    LIGHT_SYSTEM()->Init(MaxFramesInFlight);
+    TRANSFORM_SYSTEM()->Init(MaxFramesInFlight);
+    ACCELERATION_STRUCTURE_SYSTEM()->Init(MaxFramesInFlight);
 
     LoadScene("");
     ACCELERATION_STRUCTURE_SYSTEM()->Update();
@@ -197,112 +199,124 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     Init();
 }
 
+void FRender::SetMaxFramesInFlight(uint32_t MaxFramesInFlightIn)
+{
+    MaxFramesInFlight = MaxFramesInFlightIn;
+}
+
 int FRender::Init()
 {
     auto& Context = GetContext();
 
     Swapchain = std::make_shared<FSwapchain>(Width, Height, PhysicalDevice, LogicalDevice, Surface, Context.GetGraphicsQueueIndex(), Context.GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
-    MAX_FRAMES_IN_FLIGHT = Swapchain->Size();
+    SetMaxFramesInFlight(Swapchain->Size());
+    for (int i = 0; i < MaxFramesInFlight; ++i)
+    {
+        auto Framebuffer = CreateFramebufferFromExternalImage(Swapchain->Images[i], "Swapchain Framebuffer Image");
+        SetOutput(OutputType(i), Framebuffer);
+    }
 
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    for (int i = 0; i < MaxFramesInFlight; ++i)
     {
         ImageAvailableSemaphores.push_back(Context.CreateSemaphore());
         ImagesInFlight.push_back(Context.CreateSignalledFence());
     }
 
-    GenerateRaysTask = std::make_shared<FGenerateInitialRays>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    GenerateRaysTask = std::make_shared<FGenerateInitialRays>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
     GenerateRaysTask->Init();
     GenerateRaysTask->UpdateDescriptorSets();
     GenerateRaysTask->RecordCommands();
 
-    RayTraceTask = std::make_shared<FRaytraceTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    RayTraceTask = std::make_shared<FRaytraceTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
 
     RayTraceTask->Init();
     RayTraceTask->UpdateDescriptorSets();
     RayTraceTask->RecordCommands();
 
-    ClearMaterialsCountPerChunkTask = std::make_shared<FClearMaterialsCountPerChunkTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    ClearMaterialsCountPerChunkTask = std::make_shared<FClearMaterialsCountPerChunkTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
 
     ClearMaterialsCountPerChunkTask->Init();
     ClearMaterialsCountPerChunkTask->UpdateDescriptorSets();
     ClearMaterialsCountPerChunkTask->RecordCommands();
 
-    ClearTotalMaterialsCountTask = std::make_shared<FClearTotalMaterialsCountTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    ClearTotalMaterialsCountTask = std::make_shared<FClearTotalMaterialsCountTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
 
     ClearTotalMaterialsCountTask->Init();
     ClearTotalMaterialsCountTask->UpdateDescriptorSets();
     ClearTotalMaterialsCountTask->RecordCommands();
 
-    CountMaterialsPerChunkTask = std::make_shared<FCountMaterialsPerChunkTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    CountMaterialsPerChunkTask = std::make_shared<FCountMaterialsPerChunkTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
 
     CountMaterialsPerChunkTask->Init();
     CountMaterialsPerChunkTask->UpdateDescriptorSets();
     CountMaterialsPerChunkTask->RecordCommands();
 
-    ComputePrefixSumsUpSweepTask = std::make_shared<FComputePrefixSumsUpSweepTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    ComputePrefixSumsUpSweepTask = std::make_shared<FComputePrefixSumsUpSweepTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
 
     ComputePrefixSumsUpSweepTask->Init();
     ComputePrefixSumsUpSweepTask->UpdateDescriptorSets();
     ComputePrefixSumsUpSweepTask->RecordCommands();
 
-    ComputePrefixSumsZeroOutTask = std::make_shared<FComputePrefixSumsZeroOutTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    ComputePrefixSumsZeroOutTask = std::make_shared<FComputePrefixSumsZeroOutTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
 
     ComputePrefixSumsZeroOutTask->Init();
     ComputePrefixSumsZeroOutTask->UpdateDescriptorSets();
     ComputePrefixSumsZeroOutTask->RecordCommands();
 
-    ComputePrefixSumsDownSweepTask = std::make_shared<FComputePrefixSumsDownSweepTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    ComputePrefixSumsDownSweepTask = std::make_shared<FComputePrefixSumsDownSweepTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
 
     ComputePrefixSumsDownSweepTask->Init();
     ComputePrefixSumsDownSweepTask->UpdateDescriptorSets();
     ComputePrefixSumsDownSweepTask->RecordCommands();
 
-    ComputeOffsetsPerMaterialTask = std::make_shared<FComputeOffsetsPerMaterialTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    ComputeOffsetsPerMaterialTask = std::make_shared<FComputeOffsetsPerMaterialTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
 
     ComputeOffsetsPerMaterialTask->Init();
     ComputeOffsetsPerMaterialTask->UpdateDescriptorSets();
     ComputeOffsetsPerMaterialTask->RecordCommands();
 
-    SortMaterialsTask = std::make_shared<FSortMaterialsTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    SortMaterialsTask = std::make_shared<FSortMaterialsTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
 
     SortMaterialsTask->Init();
     SortMaterialsTask->UpdateDescriptorSets();
     SortMaterialsTask->RecordCommands();
 
-    ShadeTask = std::make_shared<FShadeTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    ShadeTask = std::make_shared<FShadeTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
     ShadeTask->Init();
     ShadeTask->UpdateDescriptorSets();
     ShadeTask->RecordCommands();
 
-    MissTask = std::make_shared<FMissTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    MissTask = std::make_shared<FMissTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
     SetIBL("../../../resources/brown_photostudio_02_4k.exr");
     MissTask->Init();
     MissTask->UpdateDescriptorSets();
     MissTask->RecordCommands();
 
-    AccumulateTask = std::make_shared<FAccumulateTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    AccumulateTask = std::make_shared<FAccumulateTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
     AccumulateTask->Init();
     AccumulateTask->UpdateDescriptorSets();
     AccumulateTask->RecordCommands();
 
-    ClearImageTask = std::make_shared<FClearImageTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
+    ClearImageTask = std::make_shared<FClearImageTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
     ClearImageTask->Init();
     ClearImageTask->UpdateDescriptorSets();
     ClearImageTask->RecordCommands();
 
-    PassthroughTask = std::make_shared<FPassthroughTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    PassthroughTask = std::make_shared<FPassthroughTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
+    for (int i = 0; i < MaxFramesInFlight; ++i)
     {
-        PassthroughTask->RegisterOutput(i, Swapchain->Images[i]);
+        auto& FramebufferComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(OutputToFramebufferMap[OutputType(i)]);
+        PassthroughTask->RegisterOutput(i, GetTextureManager()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex));
     }
     PassthroughTask->Init();
     PassthroughTask->UpdateDescriptorSets();
     PassthroughTask->RecordCommands();
 
-    ImguiTask = std::make_shared<FImguiTask>(Width, Height, &Context, MAX_FRAMES_IN_FLIGHT, LogicalDevice);
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    ImguiTask = std::make_shared<FImguiTask>(Width, Height, &Context, MaxFramesInFlight, LogicalDevice);
+    for (int i = 0; i < MaxFramesInFlight; ++i)
     {
-        ImguiTask->RegisterOutput(i, Swapchain->Images[i]);
+        auto& FramebufferComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(OutputToFramebufferMap[OutputType(i)]);
+        ImguiTask->RegisterOutput(i, GetTextureManager()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex));
     }
     ImguiTask->Init();
     ImguiTask->RecordCommands();
@@ -331,7 +345,7 @@ int FRender::Cleanup()
     PassthroughTask = nullptr;
     ImguiTask = nullptr;
 
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    for (int i = 0; i < MaxFramesInFlight; ++i)
     {
         vkDestroySemaphore(GetContext().LogicalDevice, ImageAvailableSemaphores[i], nullptr);
         ImageAvailableSemaphores[i] = VK_NULL_HANDLE;
@@ -368,32 +382,58 @@ ECS::FEntity FRender::CreateCamera()
 
 ECS::FEntity FRender::CreateFramebuffer(int WidthIn, int HeightIn, const std::string& DebugName)
 {
+    auto FramebufferImage = GetTextureManager()->CreateStorageImage(WidthIn, HeightIn, DebugName);
+    static int Counter = 0;
+    auto FramebufferImageIndex = GetTextureManager()->RegisterFramebuffer(FramebufferImage, (DebugName == "") ? ("Unnamed Framebuffer " + std::to_string(Counter++)) : DebugName);
+
     auto& Coordinator = ECS::GetCoordinator();
-
     ECS::FEntity Framebuffer = Coordinator.CreateEntity();
+    Coordinator.AddComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer, {FramebufferImageIndex});
 
-    // TODO;
     return Framebuffer;
 }
 
-void FRender::SetMainCamera(ECS::FEntity Camera)
-{
 
+ECS::FEntity FRender::CreateFramebufferFromExternalImage(ImagePtr ImageIn, const std::string& DebugName)
+{
+    static int Counter = 0;
+    auto FramebufferImageIndex = GetTextureManager()->RegisterFramebuffer(ImageIn, (DebugName == "") ? ("Unnamed Framebuffer From External Image " + std::to_string(Counter++)) : DebugName);
+
+    auto& Coordinator = ECS::GetCoordinator();
+    ECS::FEntity Framebuffer = Coordinator.CreateEntity();
+    Coordinator.AddComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer, {FramebufferImageIndex});
+
+    return Framebuffer;
 }
 
-void FRender::SetOutput(OutputType OutputTYpeIn, ECS::FEntity Framebuffer)
+void FRender::SetActiveCamera(ECS::FEntity Camera)
 {
+    ActiveCamera = Camera;
+}
 
+void FRender::SetOutput(OutputType OutputTypeIn, ECS::FEntity Framebuffer)
+{
+    OutputToFramebufferMap[OutputTypeIn] = Framebuffer;
+}
+
+ECS::FEntity FRender::GetOutput(OutputType OutputTypeIn)
+{
+    return OutputToFramebufferMap[OutputTypeIn];
 }
 
 void FRender::SaveFramebuffer(ECS::FEntity Framebuffer)
 {
-
+    auto& FramebufferComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);
+    GetContext().SaveImage(*GetTextureManager()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex));
 }
 
-void FRender::GetFramebufferData(ECS::FEntity)
+void FRender::GetFramebufferData(ECS::FEntity Framebuffer)
 {
+    auto& FramebufferComponent = ECS::GetCoordinator().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);
+    auto Image = GetTextureManager()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex);
+    std::vector<char> Data;
 
+    GetContext().FetchImageData(*Image, Data);
 }
 
 int FRender::Destroy()
@@ -420,7 +460,7 @@ int FRender::Render()
 
     Context.TimingManager->NewTime();
 
-    uint32_t CurrentFrame = RenderFrameIndex % MAX_FRAMES_IN_FLIGHT;
+    uint32_t CurrentFrame = RenderFrameIndex % MaxFramesInFlight;
 
     /// Previous rendering iteration of the frame might still be in use, so we wait for it
     vkWaitForFences(Context.LogicalDevice, 1, &ImagesInFlight[CurrentFrame], VK_TRUE, UINT64_MAX);

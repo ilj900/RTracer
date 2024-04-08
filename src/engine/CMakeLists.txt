@@ -10,6 +10,7 @@ set(ECS_INCLUDE
         components/device_camera_component.h
         components/device_mesh_component.h
         components/device_renderable_component.h
+        components/framebuffer_component.h
         components/light_component.h
         components/material_component.h
         components/mesh_component.h

@@ -29,12 +29,14 @@
 #include <string>
 #include <vector>
 
-enum class OutputType {Color, Normal, UV};
+enum class OutputType {Color0 = 0, Color1 = 1, Color2 = 2, Normal, UV};
+
 class FRender
 {
 public:
     FRender(uint32_t WidthIn = 1920, uint32_t HeightIn = 1080);
 
+    void SetMaxFramesInFlight(uint32_t MaxFramesInFlightIn);
     int Init();
     int Cleanup();
     int Destroy();
@@ -42,10 +44,12 @@ public:
 
     ECS::FEntity CreateCamera();
     ECS::FEntity CreateFramebuffer(int WidthIn, int HeightIn, const std::string& DebugName = "");
-    void SetMainCamera(ECS::FEntity Camera);
-    void SetOutput(OutputType OutputTYpeIn, ECS::FEntity Framebuffer);
+    ECS::FEntity CreateFramebufferFromExternalImage(ImagePtr ImageIn, const std::string& DebugName = "");
+    void SetActiveCamera(ECS::FEntity Camera);
+    void SetOutput(OutputType OutputTypeIn, ECS::FEntity Framebuffer);
+    ECS::FEntity GetOutput(OutputType OutputTypeIn);
     void SaveFramebuffer(ECS::FEntity Framebuffer);
-    void GetFramebufferData(ECS::FEntity);
+    void GetFramebufferData(ECS::FEntity Framebuffer);
 
     int Render();
     int Update();
@@ -79,12 +83,14 @@ public:
     std::shared_ptr<FSwapchain> Swapchain = nullptr;
     bool bShouldRecreateSwapchain = false;
 
-    int MAX_FRAMES_IN_FLIGHT = 2;
+    uint32_t MaxFramesInFlight = 2;
     uint32_t RenderFrameIndex = 0;
 
     std::vector<ECS::FEntity> Models;
     std::vector<ECS::FEntity> Materials;
     std::vector<ECS::FEntity> Lights;
+    std::vector<ECS::FEntity> Cameras;
+    ECS::FEntity ActiveCamera;
 
     std::shared_ptr<FGenerateInitialRays> GenerateRaysTask = nullptr;
     std::shared_ptr<FRaytraceTask> RayTraceTask = nullptr;
@@ -105,6 +111,8 @@ public:
 
     std::vector<VkSemaphore> ImageAvailableSemaphores;
     std::vector<VkFence> ImagesInFlight;
+
+    std::unordered_map<OutputType, ECS::FEntity> OutputToFramebufferMap;
 
     static FRender* RenderInstance;
 
