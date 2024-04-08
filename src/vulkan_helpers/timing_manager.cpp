@@ -3,7 +3,27 @@
 
 #include <chrono>
 
-FTimingManager::FTimingManager(VkDevice LogicalDeviceIn) : LogicalDevice(LogicalDeviceIn)
+FTimingManager* FTimingManager::TimingManager = nullptr;
+
+FTimingManager* GetTimingManager()
+{
+    if (FTimingManager::TimingManager == nullptr)
+    {
+        FTimingManager::TimingManager = new FTimingManager();
+    }
+
+    return FTimingManager::TimingManager;
+}
+
+void FreeTimingManager()
+{
+    if (FTimingManager::TimingManager != nullptr)
+    {
+        delete FTimingManager::TimingManager;
+    }
+}
+
+FTimingManager::FTimingManager()
 {
     Time = std::chrono::high_resolution_clock::now();
     PreviousTime = Time;
@@ -13,7 +33,7 @@ FTimingManager::~FTimingManager()
 {
     for (auto Entry : NameToQueryPool)
     {
-        vkDestroyQueryPool(LogicalDevice, Entry.second, nullptr);
+        vkDestroyQueryPool(VK_CONTEXT().LogicalDevice, Entry.second, nullptr);
     }
 
     NameToQueryPool.clear();
@@ -34,7 +54,7 @@ void FTimingManager::RegisterTiming(const std::string& TimingName, int NumberOfS
     QueryPoolCreateInfo.queryCount = NumberOfSimultaneousSubmitsIn * 2;
     QueryPoolCreateInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
 
-    if (vkCreateQueryPool(LogicalDevice, &QueryPoolCreateInfo, nullptr, &NameToQueryPool[TimingName]) != VK_SUCCESS)
+    if (vkCreateQueryPool(VK_CONTEXT().LogicalDevice, &QueryPoolCreateInfo, nullptr, &NameToQueryPool[TimingName]) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create query pool!");
     }
@@ -43,7 +63,7 @@ void FTimingManager::RegisterTiming(const std::string& TimingName, int NumberOfS
 float FTimingManager::GetDeltaTime(const std::string& TimingName, int FrameIndex)
 {
     std::vector<uint64_t> TimeStamps(2);
-    vkGetQueryPoolResults(LogicalDevice, NameToQueryPool[TimingName], FrameIndex * 2, 2, sizeof(uint64_t) * 2, TimeStamps.data(), sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+    vkGetQueryPoolResults(VK_CONTEXT().LogicalDevice, NameToQueryPool[TimingName], FrameIndex * 2, 2, sizeof(uint64_t) * 2, TimeStamps.data(), sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
     float Delta = float((TimeStamps[1] - TimeStamps[0]) * VK_CONTEXT().TimestampPeriod) / 1000000000.f;
     return Delta;
 }

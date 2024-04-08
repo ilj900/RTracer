@@ -9,7 +9,7 @@
 class FTimingManager
 {
 public:
-    FTimingManager(VkDevice LogicalDeviceInm);
+    FTimingManager();
     ~FTimingManager();
 
     void RegisterTiming(const std::string& TimingName, int NumberOfSimultaneousSubmitsIn);
@@ -21,10 +21,17 @@ public:
     float GetDeltaTime();
     void GetAllTimings(std::vector<std::string>& Names, std::vector<float>& Timings, float& FrameTime, int FrameIndex);
 
+    static FTimingManager* TimingManager;
+
 private:
     std::chrono::time_point<std::chrono::steady_clock> Time;
     std::chrono::time_point<std::chrono::steady_clock> PreviousTime;
-    VkDevice LogicalDevice = VK_NULL_HANDLE;
     std::unordered_map<std::string, VkQueryPool> NameToQueryPool;
     std::unordered_map<std::string, std::vector<float>> TimingHistory;
 };
+
+FTimingManager* GetTimingManager();
+void FreeTimingManager();
+
+#define TIMING_MANAGER() GetTimingManager()
+#define FREE_TIMING_MANAGER() FreeTimingManager()

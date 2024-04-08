@@ -165,7 +165,7 @@ void FVulkanContext::InitManagerResources()
 
     CommandBufferManager = std::make_shared<FCommandBufferManager>(LogicalDevice, GetQueue(VK_QUEUE_GRAPHICS_BIT),
                                                                    GetQueueIndex(VK_QUEUE_GRAPHICS_BIT));
-    TimingManager = std::make_shared<FTimingManager>(LogicalDevice);
+    TIMING_MANAGER();
 }
 
 void FVulkanContext::QueuePhysicalDeviceProperties()
@@ -926,7 +926,7 @@ ImagePtr FVulkanContext::Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspec
     return Image;
 }
 
-VkFramebuffer FVulkanContext::CreateFramebuffer(int Width, int Height, std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name) const
+VkFramebuffer FVulkanContext::CreateFramebuffer(uint32_t Width, uint32_t Height, std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name) const
 {
     std::vector<VkImageView> Attachments;
 
@@ -1488,7 +1488,7 @@ void FVulkanContext::CleanUp()
     DescriptorSetManager = nullptr;
     CommandBufferManager = nullptr;
     ResourceAllocator = nullptr;
-    TimingManager = nullptr;
+    FREE_TIMING_MANAGER();
 
     vkDestroyDevice(LogicalDevice, nullptr);
 

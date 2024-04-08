@@ -447,7 +447,7 @@ int FRender::Render()
         return 1;
     }
 
-    VK_CONTEXT().TimingManager->NewTime();
+    TIMING_MANAGER()->NewTime();
 
     uint32_t CurrentFrame = RenderFrameIndex % MaxFramesInFlight;
 

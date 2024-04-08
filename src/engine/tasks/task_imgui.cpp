@@ -37,7 +37,7 @@ FImguiTask::~FImguiTask()
 
 void FImguiTask::Init()
 {
-    VK_CONTEXT().TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+    TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
     bFirstCall = true;
 
     FGraphicsPipelineOptions ImguiPipelineOptions;
@@ -122,7 +122,7 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipel
         std::vector<std::string> Names;
         std::vector<float> Timings;
         float DeltaTime = 0;
-        VK_CONTEXT().TimingManager->GetAllTimings(Names, Timings, DeltaTime, PreviousIterationIndex);
+        TIMING_MANAGER()->GetAllTimings(Names, Timings, DeltaTime, PreviousIterationIndex);
         std::vector<legit::ProfilerTask> GPUTasks(Timings.size());
 
         float StartTime = 0.f;
@@ -147,7 +147,7 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipel
     VK_CONTEXT().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer)
     {
         {
-            VK_CONTEXT().TimingManager->TimestampStart(Name, CommandBuffers[IterationIndex], IterationIndex);
+            TIMING_MANAGER()->TimestampStart(Name, CommandBuffers[IterationIndex], IterationIndex);
 
             VkRenderPassBeginInfo RenderPassBeginInfo{};
             RenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -158,7 +158,7 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipel
             RenderPassBeginInfo.clearValueCount = 0;
             vkCmdBeginRenderPass(CommandBuffers[IterationIndex], &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            VK_CONTEXT().TimingManager->TimestampEnd(Name, CommandBuffers[IterationIndex], IterationIndex);
+            TIMING_MANAGER()->TimestampEnd(Name, CommandBuffers[IterationIndex], IterationIndex);
         }
 
         ImGui::Render();

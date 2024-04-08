@@ -113,7 +113,7 @@ public:
 
     VkSampler CreateTextureSampler(uint32_t MipLevel);
 
-    VkFramebuffer CreateFramebuffer(int Width, int Height, std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name) const;
+    VkFramebuffer CreateFramebuffer(uint32_t Width, uint32_t Height, std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name) const;
 
     VkDescriptorPool CreateDescriptorPool(const std::map<VkDescriptorType, uint32_t>& DescriptorsMap, VkDevice LogicalDevice, const std::string& debug_name);
     VkDescriptorPool CreateFreeableDescriptorPool(const std::map<VkDescriptorType, uint32_t>& DescriptorsMap, VkDevice LogicalDevice, const std::string& debug_name);
@@ -139,7 +139,6 @@ public:
 
     std::shared_ptr<FResourceAllocator> ResourceAllocator = nullptr;
     std::shared_ptr<FCommandBufferManager> CommandBufferManager = nullptr;
-    std::shared_ptr<FTimingManager> TimingManager = nullptr;
 
     VkSampleCountFlagBits MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 

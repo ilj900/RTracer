@@ -31,7 +31,7 @@ FComputePrefixSumsZeroOutTask::FComputePrefixSumsZeroOutTask(uint32_t WidthIn, u
 
 void FComputePrefixSumsZeroOutTask::Init()
 {
-    VK_CONTEXT().TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+    TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
 
     auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
 
@@ -65,7 +65,7 @@ void FComputePrefixSumsZeroOutTask::RecordCommands()
     {
         CommandBuffers[i] = VK_CONTEXT().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
-            VK_CONTEXT().TimingManager->TimestampStart(Name, CommandBuffer, i);
+            TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
             auto ComputeDescriptorSet = VK_CONTEXT().DescriptorSetManager->GetSet(Name, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_ZERO_OUT_LAYOUT_INDEX, i);
@@ -80,7 +80,7 @@ void FComputePrefixSumsZeroOutTask::RecordCommands()
                                VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstantsPrefixSums), &PushConstantsPrefixSums);
             vkCmdDispatch(CommandBuffer, 1, 1, 1);
 
-            VK_CONTEXT().TimingManager->TimestampEnd(Name, CommandBuffer, i);
+            TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
         });
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name);

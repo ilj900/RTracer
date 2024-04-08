@@ -72,7 +72,7 @@ FShadeTask::~FShadeTask()
 
 void FShadeTask::Init()
 {
-    VK_CONTEXT().TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+    TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
 
     auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
 
@@ -130,7 +130,7 @@ void FShadeTask::RecordCommands()
     {
         CommandBuffers[i] = VK_CONTEXT().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
-            VK_CONTEXT().TimingManager->TimestampStart(Name, CommandBuffer, i);
+            TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
 
             auto DispatchBuffer = VK_CONTEXT().ResourceAllocator->GetBuffer("TotalCountedMaterialsBuffer");
 
@@ -149,7 +149,7 @@ void FShadeTask::RecordCommands()
                 vkCmdDispatchIndirect(CommandBuffer, DispatchBuffer.Buffer, MaterialIndex * 3 * sizeof(uint32_t));
             }
 
-            VK_CONTEXT().TimingManager->TimestampEnd(Name, CommandBuffer, i);
+            TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
         });
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name);

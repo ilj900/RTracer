@@ -7,8 +7,6 @@
 #include "texture_manager.h"
 #include "vk_debug.h"
 
-#include "common_defines.h"
-
 FPassthroughTask::FPassthroughTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, NumberOfSimultaneousSubmits, LogicalDevice)
 {
@@ -37,7 +35,7 @@ FPassthroughTask::~FPassthroughTask()
 
 void FPassthroughTask::Init()
 {
-    VK_CONTEXT().TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+    TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
 
     auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
 
@@ -82,7 +80,7 @@ void FPassthroughTask::RecordCommands()
     {
         CommandBuffers[i] = VK_CONTEXT().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
-            VK_CONTEXT().TimingManager->TimestampStart(Name, CommandBuffer, i);
+            TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
 
             VkRenderPassBeginInfo RenderPassInfo{};
             RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -106,7 +104,7 @@ void FPassthroughTask::RecordCommands()
             vkCmdDraw(CommandBuffer, 3, 1, 0, 0);
             vkCmdEndRenderPass(CommandBuffer);
 
-            VK_CONTEXT().TimingManager->TimestampEnd(Name, CommandBuffer, i);
+            TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
         });
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name);

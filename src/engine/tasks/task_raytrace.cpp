@@ -49,7 +49,7 @@ FRaytraceTask::~FRaytraceTask()
 
 void FRaytraceTask::Init()
 {
-    VK_CONTEXT().TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+    TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
 
     auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
 
@@ -147,7 +147,7 @@ void FRaytraceTask::RecordCommands()
     {
         CommandBuffers[i] = VK_CONTEXT().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
-            VK_CONTEXT().TimingManager->TimestampStart(Name, CommandBuffer, i);
+            TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, Pipeline);
             auto RayTracingDescriptorSet = VK_CONTEXT().DescriptorSetManager->GetSet(Name, RAYTRACE_LAYOUT_INDEX, i);
@@ -155,7 +155,7 @@ void FRaytraceTask::RecordCommands()
                                     0, 1, &RayTracingDescriptorSet, 0, nullptr);
             V::vkCmdTraceRaysKHR(CommandBuffer, &RGenRegion, &RMissRegion, &RHitRegion, &RCallRegion, Width, Height, 1);
 
-            VK_CONTEXT().TimingManager->TimestampEnd(Name, CommandBuffer, i);
+            TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
         });
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name);

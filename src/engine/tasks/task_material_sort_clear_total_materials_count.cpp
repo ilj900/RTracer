@@ -33,7 +33,7 @@ FClearTotalMaterialsCountTask::~FClearTotalMaterialsCountTask()
 
 void FClearTotalMaterialsCountTask::Init()
 {
-    VK_CONTEXT().TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+    TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
 
     auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
 
@@ -66,7 +66,7 @@ void FClearTotalMaterialsCountTask::RecordCommands()
     {
         CommandBuffers[i] = VK_CONTEXT().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
-            VK_CONTEXT().TimingManager->TimestampStart(Name, CommandBuffer, i);
+            TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
             auto ComputeDescriptorSet = VK_CONTEXT().DescriptorSetManager->GetSet(Name, MATERIAL_SORT_CLEAR_TOTAL_MATERIALS_COUNT_LAYOUT_INDEX, i);
@@ -75,7 +75,7 @@ void FClearTotalMaterialsCountTask::RecordCommands()
 
             vkCmdDispatch(CommandBuffer, 1, 1, 1);
 
-            VK_CONTEXT().TimingManager->TimestampEnd(Name, CommandBuffer, i);
+            TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
         });
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name);

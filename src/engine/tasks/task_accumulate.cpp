@@ -37,7 +37,7 @@ FAccumulateTask::FAccumulateTask(uint32_t WidthIn, uint32_t HeightIn, int Number
 
 void FAccumulateTask::Init()
 {
-    VK_CONTEXT().TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+    TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
 
     auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
 
@@ -73,7 +73,7 @@ void FAccumulateTask::RecordCommands()
     {
         CommandBuffers[i] = VK_CONTEXT().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
-            VK_CONTEXT().TimingManager->TimestampStart(Name, CommandBuffer, i);
+            TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
             auto RayTracingDescriptorSet = VK_CONTEXT().DescriptorSetManager->GetSet(Name, ACCUMULATE_PER_FRAME_LAYOUT_INDEX, i);
@@ -85,7 +85,7 @@ void FAccumulateTask::RecordCommands()
 
             vkCmdDispatch(CommandBuffer, GroupSizeX, GroupSizeY, 1);
 
-            VK_CONTEXT().TimingManager->TimestampEnd(Name, CommandBuffer, i);
+            TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
         });
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name);

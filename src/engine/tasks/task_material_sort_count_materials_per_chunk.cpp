@@ -30,7 +30,7 @@ FCountMaterialsPerChunkTask::FCountMaterialsPerChunkTask(uint32_t WidthIn, uint3
 
 void FCountMaterialsPerChunkTask::Init()
 {
-    VK_CONTEXT().TimingManager->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+    TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
 
     auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
 
@@ -64,7 +64,7 @@ void FCountMaterialsPerChunkTask::RecordCommands()
     {
         CommandBuffers[i] = VK_CONTEXT().CommandBufferManager->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
-            VK_CONTEXT().TimingManager->TimestampStart(Name, CommandBuffer, i);
+            TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
             auto ComputeDescriptorSet = VK_CONTEXT().DescriptorSetManager->GetSet(Name, MATERIAL_SORT_COUNT_MATERIALS_PER_CHUNK_INDEX, i);
@@ -76,7 +76,7 @@ void FCountMaterialsPerChunkTask::RecordCommands()
 
             vkCmdDispatch(CommandBuffer, PushConstantsCountMaterialsPerChunk.GroupSize, 1, 1);
 
-            VK_CONTEXT().TimingManager->TimestampEnd(Name, CommandBuffer, i);
+            TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
         });
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name);
