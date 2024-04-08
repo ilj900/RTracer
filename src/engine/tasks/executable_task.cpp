@@ -74,7 +74,7 @@ void FExecutableTask::RegisterOutput(int Index, ImagePtr Image)
     Outputs[Index] = std::move(Image);
 }
 
-VkSemaphore FExecutableTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipelineStageFlags PipelineStageFlagsIn, VkFence WaitFence, VkFence SignalFence, int IterationIndex)
+VkSemaphore FExecutableTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipelineStageFlags PipelineStageFlagsIn, VkFence WaitFence, VkFence SignalFence, uint32_t IterationIndex)
 {
     VkSemaphore WaitSemaphores[] = {WaitSemaphore};
     VkPipelineStageFlags WaitStages[] = {PipelineStageFlagsIn};

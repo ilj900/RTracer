@@ -14,7 +14,7 @@ namespace ECS
         class FLightSystem : public FGPUBufferableSystem
         {
         public:
-            void Init(int NumberOfSimultaneousSubmits) override;
+            void Init(uint32_t NumberOfSimultaneousSubmits) override;
             void Update() override;
             void Update(int Index) override;
 

@@ -9,7 +9,7 @@ namespace ECS
 {
     namespace SYSTEMS
     {
-        void FRenderableSystem::Init(int NumberOfSimultaneousSubmits)
+        void FRenderableSystem::Init(uint32_t NumberOfSimultaneousSubmits)
         {
             FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(ECS::COMPONENTS::FDeviceRenderableComponent) * MAX_RENDERABLES,
                                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Renderable_Buffer");

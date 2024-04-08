@@ -6,7 +6,7 @@ namespace ECS
 {
     namespace SYSTEMS
     {
-        void FTransformSystem::Init(int NumberOfSimultaneousSubmits)
+        void FTransformSystem::Init(uint32_t NumberOfSimultaneousSubmits)
         {
             FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(ECS::COMPONENTS::FDeviceTransformComponent) * MAX_ENTITIES,
                                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Transform_Buffer");

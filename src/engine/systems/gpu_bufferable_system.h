@@ -16,14 +16,14 @@ namespace ECS
         class FGPUBufferableSystem : public FSystem
         {
         public:
-            virtual void Init(int NumberOfSimultaneousSubmits) = 0;
+            virtual void Init(uint32_t NumberOfSimultaneousSubmits) = 0;
             void MarkDirty(FEntity Entity);
             int GetTotalSize();
             virtual void Update() = 0;
             virtual void Update(int Index) = 0;
 
-            virtual void RegisterEntity(FEntity Entity) override;
-            virtual void UnregisterEntity(FEntity Entity) override;
+            void RegisterEntity(FEntity Entity) override;
+            void UnregisterEntity(FEntity Entity) override;
 
             template<typename T>
             void UpdateTemplate()
@@ -67,10 +67,10 @@ namespace ECS
             }
 
         public:
-            void Init(int NumberOfSimultaneousSubmits, uint32_t Size, VkBufferUsageFlags BufferFlags, const std::string& Name);
+            void Init(uint32_t NumberOfSimultaneousSubmits, uint32_t Size, VkBufferUsageFlags BufferFlags, const std::string& Name);
 
             std::vector<bool> BufferPartThatNeedsUpdate;
-            int NumberOfSimultaneousSubmits = 2;
+            uint32_t NumberOfSimultaneousSubmits = 2;
 
             FBuffer DeviceBuffer;
             std::vector<std::set<FEntity>> EntitiesToUpdate;

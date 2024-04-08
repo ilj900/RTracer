@@ -18,7 +18,7 @@ namespace ECS
             ///Todo: What to do?
         }
 
-        void FGPUBufferableSystem::Init(int NumberOfSimultaneousSubmits, uint32_t Size, VkBufferUsageFlags BufferFlags, const std::string& Name)
+        void FGPUBufferableSystem::Init(uint32_t NumberOfSimultaneousSubmits, uint32_t Size, VkBufferUsageFlags BufferFlags, const std::string& Name)
         {
             this->NumberOfSimultaneousSubmits = NumberOfSimultaneousSubmits;
 

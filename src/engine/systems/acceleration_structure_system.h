@@ -17,7 +17,7 @@ namespace ECS
         class FAccelerationStructureSystem : public FGPUBufferableSystem
         {
         public:
-            void Init(int NumberOfSimultaneousSubmits);
+            void Init(uint32_t NumberOfSimultaneousSubmits);
             void Update();
             void Update(int Index);
             void Terminate();

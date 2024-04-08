@@ -5,7 +5,7 @@ namespace ECS
 {
     namespace SYSTEMS
     {
-        void FLightSystem::Init(int NumberOfSimultaneousSubmits)
+        void FLightSystem::Init(uint32_t NumberOfSimultaneousSubmits)
         {
             FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(ECS::COMPONENTS::FLightComponent) * MAX_LIGHTS,
                                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Light");
