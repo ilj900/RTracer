@@ -45,19 +45,17 @@ namespace ECS
                     std::vector<VkDeviceSize> Offsets;
                     std::vector<void*> Data;
 
-                    auto& Coordinator = COORDINATOR();
-
                     for (auto Entity : EntitiesToUpdate[Index])
                     {
-                        if (Offsets.size() > 0 && ((Coordinator.GetOffset<T>(Entity) + DeviceBufferBaseOffset) == Offsets.back() + Sizes.back()))
+                        if (Offsets.size() > 0 && ((COORDINATOR().GetOffset<T>(Entity) + DeviceBufferBaseOffset) == Offsets.back() + Sizes.back()))
                         {
                             Sizes.back() += sizeof(T);
                         }
                         else
                         {
                             Sizes.push_back(sizeof(T));
-                            Offsets.push_back(Coordinator.GetOffset<T>(Entity) + DeviceBufferBaseOffset);
-                            Data.push_back(Coordinator.Data<T>(Entity));
+                            Offsets.push_back(COORDINATOR().GetOffset<T>(Entity) + DeviceBufferBaseOffset);
+                            Data.push_back(COORDINATOR().Data<T>(Entity));
                         }
                     }
 

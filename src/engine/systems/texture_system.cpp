@@ -10,12 +10,12 @@ namespace ECS
     {
         FEntity FTextureSystem::CreateTextureFromFile(const std::string& FilePath)
         {
-            auto& Coordinator = COORDINATOR();
-            FEntity Texture = Coordinator.CreateEntity();
             auto FileName = ExtractFileName(FilePath);
             auto Image = GetContext().LoadImageFromFile(FilePath, FileName);
             uint32_t ImageIndex = GetTextureManager()->RegisterTexture(Image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, FileName);
-            Coordinator.AddComponent<ECS::COMPONENTS::FTextureComponent>(Texture, {ImageIndex});
+            
+            FEntity Texture = COORDINATOR().CreateEntity();
+            COORDINATOR().AddComponent<ECS::COMPONENTS::FTextureComponent>(Texture, {ImageIndex});
             return Texture;
         }
     }

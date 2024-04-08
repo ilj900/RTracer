@@ -78,8 +78,7 @@ namespace ECS
 
         void FMeshSystem::GenerateBLAS(FEntity Entity)
         {
-            auto& Coordinator = COORDINATOR();
-            Coordinator.AddComponent<ECS::COMPONENTS::FAccelerationStructureComponent>(Entity, {});
+            COORDINATOR().AddComponent<ECS::COMPONENTS::FAccelerationStructureComponent>(Entity, {});
             auto& AccelerationStructureComponent = GetComponent<ECS::COMPONENTS::FAccelerationStructureComponent>(Entity);
 
             auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
@@ -195,8 +194,7 @@ namespace ECS
 
         void FMeshSystem::CreateHexahedron(FEntity Entity)
         {
-            auto& Coordinator = COORDINATOR();
-            auto& MeshComponent = Coordinator.GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
+            auto& MeshComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
 
             float A = 1.f / 3.f;
 

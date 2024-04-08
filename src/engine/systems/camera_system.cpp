@@ -18,9 +18,8 @@ namespace ECS
             {
                 for (auto Entity : Entry)
                 {
-                    auto& Coordinator = COORDINATOR();
-                    auto& DeviceCameraComponent = Coordinator.GetComponent<COMPONENTS::FDeviceCameraComponent>(Entity);
-                    auto& CameraComponent = Coordinator.GetComponent<COMPONENTS::FCameraComponent>(Entity);
+                    auto& DeviceCameraComponent = COORDINATOR().GetComponent<COMPONENTS::FDeviceCameraComponent>(Entity);
+                    auto& CameraComponent = COORDINATOR().GetComponent<COMPONENTS::FCameraComponent>(Entity);
                     DeviceCameraComponent.ViewMatrix = LookAt(CameraComponent.Position, CameraComponent.Position + CameraComponent.Direction, CameraComponent.Up);
                     DeviceCameraComponent.ProjectionMatrix = GetPerspective(CameraComponent.FOV / 90.f, CameraComponent.Ratio, CameraComponent.ZNear, CameraComponent.ZFar);
                     DeviceCameraComponent.FOV = CameraComponent.FOV;
@@ -40,9 +39,8 @@ namespace ECS
             {
                 for (auto Entity : Entry)
                 {
-                    auto& Coordinator = COORDINATOR();
-                    auto& DeviceCameraComponent = Coordinator.GetComponent<COMPONENTS::FDeviceCameraComponent>(Entity);
-                    auto& CameraComponent = Coordinator.GetComponent<COMPONENTS::FCameraComponent>(Entity);
+                    auto& DeviceCameraComponent = COORDINATOR().GetComponent<COMPONENTS::FDeviceCameraComponent>(Entity);
+                    auto& CameraComponent = COORDINATOR().GetComponent<COMPONENTS::FCameraComponent>(Entity);
                     DeviceCameraComponent.ViewMatrix = LookAt(CameraComponent.Position, CameraComponent.Position + CameraComponent.Direction, CameraComponent.Up);
                     DeviceCameraComponent.ProjectionMatrix = GetPerspective(CameraComponent.FOV / 90.f, CameraComponent.Ratio, CameraComponent.ZNear, CameraComponent.ZFar);
                     DeviceCameraComponent.FOV = CameraComponent.FOV;

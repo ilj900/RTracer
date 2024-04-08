@@ -35,76 +35,75 @@ FRender* FRender::RenderInstance = nullptr;
 
 FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(HeightIn)
 {
-    auto& Coordinator = COORDINATOR();
-    Coordinator.Init();
+    COORDINATOR().Init();
 
     /// Register components
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FAccelerationStructureComponent>();
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FCameraComponent>();
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FDeviceCameraComponent>();
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FDeviceMeshComponent>();
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FDeviceRenderableComponent>();
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FDeviceTransformComponent>();
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FLightComponent>();
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FMaterialComponent>();
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FMeshComponent>();
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FMeshInstanceComponent>();
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FTransformComponent>();
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FTextureComponent>();
-    Coordinator.RegisterComponent<ECS::COMPONENTS::FFramebufferComponent>();
+    COORDINATOR().RegisterComponent<ECS::COMPONENTS::FAccelerationStructureComponent>();
+    COORDINATOR().RegisterComponent<ECS::COMPONENTS::FCameraComponent>();
+    COORDINATOR().RegisterComponent<ECS::COMPONENTS::FDeviceCameraComponent>();
+    COORDINATOR().RegisterComponent<ECS::COMPONENTS::FDeviceMeshComponent>();
+    COORDINATOR().RegisterComponent<ECS::COMPONENTS::FDeviceRenderableComponent>();
+    COORDINATOR().RegisterComponent<ECS::COMPONENTS::FDeviceTransformComponent>();
+    COORDINATOR().RegisterComponent<ECS::COMPONENTS::FLightComponent>();
+    COORDINATOR().RegisterComponent<ECS::COMPONENTS::FMaterialComponent>();
+    COORDINATOR().RegisterComponent<ECS::COMPONENTS::FMeshComponent>();
+    COORDINATOR().RegisterComponent<ECS::COMPONENTS::FMeshInstanceComponent>();
+    COORDINATOR().RegisterComponent<ECS::COMPONENTS::FTransformComponent>();
+    COORDINATOR().RegisterComponent<ECS::COMPONENTS::FTextureComponent>();
+    COORDINATOR().RegisterComponent<ECS::COMPONENTS::FFramebufferComponent>();
 
     /// Register systems
-    auto CameraSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FCameraSystem>();
-    auto TransformSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FTransformSystem>();
-    auto RenderableSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FRenderableSystem>();
-    auto MaterialSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FMaterialSystem>();
-    auto MeshSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FMeshSystem>();
-    auto LightSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FLightSystem>();
-    auto AccelerationSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FAccelerationStructureSystem>();
-    auto TextureSystem = Coordinator.RegisterSystem<ECS::SYSTEMS::FTextureSystem>();
+    auto CameraSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FCameraSystem>();
+    auto TransformSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FTransformSystem>();
+    auto RenderableSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FRenderableSystem>();
+    auto MaterialSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FMaterialSystem>();
+    auto MeshSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FMeshSystem>();
+    auto LightSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FLightSystem>();
+    auto AccelerationSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FAccelerationStructureSystem>();
+    auto TextureSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FTextureSystem>();
 
     /// Set camera system signature
     ECS::FSignature CameraSystemSignature;
-    CameraSystemSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FCameraComponent>());
-    CameraSystemSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FDeviceCameraComponent>());
-    Coordinator.SetSystemSignature<ECS::SYSTEMS::FCameraSystem>(CameraSystemSignature);
+    CameraSystemSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FCameraComponent>());
+    CameraSystemSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FDeviceCameraComponent>());
+    COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FCameraSystem>(CameraSystemSignature);
 
     /// Register Transform system signature
     ECS::FSignature TransformSystemSignature;
-    TransformSystemSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FTransformComponent>());
-    TransformSystemSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FDeviceTransformComponent>());
-    Coordinator.SetSystemSignature<ECS::SYSTEMS::FTransformSystem>(TransformSystemSignature);
+    TransformSystemSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FTransformComponent>());
+    TransformSystemSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FDeviceTransformComponent>());
+    COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FTransformSystem>(TransformSystemSignature);
 
     /// Register Renderable system signature
     ECS::FSignature RenderableSignature;
-    RenderableSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FDeviceRenderableComponent>());
-    Coordinator.SetSystemSignature<ECS::SYSTEMS::FRenderableSystem>(RenderableSignature);
+    RenderableSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FDeviceRenderableComponent>());
+    COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FRenderableSystem>(RenderableSignature);
 
     /// Register Material system signature
     ECS::FSignature MaterialSignature;
-    MaterialSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FMaterialComponent>());
-    Coordinator.SetSystemSignature<ECS::SYSTEMS::FMaterialSystem>(MaterialSignature);
+    MaterialSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FMaterialComponent>());
+    COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FMaterialSystem>(MaterialSignature);
 
     /// Register Mesh systems signature
     ECS::FSignature MeshSignature;
-    MeshSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FMeshComponent>());
-    MeshSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FDeviceMeshComponent>());
-    MeshSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FAccelerationStructureComponent>());
-    Coordinator.SetSystemSignature<ECS::SYSTEMS::FMeshSystem>(MeshSignature);
+    MeshSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FMeshComponent>());
+    MeshSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FDeviceMeshComponent>());
+    MeshSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FAccelerationStructureComponent>());
+    COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FMeshSystem>(MeshSignature);
 
     /// Register Light system signature
     ECS::FSignature LightSignature;
-    LightSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FLightComponent>());
-    Coordinator.SetSystemSignature<ECS::SYSTEMS::FLightSystem>(LightSignature);
+    LightSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FLightComponent>());
+    COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FLightSystem>(LightSignature);
 
     /// Register Acceleration structure system signature
     ECS::FSignature AccelerationStructureSignature;
-    AccelerationStructureSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FMeshInstanceComponent>());
-    Coordinator.SetSystemSignature<ECS::SYSTEMS::FAccelerationStructureSystem>(AccelerationStructureSignature);
+    AccelerationStructureSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FMeshInstanceComponent>());
+    COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FAccelerationStructureSystem>(AccelerationStructureSignature);
 
     ECS::FSignature TextureSignature;
-    TextureSignature.set(Coordinator.GetComponentType<ECS::COMPONENTS::FTextureComponent>());
-    Coordinator.SetSystemSignature<ECS::SYSTEMS::FTextureSystem>(TextureSignature);
+    TextureSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FTextureComponent>());
+    COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FTextureSystem>(TextureSignature);
 
     auto& Context = GetContext();
 
@@ -371,11 +370,9 @@ int FRender::SetSize(int WidthIn, int HeightIn)
 
 ECS::FEntity FRender::CreateCamera()
 {
-    auto& Coordinator = COORDINATOR();
-
-    ECS::FEntity Camera = Coordinator.CreateEntity();
-    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera, {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FCameraComponent>(Camera, {});
+    ECS::FEntity Camera = COORDINATOR().CreateEntity();
+    COORDINATOR().AddComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera, {});
+    COORDINATOR().AddComponent<ECS::COMPONENTS::FCameraComponent>(Camera, {});
 
     return Camera;
 }
@@ -386,9 +383,8 @@ ECS::FEntity FRender::CreateFramebuffer(int WidthIn, int HeightIn, const std::st
     static int Counter = 0;
     auto FramebufferImageIndex = GetTextureManager()->RegisterFramebuffer(FramebufferImage, (DebugName == "") ? ("Unnamed Framebuffer " + std::to_string(Counter++)) : DebugName);
 
-    auto& Coordinator = COORDINATOR();
-    ECS::FEntity Framebuffer = Coordinator.CreateEntity();
-    Coordinator.AddComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer, {FramebufferImageIndex});
+    ECS::FEntity Framebuffer = COORDINATOR().CreateEntity();
+    COORDINATOR().AddComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer, {FramebufferImageIndex});
 
     return Framebuffer;
 }
@@ -399,9 +395,8 @@ ECS::FEntity FRender::CreateFramebufferFromExternalImage(ImagePtr ImageIn, const
     static int Counter = 0;
     auto FramebufferImageIndex = GetTextureManager()->RegisterFramebuffer(ImageIn, (DebugName == "") ? ("Unnamed Framebuffer From External Image " + std::to_string(Counter++)) : DebugName);
 
-    auto& Coordinator = COORDINATOR();
-    ECS::FEntity Framebuffer = Coordinator.CreateEntity();
-    Coordinator.AddComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer, {FramebufferImageIndex});
+    ECS::FEntity Framebuffer = COORDINATOR().CreateEntity();
+    COORDINATOR().AddComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer, {FramebufferImageIndex});
 
     return Framebuffer;
 }
@@ -547,8 +542,7 @@ int FRender::Render()
 
 int FRender::Update()
 {
-    auto& Coordinator = COORDINATOR();
-    auto& LightComponent = Coordinator.GetComponent<ECS::COMPONENTS::FLightComponent>(Lights.back());
+    auto& LightComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FLightComponent>(Lights.back());
     LightComponent.Position.SelfRotateY(0.025f);
     LIGHT_SYSTEM()->SetLightPosition(Lights.back(), LightComponent.Position.X, LightComponent.Position.Y, LightComponent.Position.Z);
 
@@ -759,11 +753,10 @@ ECS::FEntity FRender::CreateInstance(ECS::FEntity BaseModel,  const FVector3& Po
 
 int FRender::CreateLight(const FVector3& Position)
 {
-    auto& Coordinator = COORDINATOR();
-    auto LightSystem = Coordinator.GetSystem<ECS::SYSTEMS::FLightSystem>();
+    auto LightSystem = COORDINATOR().GetSystem<ECS::SYSTEMS::FLightSystem>();
 
-    Lights.push_back(Coordinator.CreateEntity());
-    Coordinator.AddComponent<ECS::COMPONENTS::FLightComponent>(Lights.back(), {});
+    Lights.push_back(COORDINATOR().CreateEntity());
+    COORDINATOR().AddComponent<ECS::COMPONENTS::FLightComponent>(Lights.back(), {});
     LIGHT_SYSTEM()->SetLightPosition(Lights.back(), Position.X, Position.Y, Position.Z);
 
     return 0;
@@ -771,11 +764,9 @@ int FRender::CreateLight(const FVector3& Position)
 
 ECS::FEntity FRender::CreateEmptyModel()
 {
-    auto& Coordinator = COORDINATOR();
-
-    ECS::FEntity EmptyModel = Coordinator.CreateEntity();
-    Coordinator.AddComponent<ECS::COMPONENTS::FMeshComponent>(EmptyModel, {});
-    Coordinator.AddComponent<ECS::COMPONENTS::FDeviceMeshComponent>(EmptyModel, {});
+    ECS::FEntity EmptyModel = COORDINATOR().CreateEntity();
+    COORDINATOR().AddComponent<ECS::COMPONENTS::FMeshComponent>(EmptyModel, {});
+    COORDINATOR().AddComponent<ECS::COMPONENTS::FDeviceMeshComponent>(EmptyModel, {});
 
     return EmptyModel;
 }

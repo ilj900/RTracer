@@ -48,18 +48,17 @@ namespace ECS
 
         FEntity FAccelerationStructureSystem::CreateInstance(FEntity Entity, const FVector3& Position)
         {
-            auto& Coordinator = COORDINATOR();
-            FEntity NewMeshInstance = Coordinator.CreateEntity();
+            FEntity NewMeshInstance = COORDINATOR().CreateEntity();
 
-            Coordinator.AddComponent<ECS::COMPONENTS::FTransformComponent>(NewMeshInstance, {Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f}});
-            Coordinator.AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(NewMeshInstance, {});
+            COORDINATOR().AddComponent<ECS::COMPONENTS::FTransformComponent>(NewMeshInstance, {Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f}});
+            COORDINATOR().AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(NewMeshInstance, {});
             TRANSFORM_SYSTEM()->SyncTransform(NewMeshInstance);
 
-            Coordinator.AddComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(NewMeshInstance, {});
+            COORDINATOR().AddComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(NewMeshInstance, {});
             auto& DeviceRenderableComponent = RENDERABLE_SYSTEM()->GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(NewMeshInstance);
             DeviceRenderableComponent.MeshIndex = Entity;
 
-            auto& ModelMatrix = Coordinator.GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(NewMeshInstance).ModelMatrix.Data;
+            auto& ModelMatrix = COORDINATOR().GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(NewMeshInstance).ModelMatrix.Data;
             uint32_t NewIndex = AvailableIndices.front();
             AvailableIndices.pop();
             auto& BLAS = GetComponent<ECS::COMPONENTS::FAccelerationStructureComponent>(Entity);
@@ -73,7 +72,7 @@ namespace ECS
             MeshInstanceComponent.mask = 0xFF;
             MeshInstanceComponent.accelerationStructureReference = GetContext().GetASDeviceAddressInfo(BLAS.AccelerationStructure);
             MeshInstanceComponent.instanceShaderBindingTableRecordOffset = 0;
-            Coordinator.AddComponent<ECS::COMPONENTS::FMeshInstanceComponent>(NewMeshInstance, MeshInstanceComponent);
+            COORDINATOR().AddComponent<ECS::COMPONENTS::FMeshInstanceComponent>(NewMeshInstance, MeshInstanceComponent);
 
             MarkDirty(NewMeshInstance);
             bIsDirty = true;
