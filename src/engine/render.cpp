@@ -438,8 +438,11 @@ int FRender::Render()
 
     ImageAvailableSemaphores[CurrentFrame] = ImguiTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), PassthroughSignalSemaphore, PassthroughTask->GetPipelineStageFlags(), VK_NULL_HANDLE, ImagesInFlight[CurrentFrame], CurrentFrame);
 
-	VK_CONTEXT()->WaitIdle();
-	SaveFramebuffer(OutputToFramebufferMap[OutputType(CurrentFrame)], "Color_Output_" + std::to_string(RenderFrameIndex));
+	if (RenderFrameIndex % 100 == 0)
+	{
+		VK_CONTEXT()->WaitIdle();
+		SaveFramebuffer(OutputToFramebufferMap[OutputType(CurrentFrame)], "Color_Output_" + std::to_string(RenderFrameIndex));
+	}
     RenderFrameIndex++;
 
     glfwPollEvents();
