@@ -7,7 +7,6 @@
 #include "command_buffer_manager.h"
 #include "timing_manager.h"
 #include "maths.h"
-#include "swapchain.h"
 #include "buffer.h"
 #include "descriptors.h"
 #include "image.h"
@@ -107,7 +106,7 @@ public:
     ImagePtr CreateEXRImageFromFile(const std::string& Path, const std::string& DebugImageName);
     ImagePtr LoadImageFromFile(const std::string& Path, const std::string& DebugImageName);
     ImagePtr Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, const std::string& DebugImageName);
-    void SaveImage(const FImage& Image);
+    void SaveImage(const FImage& Image, const std::string& FileName = "");
     template <typename T>
     void FetchImageData(const FImage& Image, std::vector<T>& Data);
 

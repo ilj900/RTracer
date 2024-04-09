@@ -4,7 +4,6 @@ set(INCLUDE
         descriptors.h
         image.h
         resource_allocation.h
-        swapchain.h
         texture_manager.h
         timing_manager.h
         vk_acceleration_structure.h
@@ -21,7 +20,6 @@ set(SOURCE
         descriptors.cpp
         image.cpp
         resource_allocation.cpp
-        swapchain.cpp
         texture_manager.cpp
         timing_manager.cpp
         vk_context.cpp

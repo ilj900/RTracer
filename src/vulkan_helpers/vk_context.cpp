@@ -889,43 +889,59 @@ std::vector<VkDeviceQueueCreateInfo> FVulkanContext::GetDeviceQueueCreateInfo(Vk
     return QueueCreateInfos;
 }
 
-void FVulkanContext::SaveImage(const FImage& Image)
+void FVulkanContext::SaveImage(const FImage& Image, const std::string& FileName)
 {
-    std::vector<char> Data;
+	std::string FileNameToUse = (FileName == "") ? (Image.DebugName) : (FileName);
 
-    FetchImageData(Image, Data);
-
-    stbi_write_bmp((Image.DebugName + ".png").c_str(), Image.Width, Image.Height, 4, Data.data());
+	if (Image.Format == VK_FORMAT_B8G8R8A8_SRGB)
+	{
+		std::vector<char> Data;
+		FetchImageData(Image, Data);
+		stbi_write_bmp((FileNameToUse + ".png").c_str(), Image.Width, Image.Height, 4, Data.data());
+		return;
+	}
+	if (Image.Format == VK_FORMAT_R32G32B32A32_SFLOAT)
+	{
+		std::vector<float> Data;
+		FetchImageData(Image, Data);
+		const char* Err = NULL;
+		SaveEXR(Data.data(), Image.Width, Image.Height, 4, false, (FileNameToUse + ".exr").c_str(), &Err);
+		return;
+	}
 }
 
 template <typename T>
 void FVulkanContext::FetchImageData(const FImage& Image, std::vector<T>& Data)
 {
     uint32_t NumberOfComponents = 0;
+	uint32_t ComponentSize = 0;
 
     switch (Image.Format) {
         case VK_FORMAT_B8G8R8A8_SRGB:
         {
             NumberOfComponents = 4;
+			ComponentSize = 1;
             break;
         }
         case VK_FORMAT_R32G32B32A32_SFLOAT:
         {
             NumberOfComponents = 4;
+			ComponentSize = 4;
             break;
         }
         case VK_FORMAT_R32_UINT:
         {
             NumberOfComponents = 1;
+			ComponentSize = 4;
             break;
         }
     }
 
-    uint32_t Size = Image.Height * Image.Width * NumberOfComponents * sizeof(T);
-    FBuffer Buffer = GetResourceAllocator()->CreateBuffer(Size, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Tmp_Save_Image_Buffer");
+    uint32_t BufferSize = Image.Height * Image.Width * NumberOfComponents * ComponentSize;
+    FBuffer Buffer = GetResourceAllocator()->CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Tmp_Save_Image_Buffer");
     RESOURCE_ALLOCATOR()->CopyImageToBuffer(Image, Buffer);
 
-    Data.resize(Size);
+    Data.resize(Image.Height * Image.Width * NumberOfComponents * ComponentSize / sizeof(T));
 
     void* BufferData;
     vkMapMemory(LogicalDevice, Buffer.MemoryRegion.Memory, 0, Buffer.BufferSize, 0, &BufferData);

@@ -19,5 +19,5 @@ void main()
     vec3 EstimatedValue = AccumulatedValue.xyz / AccumulatedValue.w;
 
     imageStore(AccumulatorImage, UV, AccumulatedValue);
-    imageStore(EstimatedImage, UV, vec4(EstimatedValue, 0.f));
+    imageStore(EstimatedImage, UV, vec4(EstimatedValue, 1.f));
 }

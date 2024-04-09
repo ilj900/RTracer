@@ -3,7 +3,6 @@
 #include "GLFW/glfw3.h"
 
 #include "image.h"
-#include "swapchain.h"
 
 #include "maths.h"
 
@@ -45,10 +44,11 @@ public:
     ECS::FEntity CreateCamera();
     ECS::FEntity CreateFramebuffer(int WidthIn, int HeightIn, const std::string& DebugName = "");
     ECS::FEntity CreateFramebufferFromExternalImage(ImagePtr ImageIn, const std::string& DebugName = "");
+	ECS::FEntity CreateColorAttachment(int WidthIn, int HeightIn, const std::string& DebugName = "");
     void SetActiveCamera(ECS::FEntity Camera);
     void SetOutput(OutputType OutputTypeIn, ECS::FEntity Framebuffer);
     ECS::FEntity GetOutput(OutputType OutputTypeIn);
-    void SaveFramebuffer(ECS::FEntity Framebuffer);
+    void SaveFramebuffer(ECS::FEntity Framebuffer, const std::string& Filename = "");
     void GetFramebufferData(ECS::FEntity Framebuffer);
 
     int Render();
@@ -75,7 +75,6 @@ public:
     int CreateLight(const FVector3& Position);
     int SetIBL(const std::string& Path);
 
-    std::shared_ptr<FSwapchain> Swapchain = nullptr;
     bool bShouldRecreateSwapchain = false;
 
     uint32_t MaxFramesInFlight = 2;

@@ -128,11 +128,9 @@ void FRender::SetMaxFramesInFlight(uint32_t MaxFramesInFlightIn)
 
 int FRender::Init()
 {
-    Swapchain = std::make_shared<FSwapchain>(Width, Height, VK_CONTEXT()->PhysicalDevice, VK_CONTEXT()->LogicalDevice, VK_CONTEXT()->Surface, VK_CONTEXT()->GetGraphicsQueueIndex(), VK_CONTEXT()->GetPresentIndex(), VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
-    SetMaxFramesInFlight(Swapchain->Size());
     for (int i = 0; i < MaxFramesInFlight; ++i)
     {
-        auto Framebuffer = CreateFramebufferFromExternalImage(Swapchain->Images[i], "Swapchain Framebuffer Image");
+        auto Framebuffer = CreateColorAttachment(Width, Height, "Output Image" + std::to_string(i));
         SetOutput(OutputType(i), Framebuffer);
     }
 
@@ -276,8 +274,6 @@ int FRender::Cleanup()
     ImageAvailableSemaphores.clear();
     ImagesInFlight.clear();
 
-    Swapchain = nullptr;
-
     return 0;
 }
 
@@ -310,7 +306,6 @@ ECS::FEntity FRender::CreateFramebuffer(int WidthIn, int HeightIn, const std::st
     return Framebuffer;
 }
 
-
 ECS::FEntity FRender::CreateFramebufferFromExternalImage(ImagePtr ImageIn, const std::string& DebugName)
 {
     static int Counter = 0;
@@ -320,6 +315,18 @@ ECS::FEntity FRender::CreateFramebufferFromExternalImage(ImagePtr ImageIn, const
     COORDINATOR().AddComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer, {FramebufferImageIndex});
 
     return Framebuffer;
+}
+
+ECS::FEntity FRender::CreateColorAttachment(int WidthIn, int HeightIn, const std::string& DebugName)
+{
+	auto FramebufferImage = TEXTURE_MANAGER()->CreateColorAttachment(WidthIn, HeightIn, DebugName);
+	static int Counter = 0;
+	auto FramebufferImageIndex = TEXTURE_MANAGER()->RegisterFramebuffer(FramebufferImage, (DebugName == "") ? ("Unnamed Framebuffer " + std::to_string(Counter++)) : DebugName);
+
+	ECS::FEntity Framebuffer = COORDINATOR().CreateEntity();
+	COORDINATOR().AddComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer, {FramebufferImageIndex});
+
+	return Framebuffer;
 }
 
 void FRender::SetActiveCamera(ECS::FEntity Camera)
@@ -337,10 +344,10 @@ ECS::FEntity FRender::GetOutput(OutputType OutputTypeIn)
     return OutputToFramebufferMap[OutputTypeIn];
 }
 
-void FRender::SaveFramebuffer(ECS::FEntity Framebuffer)
+void FRender::SaveFramebuffer(ECS::FEntity Framebuffer, const std::string& Filename)
 {
     auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);
-    VK_CONTEXT()->SaveImage(*TEXTURE_MANAGER()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex));
+    VK_CONTEXT()->SaveImage(*TEXTURE_MANAGER()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex), Filename);
 }
 
 void FRender::GetFramebufferData(ECS::FEntity Framebuffer)
@@ -379,21 +386,6 @@ int FRender::Render()
     /// Previous rendering iteration of the frame might still be in use, so we wait for it
     vkWaitForFences(VK_CONTEXT()->LogicalDevice, 1, &ImagesInFlight[CurrentFrame], VK_TRUE, UINT64_MAX);
 
-    /// Acquire next image from swapchain, also it's index and provide semaphore to signal when image is ready to be used
-    uint32_t ImageIndex = 0;
-    VkResult Result = Swapchain->GetNextImage(nullptr, ImageAvailableSemaphores[CurrentFrame], ImageIndex);
-
-    /// Run some checks
-    if (Result == VK_ERROR_OUT_OF_DATE_KHR)
-    {
-        bShouldRecreateSwapchain = true;
-        return 0;
-    }
-    if (Result != VK_SUCCESS && Result != VK_SUBOPTIMAL_KHR)
-    {
-        throw std::runtime_error("Failed to acquire swap chain image!");
-    }
-
     bool NeedUpdate = true;
     CAMERA_SYSTEM()->Update();
     TRANSFORM_SYSTEM()->Update();
@@ -401,7 +393,9 @@ int FRender::Render()
     LIGHT_SYSTEM()->Update();
     ACCELERATION_STRUCTURE_SYSTEM()->Update();
 
-    auto GenerateRaysSemaphore = GenerateRaysTask->Submit(VK_CONTEXT()->GetComputeQueue(), ImageAvailableSemaphores[CurrentFrame], VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
+	static bool bFirstCall = true;
+    auto GenerateRaysSemaphore = GenerateRaysTask->Submit(VK_CONTEXT()->GetComputeQueue(), bFirstCall ? VK_NULL_HANDLE : ImageAvailableSemaphores[(RenderFrameIndex - 1) % MaxFramesInFlight], VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
+	bFirstCall = false;
 
     auto RayTraceSignalSemaphore = RayTraceTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), GenerateRaysSemaphore, GenerateRaysTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
@@ -442,16 +436,10 @@ int FRender::Render()
 
     auto PassthroughSignalSemaphore = PassthroughTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), AccumulateSignalSemaphore, PipelineStageFlags, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    auto ImguiFinishedSemaphore = ImguiTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), PassthroughSignalSemaphore, PassthroughTask->GetPipelineStageFlags(), VK_NULL_HANDLE, ImagesInFlight[ImageIndex], CurrentFrame);
+    ImageAvailableSemaphores[CurrentFrame] = ImguiTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), PassthroughSignalSemaphore, PassthroughTask->GetPipelineStageFlags(), VK_NULL_HANDLE, ImagesInFlight[CurrentFrame], CurrentFrame);
 
-    Result = VK_CONTEXT()->Present(Swapchain->GetSwapchain(), ImguiFinishedSemaphore, CurrentFrame);
-
-    if (Result == VK_ERROR_OUT_OF_DATE_KHR || Result == VK_SUBOPTIMAL_KHR)
-    {
-        bShouldRecreateSwapchain = true;
-        return 1;
-    }
-
+	VK_CONTEXT()->WaitIdle();
+	SaveFramebuffer(OutputToFramebufferMap[OutputType(CurrentFrame)], "Color_Output_" + std::to_string(RenderFrameIndex));
     RenderFrameIndex++;
 
     glfwPollEvents();

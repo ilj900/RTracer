@@ -80,8 +80,8 @@ VkSemaphore FExecutableTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, Vk
     VkPipelineStageFlags WaitStages[] = {PipelineStageFlagsIn};
     VkSubmitInfo SubmitInfo{};
     SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    SubmitInfo.waitSemaphoreCount = 1;
-    SubmitInfo.pWaitSemaphores = WaitSemaphores;
+    SubmitInfo.waitSemaphoreCount = WaitSemaphore == VK_NULL_HANDLE ? 0 : 1;
+    SubmitInfo.pWaitSemaphores = WaitSemaphore == VK_NULL_HANDLE ? nullptr : WaitSemaphores;
     SubmitInfo.pWaitDstStageMask = WaitStages;
     SubmitInfo.commandBufferCount = 1;
     SubmitInfo.pCommandBuffers = &CommandBuffers[IterationIndex];
