@@ -26,7 +26,7 @@ namespace ECS
             auto& DeviceRenderableComponent = RENDERABLE_SYSTEM()->GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Renderable);
             auto& DeviceMeshComponent = GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(DeviceRenderableComponent.MeshIndex);
 
-            return VK_CONTEXT().GetBufferDeviceAddressInfo(VertexBuffer) + DeviceMeshComponent.VertexPtr.Offset;
+            return VK_CONTEXT()->GetBufferDeviceAddressInfo(VertexBuffer) + DeviceMeshComponent.VertexPtr.Offset;
         }
 
         VkDeviceAddress FMeshSystem::GetIndexBufferAddress(FEntity Renderable)
@@ -34,7 +34,7 @@ namespace ECS
             auto& DeviceRenderableComponent = RENDERABLE_SYSTEM()->GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Renderable);
             auto& DeviceMeshComponent = GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(DeviceRenderableComponent.MeshIndex);
 
-            return VK_CONTEXT().GetBufferDeviceAddressInfo(IndexBuffer) + DeviceMeshComponent.IndexPtr.Offset;
+            return VK_CONTEXT()->GetBufferDeviceAddressInfo(IndexBuffer) + DeviceMeshComponent.IndexPtr.Offset;
         }
 
         void FMeshSystem::LoadToGPU(FEntity Entity)
@@ -82,7 +82,7 @@ namespace ECS
 
             auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
             auto& DeviceMeshComponent = GetComponent<ECS::COMPONENTS::FDeviceMeshComponent>(Entity);
-            AccelerationStructureComponent =  VK_CONTEXT().GenerateBlas(MESH_SYSTEM()->VertexBuffer, MESH_SYSTEM()->IndexBuffer,
+            AccelerationStructureComponent =  VK_CONTEXT()->GenerateBlas(MESH_SYSTEM()->VertexBuffer, MESH_SYSTEM()->IndexBuffer,
                                                                         sizeof (FVertex), MeshComponent.Indexed ? MeshComponent.Indices.size() : MeshComponent.Vertices.size(),
                                                                         DeviceMeshComponent.VertexPtr, DeviceMeshComponent.IndexPtr);
         }
@@ -90,7 +90,7 @@ namespace ECS
         void FMeshSystem::DeleteBLAS(FEntity Entity)
         {
             auto& AccelerationStructureComponent = GetComponent<ECS::COMPONENTS::FAccelerationStructureComponent>(Entity);
-            VK_CONTEXT().DestroyAccelerationStructure(AccelerationStructureComponent.AccelerationStructure);
+            VK_CONTEXT()->DestroyAccelerationStructure(AccelerationStructureComponent.AccelerationStructure);
             AccelerationStructureComponent.AccelerationStructure.AccelerationStructure = VK_NULL_HANDLE;
             AccelerationStructureComponent.AccelerationStructure.Buffer.Buffer = VK_NULL_HANDLE;
         }

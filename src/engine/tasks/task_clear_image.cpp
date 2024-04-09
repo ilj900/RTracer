@@ -12,7 +12,7 @@ FClearImageTask::FClearImageTask(uint32_t WidthIn, uint32_t HeightIn, int Number
 {
     Name = "Clear image pipeline";
 
-    auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
+    auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
     DescriptorSetManager->AddDescriptorLayout(Name, CLEAR_IMAGE_LAYOUT_INDEX, IMAGE_TO_CLEAR,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_COMPUTE_BIT});
@@ -27,13 +27,13 @@ void FClearImageTask::Init()
 {
     TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
 
-    auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
+    auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
     auto ClearImageShader = FShader("../../../src/shaders/clear_image.comp");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
 
-    Pipeline = VK_CONTEXT().CreateComputePipeline(ClearImageShader(), PipelineLayout);
+    Pipeline = VK_CONTEXT()->CreateComputePipeline(ClearImageShader(), PipelineLayout);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
     DescriptorSetManager->ReserveDescriptorSet(Name, CLEAR_IMAGE_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
@@ -62,8 +62,8 @@ void FClearImageTask::RecordCommands()
             TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
-            auto RayTracingDescriptorSet = VK_CONTEXT().DescriptorSetManager->GetSet(Name, CLEAR_IMAGE_LAYOUT_INDEX, i);
-            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT().DescriptorSetManager->GetPipelineLayout(Name),
+            auto RayTracingDescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, CLEAR_IMAGE_LAYOUT_INDEX, i);
+            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &RayTracingDescriptorSet, 0, nullptr);
 
             int GroupSizeX = (Width % 8 == 0) ? (Width / 8) : (Width / 8) + 1;

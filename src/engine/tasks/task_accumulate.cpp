@@ -13,7 +13,7 @@ FAccumulateTask::FAccumulateTask(uint32_t WidthIn, uint32_t HeightIn, int Number
 {
     Name = "Task Accumulate";
 
-    auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
+    auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
     DescriptorSetManager->AddDescriptorLayout(Name, ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_COMPUTE_BIT});
@@ -40,13 +40,13 @@ void FAccumulateTask::Init()
 {
     TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
 
-    auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
+    auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
     auto AccumulateShader = FShader("../../../src/shaders/accumulate.comp");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
 
-    Pipeline = VK_CONTEXT().CreateComputePipeline(AccumulateShader(), PipelineLayout);
+    Pipeline = VK_CONTEXT()->CreateComputePipeline(AccumulateShader(), PipelineLayout);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
     DescriptorSetManager->ReserveDescriptorSet(Name, ACCUMULATE_PER_FRAME_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
@@ -77,8 +77,8 @@ void FAccumulateTask::RecordCommands()
             TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
-            auto RayTracingDescriptorSet = VK_CONTEXT().DescriptorSetManager->GetSet(Name, ACCUMULATE_PER_FRAME_LAYOUT_INDEX, i);
-            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT().DescriptorSetManager->GetPipelineLayout(Name),
+            auto RayTracingDescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, ACCUMULATE_PER_FRAME_LAYOUT_INDEX, i);
+            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &RayTracingDescriptorSet, 0, nullptr);
 
             uint32_t GroupSizeX = (Width % 8 == 0) ? (Width / 8) : (Width / 8) + 1;

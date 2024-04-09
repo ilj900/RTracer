@@ -14,11 +14,25 @@
 
 #include "tinyexr.h"
 
-static FVulkanContext Context{};
+FVulkanContext* VulkanContext = nullptr;
 
-FVulkanContext& GetContext()
+FVulkanContext* GetContext(GLFWwindow* Window)
 {
-    return Context;
+	if (VulkanContext == nullptr)
+	{
+		VulkanContext = new FVulkanContext(Window);
+	}
+
+	return VulkanContext;
+}
+
+void FreeVulkanContext()
+{
+	if (VulkanContext != nullptr)
+	{
+		delete VulkanContext;
+		VulkanContext = nullptr;
+	}
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL FVulkanContext::DebugCallback(
@@ -38,6 +52,82 @@ VKAPI_ATTR VkBool32 VKAPI_CALL FVulkanContext::DebugCallback(
     std::cerr << "Validation layer " << SeverityFlagToString[MessageSeverity] << ": " << pCallBackData->pMessage << '\n' << std::endl;
 
     return VK_FALSE;
+}
+
+FVulkanContext::FVulkanContext(GLFWwindow* Window)
+{
+    /// Fill in vulkan context creation options
+    FVulkanContextOptions VulkanContextOptions;
+    VulkanContextOptions.AddInstanceLayer("VK_LAYER_KHRONOS_validation");
+
+#ifndef NDEBUG
+    VkDebugUtilsMessengerCreateInfoEXT DebugCreateInfo = {};
+    DebugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    DebugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    DebugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    DebugCreateInfo.pfnUserCallback = DebugCallback;
+    VulkanContextOptions.AddInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, &DebugCreateInfo, sizeof(VkDebugUtilsMessengerCreateInfoEXT));
+#endif
+
+    // Resolve and add extensions and layers
+    uint32_t Counter = 0;
+    auto ExtensionsRequiredByGLFW = glfwGetRequiredInstanceExtensions(&Counter);
+    for (uint32_t i = 0; i < Counter; ++i)
+    {
+        VulkanContextOptions.AddInstanceExtension(ExtensionsRequiredByGLFW[i]);
+    }
+
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR PhysicalDeviceAccelerationStructureFeatures{};
+    PhysicalDeviceAccelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+    PhysicalDeviceAccelerationStructureFeatures.accelerationStructure = VK_TRUE;
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, &PhysicalDeviceAccelerationStructureFeatures, sizeof(VkPhysicalDeviceAccelerationStructureFeaturesKHR));
+
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR PhysicalDeviceRayTracingPipelineFeatures{};
+    PhysicalDeviceRayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+    PhysicalDeviceRayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, &PhysicalDeviceRayTracingPipelineFeatures, sizeof(VkPhysicalDeviceRayTracingPipelineFeaturesKHR));
+
+    VkPhysicalDeviceBufferDeviceAddressFeatures PhysicalDeviceBufferDeviceAddressFeatures{};
+    PhysicalDeviceBufferDeviceAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+    PhysicalDeviceBufferDeviceAddressFeatures.bufferDeviceAddress = VK_TRUE;
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, &PhysicalDeviceBufferDeviceAddressFeatures, sizeof(VkPhysicalDeviceBufferDeviceAddressFeatures));
+
+    VkPhysicalDeviceHostQueryResetFeatures PhysicalDeviceHostQueryResetFeatures{};
+    PhysicalDeviceHostQueryResetFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES;
+    PhysicalDeviceHostQueryResetFeatures.hostQueryReset = VK_TRUE;
+    VulkanContextOptions.AddDeviceExtension(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME, &PhysicalDeviceHostQueryResetFeatures, sizeof(VkPhysicalDeviceHostQueryResetFeatures));
+
+    VkPhysicalDeviceMaintenance4Features PhysicalDeviceMaintenance4Features{};
+    PhysicalDeviceMaintenance4Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES;
+    PhysicalDeviceMaintenance4Features.maintenance4 = VK_TRUE;
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME, &PhysicalDeviceMaintenance4Features, sizeof(PhysicalDeviceMaintenance4Features));
+
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+    VulkanContextOptions.AddDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    /// Create Vulkan instance
+    Instance = CreateVkInstance("Hello Triangle", {1, 3, 0}, "No Engine", {1, 3, 0}, VK_API_VERSION_1_3, VulkanContextOptions);
+
+    /// Load Vulkan options
+    V::LoadVkFunctions(Instance);
+
+#ifndef NDEBUG
+    /// Create debug messenger
+    DebugMessenger = CreateDebugMessenger(VulkanContextOptions);
+#endif
+    /// Create Surface
+    if (Window != nullptr)
+	{
+		Surface = CreateSurface(Window);
+	}
+
+    /// Pick Physical device
+    PhysicalDevice = PickPhysicalDevice(VulkanContextOptions, Surface);
+
+    /// Create Logical device
+    LogicalDevice = CreateLogicalDevice(PhysicalDevice, VulkanContextOptions);
+
+    GetDeviceQueues(Surface);
 }
 
 #ifndef NDEBUG
@@ -351,7 +441,7 @@ bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDeviceIn, 
         }
     }
 
-    if (!CheckDeviceQueuePresentSupport(PhysicalDeviceIn, PresentQueue.QueueIndex, SurfaceIn)) {
+    if (SurfaceIn != VK_NULL_HANDLE && !CheckDeviceQueuePresentSupport(PhysicalDeviceIn, PresentQueue.QueueIndex, SurfaceIn)) {
         return false;
     }
 
@@ -838,9 +928,9 @@ void FVulkanContext::FetchImageData(const FImage& Image, std::vector<T>& Data)
     Data.resize(Size);
 
     void* BufferData;
-    vkMapMemory(Context.LogicalDevice, Buffer.MemoryRegion.Memory, 0, Buffer.BufferSize, 0, &BufferData);
+    vkMapMemory(LogicalDevice, Buffer.MemoryRegion.Memory, 0, Buffer.BufferSize, 0, &BufferData);
     memcpy(Data.data(), BufferData, (std::size_t)Buffer.BufferSize);
-    vkUnmapMemory(Context.LogicalDevice, Buffer.MemoryRegion.Memory);
+    vkUnmapMemory(LogicalDevice, Buffer.MemoryRegion.Memory);
 
     GetResourceAllocator()->DestroyBuffer(Buffer);
 }
@@ -1490,7 +1580,11 @@ void FVulkanContext::CleanUp()
     DestroyDebugUtilsMessengerEXT(DebugMessenger);
 #endif
 
-    vkDestroySurfaceKHR(Instance, Surface, nullptr);
+	if (Surface)
+	{
+		vkDestroySurfaceKHR(Instance, Surface, nullptr);
+	}
+
     vkDestroyInstance(Instance, nullptr);
 }
 

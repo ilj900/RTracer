@@ -75,11 +75,6 @@ public:
     int CreateLight(const FVector3& Position);
     int SetIBL(const std::string& Path);
 
-    VkInstance Instance = VK_NULL_HANDLE;
-    VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
-    VkDevice LogicalDevice = VK_NULL_HANDLE;
-    VkSurfaceKHR Surface = VK_NULL_HANDLE;
-
     std::shared_ptr<FSwapchain> Swapchain = nullptr;
     bool bShouldRecreateSwapchain = false;
 

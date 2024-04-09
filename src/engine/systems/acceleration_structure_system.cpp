@@ -29,7 +29,7 @@ namespace ECS
 
         void FAccelerationStructureSystem::Terminate()
         {
-            VK_CONTEXT().DestroyAccelerationStructure(TLAS);
+            VK_CONTEXT()->DestroyAccelerationStructure(TLAS);
         }
 
         void FAccelerationStructureSystem::Update()
@@ -70,7 +70,7 @@ namespace ECS
             MeshInstanceComponent.instanceCustomIndex = NewIndex;
             MeshInstanceComponent.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
             MeshInstanceComponent.mask = 0xFF;
-            MeshInstanceComponent.accelerationStructureReference = VK_CONTEXT().GetASDeviceAddressInfo(BLAS.AccelerationStructure);
+            MeshInstanceComponent.accelerationStructureReference = VK_CONTEXT()->GetASDeviceAddressInfo(BLAS.AccelerationStructure);
             MeshInstanceComponent.instanceShaderBindingTableRecordOffset = 0;
             COORDINATOR().AddComponent<ECS::COMPONENTS::FMeshInstanceComponent>(NewMeshInstance, MeshInstanceComponent);
 
@@ -84,7 +84,7 @@ namespace ECS
         {
             if (bIsDirty)
             {
-                TLAS = VK_CONTEXT().GenerateTlas(DeviceBuffer, InstanceCount);
+                TLAS = VK_CONTEXT()->GenerateTlas(DeviceBuffer, InstanceCount);
                 bIsDirty = false;
             }
         }

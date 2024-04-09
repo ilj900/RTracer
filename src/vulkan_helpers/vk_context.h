@@ -24,7 +24,7 @@
 class FVulkanContext
 {
 public:
-    FVulkanContext() = default;
+    FVulkanContext(GLFWwindow* Window = nullptr);
     FVulkanContext operator=(const FVulkanContext* Other) = delete;
     FVulkanContext(const FVulkanContext& Other) = delete;
     ~FVulkanContext();
@@ -168,6 +168,9 @@ public:
     bool bFramebufferResized = false;
 };
 
-FVulkanContext& GetContext();
+FVulkanContext* GetContext(GLFWwindow* Window = nullptr);
+void FreeVulkanContext();
 
 #define VK_CONTEXT() GetContext()
+#define INIT_VK_CONTEXT(Window) GetContext(Window)
+#define FREE_VK_CONTEXT()

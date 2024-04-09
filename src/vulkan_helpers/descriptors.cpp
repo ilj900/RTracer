@@ -131,7 +131,7 @@ void FPipelineDescriptorSetLayout::ReserveDescriptorPool(VkDevice LogicalDevice)
         }
     }
 
-    DescriptorPool = VK_CONTEXT().CreateDescriptorPool(TypeCount, LogicalDevice, "TODO: Give me name!");
+    DescriptorPool = VK_CONTEXT()->CreateDescriptorPool(TypeCount, LogicalDevice, "TODO: Give me name!");
 }
 
 void FPipelineDescriptorSetLayout::AllocateAllDescriptorSets(VkDevice LogicalDevice)

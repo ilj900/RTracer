@@ -44,7 +44,7 @@ void FImguiTask::Init()
     FGraphicsPipelineOptions ImguiPipelineOptions;
 
     ImguiPipelineOptions.RegisterColorAttachment(0, Outputs[0], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_LOAD);
-    RenderPass = VK_CONTEXT().CreateRenderpass(LogicalDevice, ImguiPipelineOptions);
+    RenderPass = VK_CONTEXT()->CreateRenderpass(LogicalDevice, ImguiPipelineOptions);
 
     V::SetName(LogicalDevice, RenderPass, Name);
 
@@ -52,7 +52,7 @@ void FImguiTask::Init()
 
     for(int i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        ImguiFramebuffers[i] = VK_CONTEXT().CreateFramebuffer(Width, Height, {Outputs[i]}, RenderPass, Name);
+        ImguiFramebuffers[i] = VK_CONTEXT()->CreateFramebuffer(Width, Height, {Outputs[i]}, RenderPass, Name);
     }
 
     std::map<VkDescriptorType, uint32_t> PoolSizes =
@@ -60,7 +60,7 @@ void FImguiTask::Init()
                     { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
             };
 
-    DescriptorPool = VK_CONTEXT().CreateFreeableDescriptorPool(PoolSizes, LogicalDevice, "V_ImGuiDescriptorPool");
+    DescriptorPool = VK_CONTEXT()->CreateFreeableDescriptorPool(PoolSizes, LogicalDevice, "V_ImGuiDescriptorPool");
 
     auto CheckResultFunction = [](VkResult Err)
     {
@@ -80,11 +80,11 @@ void FImguiTask::Init()
 
     ImGui_ImplGlfw_InitForVulkan(WINDOW(), true);
     ImGui_ImplVulkan_InitInfo InitInfo{};
-    InitInfo.Instance = VK_CONTEXT().GetInstance();
-    InitInfo.PhysicalDevice = VK_CONTEXT().GetPhysicalDevice();
+    InitInfo.Instance = VK_CONTEXT()->GetInstance();
+    InitInfo.PhysicalDevice = VK_CONTEXT()->GetPhysicalDevice();
     InitInfo.Device = LogicalDevice;
-    InitInfo.QueueFamily = VK_CONTEXT().GetGraphicsQueueIndex();
-    InitInfo.Queue = VK_CONTEXT().GetGraphicsQueue();
+    InitInfo.QueueFamily = VK_CONTEXT()->GetGraphicsQueueIndex();
+    InitInfo.Queue = VK_CONTEXT()->GetGraphicsQueue();
     InitInfo.DescriptorPool = DescriptorPool;
     InitInfo.RenderPass = RenderPass;
     InitInfo.MinImageCount = NumberOfSimultaneousSubmits;

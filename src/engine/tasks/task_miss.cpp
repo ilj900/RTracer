@@ -18,7 +18,7 @@ FMissTask::FMissTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneo
 {
     Name = "Miss pipeline";
 
-    auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
+    auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_MISS_LAYOUT_INDEX, COMPUTE_MISS_OUTPUT_IMAGE_INDEX,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_COMPUTE_BIT});
@@ -49,15 +49,15 @@ void FMissTask::Init()
 {
     TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
 
-    auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
+    auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
     auto ShadeShader = FShader("../../../src/shaders/miss.comp");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
 
-    Pipeline = VK_CONTEXT().CreateComputePipeline(ShadeShader(), PipelineLayout);
+    Pipeline = VK_CONTEXT()->CreateComputePipeline(ShadeShader(), PipelineLayout);
 
-    IBLImageSampler = VK_CONTEXT().CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT);
+    IBLImageSampler = VK_CONTEXT()->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
     DescriptorSetManager->ReserveDescriptorSet(Name, COMPUTE_MISS_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
@@ -91,15 +91,15 @@ void FMissTask::RecordCommands()
             TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
-            auto RayTracingDescriptorSet = VK_CONTEXT().DescriptorSetManager->GetSet(Name, COMPUTE_MISS_LAYOUT_INDEX, i);
-            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT().DescriptorSetManager->GetPipelineLayout(Name),
+            auto RayTracingDescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, COMPUTE_MISS_LAYOUT_INDEX, i);
+            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &RayTracingDescriptorSet, 0, nullptr);
 
             auto DispatchBuffer = RESOURCE_ALLOCATOR()->GetBuffer("TotalCountedMaterialsBuffer");
 
             uint32_t MaterialIndex = TOTAL_MATERIALS - 1;
             FPushConstants PushConstants = {Width, Height, 1.f / Width, 1.f / Height, Width * Height, MaterialIndex};
-            vkCmdPushConstants(CommandBuffer, VK_CONTEXT().DescriptorSetManager->GetPipelineLayout(Name),
+            vkCmdPushConstants(CommandBuffer, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
                                VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
 
             vkCmdDispatchIndirect(CommandBuffer, DispatchBuffer.Buffer, MaterialIndex * 3 * sizeof(uint32_t));

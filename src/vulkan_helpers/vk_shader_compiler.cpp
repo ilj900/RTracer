@@ -27,7 +27,7 @@ FShader::FShader(const std::string &Path, const FCompileDefinitions* CompileDefi
     CreateInfo.codeSize = SPIRVData.size() * sizeof(uint32_t);
     CreateInfo.pCode = reinterpret_cast<const uint32_t *>(SPIRVData.data());
 
-    if (vkCreateShaderModule(VK_CONTEXT().LogicalDevice, &CreateInfo, nullptr, &ShaderModule) != VK_SUCCESS)
+    if (vkCreateShaderModule(VK_CONTEXT()->LogicalDevice, &CreateInfo, nullptr, &ShaderModule) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create shader module!");
     }
@@ -40,7 +40,7 @@ VkShaderModule FShader::operator()()
 
 FShader::~FShader()
 {
-    vkDestroyShaderModule(VK_CONTEXT().LogicalDevice, ShaderModule, nullptr);
+    vkDestroyShaderModule(VK_CONTEXT()->LogicalDevice, ShaderModule, nullptr);
 }
 
 shaderc_shader_kind GetShaderType(const std::string& Path)

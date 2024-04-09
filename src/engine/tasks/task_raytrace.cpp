@@ -16,7 +16,7 @@ FRaytraceTask::FRaytraceTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSi
 {
     Name = "RayTracing pipeline";
 
-    auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
+    auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_TLAS_LAYOUT_INDEX,
                                               {VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,  VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
@@ -52,7 +52,7 @@ void FRaytraceTask::Init()
 {
     TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
 
-    auto& DescriptorSetManager = VK_CONTEXT().DescriptorSetManager;
+    auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
     auto RayGenerationShader = FShader("../../../src/shaders/raytrace.rgen");
     auto RayClosestHitShader = FShader("../../../src/shaders/raytrace.rchit");
@@ -60,7 +60,7 @@ void FRaytraceTask::Init()
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
 
-    Pipeline = VK_CONTEXT().CreateRayTracingPipeline(RayGenerationShader(), RayMissShader(), RayClosestHitShader(), Width, Height, PipelineLayout);
+    Pipeline = VK_CONTEXT()->CreateRayTracingPipeline(RayGenerationShader(), RayMissShader(), RayClosestHitShader(), Width, Height, PipelineLayout);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
     DescriptorSetManager->ReserveDescriptorSet(Name, RAYTRACE_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
@@ -69,7 +69,7 @@ void FRaytraceTask::Init()
 
     DescriptorSetManager->AllocateAllDescriptorSets(Name);
 
-    auto RTProperties = VK_CONTEXT().GetRTProperties();
+    auto RTProperties = VK_CONTEXT()->GetRTProperties();
 
     uint32_t MissCount = 1;
     uint32_t HitCount = 1;
@@ -102,7 +102,7 @@ void FRaytraceTask::Init()
     SBTBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(SBTSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "V::SBT_Buffer");
 
-    auto SBTBufferAddress = VK_CONTEXT().GetBufferDeviceAddressInfo(SBTBuffer);
+    auto SBTBufferAddress = VK_CONTEXT()->GetBufferDeviceAddressInfo(SBTBuffer);
     RGenRegion.deviceAddress = SBTBufferAddress;
     RMissRegion.deviceAddress = RGenRegion.deviceAddress + RGenRegion.size;
     RHitRegion.deviceAddress = RMissRegion.deviceAddress + RMissRegion.size;
@@ -132,7 +132,7 @@ void FRaytraceTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
     {
-        VK_CONTEXT().DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_LAYOUT_INDEX, i, &ACCELERATION_STRUCTURE_SYSTEM()->TLAS.AccelerationStructure);
+        VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_LAYOUT_INDEX, i, &ACCELERATION_STRUCTURE_SYSTEM()->TLAS.AccelerationStructure);
         UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_RAYS_DATA_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("InitialRaysBuffer"));
         UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_RENDERABLE_BUFFER_INDEX, i, RENDERABLE_SYSTEM()->DeviceBuffer);
         UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_HIT_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("HitsBuffer"));
@@ -151,8 +151,8 @@ void FRaytraceTask::RecordCommands()
             TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, Pipeline);
-            auto RayTracingDescriptorSet = VK_CONTEXT().DescriptorSetManager->GetSet(Name, RAYTRACE_LAYOUT_INDEX, i);
-            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, VK_CONTEXT().DescriptorSetManager->GetPipelineLayout(Name),
+            auto RayTracingDescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, RAYTRACE_LAYOUT_INDEX, i);
+            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &RayTracingDescriptorSet, 0, nullptr);
             V::vkCmdTraceRaysKHR(CommandBuffer, &RGenRegion, &RMissRegion, &RHitRegion, &RCallRegion, Width, Height, 1);
 

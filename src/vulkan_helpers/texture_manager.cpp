@@ -25,9 +25,9 @@ void FreeTextureManager()
 
 FTextureManager::FTextureManager()
 {
-    DummyImage = VK_CONTEXT().CreateImage2D(1, 1, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+    DummyImage = VK_CONTEXT()->CreateImage2D(1, 1, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
                                        VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                       VK_IMAGE_ASPECT_COLOR_BIT, VK_CONTEXT().GetLogicalDevice(), "V_Dummy_Image");
+                                       VK_IMAGE_ASPECT_COLOR_BIT, VK_CONTEXT()->GetLogicalDevice(), "V_Dummy_Image");
 
     DummyImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
@@ -51,17 +51,17 @@ FTextureManager::~FTextureManager()
 
 ImagePtr FTextureManager::CreateStorageImage(uint32_t WidthIn, uint32_t HeightIn, const std::string& DebugName)
 {
-    return VK_CONTEXT().CreateImage2D(WidthIn, HeightIn, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+    return VK_CONTEXT()->CreateImage2D(WidthIn, HeightIn, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
                                               VK_IMAGE_USAGE_STORAGE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                              VK_IMAGE_ASPECT_COLOR_BIT, VK_CONTEXT().LogicalDevice, DebugName);
+                                              VK_IMAGE_ASPECT_COLOR_BIT, VK_CONTEXT()->LogicalDevice, DebugName);
 }
 
 
 ImagePtr FTextureManager::CreateSampledStorageImage(uint32_t WidthIn, uint32_t HeightIn, const std::string& DebugName)
 {
-    return VK_CONTEXT().CreateImage2D(WidthIn, HeightIn, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+    return VK_CONTEXT()->CreateImage2D(WidthIn, HeightIn, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
                                       VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                      VK_IMAGE_ASPECT_COLOR_BIT, VK_CONTEXT().LogicalDevice, DebugName);
+                                      VK_IMAGE_ASPECT_COLOR_BIT, VK_CONTEXT()->LogicalDevice, DebugName);
 }
 
 uint32_t FTextureManager::RegisterTexture(const ImagePtr& ImagePointer, VkImageLayout ImageLayout, const std::string& Name)

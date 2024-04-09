@@ -69,7 +69,7 @@ void FImage::Transition(VkImageLayout  OldLayout, VkImageLayout NewLayout)
         if (NewLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
             Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 
-            if (VK_CONTEXT().HasStensilComponent(Format)) {
+            if (VK_CONTEXT()->HasStensilComponent(Format)) {
                 Barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
             }
         } else {
@@ -250,7 +250,7 @@ void FImage::CreateImageView()
 void FImage::GenerateMipMaps()
 {
     VkFormatProperties FormatProperties;
-    vkGetPhysicalDeviceFormatProperties(VK_CONTEXT().PhysicalDevice, Format, &FormatProperties);
+    vkGetPhysicalDeviceFormatProperties(VK_CONTEXT()->PhysicalDevice, Format, &FormatProperties);
 
     if (!(FormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
     {
