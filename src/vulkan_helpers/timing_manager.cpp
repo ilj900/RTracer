@@ -3,23 +3,24 @@
 
 #include <chrono>
 
-FTimingManager* FTimingManager::TimingManager = nullptr;
+FTimingManager* TimingManager = nullptr;
 
 FTimingManager* GetTimingManager()
 {
-    if (FTimingManager::TimingManager == nullptr)
+    if (TimingManager == nullptr)
     {
-        FTimingManager::TimingManager = new FTimingManager();
+        TimingManager = new FTimingManager();
     }
 
-    return FTimingManager::TimingManager;
+    return TimingManager;
 }
 
 void FreeTimingManager()
 {
-    if (FTimingManager::TimingManager != nullptr)
+    if (TimingManager != nullptr)
     {
-        delete FTimingManager::TimingManager;
+        delete TimingManager;
+        TimingManager = nullptr;
     }
 }
 

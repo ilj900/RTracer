@@ -18,7 +18,7 @@ FCommandBufferManager* GetCommandBufferManager()
 
 void FreeCommandBufferManager()
 {
-    if (CommandBufferManager != nullptr);
+    if (CommandBufferManager != nullptr)
     {
         delete CommandBufferManager;
         CommandBufferManager = nullptr;

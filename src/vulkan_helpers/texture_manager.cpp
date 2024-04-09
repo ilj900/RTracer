@@ -16,7 +16,11 @@ FTextureManager* GetTextureManager()
 
 void FreeTextureManager()
 {
-    delete TextureManager;
+    if (TextureManager != nullptr)
+    {
+        delete TextureManager;
+        TextureManager = nullptr;
+    }
 }
 
 FTextureManager::FTextureManager()

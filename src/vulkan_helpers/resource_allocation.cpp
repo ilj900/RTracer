@@ -19,7 +19,11 @@ FResourceAllocator* GetResourceAllocator()
 
 void FreeResourceAllocator()
 {
-    delete ResourceAllocator;
+    if (ResourceAllocator != nullptr)
+    {
+        delete ResourceAllocator;
+        ResourceAllocator = nullptr;
+    }
 }
 
 

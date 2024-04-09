@@ -21,8 +21,6 @@ public:
     float GetDeltaTime();
     void GetAllTimings(std::vector<std::string>& Names, std::vector<float>& Timings, float& FrameTime, int FrameIndex);
 
-    static FTimingManager* TimingManager;
-
 private:
     std::chrono::time_point<std::chrono::steady_clock> Time;
     std::chrono::time_point<std::chrono::steady_clock> PreviousTime;
