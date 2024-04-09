@@ -6,8 +6,6 @@
 #include <memory>
 #include <vector>
 
-class FVulkanContext;
-
 struct FSwapchain
 {
     FSwapchain(uint32_t Width, uint32_t Height, VkPhysicalDevice PhysicalDevice, VkDevice LogicalDevice,
