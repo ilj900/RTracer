@@ -21,7 +21,7 @@ FApplication::FApplication()
 
 FApplication::~FApplication()
 {
-    RENDER()->Destroy();
+    FREE_RENDER();
     WINDOW_MANAGER()->Destroy();
 }
 
@@ -32,7 +32,7 @@ int FApplication::Run()
 	VkSemaphore RenderingFinishedSemaphore = VK_NULL_HANDLE;
 	VkSemaphore ImageReadydSemaphore = VK_NULL_HANDLE;
 
-    while (0 == i)
+    while (!WINDOW_MANAGER()->ShouldClose())
     {
         static auto StartTime = std::chrono::high_resolution_clock::now();
 
@@ -41,11 +41,13 @@ int FApplication::Run()
         StartTime = CurrentTime;
 
         CONTROLLER()->Update(Time);
-        i = RENDER()->Update();
+        RENDER()->Update();
 		ImageReadydSemaphore = Swapchain->GetNextImage( ImageIndex);
-        i += RENDER()->Render(ImageIndex, &RenderingFinishedSemaphore);
+        RENDER()->Render(ImageIndex, &RenderingFinishedSemaphore);
 		Swapchain->Present(RenderingFinishedSemaphore, ImageIndex);
     }
+
+	Swapchain = nullptr;
 
     return 0;
 }

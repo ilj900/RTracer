@@ -44,7 +44,6 @@ set(ECS_SOURCE
 set(INCLUDE
         controller.h
         render.h
-        window_manager.h
         tasks/executable_task.h
         tasks/task_accumulate.h
         tasks/task_clear_image.h
@@ -67,7 +66,6 @@ set(INCLUDE
 set(SOURCE
         controller.cpp
         render.cpp
-        window_manager.cpp
         tasks/executable_task.cpp
         tasks/task_passthrough.cpp
         tasks/task_imgui.cpp

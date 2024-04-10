@@ -13,6 +13,7 @@ FController::FController()
     Camera = COORDINATOR().CreateEntity();
     COORDINATOR().AddComponent<ECS::COMPONENTS::FCameraComponent>(Camera, ECS::COMPONENTS::FCameraComponent());
     COORDINATOR().AddComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera, {});
+	RENDER()->SetActiveCamera(Camera);
 }
 
 void FController::SetWindow(GLFWwindow* WindowIn)

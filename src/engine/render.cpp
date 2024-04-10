@@ -31,7 +31,29 @@
 
 #include "logging.h"
 
-FRender* FRender::RenderInstance = nullptr;
+FRender* RenderInstance = nullptr;
+
+
+FRender* GetRender(uint32_t WidthIn, uint32_t HeightIn)
+{
+	if (nullptr == RenderInstance)
+	{
+		RenderInstance = new FRender(WidthIn, HeightIn);
+	}
+
+	return RenderInstance;
+}
+
+void FreeRender()
+{
+	RenderInstance->Destroy();
+
+	if (RenderInstance != nullptr)
+	{
+		delete RenderInstance;
+		RenderInstance = nullptr;
+	}
+}
 
 FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(HeightIn)
 {
@@ -274,6 +296,8 @@ int FRender::Init()
 
 int FRender::Cleanup()
 {
+	VK_CONTEXT()->WaitIdle();
+
     GenerateRaysTask = nullptr;
     RayTraceTask = nullptr;
     ClearMaterialsCountPerChunkTask = nullptr;
@@ -291,13 +315,17 @@ int FRender::Cleanup()
     PassthroughTask = nullptr;
     ImguiTask = nullptr;
 
-    for (int i = 0; i < MaxFramesInFlight; ++i)
+    for (int i = 0; i < ImageAvailableSemaphores.size(); ++i)
     {
-        vkDestroySemaphore(VK_CONTEXT()->LogicalDevice, ImageAvailableSemaphores[i], nullptr);
-        ImageAvailableSemaphores[i] = VK_NULL_HANDLE;
-        vkDestroyFence(VK_CONTEXT()->LogicalDevice, ImagesInFlight[i], nullptr);
-        ImagesInFlight[i] = VK_NULL_HANDLE;
+		vkDestroySemaphore(VK_CONTEXT()->LogicalDevice, ImageAvailableSemaphores[i], nullptr);
+		ImageAvailableSemaphores[i] = VK_NULL_HANDLE;
     }
+
+	for (int i = 0; i < ImagesInFlight.size(); ++i)
+	{
+		vkDestroyFence(VK_CONTEXT()->LogicalDevice, ImagesInFlight[i], nullptr);
+		ImagesInFlight[i] = VK_NULL_HANDLE;
+	}
 
     ImageAvailableSemaphores.clear();
     ImagesInFlight.clear();
@@ -309,7 +337,8 @@ int FRender::SetSize(int WidthIn, int HeightIn)
 {
     Width = WidthIn;
     Height = HeightIn;
-    bShouldRecreateSwapchain = true;
+	bShouldResize = true;
+	CAMERA_SYSTEM()->SetAspectRatio(ActiveCamera, float(Width) / float(Height));
     return 0;
 }
 
@@ -397,7 +426,6 @@ void FRender::GetFramebufferData(ECS::FEntity Framebuffer)
 
 int FRender::Destroy()
 {
-    VK_CONTEXT()->WaitIdle();
     Cleanup();
 
     ACCELERATION_STRUCTURE_SYSTEM()->Terminate();
@@ -512,12 +540,11 @@ int FRender::Update()
     LightComponent.Position.SelfRotateY(0.025f);
     LIGHT_SYSTEM()->SetLightPosition(Lights.back(), LightComponent.Position.X, LightComponent.Position.Y, LightComponent.Position.Z);
 
-    if (bShouldRecreateSwapchain)
+    if (bShouldResize)
     {
-        VK_CONTEXT()->WaitIdle();
         Cleanup();
         Init();
-        bShouldRecreateSwapchain = false;
+		bShouldResize = false;
     }
 
     return 0;
@@ -735,14 +762,4 @@ ECS::FEntity FRender::CreateEmptyModel()
     COORDINATOR().AddComponent<ECS::COMPONENTS::FDeviceMeshComponent>(EmptyModel, {});
 
     return EmptyModel;
-}
-
-FRender* GetRender(uint32_t WidthIn, uint32_t HeightIn)
-{
-    if (nullptr == FRender::RenderInstance)
-    {
-        FRender::RenderInstance = new FRender(WidthIn, HeightIn);
-    }
-
-    return FRender::RenderInstance;
 }

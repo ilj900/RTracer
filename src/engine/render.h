@@ -76,7 +76,7 @@ public:
     int CreateLight(const FVector3& Position);
     int SetIBL(const std::string& Path);
 
-    bool bShouldRecreateSwapchain = false;
+    bool bShouldResize = false;
 
     uint32_t MaxFramesInFlight = 2;
     uint32_t RenderFrameIndex = 0;
@@ -110,8 +110,6 @@ public:
 	std::vector<VkSemaphore> ExternalImageIsReadySemaphore;
     std::unordered_map<OutputType, ECS::FEntity> OutputToFramebufferMap;
 
-    static FRender* RenderInstance;
-
 private:
     ECS::FEntity CreateEmptyModel();
     int Width;
@@ -119,6 +117,8 @@ private:
 };
 
 FRender* GetRender(uint32_t WidthIn = 1920, uint32_t HeightIn = 1080);
+void FreeRender();
 
 #define INIT_RENDER(WidthIn, HeightIn) GetRender(WidthIn, HeightIn)
 #define RENDER() GetRender()
+#define FREE_RENDER() FreeRender()
