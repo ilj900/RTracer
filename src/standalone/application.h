@@ -1,5 +1,6 @@
 #include "render.h"
 #include "controller.h"
+#include "swapchain.h"
 
 #include <memory>
 
@@ -13,4 +14,5 @@ public:
 
 private:
     std::shared_ptr<FRender> Render = nullptr;
+	std::shared_ptr<FSwapchain> Swapchain = nullptr;
 };

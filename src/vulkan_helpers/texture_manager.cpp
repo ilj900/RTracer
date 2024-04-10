@@ -97,10 +97,6 @@ uint32_t FTextureManager::RegisterFramebuffer(const ImagePtr& ImagePointer, cons
 void FTextureManager::UnregisterAndFreeFramebuffer(uint32_t FramebufferIndex)
 {
 	auto Image = GetFramebufferImage(FramebufferIndex);
-	if (Image.use_count() != 2)
-	{
-		throw std::runtime_error("A leak will occur!");
-	}
 
 	FramebufferImages[FramebufferIndex] = nullptr;
 

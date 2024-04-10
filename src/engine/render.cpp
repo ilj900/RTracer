@@ -105,7 +105,6 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     TextureSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FTextureComponent>());
     COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FTextureSystem>(TextureSignature);
 
-    INIT_VK_CONTEXT(WINDOW());
 	VK_CONTEXT()->InitManagerResources();
     CAMERA_SYSTEM()->Init(MaxFramesInFlight);
     RENDERABLE_SYSTEM()->Init(MaxFramesInFlight);
@@ -117,14 +116,12 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     LoadScene("");
     ACCELERATION_STRUCTURE_SYSTEM()->Update();
     ACCELERATION_STRUCTURE_SYSTEM()->UpdateTLAS();
-
-    Init();
 }
 
-void FRender::RegisterExternalOutputs(std::vector<ECS::FEntity> OutputFramebuffersIn, std::vector<VkSemaphore> ExternalImageIsReadySemaphoreIn)
+void FRender::RegisterExternalOutputs(std::vector<ImagePtr> OutputImagesIn, std::vector<VkSemaphore> ExternalImageIsReadySemaphoreIn)
 {
 	/// Check whether sizes are the same
-	if (OutputFramebuffersIn.size() != ExternalImageIsReadySemaphoreIn.size())
+	if (OutputImagesIn.size() != ExternalImageIsReadySemaphoreIn.size())
 	{
 		throw std::runtime_error("Number of semaphores should be the same as number of images provided!");
 	}
@@ -132,19 +129,24 @@ void FRender::RegisterExternalOutputs(std::vector<ECS::FEntity> OutputFramebuffe
 	/// Free previous Framebuffers
 	for (int i = 0; i < MaxFramesInFlight; ++i)
 	{
-		TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer(OutputToFramebufferMap[OutputType(i)]);
-		SetOutput(OutputType(i), ECS::INVALID_ENTITY);
+		if (OutputToFramebufferMap.find(OutputType(i)) != OutputToFramebufferMap.end())
+		{
+			auto FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(OutputToFramebufferMap[OutputType(i)]);
+			TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer(FramebufferComponent.FramebufferImageIndex);
+			SetOutput(OutputType(i), ECS::INVALID_ENTITY);
+		}
 	}
 
-	MaxFramesInFlight = OutputFramebuffersIn.size();
+	MaxFramesInFlight = OutputImagesIn.size();
 
 	/// Copy semaphores (Maybe std::move?)
 	ExternalImageIsReadySemaphore = ExternalImageIsReadySemaphoreIn;
 
 	///Register new framebuffers  as outputs
-	for (int i = 0; i < OutputFramebuffersIn.size(); ++i)
+	for (int i = 0; i < OutputImagesIn.size(); ++i)
 	{
-		SetOutput(OutputType(i), OutputFramebuffersIn[i]);
+		auto Framebuffer = CreateFramebufferFromExternalImage(OutputImagesIn[i]);
+		SetOutput(OutputType(i), Framebuffer);
 	}
 }
 
@@ -324,7 +326,7 @@ ECS::FEntity FRender::CreateFramebuffer(int WidthIn, int HeightIn, const std::st
 {
     auto FramebufferImage = TEXTURE_MANAGER()->CreateStorageImage(WidthIn, HeightIn, DebugName);
     static int Counter = 0;
-    auto FramebufferImageIndex = TEXTURE_MANAGER()->RegisterFramebuffer(FramebufferImage, (DebugName == "") ? ("Unnamed Framebuffer " + std::to_string(Counter++)) : DebugName);
+    auto FramebufferImageIndex = TEXTURE_MANAGER()->RegisterFramebuffer(FramebufferImage, (DebugName.empty()) ? ("Unnamed Framebuffer " + std::to_string(Counter++)) : DebugName);
 
     ECS::FEntity Framebuffer = COORDINATOR().CreateEntity();
     COORDINATOR().AddComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer, {FramebufferImageIndex});
@@ -343,7 +345,7 @@ void FRender::DestroyFramebuffer(ECS::FEntity Framebuffer)
 ECS::FEntity FRender::CreateFramebufferFromExternalImage(ImagePtr ImageIn, const std::string& DebugName)
 {
     static int Counter = 0;
-    auto FramebufferImageIndex = TEXTURE_MANAGER()->RegisterFramebuffer(ImageIn, (DebugName == "") ? ("Unnamed Framebuffer From External Image " + std::to_string(Counter++)) : DebugName);
+    auto FramebufferImageIndex = TEXTURE_MANAGER()->RegisterFramebuffer(ImageIn, (DebugName.empty()) ? ("Unnamed Framebuffer From External Image " + std::to_string(Counter++)) : DebugName);
 
     ECS::FEntity Framebuffer = COORDINATOR().CreateEntity();
     COORDINATOR().AddComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer, {FramebufferImageIndex});
@@ -355,7 +357,7 @@ ECS::FEntity FRender::CreateColorAttachment(int WidthIn, int HeightIn, const std
 {
 	auto FramebufferImage = TEXTURE_MANAGER()->CreateColorAttachment(WidthIn, HeightIn, DebugName);
 	static int Counter = 0;
-	auto FramebufferImageIndex = TEXTURE_MANAGER()->RegisterFramebuffer(FramebufferImage, (DebugName == "") ? ("Unnamed Framebuffer " + std::to_string(Counter++)) : DebugName);
+	auto FramebufferImageIndex = TEXTURE_MANAGER()->RegisterFramebuffer(FramebufferImage, (DebugName.empty()) ? ("Unnamed Framebuffer " + std::to_string(Counter++)) : DebugName);
 
 	ECS::FEntity Framebuffer = COORDINATOR().CreateEntity();
 	COORDINATOR().AddComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer, {FramebufferImageIndex});
@@ -406,7 +408,7 @@ int FRender::Destroy()
     return 0;
 }
 
-int FRender::Render()
+int FRender::Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaphore)
 {
     if (WINDOW_MANAGER()->ShouldClose())
     {
@@ -437,7 +439,7 @@ int FRender::Render()
 	}
 	else
 	{
-		SemaphoreToWait = ExternalImageIsReadySemaphore[CurrentFrame];
+		SemaphoreToWait = ExternalImageIsReadySemaphore[OutputImageIndex];
 	}
 
     auto GenerateRaysSemaphore = GenerateRaysTask->Submit(VK_CONTEXT()->GetComputeQueue(), SemaphoreToWait, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
@@ -481,13 +483,22 @@ int FRender::Render()
 
     auto PassthroughSignalSemaphore = PassthroughTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), AccumulateSignalSemaphore, PipelineStageFlags, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-    ImageAvailableSemaphores[CurrentFrame] = ImguiTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), PassthroughSignalSemaphore, PassthroughTask->GetPipelineStageFlags(), VK_NULL_HANDLE, ImagesInFlight[CurrentFrame], CurrentFrame);
+	auto ImguiFinishedSemaphore = ImguiTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), PassthroughSignalSemaphore, PassthroughTask->GetPipelineStageFlags(), VK_NULL_HANDLE, ImagesInFlight[CurrentFrame], CurrentFrame);
 
-	if (RenderFrameIndex % 100 == 0)
+	if (RenderFinishedSemaphore != nullptr)
 	{
-		VK_CONTEXT()->WaitIdle();
-		SaveFramebuffer(OutputToFramebufferMap[OutputType(CurrentFrame)], "Color_Output_" + std::to_string(RenderFrameIndex));
+		*RenderFinishedSemaphore = ImguiFinishedSemaphore;
 	}
+	else
+	{
+		ImageAvailableSemaphores[CurrentFrame] = ImguiFinishedSemaphore;
+	}
+
+//	if (RenderFrameIndex % 100 == 0)
+//	{
+//		VK_CONTEXT()->WaitIdle();
+//		SaveFramebuffer(OutputToFramebufferMap[OutputType(CurrentFrame)], "Color_Output_" + std::to_string(RenderFrameIndex));
+//	}
     RenderFrameIndex++;
 
     glfwPollEvents();

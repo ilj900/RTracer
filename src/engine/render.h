@@ -35,7 +35,7 @@ class FRender
 public:
     FRender(uint32_t WidthIn = 1920, uint32_t HeightIn = 1080);
 
-    void RegisterExternalOutputs(std::vector<ECS::FEntity> OutputFramebuffersIn, std::vector<VkSemaphore> ExternalImageIsReadySemaphoreIn);
+    void RegisterExternalOutputs(std::vector<ImagePtr> OutputImagesIn, std::vector<VkSemaphore> ExternalImageIsReadySemaphoreIn);
     int Init();
     int Cleanup();
     int Destroy();
@@ -52,7 +52,7 @@ public:
     void SaveFramebuffer(ECS::FEntity Framebuffer, const std::string& Filename = "");
     void GetFramebufferData(ECS::FEntity Framebuffer);
 
-    int Render();
+    int Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaphore);
     int Update();
 
     int LoadScene(const std::string& Path);

@@ -1,9 +1,11 @@
 set(INCLUDE
-        application.h)
+        application.h
+        swapchain.h)
 
 set(SOURCE
         application.cpp
-        main.cpp)
+        main.cpp
+        swapchain.cpp)
 
 add_executable(RTracer ${SOURCE} ${INCLUDE})
 
