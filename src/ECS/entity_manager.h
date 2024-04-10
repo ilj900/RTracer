@@ -23,7 +23,7 @@ namespace ECS
 
     private:
         std::queue<FEntity> AvailableEntities{};
-        std::array<FSignature, MAX_ENTITIES> Signatures{};
+        std::array<FSignature, MAX_ENTITIES - 1> Signatures{};
         uint32_t LivingEntitiesCount{};
     };
 

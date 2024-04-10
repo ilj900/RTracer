@@ -6,7 +6,7 @@ namespace ECS
 {
     FEntityManager::FEntityManager()
     {
-        for (FEntity Entity = 0; Entity < MAX_ENTITIES; ++Entity)
+        for (FEntity Entity = 0; Entity < MAX_ENTITIES - 1; ++Entity)
         {
             AvailableEntities.push(Entity);
         }

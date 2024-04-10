@@ -35,7 +35,7 @@ class FRender
 public:
     FRender(uint32_t WidthIn = 1920, uint32_t HeightIn = 1080);
 
-    void SetMaxFramesInFlight(uint32_t MaxFramesInFlightIn);
+    void RegisterExternalOutputs(std::vector<ECS::FEntity> OutputFramebuffersIn, std::vector<VkSemaphore> ExternalImageIsReadySemaphoreIn);
     int Init();
     int Cleanup();
     int Destroy();
@@ -43,6 +43,7 @@ public:
 
     ECS::FEntity CreateCamera();
     ECS::FEntity CreateFramebuffer(int WidthIn, int HeightIn, const std::string& DebugName = "");
+	void DestroyFramebuffer(ECS::FEntity Framebuffer);
     ECS::FEntity CreateFramebufferFromExternalImage(ImagePtr ImageIn, const std::string& DebugName = "");
 	ECS::FEntity CreateColorAttachment(int WidthIn, int HeightIn, const std::string& DebugName = "");
     void SetActiveCamera(ECS::FEntity Camera);
@@ -106,6 +107,7 @@ public:
     std::vector<VkSemaphore> ImageAvailableSemaphores;
     std::vector<VkFence> ImagesInFlight;
 
+	std::vector<VkSemaphore> ExternalImageIsReadySemaphore;
     std::unordered_map<OutputType, ECS::FEntity> OutputToFramebufferMap;
 
     static FRender* RenderInstance;

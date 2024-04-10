@@ -17,6 +17,7 @@ public:
 	ImagePtr CreateColorAttachment(uint32_t WidthIn, uint32_t HeightIn, const std::string& DebugName = "");
     uint32_t RegisterTexture(const ImagePtr& ImagePointer, VkImageLayout ImageLayout, const std::string& Name);
     uint32_t RegisterFramebuffer(const ImagePtr& ImagePointer, const std::string& Name);
+	void UnregisterAndFreeFramebuffer(uint32_t FramebufferIndex);
     ImagePtr GetTexture(uint32_t TextureIndex);
     ImagePtr GetTexture(const std::string& Name);
     ImagePtr GetFramebufferImage(uint32_t FramebufferImageIndex);

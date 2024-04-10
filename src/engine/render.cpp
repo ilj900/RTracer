@@ -121,22 +121,48 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     Init();
 }
 
-void FRender::SetMaxFramesInFlight(uint32_t MaxFramesInFlightIn)
+void FRender::RegisterExternalOutputs(std::vector<ECS::FEntity> OutputFramebuffersIn, std::vector<VkSemaphore> ExternalImageIsReadySemaphoreIn)
 {
-    MaxFramesInFlight = MaxFramesInFlightIn;
+	/// Check whether sizes are the same
+	if (OutputFramebuffersIn.size() != ExternalImageIsReadySemaphoreIn.size())
+	{
+		throw std::runtime_error("Number of semaphores should be the same as number of images provided!");
+	}
+
+	/// Free previous Framebuffers
+	for (int i = 0; i < MaxFramesInFlight; ++i)
+	{
+		TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer(OutputToFramebufferMap[OutputType(i)]);
+		SetOutput(OutputType(i), ECS::INVALID_ENTITY);
+	}
+
+	MaxFramesInFlight = OutputFramebuffersIn.size();
+
+	/// Copy semaphores (Maybe std::move?)
+	ExternalImageIsReadySemaphore = ExternalImageIsReadySemaphoreIn;
+
+	///Register new framebuffers  as outputs
+	for (int i = 0; i < OutputFramebuffersIn.size(); ++i)
+	{
+		SetOutput(OutputType(i), OutputFramebuffersIn[i]);
+	}
 }
 
 int FRender::Init()
 {
-    for (int i = 0; i < MaxFramesInFlight; ++i)
-    {
-        auto Framebuffer = CreateColorAttachment(Width, Height, "Output Image" + std::to_string(i));
-        SetOutput(OutputType(i), Framebuffer);
-    }
+	/// If no external Framebuffers provided Create internal ones
+	if (ExternalImageIsReadySemaphore.empty())
+	{
+		for (int i = 0; i < MaxFramesInFlight; ++i)
+		{
+			auto Framebuffer = CreateColorAttachment(Width, Height, "Output Image" + std::to_string(i));
+			SetOutput(OutputType(i), Framebuffer);
+			ImageAvailableSemaphores.push_back(VK_CONTEXT()->CreateSemaphore());
+		}
+	}
 
     for (int i = 0; i < MaxFramesInFlight; ++i)
     {
-        ImageAvailableSemaphores.push_back(VK_CONTEXT()->CreateSemaphore());
         ImagesInFlight.push_back(VK_CONTEXT()->CreateSignalledFence());
     }
 
@@ -306,6 +332,14 @@ ECS::FEntity FRender::CreateFramebuffer(int WidthIn, int HeightIn, const std::st
     return Framebuffer;
 }
 
+void FRender::DestroyFramebuffer(ECS::FEntity Framebuffer)
+{
+	auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer(FramebufferComponent.FramebufferImageIndex);
+	COORDINATOR().DestroyEntity(Framebuffer);
+	return;
+}
+
 ECS::FEntity FRender::CreateFramebufferFromExternalImage(ImagePtr ImageIn, const std::string& DebugName)
 {
     static int Counter = 0;
@@ -393,9 +427,20 @@ int FRender::Render()
     LIGHT_SYSTEM()->Update();
     ACCELERATION_STRUCTURE_SYSTEM()->Update();
 
-	static bool bFirstCall = true;
-    auto GenerateRaysSemaphore = GenerateRaysTask->Submit(VK_CONTEXT()->GetComputeQueue(), bFirstCall ? VK_NULL_HANDLE : ImageAvailableSemaphores[(RenderFrameIndex - 1) % MaxFramesInFlight], VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
-	bFirstCall = false;
+	VkSemaphore SemaphoreToWait = VK_NULL_HANDLE;
+
+	/// If we have no external semaphores
+	if (ExternalImageIsReadySemaphore.empty())
+	{
+		/// We need to wait for the internal one, unless it's the first frame
+		SemaphoreToWait = (RenderFrameIndex > 0) ? ImageAvailableSemaphores[(RenderFrameIndex - 1) % MaxFramesInFlight] : VK_NULL_HANDLE;
+	}
+	else
+	{
+		SemaphoreToWait = ExternalImageIsReadySemaphore[CurrentFrame];
+	}
+
+    auto GenerateRaysSemaphore = GenerateRaysTask->Submit(VK_CONTEXT()->GetComputeQueue(), SemaphoreToWait, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
 
     auto RayTraceSignalSemaphore = RayTraceTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), GenerateRaysSemaphore, GenerateRaysTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 

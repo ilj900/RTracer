@@ -94,6 +94,26 @@ uint32_t FTextureManager::RegisterFramebuffer(const ImagePtr& ImagePointer, cons
     return Index;
 }
 
+void FTextureManager::UnregisterAndFreeFramebuffer(uint32_t FramebufferIndex)
+{
+	auto Image = GetFramebufferImage(FramebufferIndex);
+	if (Image.use_count() != 2)
+	{
+		throw std::runtime_error("A leak will occur!");
+	}
+
+	FramebufferImages[FramebufferIndex] = nullptr;
+
+	for (auto It = FramebufferNameToIndexMap.begin(); It != FramebufferNameToIndexMap.end(); ++It)
+	{
+		if (It->second == FramebufferIndex)
+		{
+			FramebufferNameToIndexMap.erase(It);
+			break;
+		}
+	}
+}
+
 ImagePtr FTextureManager::GetTexture(uint32_t TextureIndex)
 {
     return Textures[TextureIndex];

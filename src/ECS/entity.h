@@ -10,6 +10,8 @@ namespace ECS
     */
     using FEntity = std::uint16_t;
 
+	constexpr FEntity INVALID_ENTITY = UINT16_MAX;
+
     /**
      * It also can be limited by any hardcoded value.
      */
