@@ -22,7 +22,6 @@
 #include "tasks/task_shade.h"
 #include "tasks/task_accumulate.h"
 #include "tasks/task_passthrough.h"
-#include "tasks/task_imgui.h"
 #include "tasks/task_clear_image.h"
 
 #include <string>
@@ -101,7 +100,6 @@ public:
     std::shared_ptr<FMissTask> MissTask = nullptr;
     std::shared_ptr<FAccumulateTask> AccumulateTask = nullptr;
     std::shared_ptr<FPassthroughTask> PassthroughTask = nullptr;
-    std::shared_ptr<FImguiTask> ImguiTask = nullptr;
     std::shared_ptr<FClearImageTask> ClearImageTask = nullptr;
 
     std::vector<VkSemaphore> ImageAvailableSemaphores;
@@ -109,6 +107,8 @@ public:
 
 	std::vector<VkSemaphore> ExternalImageIsReadySemaphore;
     std::unordered_map<OutputType, ECS::FEntity> OutputToFramebufferMap;
+
+	GLFWwindow* Window = nullptr;
 
 private:
     ECS::FEntity CreateEmptyModel();

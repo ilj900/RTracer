@@ -25,7 +25,6 @@
 #include "vk_functions.h"
 #include "render.h"
 #include "texture_manager.h"
-#include "window_manager.h"
 
 #include "utils.h"
 
@@ -280,15 +279,6 @@ int FRender::Init()
     PassthroughTask->UpdateDescriptorSets();
     PassthroughTask->RecordCommands();
 
-    ImguiTask = std::make_shared<FImguiTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    for (int i = 0; i < MaxFramesInFlight; ++i)
-    {
-        auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(OutputToFramebufferMap[OutputType(i)]);
-        ImguiTask->RegisterOutput(i, TEXTURE_MANAGER()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex));
-    }
-    ImguiTask->Init();
-    ImguiTask->RecordCommands();
-
     RenderFrameIndex = 0;
 
     return 0;
@@ -313,7 +303,6 @@ int FRender::Cleanup()
     AccumulateTask = nullptr;
     ClearImageTask = nullptr;
     PassthroughTask = nullptr;
-    ImguiTask = nullptr;
 
     for (int i = 0; i < ImageAvailableSemaphores.size(); ++i)
     {
@@ -438,11 +427,6 @@ int FRender::Destroy()
 
 int FRender::Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaphore)
 {
-    if (WINDOW_MANAGER()->ShouldClose())
-    {
-        return 1;
-    }
-
     TIMING_MANAGER()->NewTime();
 
     uint32_t CurrentFrame = RenderFrameIndex % MaxFramesInFlight;
@@ -511,15 +495,13 @@ int FRender::Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaph
 
     auto PassthroughSignalSemaphore = PassthroughTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), AccumulateSignalSemaphore, PipelineStageFlags, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
 
-	auto ImguiFinishedSemaphore = ImguiTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), PassthroughSignalSemaphore, PassthroughTask->GetPipelineStageFlags(), VK_NULL_HANDLE, ImagesInFlight[CurrentFrame], CurrentFrame);
-
 	if (RenderFinishedSemaphore != nullptr)
 	{
-		*RenderFinishedSemaphore = ImguiFinishedSemaphore;
+		*RenderFinishedSemaphore = PassthroughSignalSemaphore;
 	}
 	else
 	{
-		ImageAvailableSemaphores[CurrentFrame] = ImguiFinishedSemaphore;
+		ImageAvailableSemaphores[CurrentFrame] = PassthroughSignalSemaphore;
 	}
 
 //	if (RenderFrameIndex % 100 == 0)

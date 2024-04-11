@@ -3,7 +3,17 @@
 
 FWindowManager* FWindowManager::WindowManager = nullptr;
 
-FWindowManager::FWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, const std::string &NameIn) : Width(WidthIn), Height(HeightIn), bFullscreen(bFullscreenIn), Name(NameIn)
+FWindowManager* GetWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, FApplication* ApplicationIn, const std::string& NameIn)
+{
+	if (nullptr == FWindowManager::WindowManager)
+	{
+		FWindowManager::WindowManager = new FWindowManager(WidthIn, HeightIn, bFullscreenIn, ApplicationIn, NameIn);
+	}
+
+	return FWindowManager::WindowManager;
+}
+
+FWindowManager::FWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, FApplication* ApplicationIn, const std::string &NameIn) : Width(WidthIn), Height(HeightIn), bFullscreen(bFullscreenIn), Application(ApplicationIn), Name(NameIn)
 {
     /// Create GLFW Window
     glfwInit();
@@ -57,16 +67,6 @@ int FWindowManager::GetHeight()
 FVector2 FWindowManager::GetSize2D()
 {
     return FVector2(Width, Height);
-}
-
-FWindowManager* GetWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, const std::string& NameIn)
-{
-    if (nullptr == FWindowManager::WindowManager)
-    {
-        FWindowManager::WindowManager = new FWindowManager(WidthIn, HeightIn, bFullscreenIn, NameIn);
-    }
-
-    return FWindowManager::WindowManager;
 }
 
 void FWindowManager::KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int Action, int Mods)
