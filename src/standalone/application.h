@@ -3,6 +3,7 @@
 #include "render.h"
 #include "swapchain.h"
 #include "window_manager.h"
+#include "controller.h"
 
 #include <memory>
 
@@ -21,5 +22,6 @@ private:
     std::shared_ptr<FRender> Render = nullptr;
 	std::shared_ptr<FSwapchain> Swapchain = nullptr;
 	std::shared_ptr<FWindowManager> WindowManager = nullptr;
+	std::shared_ptr<FController> Controller = nullptr;
 	bool bSwapchainWasResized = false;
 };

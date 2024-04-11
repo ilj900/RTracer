@@ -1,18 +1,9 @@
 #include "controller.h"
-#include "components/camera_component.h"
-#include "components/device_camera_component.h"
 #include "systems/camera_system.h"
-
-#include <iostream>
-#include <utility>
-
-FController* FController::Controller = nullptr;
 
 FController::FController()
 {
-    Camera = COORDINATOR().CreateEntity();
-    COORDINATOR().AddComponent<ECS::COMPONENTS::FCameraComponent>(Camera, ECS::COMPONENTS::FCameraComponent());
-    COORDINATOR().AddComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera, {});
+    Camera = RENDER()->CreateCamera();
 	RENDER()->SetActiveCamera(Camera);
 }
 
@@ -102,14 +93,4 @@ void FController::Update(float Time)
             CAMERA_SYSTEM()->LookUp(Camera, float(-YDelta * Sensitivity));
         }
     }
-}
-
-FController* GetController()
-{
-    if (nullptr == FController::Controller)
-    {
-        FController::Controller = new FController();
-    }
-
-    return FController::Controller;
 }

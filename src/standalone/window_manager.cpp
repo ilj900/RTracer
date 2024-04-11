@@ -1,6 +1,6 @@
+#include "application.h"
 #include "controller.h"
 #include "window_manager.h"
-#include "application.h"
 
 FWindowManager::FWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, FApplication* ApplicationIn, const std::string &NameIn) : Width(WidthIn), Height(HeightIn), bFullscreen(bFullscreenIn), Application(ApplicationIn), Name(NameIn)
 {
@@ -42,6 +42,12 @@ GLFWwindow* FWindowManager::GetWindow()
     return Window;
 }
 
+
+void FWindowManager::SetController(FController* ControllerIn)
+{
+	Controller = ControllerIn;
+}
+
 int FWindowManager::GetWidth()
 {
     return Width;
@@ -80,6 +86,8 @@ void FWindowManager::KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, i
 
 void FWindowManager::MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, int Mods)
 {
+	auto* WindowManager = (FWindowManager*)glfwGetWindowUserPointer(Window);
+
     switch (Button)
     {
         case GLFW_MOUSE_BUTTON_RIGHT:
@@ -89,13 +97,13 @@ void FWindowManager::MouseButtonPressedOrReleased(GLFWwindow* Window, int Button
                 case GLFW_PRESS:
                 {
                     glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-                    CONTROLLER()->EnableCameraControlMode();
-                    CONTROLLER()->ToggleFirstUpdateSinceRMB();
+                    WindowManager->Controller->EnableCameraControlMode();
+					WindowManager->Controller->ToggleFirstUpdateSinceRMB();
                     break;
                 }
                 case GLFW_RELEASE:
                 {
-                    CONTROLLER()->DisableCameraControlMode();
+					WindowManager->Controller->DisableCameraControlMode();
                     glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                     break;
                 }
@@ -117,7 +125,9 @@ void FWindowManager::MouseButtonPressedOrReleased(GLFWwindow* Window, int Button
 
 void FWindowManager::MouseMoved(GLFWwindow* Window, double XPos, double YPos)
 {
-    CONTROLLER()->SetCameraDirection(XPos, YPos);
+	auto* WindowManager = (FWindowManager*)glfwGetWindowUserPointer(Window);
+
+	WindowManager->Controller->SetCameraDirection(XPos, YPos);
 }
 
 void FWindowManager::FramebufferResizeCallback(GLFWwindow* Window, int Width, int Height)

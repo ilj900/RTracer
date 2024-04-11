@@ -28,10 +28,4 @@ public:
     bool FirstUpdateSinceRMB = false;
 
     ECS::FEntity Camera;
-
-    static FController* Controller;
 };
-
-FController* GetController();
-
-#define CONTROLLER() GetController()

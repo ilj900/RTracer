@@ -15,7 +15,9 @@ FApplication::FApplication()
 	Swapchain = std::make_shared<FSwapchain>(Width, Height, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
 	RENDER()->RegisterExternalOutputs(Swapchain->GetImages(), Swapchain->GetSemaphores());
 	RENDER()->Init();
-    CONTROLLER()->SetWindow(WindowManager->GetWindow());
+	Controller = std::make_shared<FController>();
+	Controller->SetWindow(WindowManager->GetWindow());
+	WindowManager->SetController(Controller.get());
 }
 
 FApplication::~FApplication()
@@ -45,7 +47,7 @@ int FApplication::Run()
         float Time = std::chrono::duration<float, std::chrono::seconds::period>(CurrentTime - StartTime).count();
         StartTime = CurrentTime;
 
-        CONTROLLER()->Update(Time);
+		Controller->Update(Time);
         RENDER()->Update();
 		Swapchain->GetNextImage( ImageIndex);
         RENDER()->Render(ImageIndex, &RenderingFinishedSemaphore);

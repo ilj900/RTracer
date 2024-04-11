@@ -42,7 +42,6 @@ set(ECS_SOURCE
         )
 
 set(INCLUDE
-        controller.h
         render.h
         tasks/executable_task.h
         tasks/task_accumulate.h
@@ -63,7 +62,6 @@ set(INCLUDE
         ${ECS_INCLUDE})
 
 set(SOURCE
-        controller.cpp
         render.cpp
         tasks/executable_task.cpp
         tasks/task_passthrough.cpp

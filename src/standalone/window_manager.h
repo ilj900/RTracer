@@ -6,6 +6,7 @@
 #include <string>
 
 class FApplication;
+class FController;
 
 class FWindowManager
 {
@@ -17,8 +18,7 @@ public:
     int GetHeight();
     FVector2 GetSize2D();
     GLFWwindow* GetWindow();
-
-    static FWindowManager* WindowManager;
+	void SetController(FController* ControllerIn);
 
     static void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int Action, int Mods);
     static void MouseButtonPressedOrReleased(GLFWwindow* Window, int Button, int Action, int Mods);
@@ -31,4 +31,5 @@ private:
     std::string Name;
     bool bFullscreen = false;
 	FApplication* Application = nullptr;
+	FController* Controller = nullptr;
 };
