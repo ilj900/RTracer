@@ -1,7 +1,5 @@
 #pragma once
 
-#include "GLFW/glfw3.h"
-
 #include "image.h"
 
 #include "maths.h"
@@ -107,8 +105,6 @@ public:
 
 	std::vector<VkSemaphore> ExternalImageIsReadySemaphore;
     std::unordered_map<OutputType, ECS::FEntity> OutputToFramebufferMap;
-
-	GLFWwindow* Window = nullptr;
 
 private:
     ECS::FEntity CreateEmptyModel();
