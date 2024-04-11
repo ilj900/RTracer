@@ -21,6 +21,7 @@ struct FSwapchain
 	std::vector<ImagePtr> GetImages();
 	std::vector<VkSemaphore> GetSemaphores();
 	VkSwapchainKHR GetSwapchain();
+	uint32_t Counter = 0;
 
 
 	VkSwapchainKHR Swapchain = VK_NULL_HANDLE;

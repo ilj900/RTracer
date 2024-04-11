@@ -29,7 +29,6 @@ int FApplication::Run()
     int i = 0;
 	uint32_t ImageIndex = UINT32_MAX;
 	VkSemaphore RenderingFinishedSemaphore = VK_NULL_HANDLE;
-	VkSemaphore ImageReadySemaphore = VK_NULL_HANDLE;
 
     while (!WINDOW_MANAGER()->ShouldClose())
     {
@@ -38,7 +37,7 @@ int FApplication::Run()
 			Swapchain = nullptr;
 			Swapchain = std::make_shared<FSwapchain>(Width, Height, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
 			RENDER()->RegisterExternalOutputs(Swapchain->GetImages(), Swapchain->GetSemaphores());
-			RENDER()->Init();
+			bShouldRecreateSwaochain = false;
 		}
 
         static auto StartTime = std::chrono::high_resolution_clock::now();
@@ -49,7 +48,7 @@ int FApplication::Run()
 
         CONTROLLER()->Update(Time);
         RENDER()->Update();
-		ImageReadySemaphore = Swapchain->GetNextImage( ImageIndex);
+		Swapchain->GetNextImage( ImageIndex);
         RENDER()->Render(ImageIndex, &RenderingFinishedSemaphore);
 		Swapchain->Present(RenderingFinishedSemaphore, ImageIndex);
 

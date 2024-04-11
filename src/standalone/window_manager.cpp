@@ -29,6 +29,7 @@ FWindowManager::FWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, FA
     Window = glfwCreateWindow(Width, Height, Name.c_str(), bFullscreen ? PrimaryMonitor : nullptr, nullptr);
     glfwSetWindowPos(Window, Width / 2, Height / 2);
     glfwSetCursorPos(Window, 0.f, 0.f);
+	glfwSetWindowUserPointer(Window, this);
 
     glfwSetKeyCallback(Window, KeyboardKeyPressedOrReleased);
     glfwSetCursorPosCallback(Window, MouseMoved);
@@ -132,8 +133,10 @@ void FWindowManager::MouseMoved(GLFWwindow* Window, double XPos, double YPos)
     CONTROLLER()->SetCameraDirection(XPos, YPos);
 }
 
-void FWindowManager::FramebufferResizeCallback(GLFWwindow* window, int Width, int Height)
+void FWindowManager::FramebufferResizeCallback(GLFWwindow* Window, int Width, int Height)
 {
+	FWindowManager* WindowManager = (FWindowManager*)glfwGetWindowUserPointer(Window);
+	WindowManager->Application->SetShouldRecreateSwapchain(Width, Height);
     RENDER()->SetSize(Width, Height);
 }
 

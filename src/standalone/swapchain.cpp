@@ -209,7 +209,6 @@ VkSwapchainKHR FSwapchain::GetSwapchain()
 
 VkSemaphore FSwapchain::GetNextImage(uint32_t& ImageIndex)
 {
-	static uint32_t Counter = 0;
 	VkSemaphore ImageAcquiredSemaphore = ImageAvailableSemaphores[Counter++];
 	Counter %= Images.size();
 	VkResult Result = vkAcquireNextImageKHR(VK_CONTEXT()->LogicalDevice, Swapchain, UINT64_MAX, ImageAcquiredSemaphore, VK_NULL_HANDLE, &ImageIndex);
