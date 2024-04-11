@@ -9,19 +9,19 @@
 
 FApplication::FApplication()
 {
-    INIT_WINDOW_MANAGER(Width, Height, false, this, "RTRacer");
-	INIT_VK_CONTEXT(WINDOW());
+    WindowManager = std::make_shared<FWindowManager>(Width, Height, false, this, "RTRacer");
+	INIT_VK_CONTEXT(WindowManager->GetWindow());
     INIT_RENDER(Width, Height);
 	Swapchain = std::make_shared<FSwapchain>(Width, Height, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
 	RENDER()->RegisterExternalOutputs(Swapchain->GetImages(), Swapchain->GetSemaphores());
 	RENDER()->Init();
-    CONTROLLER()->SetWindow(WINDOW());
+    CONTROLLER()->SetWindow(WindowManager->GetWindow());
 }
 
 FApplication::~FApplication()
 {
     FREE_RENDER();
-    WINDOW_MANAGER()->Destroy();
+    WindowManager = nullptr;
 }
 
 int FApplication::Run()
@@ -29,7 +29,7 @@ int FApplication::Run()
 	uint32_t ImageIndex = UINT32_MAX;
 	VkSemaphore RenderingFinishedSemaphore = VK_NULL_HANDLE;
 
-    while (!WINDOW_MANAGER()->ShouldClose())
+    while (!WindowManager->ShouldClose())
     {
 		if (bSwapchainWasResized)
 		{

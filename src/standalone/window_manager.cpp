@@ -1,17 +1,6 @@
 #include "controller.h"
 #include "window_manager.h"
-
-FWindowManager* FWindowManager::WindowManager = nullptr;
-
-FWindowManager* GetWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, FApplication* ApplicationIn, const std::string& NameIn)
-{
-	if (nullptr == FWindowManager::WindowManager)
-	{
-		FWindowManager::WindowManager = new FWindowManager(WidthIn, HeightIn, bFullscreenIn, ApplicationIn, NameIn);
-	}
-
-	return FWindowManager::WindowManager;
-}
+#include "application.h"
 
 FWindowManager::FWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, FApplication* ApplicationIn, const std::string &NameIn) : Width(WidthIn), Height(HeightIn), bFullscreen(bFullscreenIn), Application(ApplicationIn), Name(NameIn)
 {
@@ -37,12 +26,10 @@ FWindowManager::FWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, FA
     glfwSetFramebufferSizeCallback(Window, FramebufferResizeCallback);
 }
 
-int FWindowManager::Destroy()
+FWindowManager::~FWindowManager()
 {
     glfwDestroyWindow(Window);
     glfwTerminate();
-
-    return 0;
 }
 
 bool FWindowManager::ShouldClose()

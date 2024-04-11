@@ -2,6 +2,7 @@
 
 #include "render.h"
 #include "swapchain.h"
+#include "window_manager.h"
 
 #include <memory>
 
@@ -19,5 +20,6 @@ private:
 	uint32_t Height = 1080;
     std::shared_ptr<FRender> Render = nullptr;
 	std::shared_ptr<FSwapchain> Swapchain = nullptr;
+	std::shared_ptr<FWindowManager> WindowManager = nullptr;
 	bool bSwapchainWasResized = false;
 };
