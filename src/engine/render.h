@@ -31,11 +31,11 @@ class FRender
 {
 public:
     FRender(uint32_t WidthIn = 1920, uint32_t HeightIn = 1080);
+	~FRender();
 
     void RegisterExternalOutputs(std::vector<ImagePtr> OutputImagesIn, std::vector<VkSemaphore> ExternalImageIsReadySemaphoreIn);
     int Init();
     int Cleanup();
-    int Destroy();
     int SetSize(int WidthIn, int HeightIn);
 
     ECS::FEntity CreateCamera();
@@ -111,10 +111,3 @@ private:
     int Width;
     int Height;
 };
-
-FRender* GetRender(uint32_t WidthIn = 1920, uint32_t HeightIn = 1080);
-void FreeRender();
-
-#define INIT_RENDER(WidthIn, HeightIn) GetRender(WidthIn, HeightIn)
-#define RENDER() GetRender()
-#define FREE_RENDER() FreeRender()

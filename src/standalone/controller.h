@@ -7,7 +7,7 @@
 class FController
 {
 public:
-    FController();
+    FController(std::shared_ptr<FRender> RenderIn);
     void SetWindow(GLFWwindow* WindowIn);
     void Update(float Time);
     void SetCameraDirection(float XPos, float YPos);
@@ -28,4 +28,5 @@ public:
     bool FirstUpdateSinceRMB = false;
 
     ECS::FEntity Camera;
+	std::shared_ptr<FRender> Render = nullptr;
 };

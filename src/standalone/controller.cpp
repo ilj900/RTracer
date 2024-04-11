@@ -1,10 +1,10 @@
 #include "controller.h"
 #include "systems/camera_system.h"
 
-FController::FController()
+FController::FController(std::shared_ptr<FRender> RenderIn)
 {
-    Camera = RENDER()->CreateCamera();
-	RENDER()->SetActiveCamera(Camera);
+    Camera = RenderIn->CreateCamera();
+	RenderIn->SetActiveCamera(Camera);
 }
 
 void FController::SetWindow(GLFWwindow* WindowIn)

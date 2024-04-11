@@ -134,6 +134,5 @@ void FWindowManager::FramebufferResizeCallback(GLFWwindow* Window, int Width, in
 {
 	FWindowManager* WindowManager = (FWindowManager*)glfwGetWindowUserPointer(Window);
 	WindowManager->Application->SetSwapchainWasResized(Width, Height);
-    RENDER()->SetSize(Width, Height);
 }
 

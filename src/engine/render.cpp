@@ -30,30 +30,6 @@
 
 #include "logging.h"
 
-FRender* RenderInstance = nullptr;
-
-
-FRender* GetRender(uint32_t WidthIn, uint32_t HeightIn)
-{
-	if (nullptr == RenderInstance)
-	{
-		RenderInstance = new FRender(WidthIn, HeightIn);
-	}
-
-	return RenderInstance;
-}
-
-void FreeRender()
-{
-	RenderInstance->Destroy();
-
-	if (RenderInstance != nullptr)
-	{
-		delete RenderInstance;
-		RenderInstance = nullptr;
-	}
-}
-
 FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(HeightIn)
 {
     COORDINATOR().Init();
@@ -137,6 +113,16 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     LoadScene("");
     ACCELERATION_STRUCTURE_SYSTEM()->Update();
     ACCELERATION_STRUCTURE_SYSTEM()->UpdateTLAS();
+}
+
+FRender::~FRender()
+{
+	Cleanup();
+
+	ACCELERATION_STRUCTURE_SYSTEM()->Terminate();
+	MESH_SYSTEM()->Terminate();
+
+	VK_CONTEXT()->CleanUp();
 }
 
 void FRender::RegisterExternalOutputs(std::vector<ImagePtr> OutputImagesIn, std::vector<VkSemaphore> ExternalImageIsReadySemaphoreIn)
@@ -411,18 +397,6 @@ void FRender::GetFramebufferData(ECS::FEntity Framebuffer)
     std::vector<char> Data;
 
     VK_CONTEXT()->FetchImageData(*Image, Data);
-}
-
-int FRender::Destroy()
-{
-    Cleanup();
-
-    ACCELERATION_STRUCTURE_SYSTEM()->Terminate();
-    MESH_SYSTEM()->Terminate();
-
-    VK_CONTEXT()->CleanUp();
-
-    return 0;
 }
 
 int FRender::Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaphore)

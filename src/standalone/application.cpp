@@ -10,19 +10,23 @@
 FApplication::FApplication()
 {
     WindowManager = std::make_shared<FWindowManager>(Width, Height, false, this, "RTRacer");
+
 	INIT_VK_CONTEXT(WindowManager->GetWindow());
-    INIT_RENDER(Width, Height);
+
+    Render = std::make_shared<FRender>(Width, Height);
 	Swapchain = std::make_shared<FSwapchain>(Width, Height, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
-	RENDER()->RegisterExternalOutputs(Swapchain->GetImages(), Swapchain->GetSemaphores());
-	RENDER()->Init();
-	Controller = std::make_shared<FController>();
+
+	Render->RegisterExternalOutputs(Swapchain->GetImages(), Swapchain->GetSemaphores());
+	Render->Init();
+	Controller = std::make_shared<FController>(Render);
 	Controller->SetWindow(WindowManager->GetWindow());
 	WindowManager->SetController(Controller.get());
 }
 
 FApplication::~FApplication()
 {
-    FREE_RENDER();
+	Swapchain = nullptr;
+	Render = nullptr;
     WindowManager = nullptr;
 }
 
@@ -35,9 +39,10 @@ int FApplication::Run()
     {
 		if (bSwapchainWasResized)
 		{
+			Render->SetSize(Width, Height);
 			Swapchain = nullptr;
 			Swapchain = std::make_shared<FSwapchain>(Width, Height, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
-			RENDER()->RegisterExternalOutputs(Swapchain->GetImages(), Swapchain->GetSemaphores());
+			Render->RegisterExternalOutputs(Swapchain->GetImages(), Swapchain->GetSemaphores());
 			bSwapchainWasResized = false;
 		}
 
@@ -48,15 +53,13 @@ int FApplication::Run()
         StartTime = CurrentTime;
 
 		Controller->Update(Time);
-        RENDER()->Update();
+		Render->Update();
 		Swapchain->GetNextImage( ImageIndex);
-        RENDER()->Render(ImageIndex, &RenderingFinishedSemaphore);
+		Render->Render(ImageIndex, &RenderingFinishedSemaphore);
 		Swapchain->Present(RenderingFinishedSemaphore, ImageIndex);
 
 		glfwPollEvents();
     }
-
-	Swapchain = nullptr;
 
     return 0;
 }
