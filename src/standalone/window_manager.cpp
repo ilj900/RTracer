@@ -136,7 +136,7 @@ void FWindowManager::MouseMoved(GLFWwindow* Window, double XPos, double YPos)
 void FWindowManager::FramebufferResizeCallback(GLFWwindow* Window, int Width, int Height)
 {
 	FWindowManager* WindowManager = (FWindowManager*)glfwGetWindowUserPointer(Window);
-	WindowManager->Application->SetShouldRecreateSwapchain(Width, Height);
+	WindowManager->Application->SetSwapchainWasResized(Width, Height);
     RENDER()->SetSize(Width, Height);
 }
 

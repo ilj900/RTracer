@@ -26,18 +26,17 @@ FApplication::~FApplication()
 
 int FApplication::Run()
 {
-    int i = 0;
 	uint32_t ImageIndex = UINT32_MAX;
 	VkSemaphore RenderingFinishedSemaphore = VK_NULL_HANDLE;
 
     while (!WINDOW_MANAGER()->ShouldClose())
     {
-		if (bShouldRecreateSwaochain)
+		if (bSwapchainWasResized)
 		{
 			Swapchain = nullptr;
 			Swapchain = std::make_shared<FSwapchain>(Width, Height, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
 			RENDER()->RegisterExternalOutputs(Swapchain->GetImages(), Swapchain->GetSemaphores());
-			bShouldRecreateSwaochain = false;
+			bSwapchainWasResized = false;
 		}
 
         static auto StartTime = std::chrono::high_resolution_clock::now();
@@ -60,9 +59,9 @@ int FApplication::Run()
     return 0;
 }
 
-void FApplication::SetShouldRecreateSwapchain(uint32_t NewWidth, uint32_t NewHeight)
+void FApplication::SetSwapchainWasResized(uint32_t NewWidth, uint32_t NewHeight)
 {
-	bShouldRecreateSwaochain = true;
+	bSwapchainWasResized = true;
 	Width = NewWidth;
 	Height = NewHeight;
 }
