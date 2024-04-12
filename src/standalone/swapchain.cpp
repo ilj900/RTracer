@@ -125,7 +125,7 @@ FSwapchain::FSwapchain(uint32_t Width, uint32_t Height, VkFormat Format, VkColor
 	for (uint32_t i = 0; i < SwapchainImages.size(); ++i)
 	{
 		/// In FImage first, so that there would be an ImageView
-		Images[i] = VK_CONTEXT()->Wrap(SwapchainImages[i], SurfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, VK_CONTEXT()->LogicalDevice, "V_SwapchainImage");
+		Images[i] = VK_CONTEXT()->Wrap(SwapchainImages[i], Width, Height, SurfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, VK_CONTEXT()->LogicalDevice, "V_SwapchainImage");
 		/// Also create some semaphores to track image availability
 		ImageAvailableSemaphores.push_back(VK_CONTEXT()->CreateSemaphore());
 		V::SetName(VK_CONTEXT()->LogicalDevice, ImageAvailableSemaphores[i], "Swapchain semaphore", i);

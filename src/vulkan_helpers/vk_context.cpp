@@ -1014,9 +1014,9 @@ ImagePtr FVulkanContext::LoadImageFromFile(const std::string& Path, const std::s
     return Image;
 }
 
-ImagePtr FVulkanContext::Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, const std::string& DebugImageName)
+ImagePtr FVulkanContext::Wrap(VkImage ImageToWrap, uint32_t WidthIn, uint32_t HeightIn, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, const std::string& DebugImageName)
 {
-    ImagePtr Image = std::make_shared<FImage>(ImageToWrap, Format, AspectFlags, LogicalDevice, DebugImageName);
+    ImagePtr Image = std::make_shared<FImage>(ImageToWrap, WidthIn, HeightIn, Format, AspectFlags, LogicalDevice, DebugImageName);
 
     return Image;
 }

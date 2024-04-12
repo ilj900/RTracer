@@ -47,6 +47,7 @@ public:
     void SetOutput(OutputType OutputTypeIn, ECS::FEntity Framebuffer);
     ECS::FEntity GetOutput(OutputType OutputTypeIn);
     void SaveFramebuffer(ECS::FEntity Framebuffer, const std::string& Filename = "");
+	void SaveOutput(OutputType OutputTypeIn, const std::string& Filename);
     void GetFramebufferData(ECS::FEntity Framebuffer);
 
     int Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaphore);

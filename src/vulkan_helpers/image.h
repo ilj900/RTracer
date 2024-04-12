@@ -11,7 +11,7 @@ struct FImage
     FImage(uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format,
            VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties,
            VkImageAspectFlags AspectFlags, VkDevice Device, const std::string& DebugImageName);
-    FImage(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, const std::string& DebugImageName);
+    FImage(VkImage ImageToWrap, uint32_t WidthIn, uint32_t HeightIn, VkFormat FormatIn, VkImageAspectFlags AspectFlagsIn, VkDevice LogicalDevice, const std::string& DebugImageName);
     ~FImage();
 
     FImage(const FImage&) = delete;

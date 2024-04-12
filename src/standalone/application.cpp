@@ -57,6 +57,14 @@ int FApplication::Run()
 		Render->Update();
 		Swapchain->GetNextImage( ImageIndex);
 		Render->Render(ImageIndex, &RenderingFinishedSemaphore);
+
+		static int i = 0;
+		if (i == 100)
+		{
+			Render->SaveOutput(OutputType::Color0, "Test");
+		}
+		++i;
+
 		Swapchain->Present(RenderingFinishedSemaphore, ImageIndex);
 
 		WindowManager->PollEvents();

@@ -104,7 +104,7 @@ public:
                                VkImageAspectFlags AspectFlags, VkDevice Device, const std::string& DebugImageName);
     ImagePtr CreateEXRImageFromFile(const std::string& Path, const std::string& DebugImageName);
     ImagePtr LoadImageFromFile(const std::string& Path, const std::string& DebugImageName);
-    ImagePtr Wrap(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, const std::string& DebugImageName);
+    ImagePtr Wrap(VkImage ImageToWrap, uint32_t WidthIn, uint32_t HeightIn, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, const std::string& DebugImageName);
     void SaveImage(const FImage& Image, const std::string& FileName = "");
     template <typename T>
     void FetchImageData(const FImage& Image, std::vector<T>& Data);

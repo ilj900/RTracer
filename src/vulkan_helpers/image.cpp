@@ -23,14 +23,16 @@ Tiling(Tiling), Usage(Usage), Properties(Properties), AspectFlags(AspectFlags), 
     CreateImageView();
 }
 
-FImage::FImage(VkImage ImageToWrap, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, const std::string& DebugImageName)
+FImage::FImage(VkImage ImageToWrap, uint32_t WidthIn, uint32_t HeightIn, VkFormat FormatIn, VkImageAspectFlags AspectFlagsIn, VkDevice LogicalDevice, const std::string& DebugImageName)
 {
     bIsWrappedImage = true;
 
+	Width = WidthIn;
+	Height = HeightIn;
     Image = ImageToWrap;
-    this->Format = Format;
+    Format = FormatIn;
     Device = LogicalDevice;
-    this->AspectFlags = AspectFlags;
+    AspectFlags = AspectFlagsIn;
     MipLevels = 1;
     DebugName = DebugImageName;
 

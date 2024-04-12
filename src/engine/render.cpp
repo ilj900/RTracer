@@ -390,6 +390,17 @@ void FRender::SaveFramebuffer(ECS::FEntity Framebuffer, const std::string& Filen
     VK_CONTEXT()->SaveImage(*TEXTURE_MANAGER()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex), Filename);
 }
 
+void FRender::SaveOutput(OutputType OutputTypeIn, const std::string& Filename)
+{
+	if (OutputToFramebufferMap.find(OutputTypeIn) == OutputToFramebufferMap.end())
+	{
+		return;
+	}
+
+	auto Framebuffer = OutputToFramebufferMap[OutputTypeIn];
+	SaveFramebuffer(Framebuffer, Filename);
+}
+
 void FRender::GetFramebufferData(ECS::FEntity Framebuffer)
 {
     auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);
