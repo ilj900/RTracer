@@ -59,11 +59,7 @@ int FApplication::Run()
 		Render->Render(ImageIndex, &RenderingFinishedSemaphore);
 
 		static int i = 0;
-		if (i == 100)
-		{
-			Render->SaveOutput(OutputType::Color0, "Test");
-		}
-		++i;
+		Render->SaveOutput(OutputType(ImageIndex), "Test" + std::to_string(i++));
 
 		Swapchain->Present(RenderingFinishedSemaphore, ImageIndex);
 
