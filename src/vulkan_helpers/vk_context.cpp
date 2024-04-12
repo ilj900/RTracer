@@ -932,18 +932,11 @@ void FVulkanContext::FetchImageData(const FImage& Image, std::vector<T>& Data)
         }
     }
 
-    uint32_t BufferSize = Image.Height * Image.Width * NumberOfComponents * ComponentSize;
-    FBuffer Buffer = GetResourceAllocator()->CreateBuffer(BufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Tmp_Save_Image_Buffer");
-    RESOURCE_ALLOCATOR()->CopyImageToBuffer(Image, Buffer);
+    RESOURCE_ALLOCATOR()->CopyImageToBuffer(Image, RESOURCE_ALLOCATOR()->StagingBuffer);
 
     Data.resize(Image.Height * Image.Width * NumberOfComponents * ComponentSize / sizeof(T));
 
-    void* BufferData;
-    vkMapMemory(LogicalDevice, Buffer.MemoryRegion.Memory, 0, Buffer.BufferSize, 0, &BufferData);
-    memcpy(Data.data(), BufferData, (std::size_t)Buffer.BufferSize);
-    vkUnmapMemory(LogicalDevice, Buffer.MemoryRegion.Memory);
-
-    GetResourceAllocator()->DestroyBuffer(Buffer);
+    RESOURCE_ALLOCATOR()->LoadDataFromStagingBuffer(Data.size() * sizeof(T), Data.data(), 0);
 }
 
 template void FVulkanContext::FetchImageData<uint32_t>(const FImage& Image, std::vector<uint32_t>& Data);
