@@ -33,7 +33,7 @@ public:
     FRender(uint32_t WidthIn = 1920, uint32_t HeightIn = 1080);
 	~FRender();
 
-    void RegisterExternalOutputs(std::vector<ImagePtr> OutputImagesIn, std::vector<VkSemaphore> ExternalImageIsReadySemaphoreIn);
+    void RegisterExternalOutputs(std::vector<ImagePtr> OutputImagesIn, const std::vector<VkSemaphore>& ExternalImageIsReadySemaphoreIn);
     int Init();
     int Cleanup();
     int SetSize(int WidthIn, int HeightIn);
@@ -50,8 +50,10 @@ public:
 	void SaveOutput(OutputType OutputTypeIn, const std::string& Filename);
     void GetFramebufferData(ECS::FEntity Framebuffer);
 
+	int Render();
     int Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaphore);
     int Update();
+	void WaitIdle();
 
     int LoadScene(const std::string& Path);
     ECS::FEntity CreateTexture(const std::string& FilePath);

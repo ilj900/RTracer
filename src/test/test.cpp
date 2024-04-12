@@ -2,9 +2,21 @@
 
 #include "catch2/catch_test_macros.hpp"
 
-TEST_CASE( "Factorials are computed", "[factorial]" ) {
-    REQUIRE( Factorial(1) == 1 );
-    REQUIRE( Factorial(2) == 2 );
-    REQUIRE( Factorial(3) == 6 );
-    REQUIRE( Factorial(10) == 3628800 );
+#include "render.h"
+#include "vk_context.h"
+
+TEST_CASE( "Basic scene loading", "[Basic]" )
+{
+	INIT_VK_CONTEXT({});
+	auto Render = std::make_shared<FRender>(1920, 1080);
+	Render->Init();
+	auto Camera = Render->CreateCamera();
+	Render->SetActiveCamera(Camera);
+
+	Render->Update();
+	Render->Render();
+	Render->WaitIdle();
+	Render->SaveOutput(OutputType(0), "Basic scene loading");
+
+	Render = nullptr;
 }

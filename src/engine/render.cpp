@@ -125,7 +125,7 @@ FRender::~FRender()
 	VK_CONTEXT()->CleanUp();
 }
 
-void FRender::RegisterExternalOutputs(std::vector<ImagePtr> OutputImagesIn, std::vector<VkSemaphore> ExternalImageIsReadySemaphoreIn)
+void FRender::RegisterExternalOutputs(std::vector<ImagePtr> OutputImagesIn, const std::vector<VkSemaphore>& ExternalImageIsReadySemaphoreIn)
 {
 	/// Check whether sizes are the same
 	if (OutputImagesIn.size() != ExternalImageIsReadySemaphoreIn.size())
@@ -146,7 +146,7 @@ void FRender::RegisterExternalOutputs(std::vector<ImagePtr> OutputImagesIn, std:
 
 	MaxFramesInFlight = OutputImagesIn.size();
 
-	/// Copy semaphores (Maybe std::move?)
+	/// Copy semaphores
 	ExternalImageIsReadySemaphore = ExternalImageIsReadySemaphoreIn;
 
 	///Register new framebuffers  as outputs
@@ -166,8 +166,9 @@ int FRender::Init()
 		{
 			auto Framebuffer = CreateColorAttachment(Width, Height, "Output Image" + std::to_string(i));
 			SetOutput(OutputType(i), Framebuffer);
-			ImageAvailableSemaphores.push_back(VK_CONTEXT()->CreateSemaphore());
 		}
+		
+		ImageAvailableSemaphores.resize(MaxFramesInFlight);
 	}
 
     for (int i = 0; i < MaxFramesInFlight; ++i)
@@ -290,12 +291,6 @@ int FRender::Cleanup()
     ClearImageTask = nullptr;
     PassthroughTask = nullptr;
 
-    for (int i = 0; i < ImageAvailableSemaphores.size(); ++i)
-    {
-		vkDestroySemaphore(VK_CONTEXT()->LogicalDevice, ImageAvailableSemaphores[i], nullptr);
-		ImageAvailableSemaphores[i] = VK_NULL_HANDLE;
-    }
-
 	for (int i = 0; i < ImagesInFlight.size(); ++i)
 	{
 		vkDestroyFence(VK_CONTEXT()->LogicalDevice, ImagesInFlight[i], nullptr);
@@ -410,6 +405,11 @@ void FRender::GetFramebufferData(ECS::FEntity Framebuffer)
     VK_CONTEXT()->FetchImageData(*Image, Data);
 }
 
+int FRender::Render()
+{
+	return Render(0, nullptr);
+}
+
 int FRender::Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaphore)
 {
     TIMING_MANAGER()->NewTime();
@@ -508,6 +508,11 @@ int FRender::Update()
     }
 
     return 0;
+}
+
+void FRender::WaitIdle()
+{
+	VK_CONTEXT()->WaitIdle();
 }
 
 int FRender::LoadScene(const std::string& Path)

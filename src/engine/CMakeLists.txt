@@ -84,6 +84,7 @@ set(SOURCE
 add_library(Renderer ${SOURCE} ${INCLUDE})
 
 target_include_directories(RTracer PUBLIC .)
+target_include_directories(Test PUBLIC .)
 
 target_link_libraries(Renderer
         Vulkan::Vulkan

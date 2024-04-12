@@ -107,7 +107,11 @@ FVulkanContext::FVulkanContext(const std::vector<std::string>& AdditionalDeviceE
 
     VulkanContextOptions.AddDeviceExtension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
     VulkanContextOptions.AddDeviceExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
-    VulkanContextOptions.AddDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+	if (SurfaceCreationFunction)
+	{
+		VulkanContextOptions.AddDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	}
     /// Create Vulkan instance
     Instance = CreateVkInstance("Hello Triangle", {1, 3, 0}, "No Engine", {1, 3, 0}, VK_API_VERSION_1_3, VulkanContextOptions);
 
@@ -436,8 +440,12 @@ bool FVulkanContext::CheckDeviceQueueSupport(VkPhysicalDevice PhysicalDeviceIn, 
         }
     }
 
-    if (SurfaceIn != VK_NULL_HANDLE && !CheckDeviceQueuePresentSupport(PhysicalDeviceIn, PresentQueue.QueueIndex, SurfaceIn)) {
-        return false;
+    if (SurfaceIn != VK_NULL_HANDLE)
+	{
+		if (!CheckDeviceQueuePresentSupport(PhysicalDeviceIn, PresentQueue.QueueIndex, SurfaceIn))
+		{
+			return false;
+		}
     }
 
     return true;
@@ -797,7 +805,12 @@ FAccelerationStructure FVulkanContext::GenerateTlas(const FBuffer& BlasInstanceB
 VkDevice FVulkanContext::CreateLogicalDevice(VkPhysicalDevice PhysicalDeviceIn, FVulkanContextOptions& VulkanContextOptions)
 {
     std::set<uint32_t> QueueIndices;
-    QueueIndices.insert(PresentQueue.QueueIndex);
+
+	if (SurfaceCreationFunction)
+	{
+		QueueIndices.insert(PresentQueue.QueueIndex);
+	}
+
     for (auto& Entry : Queues)
     {
         QueueIndices.insert(Entry.second.QueueIndex);
@@ -861,9 +874,13 @@ void FVulkanContext::GetDeviceQueues(VkSurfaceKHR Surface)
         vkGetDeviceQueue(LogicalDevice, Entry.second.QueueIndex, 0, &Entry.second.Queue);
         V::SetName(LogicalDevice, Entry.second.Queue, QueueTypeToStringNameMap[Entry.first]);
     }
-    CheckDeviceQueuePresentSupport(PhysicalDevice, PresentQueue.QueueIndex, Surface);
-    vkGetDeviceQueue(LogicalDevice, PresentQueue.QueueIndex, 0, &PresentQueue.Queue);
-    V::SetName(LogicalDevice, PresentQueue.Queue, "Present");
+
+	if (SurfaceCreationFunction)
+	{
+		CheckDeviceQueuePresentSupport(PhysicalDevice, PresentQueue.QueueIndex, Surface);
+		vkGetDeviceQueue(LogicalDevice, PresentQueue.QueueIndex, 0, &PresentQueue.Queue);
+		V::SetName(LogicalDevice, PresentQueue.Queue, "Present");
+	}
 }
 
 std::vector<VkDeviceQueueCreateInfo> FVulkanContext::GetDeviceQueueCreateInfo(VkPhysicalDevice PhysicalDevice, std::set<uint32_t> UniqueQueueFamilies)

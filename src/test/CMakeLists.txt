@@ -6,4 +6,4 @@ set(SOURCE
 
 add_executable(Test ${SOURCE} ${INCLUDE})
 
-target_link_libraries(Test PRIVATE Catch2::Catch2WithMain)
+target_link_libraries(Test PRIVATE Catch2::Catch2WithMain PUBLIC Renderer)
