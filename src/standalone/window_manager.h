@@ -20,7 +20,7 @@ public:
 	void PollEvents();
     GLFWwindow* GetWindow();
 	std::vector<std::string> GetRequiredDeviceExtensions();
-	std::function<VkSurfaceKHR(VkInstance)> CreateSurfaceFunctor;
+	std::function<VkSurfaceKHR(VkInstance)> CreateSurfaceFunctor = nullptr;
 	void SetController(FController* ControllerIn);
 
     static void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int Action, int Mods);
