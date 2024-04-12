@@ -57,12 +57,7 @@ int FApplication::Run()
 		Render->Update();
 		Swapchain->GetNextImage( ImageIndex);
 		Render->Render(ImageIndex, &RenderingFinishedSemaphore);
-
-		static int i = 0;
-		Render->SaveOutput(OutputType(ImageIndex), "Test" + std::to_string(i++));
-
 		Swapchain->Present(RenderingFinishedSemaphore, ImageIndex);
-
 		WindowManager->PollEvents();
     }
 

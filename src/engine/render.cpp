@@ -167,7 +167,7 @@ int FRender::Init()
 			auto Framebuffer = CreateColorAttachment(Width, Height, "Output Image" + std::to_string(i));
 			SetOutput(OutputType(i), Framebuffer);
 		}
-		
+
 		ImageAvailableSemaphores.resize(MaxFramesInFlight);
 	}
 
