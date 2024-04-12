@@ -15,12 +15,18 @@
 #include "tinyexr.h"
 
 FVulkanContext* VulkanContext = nullptr;
+std::function<VkSurfaceKHR(VkInstance)> FVulkanContext::SurfaceCreationFunction = nullptr;
 
-FVulkanContext* GetContext(GLFWwindow* Window)
+void FVulkanContext::SetSurfaceCreationFunction(std::function<VkSurfaceKHR(VkInstance)> SurfaceCreationFunctionIn)
+{
+	SurfaceCreationFunction = SurfaceCreationFunctionIn;
+}
+
+FVulkanContext* GetVulkanContext(const std::vector<std::string>& AdditionalDeviceExtensions)
 {
 	if (VulkanContext == nullptr)
 	{
-		VulkanContext = new FVulkanContext(Window);
+		VulkanContext = new FVulkanContext(AdditionalDeviceExtensions);
 	}
 
 	return VulkanContext;
@@ -54,7 +60,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL FVulkanContext::DebugCallback(
     return VK_FALSE;
 }
 
-FVulkanContext::FVulkanContext(GLFWwindow* Window)
+FVulkanContext::FVulkanContext(const std::vector<std::string>& AdditionalDeviceExtensions)
 {
     /// Fill in vulkan context creation options
     FVulkanContextOptions VulkanContextOptions;
@@ -69,12 +75,9 @@ FVulkanContext::FVulkanContext(GLFWwindow* Window)
     VulkanContextOptions.AddInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, &DebugCreateInfo, sizeof(VkDebugUtilsMessengerCreateInfoEXT));
 #endif
 
-    // Resolve and add extensions and layers
-    uint32_t Counter = 0;
-    auto ExtensionsRequiredByGLFW = glfwGetRequiredInstanceExtensions(&Counter);
-    for (uint32_t i = 0; i < Counter; ++i)
+    for (const auto & AdditionalDeviceExtension : AdditionalDeviceExtensions)
     {
-        VulkanContextOptions.AddInstanceExtension(ExtensionsRequiredByGLFW[i]);
+        VulkanContextOptions.AddInstanceExtension(AdditionalDeviceExtension);
     }
 
     VkPhysicalDeviceAccelerationStructureFeaturesKHR PhysicalDeviceAccelerationStructureFeatures{};
@@ -116,9 +119,9 @@ FVulkanContext::FVulkanContext(GLFWwindow* Window)
     DebugMessenger = CreateDebugMessenger(VulkanContextOptions);
 #endif
     /// Create Surface
-    if (Window != nullptr)
+    if (SurfaceCreationFunction != nullptr)
 	{
-		Surface = CreateSurface(Window);
+		Surface = SurfaceCreationFunction(Instance);
 	}
 
     /// Pick Physical device
@@ -146,14 +149,6 @@ void FVulkanContext::SetDebugUtilsMessengerEXT(VkDebugUtilsMessengerEXT DebugUti
     this->DebugMessenger = DebugUtilsMessengerEXT;
 }
 #endif
-
-VkSurfaceKHR FVulkanContext::CreateSurface(GLFWwindow* WindowIn) const
-{
-    VkSurfaceKHR SurfaceIn;
-    VkResult Result = glfwCreateWindowSurface(Instance, WindowIn, nullptr, &SurfaceIn);
-    assert((Result == VK_SUCCESS) && "Failed to create window surface!");
-    return SurfaceIn;
-}
 
 void FVulkanContext::DestroySurface(VkSurfaceKHR* SurfaceIn) const
 {

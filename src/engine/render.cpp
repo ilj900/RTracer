@@ -478,14 +478,7 @@ int FRender::Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaph
 		ImageAvailableSemaphores[CurrentFrame] = PassthroughSignalSemaphore;
 	}
 
-//	if (RenderFrameIndex % 100 == 0)
-//	{
-//		VK_CONTEXT()->WaitIdle();
-//		SaveFramebuffer(OutputToFramebufferMap[OutputType(CurrentFrame)], "Color_Output_" + std::to_string(RenderFrameIndex));
-//	}
     RenderFrameIndex++;
-
-    glfwPollEvents();
 
     return 0;
 }

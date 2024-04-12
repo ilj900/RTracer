@@ -17,7 +17,10 @@ public:
     int GetWidth();
     int GetHeight();
     FVector2 GetSize2D();
+	void PollEvents();
     GLFWwindow* GetWindow();
+	std::vector<std::string> GetRequiredDeviceExtensions();
+	std::function<VkSurfaceKHR(VkInstance)> CreateSurfaceFunctor;
 	void SetController(FController* ControllerIn);
 
     static void KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, int Scancode, int Action, int Mods);

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "vulkan/vulkan.h"
-#include "GLFW/glfw3.h"
 
 #include "resource_allocation.h"
 #include "command_buffer_manager.h"
@@ -14,6 +13,7 @@
 #include "vk_utils.h"
 #include "vk_pipeline.h"
 
+#include <functional>
 #include <vector>
 #include <string>
 #include <array>
@@ -23,7 +23,7 @@
 class FVulkanContext
 {
 public:
-    FVulkanContext(GLFWwindow* Window = nullptr);
+    FVulkanContext(const std::vector<std::string>& AdditionalDeviceExtensions);
     FVulkanContext operator=(const FVulkanContext* Other) = delete;
     FVulkanContext(const FVulkanContext& Other) = delete;
     ~FVulkanContext();
@@ -79,7 +79,6 @@ public:
     VkQueue GetPresentQueue() const;
     uint32_t GetPresentIndex() const;
 
-    VkSurfaceKHR CreateSurface(GLFWwindow* WindowIn) const;
     void DestroySurface(VkSurfaceKHR* SurfaceIn) const;
     void SetSurface(VkSurfaceKHR SurfaceIn);
     VkSurfaceKHR GetSurface() const;
@@ -126,6 +125,9 @@ public:
     VkFence CreateSignalledFence() const;
     VkFence CreateUnsignalledFence() const;
 
+	static void SetSurfaceCreationFunction(std::function<VkSurfaceKHR(VkInstance)> SurfaceCreationFunctionIn);
+	static std::function<VkSurfaceKHR(VkInstance)> SurfaceCreationFunction;
+
     static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT MessageSeverity,
             VkDebugUtilsMessageTypeFlagsEXT MessageType,
@@ -167,9 +169,9 @@ public:
     bool bFramebufferResized = false;
 };
 
-FVulkanContext* GetContext(GLFWwindow* Window = nullptr);
+FVulkanContext* GetVulkanContext(const std::vector<std::string>& AdditionalDeviceExtensions);
 void FreeVulkanContext();
 
-#define VK_CONTEXT() GetContext()
-#define INIT_VK_CONTEXT(Window) GetContext(Window)
+#define VK_CONTEXT() GetVulkanContext({})
+#define INIT_VK_CONTEXT(AdditionalDeviceExtensions) GetVulkanContext(AdditionalDeviceExtensions)
 #define FREE_VK_CONTEXT()

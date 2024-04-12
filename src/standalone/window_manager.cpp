@@ -24,6 +24,14 @@ FWindowManager::FWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, FA
     glfwSetCursorPosCallback(Window, MouseMoved);
     glfwSetMouseButtonCallback(Window, MouseButtonPressedOrReleased);
     glfwSetFramebufferSizeCallback(Window, FramebufferResizeCallback);
+
+	CreateSurfaceFunctor = [this](VkInstance Instance) -> VkSurfaceKHR
+	{
+		VkSurfaceKHR SurfaceIn;
+		VkResult Result = glfwCreateWindowSurface(Instance, Window, nullptr, &SurfaceIn);
+		assert((Result == VK_SUCCESS) && "Failed to create window surface!");
+		return SurfaceIn;
+	};
 }
 
 FWindowManager::~FWindowManager()
@@ -35,6 +43,11 @@ FWindowManager::~FWindowManager()
 bool FWindowManager::ShouldClose()
 {
     return glfwWindowShouldClose(Window);
+}
+
+void FWindowManager::PollEvents()
+{
+	glfwPollEvents();
 }
 
 GLFWwindow* FWindowManager::GetWindow()
@@ -135,4 +148,15 @@ void FWindowManager::FramebufferResizeCallback(GLFWwindow* Window, int Width, in
 	FWindowManager* WindowManager = (FWindowManager*)glfwGetWindowUserPointer(Window);
 	WindowManager->Application->SetSwapchainWasResized(Width, Height);
 }
+std::vector<std::string> FWindowManager::GetRequiredDeviceExtensions()
+{
+	uint32_t Counter = 0;
+	auto ExtensionsRequiredByGLFW = glfwGetRequiredInstanceExtensions(&Counter);
+	std::vector<std::string> Result;
+	for (int i = 0; i < Counter; ++i)
+	{
+		Result.emplace_back(std::string(ExtensionsRequiredByGLFW[i]));
+	}
 
+	return Result;
+}

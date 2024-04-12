@@ -10,8 +10,9 @@
 FApplication::FApplication()
 {
     WindowManager = std::make_shared<FWindowManager>(Width, Height, false, this, "RTRacer");
-
-	INIT_VK_CONTEXT(WindowManager->GetWindow());
+	FVulkanContext::SetSurfaceCreationFunction(WindowManager->CreateSurfaceFunctor);
+	auto RequiredExtensions = WindowManager->GetRequiredDeviceExtensions();
+	INIT_VK_CONTEXT(RequiredExtensions);
 
     Render = std::make_shared<FRender>(Width, Height);
 	Swapchain = std::make_shared<FSwapchain>(Width, Height, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
@@ -58,7 +59,7 @@ int FApplication::Run()
 		Render->Render(ImageIndex, &RenderingFinishedSemaphore);
 		Swapchain->Present(RenderingFinishedSemaphore, ImageIndex);
 
-		glfwPollEvents();
+		WindowManager->PollEvents();
     }
 
     return 0;
