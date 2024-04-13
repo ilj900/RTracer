@@ -91,14 +91,7 @@ FLight FetchLightData(uint LightIndex)
 
 bool CheckFlag(uint Mask, uint Field)
 {
-    if ((Mask & Field) == Field)
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+    return (Mask & Field) == Field;
 }
 
 bool IsIndexed(FRenderable Renderable)

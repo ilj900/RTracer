@@ -14,6 +14,7 @@ public:
     ~FApplication();
 
     int Run();
+	void LoadScene();
 	void SetSwapchainWasResized(uint32_t NewWidth, uint32_t NewHeight);
 
 private:

@@ -109,10 +109,6 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     LIGHT_SYSTEM()->Init(MaxFramesInFlight);
     TRANSFORM_SYSTEM()->Init(MaxFramesInFlight);
     ACCELERATION_STRUCTURE_SYSTEM()->Init(MaxFramesInFlight);
-
-    LoadScene("");
-    ACCELERATION_STRUCTURE_SYSTEM()->Update();
-    ACCELERATION_STRUCTURE_SYSTEM()->UpdateTLAS();
 }
 
 FRender::~FRender()
@@ -177,84 +173,20 @@ int FRender::Init()
     }
 
     GenerateRaysTask = std::make_shared<FGenerateInitialRays>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    GenerateRaysTask->Init();
-    GenerateRaysTask->UpdateDescriptorSets();
-    GenerateRaysTask->RecordCommands();
-
     RayTraceTask = std::make_shared<FRaytraceTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-
-    RayTraceTask->Init();
-    RayTraceTask->UpdateDescriptorSets();
-    RayTraceTask->RecordCommands();
-
     ClearMaterialsCountPerChunkTask = std::make_shared<FClearMaterialsCountPerChunkTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-
-    ClearMaterialsCountPerChunkTask->Init();
-    ClearMaterialsCountPerChunkTask->UpdateDescriptorSets();
-    ClearMaterialsCountPerChunkTask->RecordCommands();
-
     ClearTotalMaterialsCountTask = std::make_shared<FClearTotalMaterialsCountTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-
-    ClearTotalMaterialsCountTask->Init();
-    ClearTotalMaterialsCountTask->UpdateDescriptorSets();
-    ClearTotalMaterialsCountTask->RecordCommands();
-
     CountMaterialsPerChunkTask = std::make_shared<FCountMaterialsPerChunkTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-
-    CountMaterialsPerChunkTask->Init();
-    CountMaterialsPerChunkTask->UpdateDescriptorSets();
-    CountMaterialsPerChunkTask->RecordCommands();
-
     ComputePrefixSumsUpSweepTask = std::make_shared<FComputePrefixSumsUpSweepTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-
-    ComputePrefixSumsUpSweepTask->Init();
-    ComputePrefixSumsUpSweepTask->UpdateDescriptorSets();
-    ComputePrefixSumsUpSweepTask->RecordCommands();
-
     ComputePrefixSumsZeroOutTask = std::make_shared<FComputePrefixSumsZeroOutTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-
-    ComputePrefixSumsZeroOutTask->Init();
-    ComputePrefixSumsZeroOutTask->UpdateDescriptorSets();
-    ComputePrefixSumsZeroOutTask->RecordCommands();
-
     ComputePrefixSumsDownSweepTask = std::make_shared<FComputePrefixSumsDownSweepTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-
-    ComputePrefixSumsDownSweepTask->Init();
-    ComputePrefixSumsDownSweepTask->UpdateDescriptorSets();
-    ComputePrefixSumsDownSweepTask->RecordCommands();
-
     ComputeOffsetsPerMaterialTask = std::make_shared<FComputeOffsetsPerMaterialTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-
-    ComputeOffsetsPerMaterialTask->Init();
-    ComputeOffsetsPerMaterialTask->UpdateDescriptorSets();
-    ComputeOffsetsPerMaterialTask->RecordCommands();
-
     SortMaterialsTask = std::make_shared<FSortMaterialsTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-
-    SortMaterialsTask->Init();
-    SortMaterialsTask->UpdateDescriptorSets();
-    SortMaterialsTask->RecordCommands();
-
     ShadeTask = std::make_shared<FShadeTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    ShadeTask->Init();
-    ShadeTask->UpdateDescriptorSets();
-    ShadeTask->RecordCommands();
-
     MissTask = std::make_shared<FMissTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     SetIBL("../../../resources/brown_photostudio_02_4k.exr");
-    MissTask->Init();
-    MissTask->UpdateDescriptorSets();
-    MissTask->RecordCommands();
-
     AccumulateTask = std::make_shared<FAccumulateTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    AccumulateTask->Init();
-    AccumulateTask->UpdateDescriptorSets();
-    AccumulateTask->RecordCommands();
-
     ClearImageTask = std::make_shared<FClearImageTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    ClearImageTask->Init();
-    ClearImageTask->UpdateDescriptorSets();
-    ClearImageTask->RecordCommands();
 
     PassthroughTask = std::make_shared<FPassthroughTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     for (int i = 0; i < MaxFramesInFlight; ++i)
@@ -262,9 +194,6 @@ int FRender::Init()
         auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(OutputToFramebufferMap[OutputType(i)]);
         PassthroughTask->RegisterOutput(i, TEXTURE_MANAGER()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex));
     }
-    PassthroughTask->Init();
-    PassthroughTask->UpdateDescriptorSets();
-    PassthroughTask->RecordCommands();
 
     RenderFrameIndex = 0;
 
@@ -416,16 +345,26 @@ int FRender::Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaph
 
     uint32_t CurrentFrame = RenderFrameIndex % MaxFramesInFlight;
 
+	GenerateRaysTask->Reload();
+	RayTraceTask->Reload();
+	ClearMaterialsCountPerChunkTask->Reload();
+	ClearTotalMaterialsCountTask->Reload();
+	CountMaterialsPerChunkTask->Reload();
+	ComputePrefixSumsUpSweepTask->Reload();
+	ComputePrefixSumsZeroOutTask->Reload();
+	ComputePrefixSumsDownSweepTask->Reload();
+	ComputeOffsetsPerMaterialTask->Reload();
+	SortMaterialsTask->Reload();
+	ShadeTask->Reload();
+	MissTask->Reload();
+	AccumulateTask->Reload();
+	ClearImageTask->Reload();
+	PassthroughTask->Reload();
+
     /// Previous rendering iteration of the frame might still be in use, so we wait for it
     vkWaitForFences(VK_CONTEXT()->LogicalDevice, 1, &ImagesInFlight[CurrentFrame], VK_TRUE, UINT64_MAX);
 
     bool NeedUpdate = true;
-    CAMERA_SYSTEM()->Update();
-    TRANSFORM_SYSTEM()->Update();
-    RENDERABLE_SYSTEM()->Update();
-    LIGHT_SYSTEM()->Update();
-    ACCELERATION_STRUCTURE_SYSTEM()->Update();
-
 	VkSemaphore SemaphoreToWait = VK_NULL_HANDLE;
 
 	/// If we have no external semaphores
@@ -500,6 +439,13 @@ int FRender::Update()
     LightComponent.Position.SelfRotateY(0.025f);
     LIGHT_SYSTEM()->SetLightPosition(Lights.back(), LightComponent.Position.X, LightComponent.Position.Y, LightComponent.Position.Z);
 
+	CAMERA_SYSTEM()->Update();
+	TRANSFORM_SYSTEM()->Update();
+	RENDERABLE_SYSTEM()->Update();
+	LIGHT_SYSTEM()->Update();
+	ACCELERATION_STRUCTURE_SYSTEM()->Update();
+	ACCELERATION_STRUCTURE_SYSTEM()->UpdateTLAS();
+
     if (bShouldResize)
     {
         Cleanup();
@@ -513,63 +459,6 @@ int FRender::Update()
 void FRender::WaitIdle()
 {
 	VK_CONTEXT()->WaitIdle();
-}
-
-int FRender::LoadScene(const std::string& Path)
-{
-    FTimer Timer("Loading scene time: ");
-    auto Plane = CreatePlane();
-    auto Pyramid = CreatePyramid();
-    auto VikingRoom = CreateModel("../../../models/viking_room/viking_room.obj");
-    auto Cube = CreateCube();
-    auto Sphere = CreateSphere(3);
-    auto Shaderball = CreateModel("../../../models/Shaderball.obj");
-
-    auto WoodMaterial = CreateMaterial({1, 0, 1});
-    auto YellowMaterial = CreateMaterial({1, 1, 0});
-    auto VikingRoomMaterial = CreateMaterial({0, 1, 1});
-    auto RedMaterial = CreateMaterial({1, 0, 0});
-    auto GreenMaterial = CreateMaterial({0, 1, 0});
-    auto BlueMaterial = CreateMaterial({0, 0, 1});
-
-    auto ModelTexture = CreateTexture("../../../models/viking_room/viking_room.png");
-    auto WoodAlbedoTexture = CreateTexture("../../../resources/Wood/Wood_8K_Albedo.jpg");
-    auto WoodAOTexture = CreateTexture("../../../resources/Wood/Wood_8K_AO.jpg");
-    auto WoodRoughnessTexture = CreateTexture("../../../resources/Wood/Wood_8K_Roughness.jpg");
-    auto WoodNormalTexture = CreateTexture("../../../resources/Wood/Wood_8K_Normal.jpg");
-
-    MaterialSetBaseColor(WoodMaterial, WoodAlbedoTexture);
-    MaterialSetDiffuseRoughness(WoodMaterial, WoodRoughnessTexture);
-    MaterialSetNormal(WoodMaterial, WoodNormalTexture);
-    MaterialSetBaseColor(VikingRoomMaterial, ModelTexture);
-
-    auto PlaneInstance = CreateInstance(Plane, {-5.f, 0.f, -2.f});
-    auto PyramidInstance = CreateInstance(Pyramid, {-3.f, 0.f, -2.f});
-    auto VikingRoomInstance = CreateInstance(VikingRoom, {-1.f, 0.f, -2.f});
-    auto CubeInstance = CreateInstance(Cube, {1.f, 0.f, -2.f});
-    auto ShaderballInstance = CreateInstance(Shaderball, {5.f, -1.f, -2.f});
-
-    for (int i = -10; i < 10; ++i)
-    {
-        for (int j = -10; j < 10; ++j)
-        {
-            auto SphereInstance = CreateInstance(Sphere, {2.f * i, -5.f, 2.f * j});
-            ShapeSetMaterial(SphereInstance, GreenMaterial);
-        }
-    }
-
-
-    ShapeSetMaterial(PlaneInstance, WoodMaterial);
-    ShapeSetMaterial(PyramidInstance, YellowMaterial);
-    ShapeSetMaterial(VikingRoomInstance, VikingRoomMaterial);
-    ShapeSetMaterial(CubeInstance, RedMaterial);
-    ShapeSetMaterial(ShaderballInstance, BlueMaterial);
-
-    CreateLight({5, 5, 5});
-
-    TRANSFORM_SYSTEM()->Update();
-
-    return 0;
 }
 
 ECS::FEntity FRender::CreateTexture(const std::string& FilePath)

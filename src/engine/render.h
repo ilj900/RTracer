@@ -55,7 +55,6 @@ public:
     int Update();
 	void WaitIdle();
 
-    int LoadScene(const std::string& Path);
     ECS::FEntity CreateTexture(const std::string& FilePath);
     ECS::FEntity CreateMaterial(const FVector3& BaseColor);
     ECS::FEntity ShapeSetMaterial(ECS::FEntity Shape, ECS::FEntity Material);

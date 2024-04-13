@@ -4,11 +4,17 @@
 #include "vk_context.h"
 #include "vk_debug.h"
 
+bool CheckFlag(uint32_t Flags, uint32_t Flag)
+{
+	return (Flags & Flag) == Flag;
+}
+
 FExecutableTask::FExecutableTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
         Width(WidthIn), Height(HeightIn),
         NumberOfSimultaneousSubmits(NumberOfSimultaneousSubmits), LogicalDevice(LogicalDevice)
 {
     CreateSyncObjects();
+	DitryFlags |= UNINITIALIZED | OUTDATED_DESCRIPTOR_SET | OUTDATED_COMMAND_BUFFER;
 }
 
 FExecutableTask::~FExecutableTask()
@@ -74,6 +80,26 @@ void FExecutableTask::RegisterOutput(int Index, ImagePtr Image)
     Outputs[Index] = std::move(Image);
 }
 
+void FExecutableTask::Reload()
+{
+	if (CheckFlag(DitryFlags, DirtyType::UNINITIALIZED))
+	{
+		Init();
+	}
+
+	if (CheckFlag(DitryFlags, DirtyType::OUTDATED_DESCRIPTOR_SET))
+	{
+		UpdateDescriptorSets();
+	}
+
+	if (CheckFlag(DitryFlags, DirtyType::OUTDATED_COMMAND_BUFFER))
+	{
+		RecordCommands();
+	}
+
+	DitryFlags = 0u;
+}
+
 VkSemaphore FExecutableTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipelineStageFlags PipelineStageFlagsIn, VkFence WaitFence, VkFence SignalFence, uint32_t IterationIndex)
 {
     VkSemaphore WaitSemaphores[] = {WaitSemaphore};
@@ -133,6 +159,11 @@ void FExecutableTask::UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t Layo
     ImageInfo.imageView = Image->View;
     ImageInfo.sampler = Sampler;
     VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, LayoutSetIndex, LayoutIndex, FrameIndex, &ImageInfo);
+}
+
+void FExecutableTask::SetDirty(uint32_t Flags)
+{
+	DitryFlags |= Flags;
 }
 
 VkPipelineStageFlags FExecutableTask::GetPipelineStageFlags()
