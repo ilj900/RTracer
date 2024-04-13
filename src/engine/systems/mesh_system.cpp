@@ -354,7 +354,6 @@ namespace ECS
         void FMeshSystem::CreatePlane(FEntity Entity, const FVector2& Size)
         {
             auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
-            float A = 0.5;
 
             MeshComponent.Vertices.resize(4);
             MeshComponent.Vertices[0] = {-Size.X / 2.f, -Size.Y / 2.f, 0, 0, 0, 1, 0, 0};
