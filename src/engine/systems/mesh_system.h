@@ -18,7 +18,7 @@ namespace ECS
             void CreateTetrahedron(FEntity Entity);
             void CreateHexahedron(FEntity Entity);
             void CreateIcosahedron(FEntity Entity, uint32_t Depth, bool bGeometricNormals);
-            void CreatePlane(FEntity Entity);
+            void CreatePlane(FEntity Entity, const FVector2& Size);
             uint32_t Size();
 
             VkDeviceAddress GetVertexBufferAddress(FEntity Renderable);

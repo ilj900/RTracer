@@ -351,16 +351,16 @@ namespace ECS
             }
         }
 
-        void FMeshSystem::CreatePlane(FEntity Entity)
+        void FMeshSystem::CreatePlane(FEntity Entity, const FVector2& Size)
         {
             auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
             float A = 0.5;
 
             MeshComponent.Vertices.resize(4);
-            MeshComponent.Vertices[0] = {-A, -A, 0, 0, 0, 1, 0, 0};
-            MeshComponent.Vertices[1] = { A, -A, 0, 0, 0, 1, 1, 0};
-            MeshComponent.Vertices[2] = { A,  A, 0, 0, 0, 1, 1, 1};
-            MeshComponent.Vertices[3] = {-A,  A, 0, 0, 0, 1, 0, 1};
+            MeshComponent.Vertices[0] = {-Size.X / 2.f, -Size.Y / 2.f, 0, 0, 0, 1, 0, 0};
+            MeshComponent.Vertices[1] = { Size.X / 2.f, -Size.Y / 2.f, 0, 0, 0, 1, 1, 0};
+            MeshComponent.Vertices[2] = { Size.X / 2.f,  Size.Y / 2.f, 0, 0, 0, 1, 1, 1};
+            MeshComponent.Vertices[3] = {-Size.X / 2.f,  Size.Y / 2.f, 0, 0, 0, 1, 0, 1};
 
             MeshComponent.Indexed = true;
             MeshComponent.Indices.resize(6);

@@ -46,11 +46,11 @@ namespace ECS
             UpdateTLAS();
         }
 
-        FEntity FAccelerationStructureSystem::CreateInstance(FEntity Entity, const FVector3& Position)
+        FEntity FAccelerationStructureSystem::CreateInstance(FEntity Entity, const FVector3& Position, const FVector3& Direction, const FVector3& Up)
         {
             FEntity NewMeshInstance = COORDINATOR().CreateEntity();
 
-            COORDINATOR().AddComponent<ECS::COMPONENTS::FTransformComponent>(NewMeshInstance, {Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f}});
+            COORDINATOR().AddComponent<ECS::COMPONENTS::FTransformComponent>(NewMeshInstance, {Position, Direction, Up});
             COORDINATOR().AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(NewMeshInstance, {});
             TRANSFORM_SYSTEM()->SyncTransform(NewMeshInstance);
 

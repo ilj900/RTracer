@@ -35,7 +35,7 @@ void FController::ToggleFirstUpdateSinceRMB()
 
 void FController::Update(float Time)
 {
-    static float CameraMovementSpeed = 1.4f;
+    static float CameraMovementSpeed = 3.4f;
     static float CameraRotationSpeed = 0.4f;
 
     if (!CameraControlMode)

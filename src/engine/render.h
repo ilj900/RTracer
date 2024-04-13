@@ -64,13 +64,13 @@ public:
     void MaterialSetDiffuseRoughness(ECS::FEntity Material, float Value);
     void MaterialSetNormal(ECS::FEntity Material, const FVector3& Value);
     void MaterialSetNormal(ECS::FEntity Material, ECS::FEntity Image);
-    ECS::FEntity CreatePlane();
+    ECS::FEntity CreatePlane(const FVector2& Size);
     ECS::FEntity CreatePyramid();
     ECS::FEntity CreateCube();
     ECS::FEntity CreateSphere(int LevelOfComplexity);
     ECS::FEntity CreateModel(const std::string& Path);
 
-    ECS::FEntity CreateInstance(ECS::FEntity BaseModel,  const FVector3& Position);
+    ECS::FEntity CreateInstance(ECS::FEntity BaseModel, const FVector3& Position, const FVector3& Direction = {0, 0, 1}, const FVector3& Up = {0, 1 ,0});
 
 	ECS::FEntity CreateLight(const FVector3& Position);
 	void SetLightPosition(ECS::FEntity Light, const FVector3& Position);

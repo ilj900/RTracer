@@ -517,11 +517,11 @@ int FRender::SetIBL(const std::string& Path)
     return 0;
 }
 
-ECS::FEntity FRender::CreatePlane()
+ECS::FEntity FRender::CreatePlane(const FVector2& Size)
 {
     auto NewModel = CreateEmptyModel();
 
-    MESH_SYSTEM()->CreatePlane(NewModel);
+    MESH_SYSTEM()->CreatePlane(NewModel, Size);
     MESH_SYSTEM()->LoadToGPU(NewModel);
     MESH_SYSTEM()->GenerateBLAS(NewModel);
 
@@ -572,17 +572,19 @@ ECS::FEntity FRender::CreatePyramid()
     return NewModel;
 }
 
-ECS::FEntity FRender::CreateInstance(ECS::FEntity BaseModel,  const FVector3& Position)
+ECS::FEntity FRender::CreateInstance(ECS::FEntity BaseModel, const FVector3& Position, const FVector3& Direction, const FVector3& Up)
 {
-    auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(BaseModel, Position);
+    auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(BaseModel, Position, Direction, Up);
     RENDERABLE_SYSTEM()->SetRenderableDeviceAddress(MeshInstance, MESH_SYSTEM()->GetVertexBufferAddress(MeshInstance), MESH_SYSTEM()->GetIndexBufferAddress(MeshInstance));
-    TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, {0.f, 0.f, 1.f}, {0.f, 1.f, 0.f});
+	TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, Direction, Up);
     RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
     auto& MeshComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FMeshComponent>(BaseModel);
+
     if (MeshComponent.Indexed)
     {
         RENDERABLE_SYSTEM()->SetIndexed(MeshInstance);
     }
+
     return MeshInstance;
 }
 
