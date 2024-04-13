@@ -435,10 +435,6 @@ int FRender::Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaph
 
 int FRender::Update()
 {
-    auto& LightComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FLightComponent>(Lights.back());
-    LightComponent.Position.SelfRotateY(0.025f);
-    LIGHT_SYSTEM()->SetLightPosition(Lights.back(), LightComponent.Position.X, LightComponent.Position.Y, LightComponent.Position.Z);
-
 	CAMERA_SYSTEM()->Update();
 	TRANSFORM_SYSTEM()->Update();
 	RENDERABLE_SYSTEM()->Update();
@@ -469,8 +465,8 @@ ECS::FEntity FRender::CreateTexture(const std::string& FilePath)
 ECS::FEntity FRender::CreateMaterial(const FVector3& BaseColor)
 {
     auto NewMaterial = MATERIAL_SYSTEM()->CreateMaterial();
+
     MATERIAL_SYSTEM()->SetBaseColor(NewMaterial, BaseColor.X, BaseColor.Y, BaseColor.Z);
-    Materials.push_back(NewMaterial);
 
     return NewMaterial;
 }
@@ -529,8 +525,6 @@ ECS::FEntity FRender::CreatePlane()
     MESH_SYSTEM()->LoadToGPU(NewModel);
     MESH_SYSTEM()->GenerateBLAS(NewModel);
 
-    Models.push_back(NewModel);
-
     return NewModel;
 }
 
@@ -541,8 +535,6 @@ ECS::FEntity FRender::CreateCube()
     MESH_SYSTEM()->CreateHexahedron(NewModel);
     MESH_SYSTEM()->LoadToGPU(NewModel);
     MESH_SYSTEM()->GenerateBLAS(NewModel);
-
-    Models.push_back(NewModel);
 
     return NewModel;
 }
@@ -566,8 +558,6 @@ ECS::FEntity FRender::CreateModel(const std::string& Path)
     MESH_SYSTEM()->LoadToGPU(NewModel);
     MESH_SYSTEM()->GenerateBLAS(NewModel);
 
-    Models.push_back(NewModel);
-
     return NewModel;
 }
 
@@ -578,8 +568,6 @@ ECS::FEntity FRender::CreatePyramid()
     MESH_SYSTEM()->CreateTetrahedron(NewModel);
     MESH_SYSTEM()->LoadToGPU(NewModel);
     MESH_SYSTEM()->GenerateBLAS(NewModel);
-
-    Models.push_back(NewModel);
 
     return NewModel;
 }
@@ -598,15 +586,23 @@ ECS::FEntity FRender::CreateInstance(ECS::FEntity BaseModel,  const FVector3& Po
     return MeshInstance;
 }
 
-int FRender::CreateLight(const FVector3& Position)
+ECS::FEntity FRender::CreateLight(const FVector3& Position)
 {
-    auto LightSystem = COORDINATOR().GetSystem<ECS::SYSTEMS::FLightSystem>();
+    auto Light = COORDINATOR().CreateEntity();
+    COORDINATOR().AddComponent<ECS::COMPONENTS::FLightComponent>(Light, {});
+    LIGHT_SYSTEM()->SetLightPosition(Light, Position.X, Position.Y, Position.Z);
 
-    Lights.push_back(COORDINATOR().CreateEntity());
-    COORDINATOR().AddComponent<ECS::COMPONENTS::FLightComponent>(Lights.back(), {});
-    LIGHT_SYSTEM()->SetLightPosition(Lights.back(), Position.X, Position.Y, Position.Z);
+    return Light;
+}
 
-    return 0;
+void FRender::SetLightPosition(ECS::FEntity Light, const FVector3& Position)
+{
+	LIGHT_SYSTEM()->SetLightPosition(Light, Position);
+}
+
+FVector3 FRender::GetLightPosition(ECS::FEntity Light)
+{
+	return COORDINATOR().GetComponent<ECS::COMPONENTS::FLightComponent>(Light).Position;
 }
 
 ECS::FEntity FRender::CreateEmptyModel()

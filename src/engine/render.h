@@ -72,7 +72,9 @@ public:
 
     ECS::FEntity CreateInstance(ECS::FEntity BaseModel,  const FVector3& Position);
 
-    int CreateLight(const FVector3& Position);
+	ECS::FEntity CreateLight(const FVector3& Position);
+	void SetLightPosition(ECS::FEntity Light, const FVector3& Position);
+	FVector3 GetLightPosition(ECS::FEntity Light);
     int SetIBL(const std::string& Path);
 
     bool bShouldResize = false;
@@ -80,10 +82,6 @@ public:
     uint32_t MaxFramesInFlight = 2;
     uint32_t RenderFrameIndex = 0;
 
-    std::vector<ECS::FEntity> Models;
-    std::vector<ECS::FEntity> Materials;
-    std::vector<ECS::FEntity> Lights;
-    std::vector<ECS::FEntity> Cameras;
     ECS::FEntity ActiveCamera;
 
     std::shared_ptr<FGenerateInitialRays> GenerateRaysTask = nullptr;

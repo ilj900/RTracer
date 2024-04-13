@@ -53,6 +53,7 @@ int FApplication::Run()
         float Time = std::chrono::duration<float, std::chrono::seconds::period>(CurrentTime - StartTime).count();
         StartTime = CurrentTime;
 
+		Update();
 		Controller->Update(Time);
 		Render->Update();
 		Swapchain->GetNextImage( ImageIndex);
@@ -62,6 +63,12 @@ int FApplication::Run()
     }
 
     return 0;
+}
+
+void FApplication::Update()
+{
+	auto NewLightCoordinates = Render->GetLightPosition(Lights.back()).SelfRotateY(0.025f);
+	Render->SetLightPosition(Lights.back(), NewLightCoordinates);
 }
 
 void FApplication::LoadScene()
@@ -114,7 +121,7 @@ void FApplication::LoadScene()
 	Render->ShapeSetMaterial(CubeInstance, RedMaterial);
 	Render->ShapeSetMaterial(ShaderballInstance, BlueMaterial);
 
-	Render->CreateLight({5, 5, 5});
+	Lights.push_back(Render->CreateLight({5, 5, 5}));
 }
 
 void FApplication::SetSwapchainWasResized(uint32_t NewWidth, uint32_t NewHeight)

@@ -14,10 +14,17 @@ public:
     ~FApplication();
 
     int Run();
+	void Update();
 	void LoadScene();
 	void SetSwapchainWasResized(uint32_t NewWidth, uint32_t NewHeight);
 
 private:
+	/// Scene data
+	std::vector<ECS::FEntity> Models;
+	std::vector<ECS::FEntity> Materials;
+	std::vector<ECS::FEntity> Lights;
+	std::vector<ECS::FEntity> Cameras;
+
 	uint32_t Width = 1920;
 	uint32_t Height = 1080;
     std::shared_ptr<FRender> Render = nullptr;
