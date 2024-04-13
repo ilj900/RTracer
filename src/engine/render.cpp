@@ -187,8 +187,8 @@ int FRender::Init()
     SetIBL("../../../resources/brown_photostudio_02_4k.exr");
     AccumulateTask = std::make_shared<FAccumulateTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ClearImageTask = std::make_shared<FClearImageTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-
     PassthroughTask = std::make_shared<FPassthroughTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+
     for (int i = 0; i < MaxFramesInFlight; ++i)
     {
         auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(OutputToFramebufferMap[OutputType(i)]);
@@ -417,7 +417,7 @@ int FRender::Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaph
         PipelineStageFlags = AccumulateTask->GetPipelineStageFlags();
     }
 
-    auto PassthroughSignalSemaphore = PassthroughTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), AccumulateSignalSemaphore, PipelineStageFlags, VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    auto PassthroughSignalSemaphore = PassthroughTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), AccumulateSignalSemaphore, PipelineStageFlags, VK_NULL_HANDLE, ImagesInFlight[CurrentFrame], CurrentFrame);
 
 	if (RenderFinishedSemaphore != nullptr)
 	{
