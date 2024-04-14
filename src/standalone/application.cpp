@@ -78,7 +78,7 @@ void FApplication::LoadScene()
 	auto Pyramid = Render->CreatePyramid();
 	auto VikingRoom = Render->CreateModel("../../../models/viking_room/viking_room.obj");
 	auto Cube = Render->CreateCube();
-	auto Sphere = Render->CreateSphere(3);
+	auto Sphere = Render->CreateIcosahedronSphere(3, false);
 	auto Shaderball = Render->CreateModel("../../../models/Shaderball.obj");
 
 	auto WoodMaterial = Render->CreateMaterial({1, 0, 1});

@@ -246,7 +246,7 @@ namespace ECS
             }
         }
 
-        void FMeshSystem::CreateIcosahedron(FEntity Entity, uint32_t Depth, bool bGeometricNormals)
+        void FMeshSystem::CreateIcosahedron(FEntity Entity, uint32_t Depth, bool Jagged)
         {
             auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
 
@@ -311,17 +311,23 @@ namespace ECS
 
             for(uint32_t i = 0; i < Positions.size(); i += 3)
             {
-                FVector3 Normal;
+                FVector3 Normal0{};
+				FVector3 Normal1{};
+				FVector3 Normal2{};
 
-                if (bGeometricNormals)
+                if (Jagged)
                 {
                     auto V1 = Positions[i + 1] - Positions[i];
                     auto V2 = Positions[i + 2] - Positions[i];
-                    Normal = Cross(V1, V2).GetNormalized();
+                    Normal0 = Cross(V1, V2).GetNormalized();
+					Normal1 = Normal0;
+					Normal2 = Normal0;
                 }
                 else
                 {
-                    Normal = Positions[i];
+                    Normal0 = Positions[i];
+					Normal1 = Positions[i + 1];
+					Normal2 = Positions[i + 2];
                 }
 
                 auto TransformXZ = [](float InX, float InZ)
@@ -340,13 +346,13 @@ namespace ECS
                 };
 
                 MeshComponent.Vertices.emplace_back(Positions[i].X,    Positions[i].Y,    Positions[i].Z,
-                                                Normal.X,           Normal.Y,                   Normal.Z,
+                                                Normal0.X,           Normal0.Y,                   Normal0.Z,
                                                 TransformXZ(Positions[i].Y, Positions[i].Z), TransformY(Positions[i].X));
                 MeshComponent.Vertices.emplace_back(Positions[i+1].X,    Positions[i+1].Y,    Positions[i+1].Z,
-                                                Normal.X,                   Normal.Y,                   Normal.Z,
+                                                Normal1.X,                   Normal1.Y,                   Normal1.Z,
                                                     TransformXZ(Positions[i+1].Y, Positions[i+1].Z), TransformY(Positions[i+1].X));
                 MeshComponent.Vertices.emplace_back(Positions[i+2].X,    Positions[i+2].Y,    Positions[i+2].Z,
-                                                Normal.X,                   Normal.Y,                   Normal.Z,
+                                                Normal2.X,                   Normal2.Y,                   Normal2.Z,
                                                     TransformXZ(Positions[i+2].Y, Positions[i+2].Z), TransformY(Positions[i+2].X));
             }
         }

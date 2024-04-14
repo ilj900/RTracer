@@ -67,7 +67,7 @@ public:
     ECS::FEntity CreatePlane(const FVector2& Size);
     ECS::FEntity CreatePyramid();
     ECS::FEntity CreateCube();
-    ECS::FEntity CreateSphere(int LevelOfComplexity);
+    ECS::FEntity CreateIcosahedronSphere(int LevelOfComplexity, bool bJagged);
     ECS::FEntity CreateModel(const std::string& Path);
 
     ECS::FEntity CreateInstance(ECS::FEntity BaseModel, const FVector3& Position, const FVector3& Direction = {0, 0, 1}, const FVector3& Up = {0, 1 ,0});

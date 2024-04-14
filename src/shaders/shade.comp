@@ -145,8 +145,6 @@ void main()
     mat4 Transform = FetchTransform(Renderable.TransformIndex);
     const vec3 Barycentrics = vec3(1.0 - Hit.HitUV.x - Hit.HitUV.y, Hit.HitUV.x, Hit.HitUV.y);
 
-    vec3 Normal = vec3(1.f, 1.f, 1.f);
-
     FVertex V0;
     FVertex V1;
     FVertex V2;
@@ -165,10 +163,6 @@ void main()
         V0 = Verts.V[I0];
         V1 = Verts.V[I1];
         V2 = Verts.V[I2];
-
-        Normal = V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z;
-
-        Normal *= transpose(inverse(mat3(Transform)));
     }
     else
     {
@@ -176,9 +170,11 @@ void main()
         V0 = Verts.V[Index];
         V1 = Verts.V[Index + 1];
         V2 = Verts.V[Index + 2];
-
-        Normal = normalize(cross((V1.Position - V0.Position), (V2.Position - V0.Position)));
     }
+
+    vec3 Normal = vec3(1.f, 1.f, 1.f);
+    Normal = V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z;
+    Normal *= transpose(inverse(mat3(Transform)));
 
     vec2 TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
 

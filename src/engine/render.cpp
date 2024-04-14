@@ -539,11 +539,11 @@ ECS::FEntity FRender::CreateCube()
     return NewModel;
 }
 
-ECS::FEntity FRender::CreateSphere(int LevelOfComplexity)
+ECS::FEntity FRender::CreateIcosahedronSphere(int LevelOfComplexity, bool bJagged)
 {
     auto NewModel = CreateEmptyModel();
 
-    MESH_SYSTEM()->CreateIcosahedron(NewModel, LevelOfComplexity, true);
+    MESH_SYSTEM()->CreateIcosahedron(NewModel, LevelOfComplexity, bJagged);
     MESH_SYSTEM()->LoadToGPU(NewModel);
     MESH_SYSTEM()->GenerateBLAS(NewModel);
 

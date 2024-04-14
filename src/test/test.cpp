@@ -14,7 +14,7 @@ TEST_CASE( "Basic scene loading", "[Basic]" )
 	Render->SetActiveCamera(Camera);
 
 	auto Wall = Render->CreatePlane({4, 4});
-	auto Sphere = Render->CreateSphere(5);
+	auto Sphere = Render->CreateIcosahedronSphere(5, false);
 
 	auto BackWall = Render->CreateInstance(Wall, {0, 0, -2}, {0, 0, -1}, {0, 1, 0});
 	auto TopWall = Render->CreateInstance(Wall, {0, 2, 0}, {0, -1, 0}, {0, 0, 1});
