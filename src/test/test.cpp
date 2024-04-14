@@ -19,8 +19,8 @@ TEST_CASE( "Basic scene loading", "[Basic]" )
 	auto BackWall = Render->CreateInstance(Wall, {0, 0, -2}, {0, 0, -1}, {0, 1, 0});
 	auto TopWall = Render->CreateInstance(Wall, {0, 2, 0}, {0, -1, 0}, {0, 0, 1});
 	auto BottomWall = Render->CreateInstance(Wall, {0, -2, 0}, {0, 1, 0}, {0, 0, -1});
-	auto LeftWall = Render->CreateInstance(Wall, {2, 0, 0}, {1, 0, 0}, {0, 1, 0});
-	auto RightWall = Render->CreateInstance(Wall, {-2, 0, 0}, {-1, 0, 0}, {0, 1, 0});
+	auto LeftWall = Render->CreateInstance(Wall, {-2, 0, 0}, {1, 0, 0}, {0, 1, 0});
+	auto RightWall = Render->CreateInstance(Wall, {2, 0, 0}, {-1, 0, 0}, {0, 1, 0});
 	auto Sphere1 = Render->CreateInstance(Sphere, {0, -1, 1});
 	auto Sphere2 = Render->CreateInstance(Sphere, {1, -1, -1});
 	auto Sphere3 = Render->CreateInstance(Sphere, {-1, -1, -1});
@@ -41,7 +41,7 @@ TEST_CASE( "Basic scene loading", "[Basic]" )
 	Render->ShapeSetMaterial(Sphere2, DiffuseMaterial);
 	Render->ShapeSetMaterial(Sphere3, PlasticMaterial);
 
-	auto Light = Render->CreateLight({0, 2, 0});
+	auto Light = Render->CreateLight({0, 1.95, 0});
 
 	for (int i = 0; i < 10; ++i)
 	{
