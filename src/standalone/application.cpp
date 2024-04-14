@@ -67,40 +67,61 @@ int FApplication::Run()
 
 void FApplication::Update()
 {
-	//auto NewLightCoordinates = Render->GetLightPosition(Lights.back()).SelfRotateY(0.025f);
-	//Render->SetLightPosition(Lights.back(), NewLightCoordinates);
+	auto NewLightCoordinates = Render->GetLightPosition(Lights.back()).SelfRotateY(0.025f);
+	Render->SetLightPosition(Lights.back(), NewLightCoordinates);
 }
 
 void FApplication::LoadScene()
 {
 	FTimer Timer("Loading scene time: ");
-	auto Wall = Render->CreatePlane({4, 4});
-	auto Sphere = Render->CreateSphere(5);
+	auto Plane = Render->CreatePlane({1, 1});
+	auto Pyramid = Render->CreatePyramid();
+	auto VikingRoom = Render->CreateModel("../../../models/viking_room/viking_room.obj");
+	auto Cube = Render->CreateCube();
+	auto Sphere = Render->CreateSphere(3);
+	auto Shaderball = Render->CreateModel("../../../models/Shaderball.obj");
 
-	auto BackWall = Render->CreateInstance(Wall, {0, 0, -2}, {0, 0, -1}, {0, 1, 0});
-	auto TopWall = Render->CreateInstance(Wall, {0, 2, 0}, {0, -1, 0}, {0, 0, 1});
-	auto BottomWall = Render->CreateInstance(Wall, {0, -2, 0}, {0, 1, 0}, {0, 0, -1});
-	auto LeftWall = Render->CreateInstance(Wall, {2, 0, 0}, {1, 0, 0}, {0, 1, 0});
-	auto RightWall = Render->CreateInstance(Wall, {-2, 0, 0}, {-1, 0, 0}, {0, 1, 0});
-	auto Sphere1 = Render->CreateInstance(Sphere, {0, -1, 1});
-	auto Sphere2 = Render->CreateInstance(Sphere, {1, -1, -1});
-	auto Sphere3 = Render->CreateInstance(Sphere, {-1, -1, -1});
-
-	auto WhiteMaterial = Render->CreateMaterial({1, 1, 1});
+	auto WoodMaterial = Render->CreateMaterial({1, 0, 1});
+	auto YellowMaterial = Render->CreateMaterial({1, 1, 0});
+	auto VikingRoomMaterial = Render->CreateMaterial({0, 1, 1});
 	auto RedMaterial = Render->CreateMaterial({1, 0, 0});
 	auto GreenMaterial = Render->CreateMaterial({0, 1, 0});
-	auto GlassMaterial = Render->CreateMaterial({0, 1, 1});
-	auto DiffuseMaterial = Render->CreateMaterial({1, 1, 0});
-	auto PlasticMaterial = Render->CreateMaterial({1, 0, 1});
+	auto BlueMaterial = Render->CreateMaterial({0, 0, 1});
 
-	Render->ShapeSetMaterial(BackWall, WhiteMaterial);
-	Render->ShapeSetMaterial(TopWall, WhiteMaterial);
-	Render->ShapeSetMaterial(BottomWall, WhiteMaterial);
-	Render->ShapeSetMaterial(LeftWall, RedMaterial);
-	Render->ShapeSetMaterial(RightWall, GreenMaterial);
-	Render->ShapeSetMaterial(Sphere1, GlassMaterial);
-	Render->ShapeSetMaterial(Sphere2, DiffuseMaterial);
-	Render->ShapeSetMaterial(Sphere3, PlasticMaterial);
+	auto ModelTexture = Render->CreateTexture("../../../models/viking_room/viking_room.png");
+	auto WoodAlbedoTexture = Render->CreateTexture("../../../resources/Wood/Wood_8K_Albedo.jpg");
+	auto WoodAOTexture = Render->CreateTexture("../../../resources/Wood/Wood_8K_AO.jpg");
+	auto WoodRoughnessTexture = Render->CreateTexture("../../../resources/Wood/Wood_8K_Roughness.jpg");
+	auto WoodNormalTexture = Render->CreateTexture("../../../resources/Wood/Wood_8K_Normal.jpg");
+
+	Render->MaterialSetBaseColor(WoodMaterial, WoodAlbedoTexture);
+	Render->MaterialSetDiffuseRoughness(WoodMaterial, WoodRoughnessTexture);
+	Render->MaterialSetNormal(WoodMaterial, WoodNormalTexture);
+	Render->MaterialSetBaseColor(VikingRoomMaterial, ModelTexture);
+
+	auto PlaneInstance = Render->CreateInstance(Plane, {-5.f, 0.f, -2.f});
+	auto PyramidInstance = Render->CreateInstance(Pyramid, {-3.f, 0.f, -2.f});
+	auto VikingRoomInstance = Render->CreateInstance(VikingRoom, {-1.f, 0.f, -2.f});
+	auto CubeInstance = Render->CreateInstance(Cube, {1.f, 0.f, -2.f});
+	auto ShaderballInstance = Render->CreateInstance(Shaderball, {5.f, -1.f, -2.f});
+
+	for (int i = -10; i < 10; ++i)
+	{
+		for (int j = -10; j < 10; ++j)
+		{
+			auto SphereInstance = Render->CreateInstance(Sphere, {2.f * i, -5.f, 2.f * j});
+			Render->ShapeSetMaterial(SphereInstance, GreenMaterial);
+		}
+	}
+
+
+	Render->ShapeSetMaterial(PlaneInstance, WoodMaterial);
+	Render->ShapeSetMaterial(PyramidInstance, YellowMaterial);
+	Render->ShapeSetMaterial(VikingRoomInstance, VikingRoomMaterial);
+	Render->ShapeSetMaterial(CubeInstance, RedMaterial);
+	Render->ShapeSetMaterial(ShaderballInstance, BlueMaterial);
+
+	Lights.push_back(Render->CreateLight({5, 5, 5}));
 
 	Lights.push_back(Render->CreateLight({0, 2, 0}));
 }
