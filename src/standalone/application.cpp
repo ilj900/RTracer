@@ -122,8 +122,6 @@ void FApplication::LoadScene()
 	Render->ShapeSetMaterial(ShaderballInstance, BlueMaterial);
 
 	Lights.push_back(Render->CreateLight({5, 5, 5}));
-
-	Lights.push_back(Render->CreateLight({0, 2, 0}));
 }
 
 void FApplication::SetSwapchainWasResized(uint32_t NewWidth, uint32_t NewHeight)
