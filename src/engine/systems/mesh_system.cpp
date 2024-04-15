@@ -402,16 +402,12 @@ namespace ECS
 				/// Emplace upper cap of the sphere
 				int i = 0;
 
-				for (; i < LongitudeCount - 1; ++i)
+				for (; i < LongitudeCount; ++i)
 				{
 					Indices[i * 3] = 0;
 					Indices[i * 3 + 1] = i + 1;
 					Indices[i * 3 + 2] = i + 2;
 				}
-
-				Indices[i * 3] = 0;
-				Indices[i * 3 + 1] = i + 1;
-				Indices[i * 3 + 2] = 1;
 			}
 
 			uint32_t StartingIndex = LongitudeCount * 3;

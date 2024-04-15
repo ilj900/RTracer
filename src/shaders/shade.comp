@@ -173,15 +173,8 @@ void main()
     }
 
     vec3 Normal = vec3(1.f, 1.f, 1.f);
-    ///
-    vec3 V10 = V1.Position - V0.Position;
-    vec3 V20 = V2.Position - V0.Position;
-    vec3 Cross = normalize(cross(V10, V20));
-
-    Normal = vec3(Cross);
-    ///
-    //Normal = V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z;
-    //Normal *= transpose(inverse(mat3(Transform)));
+    Normal = V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z;
+    Normal *= transpose(inverse(mat3(Transform)));
 
     vec2 TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
 
@@ -198,5 +191,5 @@ void main()
 
     vec3 ColorOut = Material.BaseColor * Luminance;
 
-    imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(Normal, 1.f));
+    imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(ColorOut, 1.f));
 }

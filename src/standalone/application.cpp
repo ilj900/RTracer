@@ -80,7 +80,7 @@ void FApplication::LoadScene()
 	auto Cube = Render->CreateCube();
 	auto Sphere = Render->CreateIcosahedronSphere(3, false);
 	auto Shaderball = Render->CreateModel("../../../models/Shaderball.obj");
-	auto UVSphere = Render->CreateUVSphere(8, 8);
+	auto UVSphere = Render->CreateUVSphere(32, 16);
 
 	auto WoodMaterial = Render->CreateMaterial({1, 0, 1});
 	auto YellowMaterial = Render->CreateMaterial({1, 1, 0});
