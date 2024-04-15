@@ -67,8 +67,8 @@ int FApplication::Run()
 
 void FApplication::Update()
 {
-	auto NewLightCoordinates = Render->GetLightPosition(Lights.back()).SelfRotateY(0.025f);
-	Render->SetLightPosition(Lights.back(), NewLightCoordinates);
+	//auto NewLightCoordinates = Render->GetLightPosition(Lights.back()).SelfRotateY(0.025f);
+	//Render->SetLightPosition(Lights.back(), NewLightCoordinates);
 }
 
 void FApplication::LoadScene()
@@ -80,6 +80,7 @@ void FApplication::LoadScene()
 	auto Cube = Render->CreateCube();
 	auto Sphere = Render->CreateIcosahedronSphere(3, false);
 	auto Shaderball = Render->CreateModel("../../../models/Shaderball.obj");
+	auto UVSphere = Render->CreateUVSphere(7, 5);
 
 	auto WoodMaterial = Render->CreateMaterial({1, 0, 1});
 	auto YellowMaterial = Render->CreateMaterial({1, 1, 0});
@@ -104,6 +105,7 @@ void FApplication::LoadScene()
 	auto VikingRoomInstance = Render->CreateInstance(VikingRoom, {-1.f, 0.f, -2.f});
 	auto CubeInstance = Render->CreateInstance(Cube, {1.f, 0.f, -2.f});
 	auto ShaderballInstance = Render->CreateInstance(Shaderball, {5.f, -1.f, -2.f});
+	auto UVSphereInstance = Render->CreateInstance(UVSphere, {7.f, 0.f, -2.f});
 
 	for (int i = -10; i < 10; ++i)
 	{
@@ -120,6 +122,7 @@ void FApplication::LoadScene()
 	Render->ShapeSetMaterial(VikingRoomInstance, VikingRoomMaterial);
 	Render->ShapeSetMaterial(CubeInstance, RedMaterial);
 	Render->ShapeSetMaterial(ShaderballInstance, BlueMaterial);
+	Render->ShapeSetMaterial(UVSphereInstance, BlueMaterial);
 
 	Lights.push_back(Render->CreateLight({5, 5, 5}));
 }

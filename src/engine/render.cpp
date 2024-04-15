@@ -550,6 +550,17 @@ ECS::FEntity FRender::CreateIcosahedronSphere(int LevelOfComplexity, bool bJagge
     return NewModel;
 }
 
+ECS::FEntity FRender::CreateUVSphere(uint32_t LongitudeCount, uint32_t LatitudeCount)
+{
+	auto NewModel = CreateEmptyModel();
+
+	MESH_SYSTEM()->CreateUVSphere(NewModel, LongitudeCount, LatitudeCount);
+	MESH_SYSTEM()->LoadToGPU(NewModel);
+	MESH_SYSTEM()->GenerateBLAS(NewModel);
+
+	return NewModel;
+}
+
 ECS::FEntity FRender::CreateModel(const std::string& Path)
 {
     auto NewModel = CreateEmptyModel();

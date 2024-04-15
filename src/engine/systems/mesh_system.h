@@ -18,6 +18,7 @@ namespace ECS
             void CreateTetrahedron(FEntity Entity);
             void CreateHexahedron(FEntity Entity);
             void CreateIcosahedron(FEntity Entity, uint32_t Depth, bool Jagged);
+			void CreateUVSphere(FEntity Entity, uint32_t LongitudeCount, uint32_t LatitudeCount);
             void CreatePlane(FEntity Entity, const FVector2& Size);
             uint32_t Size();
 

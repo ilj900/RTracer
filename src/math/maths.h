@@ -10,11 +10,15 @@
 #endif
 
 #ifndef M_PI_2
-#define M_PI_2 M_PI / 2.f
+#define M_PI_2 (M_PI / 2.f)
+#endif
+
+#ifndef M_2_PI
+#define M_2_PI (M_PI * 2.f)
 #endif
 
 #ifndef M_PI_4
-#define M_PI_4 M_PI / 4.f
+#define M_PI_4 (M_PI / 4.f)
 #endif
 
 ///The selected coordinate system is right handed
