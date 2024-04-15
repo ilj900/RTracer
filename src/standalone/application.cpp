@@ -104,8 +104,8 @@ void FApplication::LoadScene()
 	auto PyramidInstance = Render->CreateInstance(Pyramid, {-3.f, 0.f, -2.f});
 	auto VikingRoomInstance = Render->CreateInstance(VikingRoom, {-1.f, 0.f, -2.f});
 	auto CubeInstance = Render->CreateInstance(Cube, {1.f, 0.f, -2.f});
-	auto ShaderballInstance = Render->CreateInstance(Shaderball, {5.f, -1.f, -2.f});
-	auto UVSphereInstance = Render->CreateInstance(UVSphere, {7.f, 0.f, -2.f});
+	auto ShaderballInstance = Render->CreateInstance(Shaderball, {3.f, -1.f, -2.f});
+	auto UVSphereInstance = Render->CreateInstance(UVSphere, {5.f, 0.f, -2.f});
 
 	for (int i = -10; i < 10; ++i)
 	{
@@ -122,9 +122,11 @@ void FApplication::LoadScene()
 	Render->ShapeSetMaterial(VikingRoomInstance, VikingRoomMaterial);
 	Render->ShapeSetMaterial(CubeInstance, RedMaterial);
 	Render->ShapeSetMaterial(ShaderballInstance, BlueMaterial);
-	Render->ShapeSetMaterial(UVSphereInstance, BlueMaterial);
+	Render->ShapeSetMaterial(UVSphereInstance, WoodMaterial);
 
 	Lights.push_back(Render->CreateLight({5, 5, 5}));
+
+	Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
 }
 
 void FApplication::SetSwapchainWasResized(uint32_t NewWidth, uint32_t NewHeight)

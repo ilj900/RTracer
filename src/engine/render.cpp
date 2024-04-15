@@ -184,7 +184,6 @@ int FRender::Init()
     SortMaterialsTask = std::make_shared<FSortMaterialsTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ShadeTask = std::make_shared<FShadeTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     MissTask = std::make_shared<FMissTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    SetIBL("../../../resources/brown_photostudio_02_4k.exr");
     AccumulateTask = std::make_shared<FAccumulateTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ClearImageTask = std::make_shared<FClearImageTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     PassthroughTask = std::make_shared<FPassthroughTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -512,7 +511,8 @@ int FRender::SetIBL(const std::string& Path)
 {
     ImagePtr IBLImage = VK_CONTEXT()->CreateEXRImageFromFile(Path, "V::IBL_Image");
     IBLImage->Transition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    MissTask->RegisterInput(1, IBLImage);
+	TEXTURE_MANAGER()->RegisterTexture(IBLImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, "IBL Image");
+	MissTask->SetDirty(OUTDATED_DESCRIPTOR_SET | OUTDATED_COMMAND_BUFFER);
 
     return 0;
 }

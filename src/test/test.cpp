@@ -43,6 +43,8 @@ TEST_CASE( "Basic scene loading", "[Basic]" )
 
 	auto Light = Render->CreateLight({0, 1.95, 0});
 
+	Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
+
 	for (int i = 0; i < 10; ++i)
 	{
 		Render->Update();
@@ -51,6 +53,17 @@ TEST_CASE( "Basic scene loading", "[Basic]" )
 
 	Render->WaitIdle();
 	Render->SaveOutput(OutputType(0), "Basic scene loading");
+
+	Render->SetIBL("../../../resources/the_sky_is_on_fire_4k.exr");
+
+	for (int i = 0; i < 10; ++i)
+	{
+		Render->Update();
+		Render->Render();
+	}
+
+	Render->WaitIdle();
+	Render->SaveOutput(OutputType(0), "Basic scene loading_1");
 
 	Render = nullptr;
 }
