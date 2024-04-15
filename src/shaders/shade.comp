@@ -198,5 +198,5 @@ void main()
 
     vec3 ColorOut = Material.BaseColor * Luminance;
 
-    imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(ColorOut, 1.f));
+    imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(Normal, 1.f));
 }

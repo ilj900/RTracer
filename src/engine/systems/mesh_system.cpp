@@ -7,8 +7,6 @@
 #include "mesh_system.h"
 #include "renderable_system.h"
 
-#include <iostream>
-
 namespace ECS
 {
     namespace SYSTEMS
@@ -362,7 +360,7 @@ namespace ECS
 		{
 			auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
 			auto& Vertices = MeshComponent.Vertices;
-			Vertices.resize(LongitudeCount * (LatitudeCount - 1) + 2);
+			Vertices.resize((LongitudeCount + 1) * (LatitudeCount - 1) + 2);
 
 			Vertices[0] = {0, 1, 0, 0, 1, 0, 0, 0};
 
@@ -380,22 +378,18 @@ namespace ECS
 				UV.Y += UVLatitudeStep;
 				UV.X = 0;
 
-				for (int j = 0; j < LongitudeCount; ++j)
+				for (int j = 0; j < (LongitudeCount + 1); ++j)
 				{
 					float X = abs(cos(CurrentLatitudeAngle)) * sin(CurrentLongitudeAngle);
 					float Y = sin(CurrentLatitudeAngle);
 					float Z = abs(cos(CurrentLatitudeAngle)) * cos(CurrentLongitudeAngle);
 					FVector3 Coordinates = {X, Y, Z};
-
-					std::cout << Coordinates.ToString() << std::endl;
-
-					Vertices[i * LongitudeCount + j + 1] = {Coordinates.X, Coordinates.Y, Coordinates.Z, Coordinates.X, Coordinates.Y, Coordinates.Z, UV.X, UV.Y};
+					uint32_t Index = i * (LongitudeCount + 1) + j + 1;
+					Vertices[Index] = {Coordinates.X, Coordinates.Y, Coordinates.Z, Coordinates.X, Coordinates.Y, Coordinates.Z, UV.X, UV.Y};
 
 					CurrentLongitudeAngle += LongitudeAngleStep;
 					UV.X += UVLongitudeStep;
 				}
-
-				std::cout << "    " << std::endl;
 			}
 
 			Vertices.back() = {0, -1, 0, 0, -1, 0, 1, 1};
@@ -425,34 +419,40 @@ namespace ECS
 
 			for (int j = 0; j < (LatitudeCount - 2); ++j)
 			{
-				for (int i = 0; i < LongitudeCount; ++i)
+				int i = 0;
+
+				for (; i < LongitudeCount - 1; ++i)
 				{
 					uint32_t Index = ((j * LongitudeCount) + i) * 6;
-					Indices[StartingIndex + Index] = StartingValue + (j * LongitudeCount + i);
-					Indices[StartingIndex + Index + 1] = StartingValue + ((j + 1) * LongitudeCount + i);
-					Indices[StartingIndex + Index + 2] = StartingValue + (j * LongitudeCount + i + 1);
-					Indices[StartingIndex + Index + 3] = StartingValue + ((j + 1) * LongitudeCount + i);
-					Indices[StartingIndex + Index + 4] = StartingValue + ((j + 1) * LongitudeCount + i + 1);
-					Indices[StartingIndex + Index + 5] = StartingValue + (j * LongitudeCount + i + 1);
+					Indices[StartingIndex + Index] = StartingValue + (j * (LongitudeCount + 1) + i);
+					Indices[StartingIndex + Index + 1] = StartingValue + ((j + 1) * (LongitudeCount + 1) + i);
+					Indices[StartingIndex + Index + 2] = StartingValue + (j * (LongitudeCount + 1) + i + 1);
+					Indices[StartingIndex + Index + 3] = StartingValue + ((j + 1) * (LongitudeCount + 1) + i);
+					Indices[StartingIndex + Index + 4] = StartingValue + ((j + 1) * (LongitudeCount + 1) + i + 1);
+					Indices[StartingIndex + Index + 5] = StartingValue + (j * (LongitudeCount + 1) + i + 1);
 				}
+
+				uint32_t Index = ((j * LongitudeCount) + i) * 6;
+				Indices[StartingIndex + Index] = StartingValue + (j * (LongitudeCount + 1) + i);
+				Indices[StartingIndex + Index + 1] = StartingValue + ((j + 1) * (LongitudeCount + 1) + i);
+				Indices[StartingIndex + Index + 2] = StartingValue + (j * (LongitudeCount + 1) + i + 1);
+				Indices[StartingIndex + Index + 3] = StartingValue + ((j + 1) * (LongitudeCount + 1) + i);
+				Indices[StartingIndex + Index + 4] = StartingValue + ((j + 1) * (LongitudeCount + 1) + i + 1);
+				Indices[StartingIndex + Index + 5] = StartingValue + (j * (LongitudeCount + 1) + i + 1);
 			}
 
 			{
 				StartingIndex += (LatitudeCount - 2) * LongitudeCount * 6;
-				StartingValue += (LatitudeCount - 2) * LongitudeCount;
+				StartingValue += (LatitudeCount - 2) * (LongitudeCount + 1);
 
 				uint32_t i = 0;
 
-				for (; i < LongitudeCount - 1; ++i)
+				for (; i < LongitudeCount; ++i)
 				{
 					Indices[StartingIndex + i * 3] = StartingValue + i;
 					Indices[StartingIndex + i * 3 + 1] = Vertices.size() - 1;
 					Indices[StartingIndex + i * 3 + 2] = StartingValue + i + 1;
 				}
-
-				Indices[StartingIndex + i * 3] = StartingValue + 1;
-				Indices[StartingIndex + i * 3 + 1] = Vertices.size() - 1;
-				Indices[StartingIndex + i * 3 + 2] = StartingValue;
 			}
 		}
 
