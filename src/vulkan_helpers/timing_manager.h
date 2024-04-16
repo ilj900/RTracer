@@ -12,14 +12,14 @@ public:
     FTimingManager();
     ~FTimingManager();
 
-    void RegisterTiming(const std::string& TimingName, int NumberOfSimultaneousSubmitsIn);
+    void RegisterTiming(const std::string& TimingName, uint32_t NumberOfSimultaneousSubmitsIn);
     /// Returns the delta time for a task in ms
-    float GetDeltaTime(const std::string& TimingName, int FrameIndex);
-    void TimestampStart(const std::string& TimingName, VkCommandBuffer CommandBuffer, int FrameIndex);
-    void TimestampEnd(const std::string& TimingName, VkCommandBuffer CommandBuffer, int FrameIndex);
+    float GetDeltaTime(const std::string& TimingName, uint32_t FrameIndex);
+    void TimestampStart(const std::string& TimingName, VkCommandBuffer CommandBuffer, uint32_t FrameIndex);
+    void TimestampEnd(const std::string& TimingName, VkCommandBuffer CommandBuffer, uint32_t FrameIndex);
     void NewTime();
     float GetDeltaTime();
-    void GetAllTimings(std::vector<std::string>& Names, std::vector<float>& Timings, float& FrameTime, int FrameIndex);
+    void GetAllTimings(std::vector<std::string>& Names, std::vector<float>& Timings, float& FrameTime, uint32_t FrameIndex);
 
 private:
     std::chrono::time_point<std::chrono::steady_clock> Time;

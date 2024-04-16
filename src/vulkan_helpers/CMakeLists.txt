@@ -31,6 +31,6 @@ set(SOURCE
 
 add_library(Vulkan_helpers STATIC ${SOURCE} ${INCLUDE})
 
-target_link_libraries(Vulkan_helpers Math Vulkan::Vulkan glfw)
+target_link_libraries(Vulkan_helpers Math Vulkan::Vulkan)
 
 target_include_directories(Renderer PUBLIC .)

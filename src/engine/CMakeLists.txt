@@ -94,5 +94,4 @@ target_link_libraries(Renderer
         tinyexr
         stb_image
         tiny_obj_loader
-        imgui
         Vulkan_helpers)

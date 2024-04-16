@@ -100,7 +100,7 @@ void FExecutableTask::Reload()
 	DitryFlags = 0u;
 }
 
-VkSemaphore FExecutableTask::Submit(VkQueue Queue, VkPipelineStageFlags PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex)
+VkSemaphore FExecutableTask::Submit(VkQueue Queue, VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex)
 {
     VkPipelineStageFlags WaitStages[] = {PipelineStageFlagsIn};
     VkSubmitInfo SubmitInfo{};
@@ -126,7 +126,8 @@ VkSemaphore FExecutableTask::Submit(VkQueue Queue, VkPipelineStageFlags Pipeline
     if (!SynchronizationPoint.FencesToSignal.empty())
     {
 #ifndef NDEBUG
-		if (SynchronizationPoint.FencesToSignal.size() > 1) U::Log("There are more that one semaphore to signal. This might be an error");
+		if (SynchronizationPoint.FencesToSignal.size() > 1)
+			U::Log("There are more that one fence to signal. This might be an error");
 #endif
         vkResetFences(LogicalDevice, SynchronizationPoint.FencesToSignal.size(), SynchronizationPoint.FencesToSignal.data());
 		FenceToSignal = SynchronizationPoint.FencesToSignal[0];
@@ -137,6 +138,8 @@ VkSemaphore FExecutableTask::Submit(VkQueue Queue, VkPipelineStageFlags Pipeline
     {
         throw std::runtime_error("Failed to submit draw command buffer!");
     }
+
+	PipelineStageFlagsIn = PipelineStageFlags;
 
     return SignalSemaphores[IterationIndex];
 }

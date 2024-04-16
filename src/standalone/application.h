@@ -4,6 +4,7 @@
 #include "swapchain.h"
 #include "window_manager.h"
 #include "controller.h"
+#include "task_imgui.h"
 
 #include <memory>
 
@@ -31,5 +32,6 @@ private:
 	std::shared_ptr<FSwapchain> Swapchain = nullptr;
 	std::shared_ptr<FWindowManager> WindowManager = nullptr;
 	std::shared_ptr<FController> Controller = nullptr;
+	std::shared_ptr<FImguiTask> ImguiTask = nullptr;
 	bool bSwapchainWasResized = false;
 };

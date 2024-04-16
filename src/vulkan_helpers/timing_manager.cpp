@@ -40,7 +40,7 @@ FTimingManager::~FTimingManager()
     NameToQueryPool.clear();
 }
 
-void FTimingManager::RegisterTiming(const std::string& TimingName, int NumberOfSimultaneousSubmitsIn)
+void FTimingManager::RegisterTiming(const std::string& TimingName, uint32_t NumberOfSimultaneousSubmitsIn)
 {
     if (NameToQueryPool.find(TimingName) != NameToQueryPool.end())
     {
@@ -61,7 +61,7 @@ void FTimingManager::RegisterTiming(const std::string& TimingName, int NumberOfS
     }
 }
 
-float FTimingManager::GetDeltaTime(const std::string& TimingName, int FrameIndex)
+float FTimingManager::GetDeltaTime(const std::string& TimingName, uint32_t FrameIndex)
 {
     std::vector<uint64_t> TimeStamps(2);
     vkGetQueryPoolResults(VK_CONTEXT()->LogicalDevice, NameToQueryPool[TimingName], FrameIndex * 2, 2, sizeof(uint64_t) * 2, TimeStamps.data(), sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
@@ -69,13 +69,13 @@ float FTimingManager::GetDeltaTime(const std::string& TimingName, int FrameIndex
     return Delta;
 }
 
-void FTimingManager::TimestampStart(const std::string& TimingName, VkCommandBuffer CommandBuffer, int FrameIndex)
+void FTimingManager::TimestampStart(const std::string& TimingName, VkCommandBuffer CommandBuffer, uint32_t FrameIndex)
 {
     vkCmdResetQueryPool(CommandBuffer, NameToQueryPool[TimingName], FrameIndex * 2, 2);
     vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, NameToQueryPool[TimingName], FrameIndex * 2);
 }
 
-void FTimingManager::TimestampEnd(const std::string& TimingName, VkCommandBuffer CommandBuffer, int FrameIndex)
+void FTimingManager::TimestampEnd(const std::string& TimingName, VkCommandBuffer CommandBuffer, uint32_t FrameIndex)
 {
     vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, NameToQueryPool[TimingName], FrameIndex * 2 + 1);
 }
@@ -91,7 +91,7 @@ float FTimingManager::GetDeltaTime()
     return std::chrono::duration<float, std::chrono::milliseconds ::period>(Time - PreviousTime).count();
 }
 
-void FTimingManager::GetAllTimings(std::vector<std::string>& Names, std::vector<float>& Timings, float& FrameTime, int FrameIndex)
+void FTimingManager::GetAllTimings(std::vector<std::string>& Names, std::vector<float>& Timings, float& FrameTime, uint32_t FrameIndex)
 {
     Names.clear();
     Timings.clear();

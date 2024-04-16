@@ -22,11 +22,19 @@ FApplication::FApplication()
 	Controller = std::make_shared<FController>(Render);
 	Controller->SetWindow(WindowManager->GetWindow());
 	WindowManager->SetController(Controller.get());
+	ImguiTask = std::make_shared<FImguiTask>(Width, Height, int(Swapchain->Size()), VK_CONTEXT()->LogicalDevice);
+	ImguiTask->SetGLFWWindow(WindowManager->GetWindow());
+	ImguiTask->Init(Swapchain->GetImages());
+	ImguiTask->UpdateDescriptorSets();
+	ImguiTask->RecordCommands();
+	Render->AddExternalTaskAfterRender(ImguiTask);
 }
 
 FApplication::~FApplication()
 {
+	Render->WaitIdle();
 	Swapchain = nullptr;
+	ImguiTask = nullptr;
 	Render = nullptr;
     WindowManager = nullptr;
 }

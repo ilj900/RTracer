@@ -27,7 +27,7 @@ public:
     virtual void UpdateDescriptorSets() = 0;
     virtual void RecordCommands() = 0;
 	virtual void Reload();
-    virtual VkSemaphore Submit(VkQueue Queue, VkPipelineStageFlags PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex);
+    virtual VkSemaphore Submit(VkQueue Queue, VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex);
 
     void RegisterInput(int Index, ImagePtr Image);
     void RegisterOutput(int Index, ImagePtr Image);

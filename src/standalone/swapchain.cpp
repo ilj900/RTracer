@@ -146,8 +146,6 @@ FSwapchain::~FSwapchain()
 
 void FSwapchain::Present(VkSemaphore WaitSemaphore, uint32_t ImageIndex)
 {
-	Images[ImageIndex]->Transition(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
 	VkSemaphore WaitSemaphores[] = {WaitSemaphore};
 
 	VkPresentInfoKHR PresentInfo{};

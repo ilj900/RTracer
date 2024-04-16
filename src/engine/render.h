@@ -50,6 +50,7 @@ public:
 	void SaveOutput(OutputType OutputTypeIn, const std::string& Filename);
     void GetFramebufferData(ECS::FEntity Framebuffer);
 
+	void AddExternalTaskAfterRender(std::shared_ptr<FExecutableTask> Task);
 	int Render();
     int Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaphore);
     int Update();
@@ -100,6 +101,7 @@ public:
     std::shared_ptr<FAccumulateTask> AccumulateTask = nullptr;
     std::shared_ptr<FPassthroughTask> PassthroughTask = nullptr;
     std::shared_ptr<FClearImageTask> ClearImageTask = nullptr;
+	std::vector<std::shared_ptr<FExecutableTask>> ExternalTasks;
 
     std::vector<VkSemaphore> ImageAvailableSemaphores;
     std::vector<VkFence> ImagesInFlight;
