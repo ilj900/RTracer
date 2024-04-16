@@ -9,6 +9,14 @@ enum DirtyType {UNINITIALIZED = 1u,
 
 class FVulkanContext;
 
+struct FSynchronizationPoint
+{
+	std::vector<VkSemaphore> SemaphoresToWait;
+	std::vector<VkFence> FencesToWait;
+	std::vector<VkSemaphore> SemaphoresToSignal;
+	std::vector<VkFence> FencesToSignal;
+};
+
 class FExecutableTask
 {
 public:
@@ -19,7 +27,7 @@ public:
     virtual void UpdateDescriptorSets() = 0;
     virtual void RecordCommands() = 0;
 	virtual void Reload();
-    virtual VkSemaphore Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipelineStageFlags PipelineStageFlagsIn, VkFence WaitFence, VkFence SignalFence, uint32_t IterationIndex);
+    virtual VkSemaphore Submit(VkQueue Queue, VkPipelineStageFlags PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex);
 
     void RegisterInput(int Index, ImagePtr Image);
     void RegisterOutput(int Index, ImagePtr Image);

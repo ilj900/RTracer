@@ -4,6 +4,8 @@
 
 #include "vulkan/vulkan.h"
 
+#include "logging.h"
+
 namespace V {
     void SetName(VkDevice Device, uint64_t Object, VkObjectType ObjectType, const std::string &Name, uint32_t Index = UINT32_MAX);
 

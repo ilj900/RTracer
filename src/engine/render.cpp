@@ -377,54 +377,49 @@ int FRender::Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaph
 		SemaphoreToWait = ExternalImageIsReadySemaphore[OutputImageIndex];
 	}
 
-    auto GenerateRaysSemaphore = GenerateRaysTask->Submit(VK_CONTEXT()->GetComputeQueue(), SemaphoreToWait, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, ImagesInFlight[CurrentFrame], VK_NULL_HANDLE, CurrentFrame);
+	SemaphoreToWait = GenerateRaysTask->Submit(VK_CONTEXT()->GetComputeQueue(), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, {{SemaphoreToWait}, {ImagesInFlight[CurrentFrame]}, {}, {}}, CurrentFrame);
 
-    auto RayTraceSignalSemaphore = RayTraceTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), GenerateRaysSemaphore, GenerateRaysTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+	SemaphoreToWait = RayTraceTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), GenerateRaysTask->GetPipelineStageFlags(), {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-    auto ClearMaterialsCountPerChunkSemaphore = ClearMaterialsCountPerChunkTask->Submit(VK_CONTEXT()->GetComputeQueue(), RayTraceSignalSemaphore, RayTraceTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+	SemaphoreToWait = ClearMaterialsCountPerChunkTask->Submit(VK_CONTEXT()->GetComputeQueue(), RayTraceTask->GetPipelineStageFlags(), {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-    auto ClearTotalMaterialsCountSemaphore = ClearTotalMaterialsCountTask->Submit(VK_CONTEXT()->GetComputeQueue(), ClearMaterialsCountPerChunkSemaphore, ClearMaterialsCountPerChunkTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+	SemaphoreToWait = ClearTotalMaterialsCountTask->Submit(VK_CONTEXT()->GetComputeQueue(), ClearMaterialsCountPerChunkTask->GetPipelineStageFlags(), {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-    auto CountMaterialsPerChunkSemaphore = CountMaterialsPerChunkTask->Submit(VK_CONTEXT()->GetComputeQueue(), ClearTotalMaterialsCountSemaphore, ClearTotalMaterialsCountTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+	SemaphoreToWait = CountMaterialsPerChunkTask->Submit(VK_CONTEXT()->GetComputeQueue(), ClearTotalMaterialsCountTask->GetPipelineStageFlags(), {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-    auto ComputePrefixSumsUpSweepSemaphore = ComputePrefixSumsUpSweepTask->Submit(VK_CONTEXT()->GetComputeQueue(), CountMaterialsPerChunkSemaphore, CountMaterialsPerChunkTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+	SemaphoreToWait = ComputePrefixSumsUpSweepTask->Submit(VK_CONTEXT()->GetComputeQueue(), CountMaterialsPerChunkTask->GetPipelineStageFlags(), {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-    auto ComputePrefixSumsZeroOutSemaphore = ComputePrefixSumsZeroOutTask->Submit(VK_CONTEXT()->GetComputeQueue(), ComputePrefixSumsUpSweepSemaphore, ComputePrefixSumsUpSweepTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+	SemaphoreToWait = ComputePrefixSumsZeroOutTask->Submit(VK_CONTEXT()->GetComputeQueue(), ComputePrefixSumsUpSweepTask->GetPipelineStageFlags(), {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-    auto ComputePrefixSumsDownSweepSemaphore = ComputePrefixSumsDownSweepTask->Submit(VK_CONTEXT()->GetComputeQueue(), ComputePrefixSumsZeroOutSemaphore, ComputePrefixSumsZeroOutTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+	SemaphoreToWait = ComputePrefixSumsDownSweepTask->Submit(VK_CONTEXT()->GetComputeQueue(), ComputePrefixSumsZeroOutTask->GetPipelineStageFlags(), {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-    auto ComputeOffsetsPerMaterialSemaphore = ComputeOffsetsPerMaterialTask->Submit(VK_CONTEXT()->GetComputeQueue(), ComputePrefixSumsDownSweepSemaphore, ComputePrefixSumsDownSweepTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+	SemaphoreToWait = ComputeOffsetsPerMaterialTask->Submit(VK_CONTEXT()->GetComputeQueue(), ComputePrefixSumsDownSweepTask->GetPipelineStageFlags(), {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-    auto SortMaterialsSemaphore = SortMaterialsTask->Submit(VK_CONTEXT()->GetComputeQueue(), ComputeOffsetsPerMaterialSemaphore, ComputeOffsetsPerMaterialTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+	SemaphoreToWait = SortMaterialsTask->Submit(VK_CONTEXT()->GetComputeQueue(), ComputeOffsetsPerMaterialTask->GetPipelineStageFlags(), {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-    auto ShadeSignalSemaphore = ShadeTask->Submit(VK_CONTEXT()->GetComputeQueue(), SortMaterialsSemaphore, SortMaterialsTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+	SemaphoreToWait = ShadeTask->Submit(VK_CONTEXT()->GetComputeQueue(), SortMaterialsTask->GetPipelineStageFlags(), {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-    auto MissSignalSemaphore = MissTask->Submit(VK_CONTEXT()->GetComputeQueue(), ShadeSignalSemaphore, ShadeTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+    SemaphoreToWait = MissTask->Submit(VK_CONTEXT()->GetComputeQueue(), ShadeTask->GetPipelineStageFlags(), {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-    VkSemaphore AccumulateSignalSemaphore = VK_NULL_HANDLE;
-    VkPipelineStageFlags PipelineStageFlags = 0;
+    VkPipelineStageFlags PipelineStageFlags = MissTask->GetPipelineStageFlags();
 
     if (NeedUpdate)
     {
-        auto ClearAccumulatorSemaphore = ClearImageTask->Submit(VK_CONTEXT()->GetComputeQueue(), MissSignalSemaphore, MissTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
-        AccumulateSignalSemaphore = AccumulateTask->Submit(VK_CONTEXT()->GetComputeQueue(), ClearAccumulatorSemaphore, ClearImageTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
+        SemaphoreToWait = ClearImageTask->Submit(VK_CONTEXT()->GetComputeQueue(), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
         PipelineStageFlags = ClearImageTask->GetPipelineStageFlags();
     }
-    else
-    {
-        AccumulateSignalSemaphore = AccumulateTask->Submit(VK_CONTEXT()->GetComputeQueue(), MissSignalSemaphore, MissTask->GetPipelineStageFlags(), VK_NULL_HANDLE, VK_NULL_HANDLE, CurrentFrame);
-        PipelineStageFlags = AccumulateTask->GetPipelineStageFlags();
-    }
 
-    auto PassthroughSignalSemaphore = PassthroughTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), AccumulateSignalSemaphore, PipelineStageFlags, VK_NULL_HANDLE, ImagesInFlight[CurrentFrame], CurrentFrame);
+	SemaphoreToWait = AccumulateTask->Submit(VK_CONTEXT()->GetComputeQueue(), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+
+    SemaphoreToWait = PassthroughTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {ImagesInFlight[CurrentFrame]}}, CurrentFrame);
 
 	if (RenderFinishedSemaphore != nullptr)
 	{
-		*RenderFinishedSemaphore = PassthroughSignalSemaphore;
+		*RenderFinishedSemaphore = SemaphoreToWait;
 	}
 	else
 	{
-		ImageAvailableSemaphores[CurrentFrame] = PassthroughSignalSemaphore;
+		ImageAvailableSemaphores[CurrentFrame] = SemaphoreToWait;
 	}
 
     RenderFrameIndex++;

@@ -100,34 +100,40 @@ void FExecutableTask::Reload()
 	DitryFlags = 0u;
 }
 
-VkSemaphore FExecutableTask::Submit(VkQueue Queue, VkSemaphore WaitSemaphore, VkPipelineStageFlags PipelineStageFlagsIn, VkFence WaitFence, VkFence SignalFence, uint32_t IterationIndex)
+VkSemaphore FExecutableTask::Submit(VkQueue Queue, VkPipelineStageFlags PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex)
 {
-    VkSemaphore WaitSemaphores[] = {WaitSemaphore};
     VkPipelineStageFlags WaitStages[] = {PipelineStageFlagsIn};
     VkSubmitInfo SubmitInfo{};
     SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    SubmitInfo.waitSemaphoreCount = WaitSemaphore == VK_NULL_HANDLE ? 0 : 1;
-    SubmitInfo.pWaitSemaphores = WaitSemaphore == VK_NULL_HANDLE ? nullptr : WaitSemaphores;
+    SubmitInfo.waitSemaphoreCount = SynchronizationPoint.SemaphoresToWait.size();
+    SubmitInfo.pWaitSemaphores = SynchronizationPoint.SemaphoresToWait.empty() ? nullptr : SynchronizationPoint.SemaphoresToWait.data();
     SubmitInfo.pWaitDstStageMask = WaitStages;
     SubmitInfo.commandBufferCount = 1;
     SubmitInfo.pCommandBuffers = &CommandBuffers[IterationIndex];
 
-    VkSemaphore Semaphores[] = {SignalSemaphores[IterationIndex]};
-    SubmitInfo.signalSemaphoreCount = 1;
-    SubmitInfo.pSignalSemaphores = Semaphores;
+	/// We push the task's semaphore to the list of signal semaphores
+	SynchronizationPoint.SemaphoresToSignal.push_back(SignalSemaphores[IterationIndex]);
+    SubmitInfo.signalSemaphoreCount = SynchronizationPoint.SemaphoresToSignal.size();
+    SubmitInfo.pSignalSemaphores = SynchronizationPoint.SemaphoresToSignal.data();
 
-    if(WaitFence != VK_NULL_HANDLE)
+    if(!SynchronizationPoint.FencesToWait.empty())
     {
-        vkWaitForFences(LogicalDevice, 1, &WaitFence, VK_TRUE, UINT64_MAX);
+		vkWaitForFences(LogicalDevice, SynchronizationPoint.FencesToWait.size(), SynchronizationPoint.FencesToWait.data(), VK_TRUE, UINT64_MAX);
     }
 
-    if (SignalFence != VK_NULL_HANDLE)
+	VkFence FenceToSignal = VK_NULL_HANDLE;
+
+    if (!SynchronizationPoint.FencesToSignal.empty())
     {
-        vkResetFences(LogicalDevice, 1, &SignalFence);
+#ifndef NDEBUG
+		if (SynchronizationPoint.FencesToSignal.size() > 1) U::Log("There are more that one semaphore to signal. This might be an error");
+#endif
+        vkResetFences(LogicalDevice, SynchronizationPoint.FencesToSignal.size(), SynchronizationPoint.FencesToSignal.data());
+		FenceToSignal = SynchronizationPoint.FencesToSignal[0];
     }
 
     /// Submit computing. When computing finished, appropriate fence will be signalled
-    if (vkQueueSubmit(Queue, 1, &SubmitInfo, SignalFence) != VK_SUCCESS)
+    if (vkQueueSubmit(Queue, 1, &SubmitInfo, FenceToSignal) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to submit draw command buffer!");
     }

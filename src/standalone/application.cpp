@@ -67,8 +67,8 @@ int FApplication::Run()
 
 void FApplication::Update()
 {
-	//auto NewLightCoordinates = Render->GetLightPosition(Lights.back()).SelfRotateY(0.025f);
-	//Render->SetLightPosition(Lights.back(), NewLightCoordinates);
+	auto NewLightCoordinates = Render->GetLightPosition(Lights.back()).SelfRotateY(0.025f);
+	Render->SetLightPosition(Lights.back(), NewLightCoordinates);
 }
 
 void FApplication::LoadScene()
