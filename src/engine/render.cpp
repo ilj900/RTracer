@@ -219,6 +219,11 @@ int FRender::Cleanup()
     ClearImageTask = nullptr;
     PassthroughTask = nullptr;
 
+	for (auto& Task : ExternalTasks)
+	{
+		Task = nullptr;
+	}
+
 	for (int i = 0; i < ImagesInFlight.size(); ++i)
 	{
 		vkDestroyFence(VK_CONTEXT()->LogicalDevice, ImagesInFlight[i], nullptr);
