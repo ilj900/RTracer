@@ -32,6 +32,7 @@ FApplication::FApplication()
 
 FApplication::~FApplication()
 {
+	Render->WaitIdle();
 	Swapchain = nullptr;
 	ImguiTask = nullptr;
 	Render = nullptr;
