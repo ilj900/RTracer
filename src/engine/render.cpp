@@ -384,7 +384,7 @@ int FRender::Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaph
 
 	VkPipelineStageFlags PipelineStageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
-	SemaphoreToWait = GenerateRaysTask->Submit(VK_CONTEXT()->GetComputeQueue(), PipelineStageFlags, {{SemaphoreToWait}, {ImagesInFlight[CurrentFrame]}, {}, {}}, CurrentFrame);
+	SemaphoreToWait = GenerateRaysTask->Submit(VK_CONTEXT()->GetComputeQueue(), PipelineStageFlags, {(SemaphoreToWait == VK_NULL_HANDLE) ? std::vector<VkSemaphore>() : std::vector<VkSemaphore>(1, SemaphoreToWait), {ImagesInFlight[CurrentFrame]}, {}, {}}, CurrentFrame);
 
 	SemaphoreToWait = RayTraceTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
@@ -424,13 +424,16 @@ int FRender::Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaph
 
     SemaphoreToWait = PassthroughTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, FencesToSignal}, CurrentFrame);
 
-	for (int i = 0; i < ExternalTasks.size() - 1; ++i)
+	if (!ExternalTasks.empty())
 	{
-		SemaphoreToWait = ExternalTasks[i]->Submit(VK_CONTEXT()->GetQueue(ExternalTasks[i]->QueueFlagsBits), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+		for (uint32_t i = 0; i < ExternalTasks.size() - 1; ++i)
+		{
+			SemaphoreToWait = ExternalTasks[i]->Submit(VK_CONTEXT()->GetQueue(ExternalTasks[i]->QueueFlagsBits), PipelineStageFlags, { { SemaphoreToWait }, {}, {}, {} }, CurrentFrame);
+		}
+
+		SemaphoreToWait = ExternalTasks.back()->Submit(VK_CONTEXT()->GetQueue(ExternalTasks.back()->QueueFlagsBits), PipelineStageFlags, { { SemaphoreToWait }, {}, {}, { ImagesInFlight[CurrentFrame] } }, CurrentFrame);
 	}
-
-	SemaphoreToWait = ExternalTasks.back()->Submit(VK_CONTEXT()->GetQueue(ExternalTasks.back()->QueueFlagsBits), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {ImagesInFlight[CurrentFrame]}}, CurrentFrame);
-
+	
 	if (RenderFinishedSemaphore != nullptr)
 	{
 		*RenderFinishedSemaphore = SemaphoreToWait;
