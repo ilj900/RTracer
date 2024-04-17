@@ -22,7 +22,7 @@ public:
     FBuffer GetBuffer(const std::string& Name);
     void UnregisterAndDestroyBuffer(const std::string& Name);
 
-    FBuffer LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDeviceSize> Sizes, std::vector<VkDeviceSize> Offsets, std::vector<void*> Datas);
+    FBuffer LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDeviceSize> SizesIn, std::vector<VkDeviceSize> OffsetsIn, std::vector<void*> DatasIn);
     void LoadDataFromBuffer(FBuffer& Buffer, VkDeviceSize Size, VkDeviceSize Offset, void* Data);
     void LoadDataToStagingBuffer(std::vector<VkDeviceSize> Sizes, std::vector<void*> Datas);
     void LoadDataFromStagingBuffer(VkDeviceSize Size, void* Data, VkDeviceSize Offset);

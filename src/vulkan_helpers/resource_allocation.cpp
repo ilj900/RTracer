@@ -128,9 +128,9 @@ FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags U
     return Buffer;
 }
 
-FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDeviceSize> Sizes, std::vector<VkDeviceSize> Offsets, std::vector<void*> Datas)
+FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDeviceSize> SizesIn, std::vector<VkDeviceSize> OffsetsIn, std::vector<void*> DatasIn)
 {
-    if (Sizes.size() == 0)
+    if (SizesIn.empty())
     {
         /// TODO: Log warning
         return Buffer;
@@ -151,7 +151,7 @@ FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDevi
     /// Calculate total size to be pushed
     VkDeviceSize TotalSizeToPush = 0;
 
-    for (auto Entry : Sizes)
+    for (auto Entry : SizesIn)
     {
         TotalSizeToPush += Entry;
     }
@@ -161,16 +161,16 @@ FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDevi
         std::vector<CopySizeOffsetDataPtr> PreparedDataEntry;
         VkDeviceSize RemainingSpaceInStagingBuffer = StagingBufferSize;
 
-        while (i < Sizes.size() && RemainingSpaceInStagingBuffer > 0)
+        while (i < SizesIn.size() && RemainingSpaceInStagingBuffer > 0)
         {
-            VkDeviceSize HowMuchToPush = Sizes[i] - AlreadyPushedPart;
+            VkDeviceSize HowMuchToPush = SizesIn[i] - AlreadyPushedPart;
 
             if (HowMuchToPush <= RemainingSpaceInStagingBuffer)
             {
                 CopySizeOffsetDataPtr DataToPush{};
                 DataToPush.Size = HowMuchToPush;
-                DataToPush.Offset = Offsets[i] + AlreadyPushedPart;
-                DataToPush.Data = (char*)Datas[i] + AlreadyPushedPart;
+                DataToPush.Offset = OffsetsIn[i] + AlreadyPushedPart;
+                DataToPush.Data = (char*)DatasIn[i] + AlreadyPushedPart;
                 PreparedDataEntry.push_back(DataToPush);
 
                 RemainingSpaceInStagingBuffer -= HowMuchToPush;
@@ -183,8 +183,8 @@ FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDevi
 
             CopySizeOffsetDataPtr LastDataToPush{};
             LastDataToPush.Size = RemainingSpaceInStagingBuffer;
-            LastDataToPush.Offset = Offsets[i] + AlreadyPushedPart;
-            LastDataToPush.Data = (char*)Datas[i] + AlreadyPushedPart;
+            LastDataToPush.Offset = OffsetsIn[i] + AlreadyPushedPart;
+            LastDataToPush.Data = (char*)DatasIn[i] + AlreadyPushedPart;
             PreparedDataEntry.push_back(LastDataToPush);
 
             AlreadyPushedPart += RemainingSpaceInStagingBuffer;
