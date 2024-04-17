@@ -25,7 +25,7 @@ FSortMaterialsTask::FSortMaterialsTask(uint32_t WidthIn, uint32_t HeightIn, int 
     DescriptorSetManager->AddDescriptorLayout(Name, MATERIAL_SORT_SORT_MATERIALS_LAYOUT_INDEX, MATERIAL_SORT_SORT_MATERIALS_SORTED_MATERIALS_INDEX_MAP_BUFFER,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
-    FBuffer SortedMaterialsIndexMapBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "SortedMaterialsIndexMapBuffer");
+    FBuffer SortedMaterialsIndexMapBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "SortedMaterialsIndexMapBuffer");
     RESOURCE_ALLOCATOR()->RegisterBuffer(SortedMaterialsIndexMapBuffer, "SortedMaterialsIndexMapBuffer");
 
     VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstantsCountMaterialsPerChunk)};

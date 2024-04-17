@@ -167,7 +167,7 @@ FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDevi
 
             if (HowMuchToPush <= RemainingSpaceInStagingBuffer)
             {
-                CopySizeOffsetDataPtr DataToPush;
+                CopySizeOffsetDataPtr DataToPush{};
                 DataToPush.Size = HowMuchToPush;
                 DataToPush.Offset = Offsets[i] + AlreadyPushedPart;
                 DataToPush.Data = (char*)Datas[i] + AlreadyPushedPart;
@@ -181,7 +181,7 @@ FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDevi
                 continue;
             }
 
-            CopySizeOffsetDataPtr LastDataToPush;
+            CopySizeOffsetDataPtr LastDataToPush{};
             LastDataToPush.Size = RemainingSpaceInStagingBuffer;
             LastDataToPush.Offset = Offsets[i] + AlreadyPushedPart;
             LastDataToPush.Data = (char*)Datas[i] + AlreadyPushedPart;

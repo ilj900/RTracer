@@ -22,7 +22,7 @@ FComputeOffsetsPerMaterialTask::FComputeOffsetsPerMaterialTask(uint32_t WidthIn,
 
     DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
 
-    FBuffer MaterialsOffsetsPerMaterialBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialsOffsetsPerMaterialBuffer");
+    FBuffer MaterialsOffsetsPerMaterialBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialsOffsetsPerMaterialBuffer");
     RESOURCE_ALLOCATOR()->RegisterBuffer(MaterialsOffsetsPerMaterialBuffer, "MaterialsOffsetsPerMaterialBuffer");
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;

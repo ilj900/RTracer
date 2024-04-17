@@ -32,7 +32,7 @@ FRaytraceTask::FRaytraceTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSi
     FBuffer HitsBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FHit) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "HitsBuffer");
     RESOURCE_ALLOCATOR()->RegisterBuffer(HitsBuffer, "HitsBuffer");
 
-    FBuffer MaterialIndicesAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialIndicesAOVBuffer");
+    FBuffer MaterialIndicesAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialIndicesAOVBuffer");
     RESOURCE_ALLOCATOR()->RegisterBuffer(MaterialIndicesAOVBuffer, "MaterialIndicesAOVBuffer");
 
     DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
@@ -99,7 +99,7 @@ void FRaytraceTask::Init()
     assert(Result == VK_SUCCESS && "Failed to get handles for SBT");
 
     VkDeviceSize SBTSize = RGenRegion.size + RMissRegion.size + RHitRegion.size;
-    SBTBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(SBTSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
+    SBTBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(SBTSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "V::SBT_Buffer");
 
     auto SBTBufferAddress = VK_CONTEXT()->GetBufferDeviceAddressInfo(SBTBuffer);
