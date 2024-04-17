@@ -18,7 +18,7 @@ public:
 	void Init() override;
 	void UpdateDescriptorSets() override;
 	void RecordCommands() override;
-	VkSemaphore Submit(VkQueue Queue, VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex) override;
+	VkSemaphore Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex) override;
 
 	FGraphicsPipelineOptions GraphicsPipelineOptions;
 

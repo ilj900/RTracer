@@ -245,12 +245,12 @@ namespace ECS
             }
         }
 
-        void FMeshSystem::CreateIcosahedron(FEntity Entity, uint32_t Depth, bool Jagged)
+        void FMeshSystem::CreateIcosahedron(FEntity Entity, float Radius,  uint32_t Depth, bool Jagged)
         {
             auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
 
-            float X = 0.52573111211f;
-            float Z = 0.85065080835f;
+            float X = 0.52573111211f * Radius;
+            float Z = 0.85065080835f * Radius;
             float N = 0.f;
 
             std::vector<FVector3> InitialPositions(12);
@@ -288,9 +288,9 @@ namespace ECS
                     FVector3 B = Positions[j+1];
                     FVector3 C = Positions[j+2];
 
-                    FVector3 AB = (A + B).GetNormalized();
-                    FVector3 AC = (A + C).GetNormalized();
-                    FVector3 BC = (B + C).GetNormalized();
+                    FVector3 AB = (A + B).GetNormalized() * Radius;
+                    FVector3 AC = (A + C).GetNormalized() * Radius;
+                    FVector3 BC = (B + C).GetNormalized() * Radius;
 
                     NextIterationPositions.push_back(A);
                     NextIterationPositions.push_back(AB);
@@ -324,9 +324,9 @@ namespace ECS
                 }
                 else
                 {
-                    Normal0 = Positions[i];
-					Normal1 = Positions[i + 1];
-					Normal2 = Positions[i + 2];
+                    Normal0 = Positions[i].GetNormalized();
+					Normal1 = Positions[i + 1].GetNormalized();
+					Normal2 = Positions[i + 2].GetNormalized();
                 }
 
                 auto TransformXZ = [](float InX, float InZ)

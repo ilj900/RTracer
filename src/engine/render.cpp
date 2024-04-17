@@ -384,36 +384,36 @@ int FRender::Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaph
 
 	VkPipelineStageFlags PipelineStageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
-	SemaphoreToWait = GenerateRaysTask->Submit(VK_CONTEXT()->GetComputeQueue(), PipelineStageFlags, {(SemaphoreToWait == VK_NULL_HANDLE) ? std::vector<VkSemaphore>() : std::vector<VkSemaphore>(1, SemaphoreToWait), {ImagesInFlight[CurrentFrame]}, {}, {}}, CurrentFrame);
+	SemaphoreToWait = GenerateRaysTask->Submit(PipelineStageFlags, {(SemaphoreToWait == VK_NULL_HANDLE) ? std::vector<VkSemaphore>() : std::vector<VkSemaphore>(1, SemaphoreToWait), {ImagesInFlight[CurrentFrame]}, {}, {}}, CurrentFrame);
 
-	SemaphoreToWait = RayTraceTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SemaphoreToWait = RayTraceTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-	SemaphoreToWait = ClearMaterialsCountPerChunkTask->Submit(VK_CONTEXT()->GetComputeQueue(), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SemaphoreToWait = ClearMaterialsCountPerChunkTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-	SemaphoreToWait = ClearTotalMaterialsCountTask->Submit(VK_CONTEXT()->GetComputeQueue(), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SemaphoreToWait = ClearTotalMaterialsCountTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-	SemaphoreToWait = CountMaterialsPerChunkTask->Submit(VK_CONTEXT()->GetComputeQueue(), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SemaphoreToWait = CountMaterialsPerChunkTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-	SemaphoreToWait = ComputePrefixSumsUpSweepTask->Submit(VK_CONTEXT()->GetComputeQueue(), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SemaphoreToWait = ComputePrefixSumsUpSweepTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-	SemaphoreToWait = ComputePrefixSumsZeroOutTask->Submit(VK_CONTEXT()->GetComputeQueue(), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SemaphoreToWait = ComputePrefixSumsZeroOutTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-	SemaphoreToWait = ComputePrefixSumsDownSweepTask->Submit(VK_CONTEXT()->GetComputeQueue(), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SemaphoreToWait = ComputePrefixSumsDownSweepTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-	SemaphoreToWait = ComputeOffsetsPerMaterialTask->Submit(VK_CONTEXT()->GetComputeQueue(), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SemaphoreToWait = ComputeOffsetsPerMaterialTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-	SemaphoreToWait = SortMaterialsTask->Submit(VK_CONTEXT()->GetComputeQueue(), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SemaphoreToWait = SortMaterialsTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-	SemaphoreToWait = ShadeTask->Submit(VK_CONTEXT()->GetComputeQueue(), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SemaphoreToWait = ShadeTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
-    SemaphoreToWait = MissTask->Submit(VK_CONTEXT()->GetComputeQueue(), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+    SemaphoreToWait = MissTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
     if (NeedUpdate)
     {
-        SemaphoreToWait = ClearImageTask->Submit(VK_CONTEXT()->GetComputeQueue(), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+        SemaphoreToWait = ClearImageTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
     }
 
-	SemaphoreToWait = AccumulateTask->Submit(VK_CONTEXT()->GetComputeQueue(), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SemaphoreToWait = AccumulateTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
 	std::vector<VkFence> FencesToSignal;
 	/// If no external work to be done, then use the internal fence in passthrough
@@ -422,18 +422,18 @@ int FRender::Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaph
 		FencesToSignal.push_back(ImagesInFlight[CurrentFrame]);
 	}
 
-    SemaphoreToWait = PassthroughTask->Submit(VK_CONTEXT()->GetGraphicsQueue(), PipelineStageFlags, {{SemaphoreToWait}, {}, {}, FencesToSignal}, CurrentFrame);
+    SemaphoreToWait = PassthroughTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, FencesToSignal}, CurrentFrame);
 
 	if (!ExternalTasks.empty())
 	{
 		for (uint32_t i = 0; i < ExternalTasks.size() - 1; ++i)
 		{
-			SemaphoreToWait = ExternalTasks[i]->Submit(VK_CONTEXT()->GetQueue(ExternalTasks[i]->QueueFlagsBits), PipelineStageFlags, { { SemaphoreToWait }, {}, {}, {} }, CurrentFrame);
+			SemaphoreToWait = ExternalTasks[i]->Submit(PipelineStageFlags, { { SemaphoreToWait }, {}, {}, {} }, CurrentFrame);
 		}
 
-		SemaphoreToWait = ExternalTasks.back()->Submit(VK_CONTEXT()->GetQueue(ExternalTasks.back()->QueueFlagsBits), PipelineStageFlags, { { SemaphoreToWait }, {}, {}, { ImagesInFlight[CurrentFrame] } }, CurrentFrame);
+		SemaphoreToWait = ExternalTasks.back()->Submit(PipelineStageFlags, { { SemaphoreToWait }, {}, {}, { ImagesInFlight[CurrentFrame] } }, CurrentFrame);
 	}
-	
+
 	if (RenderFinishedSemaphore != nullptr)
 	{
 		*RenderFinishedSemaphore = SemaphoreToWait;
@@ -554,11 +554,11 @@ ECS::FEntity FRender::CreateCube()
     return NewModel;
 }
 
-ECS::FEntity FRender::CreateIcosahedronSphere(int LevelOfComplexity, bool bJagged)
+ECS::FEntity FRender::CreateIcosahedronSphere(float Radius, int LevelOfComplexity, bool bJagged)
 {
     auto NewModel = CreateEmptyModel();
 
-    MESH_SYSTEM()->CreateIcosahedron(NewModel, LevelOfComplexity, bJagged);
+    MESH_SYSTEM()->CreateIcosahedron(NewModel, Radius, LevelOfComplexity, bJagged);
     MESH_SYSTEM()->LoadToGPU(NewModel);
     MESH_SYSTEM()->GenerateBLAS(NewModel);
 

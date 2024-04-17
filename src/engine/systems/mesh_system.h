@@ -17,7 +17,7 @@ namespace ECS
             void LoadMesh(FEntity Entity, const std::string &Path);
             void CreateTetrahedron(FEntity Entity);
             void CreateHexahedron(FEntity Entity);
-            void CreateIcosahedron(FEntity Entity, uint32_t Depth, bool Jagged);
+            void CreateIcosahedron(FEntity Entity, float Radius, uint32_t Depth, bool Jagged);
 			void CreateUVSphere(FEntity Entity, uint32_t LongitudeCount, uint32_t LatitudeCount);
             void CreatePlane(FEntity Entity, const FVector2& Size);
             uint32_t Size();

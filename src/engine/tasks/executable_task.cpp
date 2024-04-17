@@ -100,7 +100,7 @@ void FExecutableTask::Reload()
 	DitryFlags = 0u;
 }
 
-VkSemaphore FExecutableTask::Submit(VkQueue Queue, VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex)
+VkSemaphore FExecutableTask::Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex)
 {
     VkPipelineStageFlags WaitStages[] = {PipelineStageFlagsIn};
     VkSubmitInfo SubmitInfo{};
@@ -134,7 +134,7 @@ VkSemaphore FExecutableTask::Submit(VkQueue Queue, VkPipelineStageFlags& Pipelin
     }
 
     /// Submit computing. When computing finished, appropriate fence will be signalled
-    if (vkQueueSubmit(Queue, 1, &SubmitInfo, FenceToSignal) != VK_SUCCESS)
+    if (vkQueueSubmit(VK_CONTEXT()->GetQueue(QueueFlagsBits), 1, &SubmitInfo, FenceToSignal) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to submit draw command buffer!");
     }

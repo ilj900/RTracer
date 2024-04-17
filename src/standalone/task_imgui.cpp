@@ -118,7 +118,7 @@ void FImguiTask::RecordCommands()
 	CommandBuffers.resize(NumberOfSimultaneousSubmits);
 }
 
-VkSemaphore FImguiTask::Submit(VkQueue Queue, VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex)
+VkSemaphore FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex)
 {
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
@@ -191,5 +191,5 @@ VkSemaphore FImguiTask::Submit(VkQueue Queue, VkPipelineStageFlags& PipelineStag
 
 	PreviousIterationIndex = IterationIndex;
 
-	return FExecutableTask::Submit(Queue, PipelineStageFlags, SynchronizationPoint, IterationIndex);
+	return FExecutableTask::Submit(PipelineStageFlags, SynchronizationPoint, IterationIndex);
 }

@@ -14,16 +14,16 @@ TEST_CASE( "Basic scene loading", "[Basic]" )
 	Render->SetActiveCamera(Camera);
 
 	auto Wall = Render->CreatePlane({4, 4});
-	auto Sphere = Render->CreateIcosahedronSphere(5, false);
+	auto Sphere = Render->CreateIcosahedronSphere(0.5f, 5, false);
 
 	auto BackWall = Render->CreateInstance(Wall, {0, 0, -2}, {0, 0, -1}, {0, 1, 0});
 	auto TopWall = Render->CreateInstance(Wall, {0, 2, 0}, {0, -1, 0}, {0, 0, 1});
 	auto BottomWall = Render->CreateInstance(Wall, {0, -2, 0}, {0, 1, 0}, {0, 0, -1});
 	auto LeftWall = Render->CreateInstance(Wall, {-2, 0, 0}, {1, 0, 0}, {0, 1, 0});
 	auto RightWall = Render->CreateInstance(Wall, {2, 0, 0}, {-1, 0, 0}, {0, 1, 0});
-	auto Sphere1 = Render->CreateInstance(Sphere, {0, -1, 1});
-	auto Sphere2 = Render->CreateInstance(Sphere, {1, -1, -1});
-	auto Sphere3 = Render->CreateInstance(Sphere, {-1, -1, -1});
+	auto Sphere1 = Render->CreateInstance(Sphere, {0, -1.5, 1});
+	auto Sphere2 = Render->CreateInstance(Sphere, {1, -1.5, -1});
+	auto Sphere3 = Render->CreateInstance(Sphere, {-1, -1.5, -1});
 
 	auto WhiteMaterial = Render->CreateMaterial({1, 1, 1});
 	auto RedMaterial = Render->CreateMaterial({1, 0, 0});
