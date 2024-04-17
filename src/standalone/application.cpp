@@ -50,8 +50,15 @@ int FApplication::Run()
 		{
 			Render->SetSize(Width, Height);
 			Swapchain = nullptr;
+			ImguiTask = nullptr;
 			Swapchain = std::make_shared<FSwapchain>(Width, Height, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
 			Render->RegisterExternalOutputs(Swapchain->GetImages(), Swapchain->GetSemaphores());
+			ImguiTask = std::make_shared<FImguiTask>(Width, Height, int(Swapchain->Size()), VK_CONTEXT()->LogicalDevice);
+			ImguiTask->SetGLFWWindow(WindowManager->GetWindow());
+			ImguiTask->Init(Swapchain->GetImages());
+			ImguiTask->UpdateDescriptorSets();
+			ImguiTask->RecordCommands();
+			Render->AddExternalTaskAfterRender(ImguiTask);
 			bSwapchainWasResized = false;
 		}
 

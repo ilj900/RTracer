@@ -79,7 +79,7 @@ public:
 	FVector3 GetLightPosition(ECS::FEntity Light);
     int SetIBL(const std::string& Path);
 
-    bool bShouldResize = false;
+    bool bWasResized = false;
 
     uint32_t MaxFramesInFlight = 2;
     uint32_t RenderFrameIndex = 0;

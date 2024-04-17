@@ -219,10 +219,7 @@ int FRender::Cleanup()
     ClearImageTask = nullptr;
     PassthroughTask = nullptr;
 
-	for (auto& Task : ExternalTasks)
-	{
-		Task = nullptr;
-	}
+	ExternalTasks.clear();
 
 	for (int i = 0; i < ImagesInFlight.size(); ++i)
 	{
@@ -240,7 +237,8 @@ int FRender::SetSize(int WidthIn, int HeightIn)
 {
     Width = WidthIn;
     Height = HeightIn;
-	bShouldResize = true;
+	bWasResized = true;
+	Cleanup();
 	CAMERA_SYSTEM()->SetAspectRatio(ActiveCamera, float(Width) / float(Height));
     return 0;
 }
@@ -456,11 +454,10 @@ int FRender::Update()
 	ACCELERATION_STRUCTURE_SYSTEM()->Update();
 	ACCELERATION_STRUCTURE_SYSTEM()->UpdateTLAS();
 
-    if (bShouldResize)
+    if (bWasResized)
     {
-        Cleanup();
         Init();
-		bShouldResize = false;
+		bWasResized = false;
     }
 
     return 0;
