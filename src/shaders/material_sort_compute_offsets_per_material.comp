@@ -25,6 +25,6 @@ void main()
 
     for (uint i = 0; i < TOTAL_MATERIALS; ++i)
     {
-        TotalMaterialCount[i] = (TotalMaterialCount[i] + BASIC_CHUNK_SIZE - 1) / BASIC_CHUNK_SIZE;
+        TotalMaterialCount[i * 3] = (TotalMaterialCount[i * 3] + BASIC_CHUNK_SIZE - 1) / BASIC_CHUNK_SIZE;
     }
 }
