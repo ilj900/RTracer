@@ -93,7 +93,7 @@ void FApplication::LoadScene()
 	auto Pyramid = Render->CreatePyramid();
 	auto VikingRoom = Render->CreateModel("../../../models/viking_room/viking_room.obj");
 	auto Cube = Render->CreateCube();
-	auto Sphere = Render->CreateIcosahedronSphere(1, 3, false);
+	auto Sphere = Render->CreateIcosahedronSphere(1, 5, false);
 	auto Shaderball = Render->CreateModel("../../../models/Shaderball.obj");
 	auto UVSphere = Render->CreateUVSphere(32, 16);
 
