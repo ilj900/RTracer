@@ -85,14 +85,6 @@ void FApplication::Update(float DeltaTime, float Time)
 {
 	auto NewLightCoordinates = Render->GetLightPosition(Lights.back()).SelfRotateY(0.025f);
 	Render->SetLightPosition(Lights.back(), NewLightCoordinates);
-
-	for (auto& Instance : Models)
-	{
-		auto NewInstanceCoordinates = Render->GetInstancePosition(Instance);
-		float R = sqrt(NewInstanceCoordinates.X * NewInstanceCoordinates.X + NewInstanceCoordinates.Z * NewInstanceCoordinates.Z);
-		NewInstanceCoordinates.Y = sin((R / 4 + Time)) * 2 - 5.f;
-		Render->SetInstancePosition(Instance, NewInstanceCoordinates);
-	}
 }
 
 void FApplication::LoadScene()
@@ -124,12 +116,12 @@ void FApplication::LoadScene()
 	Render->MaterialSetNormal(WoodMaterial, WoodNormalTexture);
 	Render->MaterialSetBaseColor(VikingRoomMaterial, ModelTexture);
 
-//	auto PlaneInstance = Render->CreateInstance(Plane, {-5.f, 0.f, -2.f});
-//	auto PyramidInstance = Render->CreateInstance(Pyramid, {-3.f, 0.f, -2.f});
-//	auto VikingRoomInstance = Render->CreateInstance(VikingRoom, {-1.f, 0.f, -2.f});
-//	auto CubeInstance = Render->CreateInstance(Cube, {1.f, 0.f, -2.f});
-//	auto ShaderballInstance = Render->CreateInstance(Shaderball, {3.f, -1.f, -2.f});
-//	auto UVSphereInstance = Render->CreateInstance(UVSphere, {5.f, 0.f, -2.f});
+	auto PlaneInstance = Render->CreateInstance(Plane, {-5.f, 0.f, -2.f});
+	auto PyramidInstance = Render->CreateInstance(Pyramid, {-3.f, 0.f, -2.f});
+	auto VikingRoomInstance = Render->CreateInstance(VikingRoom, {-1.f, 0.f, -2.f});
+	auto CubeInstance = Render->CreateInstance(Cube, {1.f, 0.f, -2.f});
+	auto ShaderballInstance = Render->CreateInstance(Shaderball, {3.f, -1.f, -2.f});
+	auto UVSphereInstance = Render->CreateInstance(UVSphere, {5.f, 0.f, -2.f});
 
 	for (int i = -20; i < 20; ++i)
 	{
@@ -137,19 +129,17 @@ void FApplication::LoadScene()
 		{
 			auto SphereInstance = Render->CreateInstance(Sphere, {2.f * i, -5.f, 2.f * j});
 			Render->ShapeSetMaterial(SphereInstance, GreenMaterial);
-			Models.push_back(SphereInstance);
 		}
 	}
 
+	Render->ShapeSetMaterial(PlaneInstance, WoodMaterial);
+	Render->ShapeSetMaterial(PyramidInstance, YellowMaterial);
+	Render->ShapeSetMaterial(VikingRoomInstance, VikingRoomMaterial);
+	Render->ShapeSetMaterial(CubeInstance, RedMaterial);
+	Render->ShapeSetMaterial(ShaderballInstance, BlueMaterial);
+	Render->ShapeSetMaterial(UVSphereInstance, WoodMaterial);
 
-//	Render->ShapeSetMaterial(PlaneInstance, WoodMaterial);
-//	Render->ShapeSetMaterial(PyramidInstance, YellowMaterial);
-//	Render->ShapeSetMaterial(VikingRoomInstance, VikingRoomMaterial);
-//	Render->ShapeSetMaterial(CubeInstance, RedMaterial);
-//	Render->ShapeSetMaterial(ShaderballInstance, BlueMaterial);
-//	Render->ShapeSetMaterial(UVSphereInstance, WoodMaterial);
-
-	Lights.push_back(Render->CreateLight({5, 25, 5}));
+	Lights.push_back(Render->CreateLight({5, 5, 5}));
 
 	Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
 }
