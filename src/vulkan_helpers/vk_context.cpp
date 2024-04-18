@@ -695,6 +695,15 @@ VkAccelerationStructureBuildGeometryInfoKHR FVulkanContext::GetAccelerationStruc
     return AccelerationStructureBuildGeometryInfo;
 }
 
+VkAccelerationStructureBuildSizesInfoKHR FVulkanContext::GetAccelerationStructureBuildSizesInfo(const VkAccelerationStructureBuildGeometryInfoKHR& AccelerationStructureBuildGeometryInfo, uint32_t& PrimitivesCount)
+{
+	VkAccelerationStructureBuildSizesInfoKHR AccelerationStructureBuildSizesInfo{};
+	AccelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+	V::vkGetAccelerationStructureBuildSizesKHR(LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &AccelerationStructureBuildGeometryInfo, &PrimitivesCount, &AccelerationStructureBuildSizesInfo);
+
+	return AccelerationStructureBuildSizesInfo;
+}
+
 FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuffer& IndexBuffer, VkDeviceSize VertexStride, uint32_t MaxVertices, FMemoryPtr& VertexBufferPtr, FMemoryPtr& IndexBufferPtr)
 {
     VkAccelerationStructureGeometryTrianglesDataKHR AccelerationStructureGeometryTrianglesData = GetAccelerationStructureGeometryTrianglesData(VertexBuffer, IndexBuffer, VertexStride, MaxVertices, VertexBufferPtr, IndexBufferPtr);
@@ -704,12 +713,8 @@ FAccelerationStructure FVulkanContext::GenerateBlas(FBuffer& VertexBuffer, FBuff
 
     const VkAccelerationStructureBuildRangeInfoKHR* VkAccelerationStructureBuildRangeInfoKHRPtr = &AccelerationStructureBuildRangeInfo;
 
-    uint32_t MaxPrimitiveCount = AccelerationStructureBuildRangeInfo.primitiveCount;
-
-    VkAccelerationStructureBuildSizesInfoKHR AccelerationStructureBuildSizesInfo{};
-    AccelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
-
-    V::vkGetAccelerationStructureBuildSizesKHR(LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &AccelerationStructureBuildGeometryInfo, &MaxPrimitiveCount, &AccelerationStructureBuildSizesInfo);
+	uint32_t MaxPrimitiveCount = AccelerationStructureBuildRangeInfo.primitiveCount;
+    VkAccelerationStructureBuildSizesInfoKHR AccelerationStructureBuildSizesInfo = GetAccelerationStructureBuildSizesInfo(AccelerationStructureBuildGeometryInfo, MaxPrimitiveCount);
 
     FAccelerationStructure NotCompactedBLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR, "NotCompactedBLAS");
 
@@ -776,14 +781,9 @@ FAccelerationStructure FVulkanContext::GenerateTlas(const FBuffer& BlasInstanceB
     FBuffer ScratchBuffer;
 
 	VkAccelerationStructureGeometryInstancesDataKHR AccelerationStructureGeometryInstancesData = GetAccelerationStructureGeometryInstancesData(BlasInstanceBuffer);
-
 	VkAccelerationStructureGeometryKHR AccelerationStructureGeometry = GetAccelerationStructureGeometry(AccelerationStructureGeometryInstancesData);
-
 	VkAccelerationStructureBuildGeometryInfoKHR AccelerationStructureBuildGeometry = GetAccelerationStructureBuildGeometryInfo(AccelerationStructureGeometry, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
-
-	VkAccelerationStructureBuildSizesInfoKHR AccelerationStructureBuildSizesInfo{};
-	AccelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
-	V::vkGetAccelerationStructureBuildSizesKHR(LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &AccelerationStructureBuildGeometry, &BLASCount, &AccelerationStructureBuildSizesInfo);
+	VkAccelerationStructureBuildSizesInfoKHR AccelerationStructureBuildSizesInfo = GetAccelerationStructureBuildSizesInfo(AccelerationStructureBuildGeometry, BLASCount);
 
 	TLAS = CreateAccelerationStructure(AccelerationStructureBuildSizesInfo.accelerationStructureSize, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR, "V::TLAS");
 
