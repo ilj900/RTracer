@@ -83,7 +83,7 @@ int FApplication::Run()
 
 void FApplication::Update(float DeltaTime, float Time)
 {
-	auto NewLightCoordinates = Render->GetLightPosition(Lights.back()).SelfRotateY(0.025f);
+	auto NewLightCoordinates = Render->GetLightPosition(Lights.back()).SelfRotateY(DeltaTime);
 	Render->SetLightPosition(Lights.back(), NewLightCoordinates);
 }
 
