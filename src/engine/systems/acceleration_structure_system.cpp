@@ -80,10 +80,22 @@ namespace ECS
             return NewMeshInstance;
         }
 
+		void FAccelerationStructureSystem::UpdateInstancePosition(FEntity Entity)
+		{
+			auto& MeshInstanceComponent = GetComponent<COMPONENTS::FMeshInstanceComponent>(Entity);
+			auto& ModelMatrix = COORDINATOR().GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Entity).ModelMatrix.Data;
+			MeshInstanceComponent.transform = { ModelMatrix[0].X, ModelMatrix[1].X, ModelMatrix[2].X, ModelMatrix[3].X,
+				ModelMatrix[0].Y, ModelMatrix[1].Y, ModelMatrix[2].Y, ModelMatrix[3].Y,
+				ModelMatrix[0].Z, ModelMatrix[1].Z, ModelMatrix[2].Z, ModelMatrix[3].Z,};
+			MarkDirty(Entity);
+			bIsDirty = true;
+		}
+
         void FAccelerationStructureSystem::UpdateTLAS()
         {
             if (bIsDirty)
             {
+				VK_CONTEXT()->DestroyAccelerationStructure(TLAS);
                 TLAS = VK_CONTEXT()->GenerateTlas(DeviceBuffer, InstanceCount);
                 bIsDirty = false;
             }

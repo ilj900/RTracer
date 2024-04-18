@@ -84,6 +84,8 @@ void FApplication::Update()
 {
 	auto NewLightCoordinates = Render->GetLightPosition(Lights.back()).SelfRotateY(0.025f);
 	Render->SetLightPosition(Lights.back(), NewLightCoordinates);
+	auto NewInstanceCoordinates = Render->GetInstancePosition(Models.back()).SelfRotateY(0.025f);
+	Render->SetInstancePosition(Models.back(), NewInstanceCoordinates);
 }
 
 void FApplication::LoadScene()
@@ -121,6 +123,7 @@ void FApplication::LoadScene()
 	auto CubeInstance = Render->CreateInstance(Cube, {1.f, 0.f, -2.f});
 	auto ShaderballInstance = Render->CreateInstance(Shaderball, {3.f, -1.f, -2.f});
 	auto UVSphereInstance = Render->CreateInstance(UVSphere, {5.f, 0.f, -2.f});
+	Models.push_back(UVSphereInstance);
 
 	for (int i = -10; i < 10; ++i)
 	{

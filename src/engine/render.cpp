@@ -614,6 +614,19 @@ ECS::FEntity FRender::CreateInstance(ECS::FEntity BaseModel, const FVector3& Pos
     return MeshInstance;
 }
 
+void FRender::SetInstancePosition(ECS::FEntity Instance, const FVector3& Position)
+{
+	auto& TransformComponent = TRANSFORM_SYSTEM()->GetComponent<ECS::COMPONENTS::FTransformComponent>(Instance);
+	TRANSFORM_SYSTEM()->SetTransform(Instance, Position, TransformComponent.Direction, TransformComponent.Up);
+	ACCELERATION_STRUCTURE_SYSTEM()->UpdateInstancePosition(Instance);
+	RayTraceTask->SetDirty(OUTDATED_DESCRIPTOR_SET | OUTDATED_COMMAND_BUFFER);
+}
+
+FVector3 FRender::GetInstancePosition(ECS::FEntity Instance)
+{
+	return TRANSFORM_SYSTEM()->GetComponent<ECS::COMPONENTS::FTransformComponent>(Instance).Position;
+}
+
 ECS::FEntity FRender::CreateLight(const FVector3& Position)
 {
     auto Light = COORDINATOR().CreateEntity();

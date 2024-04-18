@@ -23,7 +23,7 @@ namespace ECS
             void Terminate();
 
             FEntity CreateInstance(FEntity Entity, const FVector3& Position, const FVector3& Direction, const FVector3& Up);
-
+			void UpdateInstancePosition(FEntity Entity);
             void UpdateTLAS();
 
             const uint32_t MAX_INSTANCE_COUNT = 512u * 1024u;
