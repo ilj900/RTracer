@@ -85,6 +85,8 @@ void FApplication::Update(float DeltaTime, float Time)
 {
 	auto NewLightCoordinates = Render->GetLightPosition(Lights.back()).SelfRotateY(DeltaTime);
 	Render->SetLightPosition(Lights.back(), NewLightCoordinates);
+	auto NewModelPosition = Render->GetInstancePosition(Models.back()).SelfRotateY(DeltaTime);
+	Render->SetInstancePosition(Models.back(), NewModelPosition);
 }
 
 void FApplication::LoadScene()
@@ -122,6 +124,7 @@ void FApplication::LoadScene()
 	auto CubeInstance = Render->CreateInstance(Cube, {1.f, 0.f, -2.f});
 	auto ShaderballInstance = Render->CreateInstance(Shaderball, {3.f, -1.f, -2.f});
 	auto UVSphereInstance = Render->CreateInstance(UVSphere, {5.f, 0.f, -2.f});
+	Models.push_back(UVSphereInstance);
 
 	for (int i = -20; i < 20; ++i)
 	{
