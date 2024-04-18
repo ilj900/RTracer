@@ -93,9 +93,11 @@ public:
     VkDeviceAddress GetBufferDeviceAddressInfo(const FBuffer& Buffer);
     VkDeviceAddress GetASDeviceAddressInfo(FAccelerationStructure& AS);
     VkAccelerationStructureGeometryTrianglesDataKHR GetAccelerationStructureGeometryTrianglesData(FBuffer& VertexBuffer, FBuffer& IndexBuffer, VkDeviceSize VertexStride, uint32_t MaxVertices, FMemoryPtr& VertexBufferPtr, FMemoryPtr& IndexBufferPtr);
+	VkAccelerationStructureGeometryInstancesDataKHR GetAccelerationStructureGeometryInstancesData(const FBuffer& InstanceBuffer);
     VkAccelerationStructureGeometryKHR GetAccelerationStructureGeometry(VkAccelerationStructureGeometryTrianglesDataKHR& AccelerationStructureGeometryTrianglesData);
+	VkAccelerationStructureGeometryKHR GetAccelerationStructureGeometry(VkAccelerationStructureGeometryInstancesDataKHR& AccelerationStructureGeometryInstancesData);
     VkAccelerationStructureBuildRangeInfoKHR GetAccelerationStructureBuildRangeInfo(uint32_t PrimitiveCount);
-    VkAccelerationStructureBuildGeometryInfoKHR GetAccelerationStructureBuildGeometryInfo(VkAccelerationStructureGeometryKHR& AccelerationStructureGeometry, VkBuildAccelerationStructureFlagsKHR Flags);
+    VkAccelerationStructureBuildGeometryInfoKHR GetAccelerationStructureBuildGeometryInfo(VkAccelerationStructureGeometryKHR& AccelerationStructureGeometry, VkBuildAccelerationStructureFlagsKHR Flags, VkAccelerationStructureTypeKHR AccelerationStructureType);
     FAccelerationStructure GenerateBlas(FBuffer& VertexBuffer, FBuffer& IndexBuffer, VkDeviceSize VertexStride, uint32_t MaxVertices, FMemoryPtr& VertexBufferPtr, FMemoryPtr& IndexBufferPtr);
     FAccelerationStructure GenerateTlas(const FBuffer& BlasInstanceBuffer, uint32_t BLASCount);
 
