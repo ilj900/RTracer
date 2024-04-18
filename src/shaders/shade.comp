@@ -187,7 +187,7 @@ void main()
     vec3 PointOfIntersectioToLightDirection = Light.Position - PointOfIntersectionInWorldSpace;
     float CosNormalToLightAngle = dot(normalize(PointOfIntersectioToLightDirection), Normal);
     float Distance2 = dot(PointOfIntersectioToLightDirection, PointOfIntersectioToLightDirection);
-    float Luminance = Light.Intensity * CosNormalToLightAngle / Distance2;
+    float Luminance = Light.Intensity * CosNormalToLightAngle / Distance2 * 5;
 
     vec3 ColorOut = Material.BaseColor * Luminance;
 

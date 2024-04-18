@@ -15,7 +15,7 @@ public:
     ~FApplication();
 
     int Run();
-	void Update();
+	void Update(float DeltaTime, float Time);
 	void LoadScene();
 	void SetSwapchainWasResized(uint32_t NewWidth, uint32_t NewHeight);
 
