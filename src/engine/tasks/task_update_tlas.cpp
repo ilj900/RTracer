@@ -17,6 +17,11 @@ FUpdateTLASTask::FUpdateTLASTask(uint32_t WidthIn, uint32_t HeightIn, int Number
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
 }
 
+FUpdateTLASTask::~FUpdateTLASTask()
+{
+	RESOURCE_ALLOCATOR()->DestroyBuffer(ScratchBuffer);
+}
+
 void FUpdateTLASTask::Init()
 {
     TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
@@ -30,15 +35,17 @@ void FUpdateTLASTask::RecordCommands()
 {
     CommandBuffers.resize(NumberOfSimultaneousSubmits);
 
-	FBuffer ScratchBuffer;
-
 	VkAccelerationStructureGeometryInstancesDataKHR AccelerationStructureGeometryInstancesData = VK_CONTEXT()->GetAccelerationStructureGeometryInstancesData(ACCELERATION_STRUCTURE_SYSTEM()->DeviceBuffer);
 	VkAccelerationStructureGeometryKHR AccelerationStructureGeometry = VK_CONTEXT()->GetAccelerationStructureGeometry(AccelerationStructureGeometryInstancesData);
 	VkAccelerationStructureBuildGeometryInfoKHR AccelerationStructureBuildGeometry = VK_CONTEXT()->GetAccelerationStructureBuildGeometryInfo(AccelerationStructureGeometry, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR, VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR);
 	AccelerationStructureBuildGeometry.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR;
 	VkAccelerationStructureBuildSizesInfoKHR AccelerationStructureBuildSizesInfo = VK_CONTEXT()->GetAccelerationStructureBuildSizesInfo(AccelerationStructureBuildGeometry, ACCELERATION_STRUCTURE_SYSTEM()->InstanceCount);
 
-	ScratchBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(AccelerationStructureBuildSizesInfo.buildScratchSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V::TLAS_Scratch_Buffer");
+	if (ScratchBuffer.BufferSize != AccelerationStructureBuildSizesInfo.buildScratchSize)
+	{
+		RESOURCE_ALLOCATOR()->DestroyBuffer(ScratchBuffer);
+		ScratchBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(AccelerationStructureBuildSizesInfo.buildScratchSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V::TLAS_Scratch_Buffer");
+	}
 
 	AccelerationStructureBuildGeometry.srcAccelerationStructure = ACCELERATION_STRUCTURE_SYSTEM()->TLAS.AccelerationStructure;
 	AccelerationStructureBuildGeometry.dstAccelerationStructure = ACCELERATION_STRUCTURE_SYSTEM()->TLAS.AccelerationStructure;
