@@ -455,7 +455,6 @@ int FRender::Update()
 	RENDERABLE_SYSTEM()->Update();
 	LIGHT_SYSTEM()->Update();
 	ACCELERATION_STRUCTURE_SYSTEM()->Update();
-	ACCELERATION_STRUCTURE_SYSTEM()->UpdateTLAS();
 
     if (bWasResized)
     {
