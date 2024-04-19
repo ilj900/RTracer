@@ -813,42 +813,6 @@ FAccelerationStructure FVulkanContext::GenerateTlas(const FBuffer& BlasInstanceB
 	return TLAS;
 }
 
-void FVulkanContext::UpdateTlas(FAccelerationStructure TLAS, const FBuffer& BlasInstanceBuffer, uint32_t BLASCount)
-{
-	FBuffer ScratchBuffer;
-
-	VkAccelerationStructureGeometryInstancesDataKHR AccelerationStructureGeometryInstancesData = GetAccelerationStructureGeometryInstancesData(BlasInstanceBuffer);
-	VkAccelerationStructureGeometryKHR AccelerationStructureGeometry = GetAccelerationStructureGeometry(AccelerationStructureGeometryInstancesData);
-	VkAccelerationStructureBuildGeometryInfoKHR AccelerationStructureBuildGeometry = GetAccelerationStructureBuildGeometryInfo(AccelerationStructureGeometry, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR, VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR);
-	AccelerationStructureBuildGeometry.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR;
-	VkAccelerationStructureBuildSizesInfoKHR AccelerationStructureBuildSizesInfo = GetAccelerationStructureBuildSizesInfo(AccelerationStructureBuildGeometry, BLASCount);
-
-	ScratchBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(AccelerationStructureBuildSizesInfo.buildScratchSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V::TLAS_Scratch_Buffer");
-
-	AccelerationStructureBuildGeometry.srcAccelerationStructure = TLAS.AccelerationStructure;
-	AccelerationStructureBuildGeometry.dstAccelerationStructure = TLAS.AccelerationStructure;
-	AccelerationStructureBuildGeometry.scratchData.deviceAddress = GetBufferDeviceAddressInfo(ScratchBuffer);
-
-	VkAccelerationStructureBuildRangeInfoKHR AccelerationStructureBuildRangeInfo{};
-	AccelerationStructureBuildRangeInfo.primitiveCount = BLASCount;
-	const VkAccelerationStructureBuildRangeInfoKHR* AccelerationStructureBuildRangeInfoPtr = &AccelerationStructureBuildRangeInfo;
-
-	COMMAND_BUFFER_MANAGER()->RunSingletimeCommand([&, this](VkCommandBuffer CommandBuffer)
-		{
-			VkMemoryBarrier MemoryBarrier{};
-			MemoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-			MemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			MemoryBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
-			vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, 0, 1,
-				&MemoryBarrier, 0, nullptr, 0, nullptr);
-
-
-			V::vkCmdBuildAccelerationStructuresKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometry, &AccelerationStructureBuildRangeInfoPtr);
-		}, VK_QUEUE_COMPUTE_BIT);
-
-	RESOURCE_ALLOCATOR()->DestroyBuffer(ScratchBuffer);
-}
-
 VkDevice FVulkanContext::CreateLogicalDevice(VkPhysicalDevice PhysicalDeviceIn, FVulkanContextOptions& VulkanContextOptions)
 {
     std::set<uint32_t> QueueIndices;
