@@ -4,6 +4,7 @@
 #include "swapchain.h"
 #include "window_manager.h"
 #include "controller.h"
+#include "scene_loader.h"
 #include "task_imgui.h"
 
 #include <memory>
@@ -15,8 +16,6 @@ public:
     ~FApplication();
 
     int Run();
-	void Update(float DeltaTime, float Time);
-	void LoadScene();
 	void SetSwapchainWasResized(uint32_t NewWidth, uint32_t NewHeight);
 
 private:
@@ -33,5 +32,6 @@ private:
 	std::shared_ptr<FWindowManager> WindowManager = nullptr;
 	std::shared_ptr<FController> Controller = nullptr;
 	std::shared_ptr<FImguiTask> ImguiTask = nullptr;
+	std::shared_ptr<FSceneLoader> SceneLoader = nullptr;
 	bool bSwapchainWasResized = false;
 };

@@ -28,6 +28,7 @@ FApplication::FApplication()
 	ImguiTask->UpdateDescriptorSets();
 	ImguiTask->RecordCommands();
 	Render->AddExternalTaskAfterRender(ImguiTask);
+	SceneLoader = std::make_shared<FSceneLoader>(Render);
 }
 
 FApplication::~FApplication()
@@ -43,6 +44,7 @@ int FApplication::Run()
 {
 	uint32_t ImageIndex = UINT32_MAX;
 	VkSemaphore RenderingFinishedSemaphore = VK_NULL_HANDLE;
+	SceneLoader->LoadScene("Floating spheres");
 
     while (!WindowManager->ShouldClose())
     {
@@ -69,7 +71,7 @@ int FApplication::Run()
 		float Time = std::chrono::duration<float>(CurrentTime.time_since_epoch()).count();
         StartTime = CurrentTime;
 
-		Update(DeltaTime, Time);
+		SceneLoader->UpdateScene(DeltaTime, Time);
 		Controller->Update(DeltaTime);
 		Render->Update();
 		Swapchain->GetNextImage( ImageIndex);
@@ -79,72 +81,6 @@ int FApplication::Run()
     }
 
     return 0;
-}
-
-void FApplication::Update(float DeltaTime, float Time)
-{
-	auto NewLightCoordinates = Render->GetLightPosition(Lights.back()).SelfRotateY(DeltaTime);
-	Render->SetLightPosition(Lights.back(), NewLightCoordinates);
-	auto NewModelPosition = Render->GetInstancePosition(Models.back()).SelfRotateY(DeltaTime);
-	Render->SetInstancePosition(Models.back(), NewModelPosition);
-}
-
-void FApplication::LoadScene()
-{
-	FTimer Timer("Loading scene time: ");
-	auto Plane = Render->CreatePlane({1, 1});
-	auto Pyramid = Render->CreatePyramid();
-	auto VikingRoom = Render->CreateModel("../../../models/viking_room/viking_room.obj");
-	auto Cube = Render->CreateCube();
-	auto Sphere = Render->CreateIcosahedronSphere(1, 5, false);
-	auto Shaderball = Render->CreateModel("../../../models/Shaderball.obj");
-	auto UVSphere = Render->CreateUVSphere(32, 16);
-
-	auto WoodMaterial = Render->CreateMaterial({1, 0, 1});
-	auto YellowMaterial = Render->CreateMaterial({1, 1, 0});
-	auto VikingRoomMaterial = Render->CreateMaterial({0, 1, 1});
-	auto RedMaterial = Render->CreateMaterial({1, 0, 0});
-	auto GreenMaterial = Render->CreateMaterial({0, 1, 0});
-	auto BlueMaterial = Render->CreateMaterial({0, 0, 1});
-
-	auto ModelTexture = Render->CreateTexture("../../../models/viking_room/viking_room.png");
-	auto WoodAlbedoTexture = Render->CreateTexture("../../../resources/Wood/Wood_8K_Albedo.jpg");
-	auto WoodAOTexture = Render->CreateTexture("../../../resources/Wood/Wood_8K_AO.jpg");
-	auto WoodRoughnessTexture = Render->CreateTexture("../../../resources/Wood/Wood_8K_Roughness.jpg");
-	auto WoodNormalTexture = Render->CreateTexture("../../../resources/Wood/Wood_8K_Normal.jpg");
-
-	Render->MaterialSetBaseColor(WoodMaterial, WoodAlbedoTexture);
-	Render->MaterialSetDiffuseRoughness(WoodMaterial, WoodRoughnessTexture);
-	Render->MaterialSetNormal(WoodMaterial, WoodNormalTexture);
-	Render->MaterialSetBaseColor(VikingRoomMaterial, ModelTexture);
-
-	auto PlaneInstance = Render->CreateInstance(Plane, {-5.f, 0.f, -2.f});
-	auto PyramidInstance = Render->CreateInstance(Pyramid, {-3.f, 0.f, -2.f});
-	auto VikingRoomInstance = Render->CreateInstance(VikingRoom, {-1.f, 0.f, -2.f});
-	auto CubeInstance = Render->CreateInstance(Cube, {1.f, 0.f, -2.f});
-	auto ShaderballInstance = Render->CreateInstance(Shaderball, {3.f, -1.f, -2.f});
-	auto UVSphereInstance = Render->CreateInstance(UVSphere, {5.f, 0.f, -2.f});
-	Models.push_back(UVSphereInstance);
-
-	for (int i = -20; i < 20; ++i)
-	{
-		for (int j = -20; j < 20; ++j)
-		{
-			auto SphereInstance = Render->CreateInstance(Sphere, {2.f * i, -5.f, 2.f * j});
-			Render->ShapeSetMaterial(SphereInstance, GreenMaterial);
-		}
-	}
-
-	Render->ShapeSetMaterial(PlaneInstance, WoodMaterial);
-	Render->ShapeSetMaterial(PyramidInstance, YellowMaterial);
-	Render->ShapeSetMaterial(VikingRoomInstance, VikingRoomMaterial);
-	Render->ShapeSetMaterial(CubeInstance, RedMaterial);
-	Render->ShapeSetMaterial(ShaderballInstance, BlueMaterial);
-	Render->ShapeSetMaterial(UVSphereInstance, WoodMaterial);
-
-	Lights.push_back(Render->CreateLight({5, 5, 5}));
-
-	Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
 }
 
 void FApplication::SetSwapchainWasResized(uint32_t NewWidth, uint32_t NewHeight)
