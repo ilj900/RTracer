@@ -619,7 +619,6 @@ void FRender::SetInstancePosition(ECS::FEntity Instance, const FVector3& Positio
 	auto& TransformComponent = TRANSFORM_SYSTEM()->GetComponent<ECS::COMPONENTS::FTransformComponent>(Instance);
 	TRANSFORM_SYSTEM()->SetTransform(Instance, Position, TransformComponent.Direction, TransformComponent.Up);
 	ACCELERATION_STRUCTURE_SYSTEM()->UpdateInstancePosition(Instance);
-	RayTraceTask->SetDirty(OUTDATED_DESCRIPTOR_SET | OUTDATED_COMMAND_BUFFER);
 }
 
 FVector3 FRender::GetInstancePosition(ECS::FEntity Instance)

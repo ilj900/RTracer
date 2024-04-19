@@ -95,8 +95,14 @@ namespace ECS
         {
             if (bIsDirty)
             {
-				VK_CONTEXT()->DestroyAccelerationStructure(TLAS);
-                TLAS = VK_CONTEXT()->GenerateTlas(DeviceBuffer, InstanceCount);
+				if (TLAS.AccelerationStructure == VK_NULL_HANDLE)
+				{
+					TLAS = VK_CONTEXT()->GenerateTlas(DeviceBuffer, InstanceCount);
+				}
+				else
+				{
+					VK_CONTEXT()->UpdateTlas(TLAS, DeviceBuffer, InstanceCount);
+				}
                 bIsDirty = false;
             }
         }

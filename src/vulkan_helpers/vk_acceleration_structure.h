@@ -5,6 +5,6 @@
 struct FAccelerationStructure
 {
     FBuffer Buffer;
-    VkAccelerationStructureKHR AccelerationStructure;
+    VkAccelerationStructureKHR AccelerationStructure = VK_NULL_HANDLE;
     VkAccelerationStructureTypeKHR Type;
 };

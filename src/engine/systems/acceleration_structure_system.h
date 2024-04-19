@@ -29,7 +29,7 @@ namespace ECS
             const uint32_t MAX_INSTANCE_COUNT = 512u * 1024u;
             std::queue<uint32_t> AvailableIndices;
 
-            FAccelerationStructure TLAS;
+            FAccelerationStructure TLAS = {};
 
             uint32_t InstanceCount = 0u;
 

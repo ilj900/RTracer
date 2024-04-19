@@ -97,10 +97,11 @@ public:
     VkAccelerationStructureGeometryKHR GetAccelerationStructureGeometry(VkAccelerationStructureGeometryTrianglesDataKHR& AccelerationStructureGeometryTrianglesData);
 	VkAccelerationStructureGeometryKHR GetAccelerationStructureGeometry(VkAccelerationStructureGeometryInstancesDataKHR& AccelerationStructureGeometryInstancesData);
     VkAccelerationStructureBuildRangeInfoKHR GetAccelerationStructureBuildRangeInfo(uint32_t PrimitiveCount);
-    VkAccelerationStructureBuildGeometryInfoKHR GetAccelerationStructureBuildGeometryInfo(VkAccelerationStructureGeometryKHR& AccelerationStructureGeometry, VkBuildAccelerationStructureFlagsKHR Flags, VkAccelerationStructureTypeKHR AccelerationStructureType);
+	VkAccelerationStructureBuildGeometryInfoKHR GetAccelerationStructureBuildGeometryInfo(VkAccelerationStructureGeometryKHR& AccelerationStructureGeometry, VkBuildAccelerationStructureFlagsKHR Flags, VkAccelerationStructureTypeKHR AccelerationStructureType, VkBuildAccelerationStructureModeKHR BuildAccelerationStructureMode);
 	VkAccelerationStructureBuildSizesInfoKHR GetAccelerationStructureBuildSizesInfo(const VkAccelerationStructureBuildGeometryInfoKHR& AccelerationStructureBuildGeometryInfo, uint32_t& PrimitivesCount);
     FAccelerationStructure GenerateBlas(FBuffer& VertexBuffer, FBuffer& IndexBuffer, VkDeviceSize VertexStride, uint32_t MaxVertices, FMemoryPtr& VertexBufferPtr, FMemoryPtr& IndexBufferPtr);
     FAccelerationStructure GenerateTlas(const FBuffer& BlasInstanceBuffer, uint32_t BLASCount);
+	void UpdateTlas(FAccelerationStructure TLAS, const FBuffer& BlasInstanceBuffer, uint32_t BLASCount);
 
     ImagePtr CreateImage2D(uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format,
                                VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties,
