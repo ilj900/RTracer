@@ -16,6 +16,7 @@
 #include "tasks/task_material_sort_compute_prefix_sums_down_sweep.h"
 #include "tasks/task_material_sort_compute_prefix_sums_up_sweep.h"
 #include "tasks/task_material_sort_compute_prefix_sums_zero_out.h"
+#include "tasks/task_update_tlas.h"
 #include "tasks/task_miss.h"
 #include "tasks/task_shade.h"
 #include "tasks/task_accumulate.h"
@@ -87,6 +88,7 @@ public:
 
     ECS::FEntity ActiveCamera;
 
+	std::shared_ptr<FUpdateTLASTask> UpdateTLASTask = nullptr;
     std::shared_ptr<FGenerateInitialRays> GenerateRaysTask = nullptr;
     std::shared_ptr<FRaytraceTask> RayTraceTask = nullptr;
     std::shared_ptr<FClearMaterialsCountPerChunkTask> ClearMaterialsCountPerChunkTask = nullptr;

@@ -99,10 +99,6 @@ namespace ECS
 				{
 					TLAS = VK_CONTEXT()->GenerateTlas(DeviceBuffer, InstanceCount);
 				}
-				else
-				{
-					VK_CONTEXT()->UpdateTlas(TLAS, DeviceBuffer, InstanceCount);
-				}
                 bIsDirty = false;
             }
         }

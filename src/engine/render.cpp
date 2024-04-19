@@ -172,6 +172,7 @@ int FRender::Init()
         ImagesInFlight.push_back(VK_CONTEXT()->CreateSignalledFence());
     }
 
+	UpdateTLASTask = std::make_shared<FUpdateTLASTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     GenerateRaysTask = std::make_shared<FGenerateInitialRays>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     RayTraceTask = std::make_shared<FRaytraceTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ClearMaterialsCountPerChunkTask = std::make_shared<FClearMaterialsCountPerChunkTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -203,6 +204,7 @@ int FRender::Cleanup()
 {
 	VK_CONTEXT()->WaitIdle();
 
+	UpdateTLASTask = nullptr;
     GenerateRaysTask = nullptr;
     RayTraceTask = nullptr;
     ClearMaterialsCountPerChunkTask = nullptr;
@@ -352,6 +354,7 @@ int FRender::Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaph
 
     uint32_t CurrentFrame = RenderFrameIndex % MaxFramesInFlight;
 
+	UpdateTLASTask->Reload();
 	GenerateRaysTask->Reload();
 	RayTraceTask->Reload();
 	ClearMaterialsCountPerChunkTask->Reload();
@@ -384,7 +387,9 @@ int FRender::Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaph
 
 	VkPipelineStageFlags PipelineStageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
-	SemaphoreToWait = GenerateRaysTask->Submit(PipelineStageFlags, {(SemaphoreToWait == VK_NULL_HANDLE) ? std::vector<VkSemaphore>() : std::vector<VkSemaphore>(1, SemaphoreToWait), {ImagesInFlight[CurrentFrame]}, {}, {}}, CurrentFrame);
+	SemaphoreToWait = UpdateTLASTask->Submit(PipelineStageFlags, {(SemaphoreToWait == VK_NULL_HANDLE) ? std::vector<VkSemaphore>() : std::vector<VkSemaphore>(1, SemaphoreToWait), {}, {}, {}}, CurrentFrame);
+
+	SemaphoreToWait = GenerateRaysTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {ImagesInFlight[CurrentFrame]}, {}, {}}, CurrentFrame);
 
 	SemaphoreToWait = RayTraceTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 

@@ -59,6 +59,7 @@ set(INCLUDE
         tasks/task_raytrace.h
         tasks/task_shade.h
         tasks/task_generate_initial_rays.h
+        tasks/task_update_tlas.h
         ${ECS_INCLUDE})
 
 set(SOURCE
@@ -79,6 +80,7 @@ set(SOURCE
         tasks/task_clear_image.cpp
         tasks/task_shade.cpp
         tasks/task_generate_initial_rays.cpp
+        tasks/task_update_tlas.cpp
         ${ECS_SOURCE})
 
 add_library(Renderer ${SOURCE} ${INCLUDE})
