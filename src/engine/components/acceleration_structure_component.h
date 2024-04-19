@@ -13,5 +13,7 @@ namespace ECS
 
             FAccelerationStructure AccelerationStructure;
         };
+
+		typedef VkAccelerationStructureInstanceKHR FMeshInstanceComponent;
     }
 }

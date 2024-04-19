@@ -7,7 +7,6 @@
 
 struct VkVertexInputBindingDescription;
 struct VkVertexInputAttributeDescription;
-struct VkAccelerationStructureInstanceKHR;
 
 namespace ECS
 {
@@ -29,8 +28,6 @@ namespace ECS
             std::vector<uint32_t> Indices{};
             bool Indexed = false;
         };
-
-        typedef VkAccelerationStructureInstanceKHR FMeshInstanceComponent;
     }
 }
 
