@@ -1,7 +1,8 @@
 #pragma once
 
-#include "render.h"
 #include "GLFW/glfw3.h"
+
+#include "render.h"
 
 #include <string>
 
