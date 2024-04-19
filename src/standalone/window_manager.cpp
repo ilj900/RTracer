@@ -2,7 +2,7 @@
 #include "controller.h"
 #include "window_manager.h"
 
-FWindowManager::FWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, FApplication* ApplicationIn, const std::string &NameIn) : Width(WidthIn), Height(HeightIn), bFullscreen(bFullscreenIn), Application(ApplicationIn), Name(NameIn)
+FWindowManager::FWindowManager(uint32_t& WidthIn, uint32_t& HeightIn, bool bFullscreenIn, FApplication* ApplicationIn, const std::string& NameIn) : Width(WidthIn), Height(HeightIn), bFullscreen(bFullscreenIn), Application(ApplicationIn), Name(NameIn)
 {
     /// Create GLFW Window
     glfwInit();
@@ -10,11 +10,15 @@ FWindowManager::FWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, FA
     glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
     GLFWmonitor* PrimaryMonitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* Mode = glfwGetVideoMode(PrimaryMonitor);
+
     if (bFullscreen)
     {
         Width = Mode->width;
+		WidthIn = Width;
         Height = Mode->height;
+		HeightIn = Height;
     }
+
     Window = glfwCreateWindow(Width, Height, Name.c_str(), bFullscreen ? PrimaryMonitor : nullptr, nullptr);
     glfwSetWindowPos(Window, Width / 2, Height / 2);
     glfwSetCursorPos(Window, 0.f, 0.f);

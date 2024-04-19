@@ -12,7 +12,7 @@ class FController;
 class FWindowManager
 {
 public:
-    FWindowManager(int WidthIn, int HeightIn, bool bFullscreenIn, FApplication* ApplicationIn, const std::string& NameIn);
+    FWindowManager(uint32_t& WidthIn, uint32_t& HeightIn, bool bFullscreenIn, FApplication* ApplicationIn, const std::string& NameIn);
     ~FWindowManager();
     bool ShouldClose();
     int GetWidth();
