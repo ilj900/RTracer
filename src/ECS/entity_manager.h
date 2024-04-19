@@ -2,8 +2,8 @@
 
 #include "entity.h"
 
-#include <array>
 #include <queue>
+#include <vector>
 
 namespace ECS
 {
@@ -23,7 +23,7 @@ namespace ECS
 
     private:
         std::queue<FEntity> AvailableEntities{};
-        std::array<FSignature, MAX_ENTITIES - 1> Signatures{};
+        std::vector<FSignature> Signatures{};
         uint32_t LivingEntitiesCount{};
     };
 

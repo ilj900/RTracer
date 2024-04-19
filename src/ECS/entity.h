@@ -8,14 +8,14 @@ namespace ECS
     /**
     * Entity is just a custom type for uint16. This also defines the maximum number of entities
     */
-    using FEntity = std::uint16_t;
+    using FEntity = std::uint32_t;
 
-	constexpr FEntity INVALID_ENTITY = UINT16_MAX;
+	constexpr FEntity INVALID_ENTITY = UINT32_MAX;
 
     /**
      * It also can be limited by any hardcoded value.
      */
-    constexpr std::uint32_t MAX_ENTITIES = std::numeric_limits<FEntity>::max();
+    constexpr std::uint32_t MAX_ENTITIES = 2 * 1024 * 1024;
 
      /**
      * Component type is just a custom type for uint8

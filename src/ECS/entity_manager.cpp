@@ -10,6 +10,8 @@ namespace ECS
         {
             AvailableEntities.push(Entity);
         }
+
+		Signatures.resize(MAX_ENTITIES - 1, 0);
     }
 
     FEntity FEntityManager::CreateEntity()
