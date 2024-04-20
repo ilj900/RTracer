@@ -1,9 +1,41 @@
 #include "vk_utils.h"
 
 #include <iostream>
+#ifndef NDEBUG
+#include <unordered_set>
+template <typename T>
+bool Collide(const std::vector<T>& A, const std::vector<T>& B)
+{
+	std::unordered_set<T> SetA;
+	SetA.reserve(A.size());
+
+	for (auto& Entry : A)
+	{
+		SetA.insert(Entry);
+	}
+
+	for (auto& Entry : B)
+	{
+		if (SetA.find(Entry) != SetA.end())
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+#endif
 
 FSynchronizationPoint operator+(const FSynchronizationPoint& A, const FSynchronizationPoint& B)
 {
+#ifndef NDEBUG
+	if (Collide(A.SemaphoresToWait, B.SemaphoresToWait) || Collide(A.FencesToWait, B.FencesToWait) || Collide(A.SemaphoresToSignal, B.SemaphoresToSignal) || Collide(A.FencesToSignal, B.FencesToSignal))
+	{
+		throw std::runtime_error("You are merging two FSynchronizationPoint, and they have some common elements");
+	}
+#endif
+
 	FSynchronizationPoint Result = A;
 	Result.SemaphoresToWait.insert(A.SemaphoresToWait.end(), B.SemaphoresToWait.begin(), B.SemaphoresToWait.end());
 	Result.FencesToWait.insert(A.FencesToWait.end(), B.FencesToWait.begin(), B.FencesToWait.end());
@@ -15,6 +47,13 @@ FSynchronizationPoint operator+(const FSynchronizationPoint& A, const FSynchroni
 
 FSynchronizationPoint& operator+=(FSynchronizationPoint& A, const FSynchronizationPoint& B)
 {
+#ifndef NDEBUG
+	if (Collide(A.SemaphoresToWait, B.SemaphoresToWait) || Collide(A.FencesToWait, B.FencesToWait) || Collide(A.SemaphoresToSignal, B.SemaphoresToSignal) || Collide(A.FencesToSignal, B.FencesToSignal))
+	{
+		throw std::runtime_error("You are merging two FSynchronizationPoint, and they have some common elements");
+	}
+#endif
+	
 	A.SemaphoresToWait.insert(A.SemaphoresToWait.end(), B.SemaphoresToWait.begin(), B.SemaphoresToWait.end());
 	A.FencesToWait.insert(A.FencesToWait.end(), B.FencesToWait.begin(), B.FencesToWait.end());
 	A.SemaphoresToSignal.insert(A.SemaphoresToSignal.end(), B.SemaphoresToSignal.begin(), B.SemaphoresToSignal.end());
