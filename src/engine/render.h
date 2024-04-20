@@ -34,7 +34,7 @@ public:
     FRender(uint32_t WidthIn = 1920, uint32_t HeightIn = 1080);
 	~FRender();
 
-    void RegisterExternalOutputs(std::vector<ImagePtr> OutputImagesIn, const std::vector<VkSemaphore>& ExternalImageIsReadySemaphoreIn);
+    void RegisterExternalOutputs(std::vector<ImagePtr> OutputImagesIn, const std::vector<FSynchronizationPoint>& ExternalImageIsReadyIn);
     int Init();
     int Cleanup();
     int SetSize(int WidthIn, int HeightIn);
@@ -52,8 +52,8 @@ public:
     void GetFramebufferData(ECS::FEntity Framebuffer);
 
 	void AddExternalTaskAfterRender(std::shared_ptr<FExecutableTask> Task);
-	int Render();
-    int Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaphore);
+	FSynchronizationPoint Render();
+    FSynchronizationPoint Render(uint32_t OutputImageIndex);
     int Update();
 	void WaitIdle();
 
@@ -106,10 +106,10 @@ public:
     std::shared_ptr<FClearImageTask> ClearImageTask = nullptr;
 	std::vector<std::shared_ptr<FExecutableTask>> ExternalTasks;
 
-    std::vector<VkSemaphore> ImageAvailableSemaphores;
+    std::vector<FSynchronizationPoint> ImageAvailable;
     std::vector<VkFence> ImagesInFlight;
 
-	std::vector<VkSemaphore> ExternalImageIsReadySemaphore;
+	std::vector<FSynchronizationPoint> ExternalImageAvailable;
     std::unordered_map<OutputType, ECS::FEntity> OutputToFramebufferMap;
 
 private:

@@ -100,7 +100,7 @@ void FExecutableTask::Reload()
 	DitryFlags = 0u;
 }
 
-VkSemaphore FExecutableTask::Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex)
+FSynchronizationPoint FExecutableTask::Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex)
 {
     VkPipelineStageFlags WaitStages[] = {PipelineStageFlagsIn};
     VkSubmitInfo SubmitInfo{};
@@ -141,7 +141,7 @@ VkSemaphore FExecutableTask::Submit(VkPipelineStageFlags& PipelineStageFlagsIn, 
 
 	PipelineStageFlagsIn = PipelineStageFlags;
 
-    return SignalSemaphores[IterationIndex];
+	return {{SignalSemaphores[IterationIndex]}, {}, {}, {}};
 }
 
 void FExecutableTask::UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t LayoutIndex, int FrameIndex, const FBuffer& Buffer)

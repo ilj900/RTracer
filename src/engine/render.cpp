@@ -121,10 +121,10 @@ FRender::~FRender()
 	VK_CONTEXT()->CleanUp();
 }
 
-void FRender::RegisterExternalOutputs(std::vector<ImagePtr> OutputImagesIn, const std::vector<VkSemaphore>& ExternalImageIsReadySemaphoreIn)
+void FRender::RegisterExternalOutputs(std::vector<ImagePtr> OutputImagesIn, const std::vector<FSynchronizationPoint>& ExternalImageIsReadyIn)
 {
 	/// Check whether sizes are the same
-	if (OutputImagesIn.size() != ExternalImageIsReadySemaphoreIn.size())
+	if (OutputImagesIn.size() != ExternalImageIsReadyIn.size())
 	{
 		throw std::runtime_error("Number of semaphores should be the same as number of images provided!");
 	}
@@ -142,8 +142,8 @@ void FRender::RegisterExternalOutputs(std::vector<ImagePtr> OutputImagesIn, cons
 
 	MaxFramesInFlight = OutputImagesIn.size();
 
-	/// Copy semaphores
-	ExternalImageIsReadySemaphore = ExternalImageIsReadySemaphoreIn;
+	/// Copy
+	ExternalImageAvailable = ExternalImageIsReadyIn;
 
 	///Register new framebuffers  as outputs
 	for (int i = 0; i < OutputImagesIn.size(); ++i)
@@ -156,16 +156,16 @@ void FRender::RegisterExternalOutputs(std::vector<ImagePtr> OutputImagesIn, cons
 int FRender::Init()
 {
 	/// If no external Framebuffers provided Create internal ones
-	if (ExternalImageIsReadySemaphore.empty())
+	if (ExternalImageAvailable.empty())
 	{
 		for (int i = 0; i < MaxFramesInFlight; ++i)
 		{
 			auto Framebuffer = CreateColorAttachment(Width, Height, "Output Image" + std::to_string(i));
 			SetOutput(OutputType(i), Framebuffer);
 		}
-
-		ImageAvailableSemaphores.resize(MaxFramesInFlight);
 	}
+
+	ImageAvailable.resize(MaxFramesInFlight);
 
     for (int i = 0; i < MaxFramesInFlight; ++i)
     {
@@ -229,7 +229,7 @@ int FRender::Cleanup()
 		ImagesInFlight[i] = VK_NULL_HANDLE;
 	}
 
-    ImageAvailableSemaphores.clear();
+    ImageAvailable.clear();
     ImagesInFlight.clear();
 
     return 0;
@@ -343,12 +343,12 @@ void FRender::AddExternalTaskAfterRender(std::shared_ptr<FExecutableTask> Task)
 	ExternalTasks.push_back(Task);
 }
 
-int FRender::Render()
+FSynchronizationPoint FRender::Render()
 {
-	return Render(0, nullptr);
+	return Render(0);
 }
 
-int FRender::Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaphore)
+FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 {
     TIMING_MANAGER()->NewTime();
 
@@ -372,85 +372,82 @@ int FRender::Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaph
 	PassthroughTask->Reload();
 
     bool NeedUpdate = true;
-	VkSemaphore SemaphoreToWait = VK_NULL_HANDLE;
+	FSynchronizationPoint SynchronizationPoint = {{}, {ImagesInFlight[CurrentFrame]}, {}, {}};
 
 	/// If we have no external semaphores
-	if (ExternalImageIsReadySemaphore.empty())
+	if (ExternalImageAvailable.empty())
 	{
 		/// We need to wait for the internal one, unless it's the first frame
-		SemaphoreToWait = (RenderFrameIndex > 0) ? ImageAvailableSemaphores[(RenderFrameIndex - 1) % MaxFramesInFlight] : VK_NULL_HANDLE;
+		if (RenderFrameIndex > 0)
+		{
+			SynchronizationPoint += ImageAvailable[(RenderFrameIndex - 1) % MaxFramesInFlight];
+		}
 	}
 	else
 	{
-		SemaphoreToWait = ExternalImageIsReadySemaphore[OutputImageIndex];
+		SynchronizationPoint += ExternalImageAvailable[OutputImageIndex];
 	}
 
 	VkPipelineStageFlags PipelineStageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
-	SemaphoreToWait = UpdateTLASTask->Submit(PipelineStageFlags, {(SemaphoreToWait == VK_NULL_HANDLE) ? std::vector<VkSemaphore>() : std::vector<VkSemaphore>(1, SemaphoreToWait), {ImagesInFlight[CurrentFrame]}, {}, {}}, CurrentFrame);
+	SynchronizationPoint = UpdateTLASTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
 
-	SemaphoreToWait = GenerateRaysTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SynchronizationPoint = GenerateRaysTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
 
-	SemaphoreToWait = RayTraceTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SynchronizationPoint = RayTraceTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
 
-	SemaphoreToWait = ClearMaterialsCountPerChunkTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SynchronizationPoint = ClearMaterialsCountPerChunkTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
 
-	SemaphoreToWait = ClearTotalMaterialsCountTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SynchronizationPoint = ClearTotalMaterialsCountTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
 
-	SemaphoreToWait = CountMaterialsPerChunkTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SynchronizationPoint = CountMaterialsPerChunkTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
 
-	SemaphoreToWait = ComputePrefixSumsUpSweepTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SynchronizationPoint = ComputePrefixSumsUpSweepTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
 
-	SemaphoreToWait = ComputePrefixSumsZeroOutTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SynchronizationPoint = ComputePrefixSumsZeroOutTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
 
-	SemaphoreToWait = ComputePrefixSumsDownSweepTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SynchronizationPoint = ComputePrefixSumsDownSweepTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
 
-	SemaphoreToWait = ComputeOffsetsPerMaterialTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SynchronizationPoint = ComputeOffsetsPerMaterialTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
 
-	SemaphoreToWait = SortMaterialsTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SynchronizationPoint = SortMaterialsTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
 
-	SemaphoreToWait = ShadeTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SynchronizationPoint = ShadeTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
 
-    SemaphoreToWait = MissTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SynchronizationPoint = MissTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
 
     if (NeedUpdate)
     {
-        SemaphoreToWait = ClearImageTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+		SynchronizationPoint = ClearImageTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
     }
 
-	SemaphoreToWait = AccumulateTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
+	SynchronizationPoint = AccumulateTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
 
 	std::vector<VkFence> FencesToSignal;
 	/// If no external work to be done, then use the internal fence in passthrough
 	if (ExternalTasks.empty())
 	{
-		FencesToSignal.push_back(ImagesInFlight[CurrentFrame]);
+		SynchronizationPoint.FencesToSignal.push_back(ImagesInFlight[CurrentFrame]);
 	}
 
-    SemaphoreToWait = PassthroughTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, FencesToSignal}, CurrentFrame);
+	SynchronizationPoint = PassthroughTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
 
 	if (!ExternalTasks.empty())
 	{
 		for (uint32_t i = 0; i < ExternalTasks.size() - 1; ++i)
 		{
-			SemaphoreToWait = ExternalTasks[i]->Submit(PipelineStageFlags, { { SemaphoreToWait }, {}, {}, {} }, CurrentFrame);
+			SynchronizationPoint = ExternalTasks[i]->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
 		}
 
-		SemaphoreToWait = ExternalTasks.back()->Submit(PipelineStageFlags, { { SemaphoreToWait }, {}, {}, { ImagesInFlight[CurrentFrame] } }, CurrentFrame);
+		SynchronizationPoint.FencesToSignal.push_back(ImagesInFlight[CurrentFrame]);
+		SynchronizationPoint = ExternalTasks.back()->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
 	}
 
-	if (RenderFinishedSemaphore != nullptr)
-	{
-		*RenderFinishedSemaphore = SemaphoreToWait;
-	}
-	else
-	{
-		ImageAvailableSemaphores[CurrentFrame] = SemaphoreToWait;
-	}
+	ImageAvailable[CurrentFrame] = SynchronizationPoint;
 
     RenderFrameIndex++;
 
-    return 0;
+    return SynchronizationPoint;
 }
 
 int FRender::Update()

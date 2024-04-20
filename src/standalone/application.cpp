@@ -43,7 +43,6 @@ FApplication::~FApplication()
 int FApplication::Run()
 {
 	uint32_t ImageIndex = UINT32_MAX;
-	VkSemaphore RenderingFinishedSemaphore = VK_NULL_HANDLE;
 	SceneLoader->LoadScene("Floating spheres");
 
     while (!WindowManager->ShouldClose())
@@ -75,8 +74,8 @@ int FApplication::Run()
 		Controller->Update(DeltaTime);
 		Render->Update();
 		Swapchain->GetNextImage( ImageIndex);
-		Render->Render(ImageIndex, &RenderingFinishedSemaphore);
-		Swapchain->Present(RenderingFinishedSemaphore, ImageIndex);
+		auto RenderingFinished = Render->Render(ImageIndex);
+		Swapchain->Present(RenderingFinished, ImageIndex);
 		WindowManager->PollEvents();
     }
 

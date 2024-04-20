@@ -2,20 +2,13 @@
 
 #include "image.h"
 #include "vk_pipeline.h"
+#include "vk_utils.h"
 
 enum DirtyType {UNINITIALIZED = 1u,
 				OUTDATED_DESCRIPTOR_SET = 1u << 1,
 				OUTDATED_COMMAND_BUFFER = 1u << 2};
 
 class FVulkanContext;
-
-struct FSynchronizationPoint
-{
-	std::vector<VkSemaphore> SemaphoresToWait;
-	std::vector<VkFence> FencesToWait;
-	std::vector<VkSemaphore> SemaphoresToSignal;
-	std::vector<VkFence> FencesToSignal;
-};
 
 class FExecutableTask
 {
@@ -27,7 +20,8 @@ public:
     virtual void UpdateDescriptorSets() = 0;
     virtual void RecordCommands() = 0;
 	virtual void Reload();
-    virtual VkSemaphore Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex);
+	/// SynchronizationPoint will be updated after this
+    virtual FSynchronizationPoint Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex);
 
     void RegisterInput(int Index, ImagePtr Image);
     void RegisterOutput(int Index, ImagePtr Image);

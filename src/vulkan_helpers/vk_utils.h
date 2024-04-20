@@ -22,6 +22,17 @@ struct BaseVulkanStructure
     const void*                             pNext;
 };
 
+struct FSynchronizationPoint
+{
+	std::vector<VkSemaphore> SemaphoresToWait;
+	std::vector<VkFence> FencesToWait;
+	std::vector<VkSemaphore> SemaphoresToSignal;
+	std::vector<VkFence> FencesToSignal;
+
+	friend FSynchronizationPoint operator+(const FSynchronizationPoint& A, const FSynchronizationPoint& B);
+	friend FSynchronizationPoint& operator+=(FSynchronizationPoint& A, const FSynchronizationPoint& B);
+};
+
 /// A helper class to store strings
 struct FStringStorage
 {

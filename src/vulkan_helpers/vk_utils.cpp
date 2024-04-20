@@ -2,6 +2,27 @@
 
 #include <iostream>
 
+FSynchronizationPoint operator+(const FSynchronizationPoint& A, const FSynchronizationPoint& B)
+{
+	FSynchronizationPoint Result = A;
+	Result.SemaphoresToWait.insert(A.SemaphoresToWait.end(), B.SemaphoresToWait.begin(), B.SemaphoresToWait.end());
+	Result.FencesToWait.insert(A.FencesToWait.end(), B.FencesToWait.begin(), B.FencesToWait.end());
+	Result.SemaphoresToSignal.insert(A.SemaphoresToSignal.end(), B.SemaphoresToSignal.begin(), B.SemaphoresToSignal.end());
+	Result.FencesToSignal.insert(A.FencesToSignal.end(), B.FencesToSignal.begin(), B.FencesToSignal.end());
+
+	return Result;
+}
+
+FSynchronizationPoint& operator+=(FSynchronizationPoint& A, const FSynchronizationPoint& B)
+{
+	A.SemaphoresToWait.insert(A.SemaphoresToWait.end(), B.SemaphoresToWait.begin(), B.SemaphoresToWait.end());
+	A.FencesToWait.insert(A.FencesToWait.end(), B.FencesToWait.begin(), B.FencesToWait.end());
+	A.SemaphoresToSignal.insert(A.SemaphoresToSignal.end(), B.SemaphoresToSignal.begin(), B.SemaphoresToSignal.end());
+	A.FencesToSignal.insert(A.FencesToSignal.end(), B.FencesToSignal.begin(), B.FencesToSignal.end());
+
+	return A;
+}
+
 void FStringStorage::AddString(const std::string& String)
 {
     Strings.push_back(String);

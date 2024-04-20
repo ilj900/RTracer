@@ -127,8 +127,8 @@ FSwapchain::FSwapchain(uint32_t Width, uint32_t Height, VkFormat Format, VkColor
 		/// In FImage first, so that there would be an ImageView
 		Images[i] = VK_CONTEXT()->Wrap(SwapchainImages[i], Width, Height, SurfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, VK_CONTEXT()->LogicalDevice, "V_SwapchainImage");
 		/// Also create some semaphores to track image availability
-		ImageAvailableSemaphores.push_back(VK_CONTEXT()->CreateSemaphore());
-		V::SetName(VK_CONTEXT()->LogicalDevice, ImageAvailableSemaphores[i], "Swapchain semaphore", i);
+		ImageAvailable.push_back({{VK_CONTEXT()->CreateSemaphore()}, {}, {}, {}});
+		V::SetName(VK_CONTEXT()->LogicalDevice, ImageAvailable[i].SemaphoresToWait[0], "Swapchain semaphore", i);
 	}
 }
 
@@ -136,22 +136,20 @@ FSwapchain::~FSwapchain()
 {
 	for (uint32_t i = 0; i < Images.size(); ++i)
 	{
-		vkDestroySemaphore(VK_CONTEXT()->LogicalDevice, ImageAvailableSemaphores[i], nullptr);
+		vkDestroySemaphore(VK_CONTEXT()->LogicalDevice, ImageAvailable[i].SemaphoresToWait[0], nullptr);
 	}
-	ImageAvailableSemaphores.clear();
+	ImageAvailable.clear();
 
 	Images.clear();
 	vkDestroySwapchainKHR(VK_CONTEXT()->LogicalDevice, Swapchain, nullptr);
 }
 
-void FSwapchain::Present(VkSemaphore WaitSemaphore, uint32_t ImageIndex)
+void FSwapchain::Present(FSynchronizationPoint Wait, uint32_t ImageIndex)
 {
-	VkSemaphore WaitSemaphores[] = {WaitSemaphore};
-
 	VkPresentInfoKHR PresentInfo{};
 	PresentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-	PresentInfo.waitSemaphoreCount = 1;
-	PresentInfo.pWaitSemaphores = WaitSemaphores;
+	PresentInfo.waitSemaphoreCount = Wait.SemaphoresToWait.size();
+	PresentInfo.pWaitSemaphores = Wait.SemaphoresToWait.data();
 	VkSwapchainKHR SwapChains[] = {Swapchain};
 	PresentInfo.swapchainCount = 1;
 	PresentInfo.pSwapchains = SwapChains;
@@ -196,9 +194,9 @@ std::vector<ImagePtr> FSwapchain::GetImages()
 	return Images;
 }
 
-std::vector<VkSemaphore> FSwapchain::GetSemaphores()
+std::vector<FSynchronizationPoint> FSwapchain::GetSemaphores()
 {
-	return ImageAvailableSemaphores;
+	return ImageAvailable;
 }
 
 VkSwapchainKHR FSwapchain::GetSwapchain()
@@ -206,21 +204,21 @@ VkSwapchainKHR FSwapchain::GetSwapchain()
 	return Swapchain;
 }
 
-VkSemaphore FSwapchain::GetNextImage(uint32_t& ImageIndex)
+FSynchronizationPoint FSwapchain::GetNextImage(uint32_t& ImageIndex)
 {
-	VkSemaphore ImageAcquiredSemaphore = ImageAvailableSemaphores[Counter++];
+	FSynchronizationPoint ImageAcquired = ImageAvailable[Counter++];
 	Counter %= Images.size();
-	VkResult Result = vkAcquireNextImageKHR(VK_CONTEXT()->LogicalDevice, Swapchain, UINT64_MAX, ImageAcquiredSemaphore, VK_NULL_HANDLE, &ImageIndex);
+	VkResult Result = vkAcquireNextImageKHR(VK_CONTEXT()->LogicalDevice, Swapchain, UINT64_MAX, ImageAcquired.SemaphoresToWait[0], VK_NULL_HANDLE, &ImageIndex);
 
 	/// Run some checks
 	if (Result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
-		return VK_NULL_HANDLE;
+		return FSynchronizationPoint();
 	}
 	if (Result != VK_SUCCESS && Result != VK_SUBOPTIMAL_KHR)
 	{
 		throw std::runtime_error("Failed to acquire swap chain image!");
 	}
 
-	return ImageAcquiredSemaphore;
+	return ImageAcquired;
 }
