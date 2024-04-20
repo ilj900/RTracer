@@ -77,10 +77,10 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
 
-//		Updater = [&](float, float)
-//		{
-//			Render->SetIBL("../../../resources/the_sky_is_on_fire_4k.exr");
-//		};
+		Updater = [&](float, float)
+		{
+			Render->SetIBL("../../../resources/the_sky_is_on_fire_4k.exr");
+		};
 
 	}
 	else

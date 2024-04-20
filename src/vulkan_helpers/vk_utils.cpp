@@ -53,7 +53,7 @@ FSynchronizationPoint& operator+=(FSynchronizationPoint& A, const FSynchronizati
 		throw std::runtime_error("You are merging two FSynchronizationPoint, and they have some common elements");
 	}
 #endif
-	
+
 	A.SemaphoresToWait.insert(A.SemaphoresToWait.end(), B.SemaphoresToWait.begin(), B.SemaphoresToWait.end());
 	A.FencesToWait.insert(A.FencesToWait.end(), B.FencesToWait.begin(), B.FencesToWait.end());
 	A.SemaphoresToSignal.insert(A.SemaphoresToSignal.end(), B.SemaphoresToSignal.begin(), B.SemaphoresToSignal.end());
