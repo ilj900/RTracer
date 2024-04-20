@@ -21,7 +21,6 @@ FWindowManager::FWindowManager(uint32_t& WidthIn, uint32_t& HeightIn, bool bFull
 
     Window = glfwCreateWindow(Width, Height, Name.c_str(), bFullscreen ? PrimaryMonitor : nullptr, nullptr);
     glfwSetWindowPos(Window, Width / 2, Height / 2);
-    glfwSetCursorPos(Window, 0.f, 0.f);
 	glfwSetWindowUserPointer(Window, this);
 
     glfwSetKeyCallback(Window, KeyboardKeyPressedOrReleased);
