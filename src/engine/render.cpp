@@ -387,9 +387,9 @@ int FRender::Render(uint32_t OutputImageIndex, VkSemaphore* RenderFinishedSemaph
 
 	VkPipelineStageFlags PipelineStageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
-	SemaphoreToWait = UpdateTLASTask->Submit(PipelineStageFlags, {(SemaphoreToWait == VK_NULL_HANDLE) ? std::vector<VkSemaphore>() : std::vector<VkSemaphore>(1, SemaphoreToWait), {}, {}, {}}, CurrentFrame);
+	SemaphoreToWait = UpdateTLASTask->Submit(PipelineStageFlags, {(SemaphoreToWait == VK_NULL_HANDLE) ? std::vector<VkSemaphore>() : std::vector<VkSemaphore>(1, SemaphoreToWait), {ImagesInFlight[CurrentFrame]}, {}, {}}, CurrentFrame);
 
-	SemaphoreToWait = GenerateRaysTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {ImagesInFlight[CurrentFrame]}, {}, {}}, CurrentFrame);
+	SemaphoreToWait = GenerateRaysTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
 	SemaphoreToWait = RayTraceTask->Submit(PipelineStageFlags, {{SemaphoreToWait}, {}, {}, {}}, CurrentFrame);
 
