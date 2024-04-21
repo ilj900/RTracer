@@ -43,5 +43,5 @@ void main()
     float tMin = 0.001f;
     float tMax = 10000.f;
 
-    RayData[gl_GlobalInvocationID.x] = FRayData(Origin, Direction, 1, tMin, tMax, 0.f);
+    RayData[gl_GlobalInvocationID.x] = FRayData(Origin, Direction, 0, tMin, tMax, 0.f);
 }

@@ -35,7 +35,7 @@ void main()
     uint RayIndex = gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
     FRayData RayData = FetchRayData(RayIndex);
 
-    if ((RayData.RayFlags | RAY_DATA_RAY_MISSED) == RAY_DATA_RAY_MISSED)
+    if ((RayData.RayFlags & RAY_DATA_RAY_MISSED) == RAY_DATA_RAY_MISSED)
     {
         return;
     }

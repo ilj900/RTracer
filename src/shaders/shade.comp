@@ -144,7 +144,7 @@ void main()
 
     FRayData RayData = FetchRayData(NewPixelIndex);
 
-    if ((RayData.RayFlags | RAY_DATA_RAY_MISSED) == RAY_DATA_RAY_MISSED)
+    if ((RayData.RayFlags & RAY_DATA_RAY_MISSED) == RAY_DATA_RAY_MISSED)
     {
         return;
     }
@@ -204,6 +204,6 @@ void main()
     ///imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(ColorOut, 1.f));
 
     RayData.Origin.xyz = PointOfIntersectionInWorldSpace;
-    RayData.Direction.xyz = refract(RayData.Direction.xyz, NormalInWorldSpace, 1.5);
+    RayData.Direction.xyz = refract(-RayData.Direction.xyz, NormalInWorldSpace, 1.5);
     SetRayData(NewPixelIndex, RayData);
 }
