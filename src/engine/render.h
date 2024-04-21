@@ -116,5 +116,5 @@ private:
     ECS::FEntity CreateEmptyModel();
     int Width;
     int Height;
-	uint32_t RecursionDepth = 2;
+	uint32_t RecursionDepth = 7;
 };

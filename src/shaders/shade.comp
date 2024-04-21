@@ -204,6 +204,6 @@ void main()
     ///imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(ColorOut, 1.f));
 
     RayData.Origin.xyz = PointOfIntersectionInWorldSpace;
-    RayData.Direction.xyz = refract(-RayData.Direction.xyz, NormalInWorldSpace, 1.5);
+    RayData.Direction.xyz = -reflect(-RayData.Direction.xyz, NormalInWorldSpace);
     SetRayData(NewPixelIndex, RayData);
 }
