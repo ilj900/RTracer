@@ -84,6 +84,11 @@ FRayData FetchRayData(uint RayIndex)
     return RayData[RayIndex];
 }
 
+void SetRayData(uint RayIndex, FRayData RayDataIn)
+{
+    RayData[RayIndex] = RayDataIn;
+}
+
 FLight FetchLightData(uint LightIndex)
 {
     return Lights[LightIndex];
@@ -137,6 +142,13 @@ void main()
 
     uvec2 NewPixelCoords = uvec2(NewPixelIndex % PushConstants.Width, NewPixelIndex / PushConstants.Width);
 
+    FRayData RayData = FetchRayData(NewPixelIndex);
+
+    if ((RayData.RayFlags | RAY_DATA_RAY_MISSED) == RAY_DATA_RAY_MISSED)
+    {
+        return;
+    }
+
     FHit Hit = FetchHit(NewPixelIndex);
     FRenderable Renderable = FetchRenderable(Hit.RenderableIndex);
 
@@ -174,22 +186,24 @@ void main()
 
     vec3 Normal = vec3(1.f, 1.f, 1.f);
     Normal = V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z;
-    Normal *= transpose(inverse(mat3(Transform)));
-
-    vec2 TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
-
-    FDeviceMaterial Material = GetMaterial(TextureCoords);
-
+    vec3 NormalInWorldSpace = Normal * transpose(inverse(mat3(Transform)));
     vec3 PointOfIntersectionInLocalSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
     vec3 PointOfIntersectionInWorldSpace = vec3(Transform * vec4(PointOfIntersectionInLocalSpace, 1.f));
+
+    vec2 TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
+    FDeviceMaterial Material = GetMaterial(TextureCoords);
     
-    FLight Light = FetchLightData(0);
-    vec3 PointOfIntersectioToLightDirection = Light.Position - PointOfIntersectionInWorldSpace;
-    float CosNormalToLightAngle = dot(normalize(PointOfIntersectioToLightDirection), Normal);
-    float Distance2 = dot(PointOfIntersectioToLightDirection, PointOfIntersectioToLightDirection);
-    float Luminance = Light.Intensity * CosNormalToLightAngle / Distance2;
+    ///FLight Light = FetchLightData(0);
+    ///vec3 PointOfIntersectioToLightDirection = Light.Position - PointOfIntersectionInWorldSpace;
+    ///float CosNormalToLightAngle = dot(normalize(PointOfIntersectioToLightDirection), Normal);
+    ///float Distance2 = dot(PointOfIntersectioToLightDirection, PointOfIntersectioToLightDirection);
+    ///float Luminance = Light.Intensity * CosNormalToLightAngle / Distance2;
 
-    vec3 ColorOut = Material.BaseColor * Luminance;
+    ///vec3 ColorOut = Material.BaseColor * Luminance;
 
-    imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(ColorOut, 1.f));
+    ///imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(ColorOut, 1.f));
+
+    RayData.Origin.xyz = PointOfIntersectionInWorldSpace;
+    RayData.Direction.xyz = refract(RayData.Direction.xyz, NormalInWorldSpace, 1.5);
+    SetRayData(NewPixelIndex, RayData);
 }

@@ -83,6 +83,23 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		};
 
 	}
+	else if (Name == "Three Spheres")
+	{
+		auto Sphere = Render->CreateIcosahedronSphere(0.5f, 5, false);
+		auto Sphere1 = Render->CreateInstance(Sphere, {0, -1.5, 1});
+		auto Sphere2 = Render->CreateInstance(Sphere, {1, -1.5, -1});
+		auto Sphere3 = Render->CreateInstance(Sphere, {-1, -1.5, -1});
+
+		auto GlassMaterial = Render->CreateMaterial({0, 1, 1});
+		auto DiffuseMaterial = Render->CreateMaterial({1, 1, 0});
+		auto PlasticMaterial = Render->CreateMaterial({1, 0, 1});
+
+		Render->ShapeSetMaterial(Sphere1, GlassMaterial);
+		Render->ShapeSetMaterial(Sphere2, DiffuseMaterial);
+		Render->ShapeSetMaterial(Sphere3, PlasticMaterial);
+
+		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
+	}
 	else
 	{
 		throw std::runtime_error("Scene not found");

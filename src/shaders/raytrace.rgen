@@ -25,10 +25,20 @@ layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_MATERIAL_INDEX_BUFFER) b
     uint MaterialIndicesAOV[];
 };
 
+FRayData FetchRayData(uint RayIndex)
+{
+    return RayData[RayIndex];
+}
+
 void main()
 {
     uint RayIndex = gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
-    FRayData RayData = RayData[RayIndex];
+    FRayData RayData = FetchRayData(RayIndex);
+
+    if ((RayData.RayFlags | RAY_DATA_RAY_MISSED) == RAY_DATA_RAY_MISSED)
+    {
+        return;
+    }
 
     traceRayEXT(TopLevelAS, RayData.RayFlags, 0xFF, 0, 0, 0, RayData.Origin.xyz, RayData.TMin, RayData.Direction.xyz, RayData.TMax, 0);
 

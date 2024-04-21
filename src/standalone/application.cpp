@@ -43,7 +43,7 @@ FApplication::~FApplication()
 int FApplication::Run()
 {
 	uint32_t ImageIndex = UINT32_MAX;
-	SceneLoader->LoadScene("Floating spheres");
+	SceneLoader->LoadScene("Three Spheres");
 
     while (!WindowManager->ShouldClose())
     {

@@ -174,17 +174,17 @@ int FRender::Init()
 
 	UpdateTLASTask = std::make_shared<FUpdateTLASTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     GenerateRaysTask = std::make_shared<FGenerateInitialRays>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    RayTraceTask = std::make_shared<FRaytraceTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    ClearMaterialsCountPerChunkTask = std::make_shared<FClearMaterialsCountPerChunkTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    ClearTotalMaterialsCountTask = std::make_shared<FClearTotalMaterialsCountTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    CountMaterialsPerChunkTask = std::make_shared<FCountMaterialsPerChunkTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    ComputePrefixSumsUpSweepTask = std::make_shared<FComputePrefixSumsUpSweepTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    ComputePrefixSumsZeroOutTask = std::make_shared<FComputePrefixSumsZeroOutTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    ComputePrefixSumsDownSweepTask = std::make_shared<FComputePrefixSumsDownSweepTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    ComputeOffsetsPerMaterialTask = std::make_shared<FComputeOffsetsPerMaterialTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    SortMaterialsTask = std::make_shared<FSortMaterialsTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    ShadeTask = std::make_shared<FShadeTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    MissTask = std::make_shared<FMissTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+    RayTraceTask = std::make_shared<FRaytraceTask>(Width, Height, MaxFramesInFlight * RecursionDepth, VK_CONTEXT()->LogicalDevice);
+    ClearMaterialsCountPerChunkTask = std::make_shared<FClearMaterialsCountPerChunkTask>(Width, Height, MaxFramesInFlight * RecursionDepth, VK_CONTEXT()->LogicalDevice);
+    ClearTotalMaterialsCountTask = std::make_shared<FClearTotalMaterialsCountTask>(Width, Height, MaxFramesInFlight * RecursionDepth, VK_CONTEXT()->LogicalDevice);
+    CountMaterialsPerChunkTask = std::make_shared<FCountMaterialsPerChunkTask>(Width, Height, MaxFramesInFlight * RecursionDepth, VK_CONTEXT()->LogicalDevice);
+    ComputePrefixSumsUpSweepTask = std::make_shared<FComputePrefixSumsUpSweepTask>(Width, Height, MaxFramesInFlight * RecursionDepth, VK_CONTEXT()->LogicalDevice);
+    ComputePrefixSumsZeroOutTask = std::make_shared<FComputePrefixSumsZeroOutTask>(Width, Height, MaxFramesInFlight * RecursionDepth, VK_CONTEXT()->LogicalDevice);
+    ComputePrefixSumsDownSweepTask = std::make_shared<FComputePrefixSumsDownSweepTask>(Width, Height, MaxFramesInFlight * RecursionDepth, VK_CONTEXT()->LogicalDevice);
+    ComputeOffsetsPerMaterialTask = std::make_shared<FComputeOffsetsPerMaterialTask>(Width, Height, MaxFramesInFlight * RecursionDepth, VK_CONTEXT()->LogicalDevice);
+    SortMaterialsTask = std::make_shared<FSortMaterialsTask>(Width, Height, MaxFramesInFlight * RecursionDepth, VK_CONTEXT()->LogicalDevice);
+    ShadeTask = std::make_shared<FShadeTask>(Width, Height, MaxFramesInFlight * RecursionDepth, VK_CONTEXT()->LogicalDevice);
+    MissTask = std::make_shared<FMissTask>(Width, Height, MaxFramesInFlight * RecursionDepth, VK_CONTEXT()->LogicalDevice);
     AccumulateTask = std::make_shared<FAccumulateTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ClearImageTask = std::make_shared<FClearImageTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     PassthroughTask = std::make_shared<FPassthroughTask>(Width, Height, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -394,27 +394,30 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 	SynchronizationPoint = GenerateRaysTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
 
-	SynchronizationPoint = RayTraceTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
+	for (uint32_t i = 0; i < RecursionDepth; ++i)
+	{
+		SynchronizationPoint = RayTraceTask->Submit(PipelineStageFlags, SynchronizationPoint, i * MaxFramesInFlight + CurrentFrame);
 
-	SynchronizationPoint = ClearMaterialsCountPerChunkTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
+		SynchronizationPoint = ClearMaterialsCountPerChunkTask->Submit(PipelineStageFlags, SynchronizationPoint, i * MaxFramesInFlight + CurrentFrame);
 
-	SynchronizationPoint = ClearTotalMaterialsCountTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
+		SynchronizationPoint = ClearTotalMaterialsCountTask->Submit(PipelineStageFlags, SynchronizationPoint, i * MaxFramesInFlight + CurrentFrame);
 
-	SynchronizationPoint = CountMaterialsPerChunkTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
+		SynchronizationPoint = CountMaterialsPerChunkTask->Submit(PipelineStageFlags, SynchronizationPoint, i * MaxFramesInFlight + CurrentFrame);
 
-	SynchronizationPoint = ComputePrefixSumsUpSweepTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
+		SynchronizationPoint = ComputePrefixSumsUpSweepTask->Submit(PipelineStageFlags, SynchronizationPoint, i * MaxFramesInFlight + CurrentFrame);
 
-	SynchronizationPoint = ComputePrefixSumsZeroOutTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
+		SynchronizationPoint = ComputePrefixSumsZeroOutTask->Submit(PipelineStageFlags, SynchronizationPoint, i * MaxFramesInFlight + CurrentFrame);
 
-	SynchronizationPoint = ComputePrefixSumsDownSweepTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
+		SynchronizationPoint = ComputePrefixSumsDownSweepTask->Submit(PipelineStageFlags, SynchronizationPoint, i * MaxFramesInFlight + CurrentFrame);
 
-	SynchronizationPoint = ComputeOffsetsPerMaterialTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
+		SynchronizationPoint = ComputeOffsetsPerMaterialTask->Submit(PipelineStageFlags, SynchronizationPoint, i * MaxFramesInFlight + CurrentFrame);
 
-	SynchronizationPoint = SortMaterialsTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
+		SynchronizationPoint = SortMaterialsTask->Submit(PipelineStageFlags, SynchronizationPoint, i * MaxFramesInFlight + CurrentFrame);
 
-	SynchronizationPoint = ShadeTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
+		SynchronizationPoint = ShadeTask->Submit(PipelineStageFlags, SynchronizationPoint, i * MaxFramesInFlight + CurrentFrame);
 
-	SynchronizationPoint = MissTask->Submit(PipelineStageFlags, SynchronizationPoint, CurrentFrame);
+		SynchronizationPoint = MissTask->Submit(PipelineStageFlags, SynchronizationPoint, i * MaxFramesInFlight + CurrentFrame);
+	}
 
     if (NeedUpdate)
     {
