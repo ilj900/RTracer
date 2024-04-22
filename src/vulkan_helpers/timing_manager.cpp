@@ -38,9 +38,10 @@ FTimingManager::~FTimingManager()
     }
 
     NameToQueryPool.clear();
+	TimingSizes.clear();
 }
 
-void FTimingManager::RegisterTiming(const std::string& TimingName, uint32_t NumberOfSimultaneousSubmitsIn)
+void FTimingManager::RegisterTiming(const std::string& TimingName, uint32_t SizeXIn, uint32_t SizeYIn)
 {
     if (NameToQueryPool.find(TimingName) != NameToQueryPool.end())
     {
@@ -51,32 +52,47 @@ void FTimingManager::RegisterTiming(const std::string& TimingName, uint32_t Numb
 
     VkQueryPoolCreateInfo QueryPoolCreateInfo{};
     QueryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
-    QueryPoolCreateInfo.queryCount = NumberOfSimultaneousSubmitsIn * 2;
+    QueryPoolCreateInfo.queryCount = SizeXIn * SizeYIn * 2;
     QueryPoolCreateInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
 
     if (vkCreateQueryPool(VK_CONTEXT()->LogicalDevice, &QueryPoolCreateInfo, nullptr, &NameToQueryPool[TimingName]) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create query pool!");
     }
+
+	TimingSizes[TimingName] = {SizeXIn, SizeYIn};
 }
 
-float FTimingManager::GetDeltaTime(const std::string& TimingName, uint32_t FrameIndex)
+float FTimingManager::GetDeltaTime(const std::string& TimingName, uint32_t Y)
 {
-    std::vector<uint64_t> TimeStamps(2);
-    vkGetQueryPoolResults(VK_CONTEXT()->LogicalDevice, NameToQueryPool[TimingName], FrameIndex * 2, 2, sizeof(uint64_t) * 2, TimeStamps.data(), sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-    float Delta = float((TimeStamps[1] - TimeStamps[0]) * VK_CONTEXT()->TimestampPeriod) / 1000000000.f;
+    std::vector<uint64_t> TimeStamps(TimingSizes[TimingName].first * 2);
+    vkGetQueryPoolResults(VK_CONTEXT()->LogicalDevice, NameToQueryPool[TimingName], Y * 2 * TimingSizes[TimingName].first, 2 * TimingSizes[TimingName].first, sizeof(uint64_t) * TimeStamps.size(), TimeStamps.data(), sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+
+	uint32_t DeltaUint = 0u;
+
+	for (int i = 0; i < TimingSizes[TimingName].first; ++i)
+	{
+		DeltaUint += (TimeStamps[1] - TimeStamps[0]);
+	}
+
+    float Delta = float(DeltaUint * VK_CONTEXT()->TimestampPeriod) / 1000000000.f;
+
     return Delta;
 }
 
-void FTimingManager::TimestampStart(const std::string& TimingName, VkCommandBuffer CommandBuffer, uint32_t FrameIndex)
+void FTimingManager::TimestampReset(const std::string& TimingName, VkCommandBuffer CommandBuffer, uint32_t Y)
 {
-    vkCmdResetQueryPool(CommandBuffer, NameToQueryPool[TimingName], FrameIndex * 2, 2);
-    vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, NameToQueryPool[TimingName], FrameIndex * 2);
+	vkCmdResetQueryPool(CommandBuffer, NameToQueryPool[TimingName], Y * 2 * TimingSizes[TimingName].first, 2 * TimingSizes[TimingName].first);
 }
 
-void FTimingManager::TimestampEnd(const std::string& TimingName, VkCommandBuffer CommandBuffer, uint32_t FrameIndex)
+void FTimingManager::TimestampStart(const std::string& TimingName, VkCommandBuffer CommandBuffer, uint32_t X, uint32_t Y)
 {
-    vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, NameToQueryPool[TimingName], FrameIndex * 2 + 1);
+    vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, NameToQueryPool[TimingName], 2 * (Y * TimingSizes[TimingName].first + X));
+}
+
+void FTimingManager::TimestampEnd(const std::string& TimingName, VkCommandBuffer CommandBuffer, uint32_t X, uint32_t Y)
+{
+    vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, NameToQueryPool[TimingName], 2 * (Y * TimingSizes[TimingName].first + X) + 1);
 }
 
 void FTimingManager::NewTime()

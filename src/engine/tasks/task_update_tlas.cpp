@@ -24,7 +24,7 @@ FUpdateTLASTask::~FUpdateTLASTask()
 
 void FUpdateTLASTask::Init()
 {
-    TIMING_MANAGER()->RegisterTiming(Name, TotalSize);
+    TIMING_MANAGER()->RegisterTiming(Name, SubmitX, SubmitY);
 };
 
 void FUpdateTLASTask::UpdateDescriptorSets()
@@ -57,8 +57,16 @@ void FUpdateTLASTask::RecordCommands()
 
     for (uint32_t i = 0; i < TotalSize; ++i)
     {
-		CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer) {
-			TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
+		CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
+		{
+			uint32_t X = i % SubmitX;
+			uint32_t Y = i / SubmitX;
+
+			if (X == 0)
+			{
+				TIMING_MANAGER()->TimestampReset(Name, CommandBuffer, Y);
+			}
+			TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, X, Y);
 
 			VkMemoryBarrier MemoryBarrier{};
 			MemoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
@@ -69,7 +77,7 @@ void FUpdateTLASTask::RecordCommands()
 
 			V::vkCmdBuildAccelerationStructuresKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometry, &AccelerationStructureBuildRangeInfoPtr);
 
-			TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
+			TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, X, Y);
 		},QueueFlagsBits);
 
 		V::SetName(LogicalDevice, CommandBuffers[i], Name, i);

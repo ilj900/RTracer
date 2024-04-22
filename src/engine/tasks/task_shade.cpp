@@ -73,7 +73,7 @@ FShadeTask::~FShadeTask()
 
 void FShadeTask::Init()
 {
-    TIMING_MANAGER()->RegisterTiming(Name, TotalSize);
+    TIMING_MANAGER()->RegisterTiming(Name, SubmitX, SubmitY);
 
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
@@ -129,8 +129,16 @@ void FShadeTask::RecordCommands()
 
 	for (uint32_t i = 0; i < TotalSize; ++i)
 	{
-		CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer) {
-			TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
+		CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
+		{
+			uint32_t X = i % SubmitX;
+			uint32_t Y = i / SubmitX;
+
+			if (X == 0)
+			{
+				TIMING_MANAGER()->TimestampReset(Name, CommandBuffer, Y);
+			}
+			TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, X, Y);
 
 			auto DispatchBuffer = RESOURCE_ALLOCATOR()->GetBuffer("TotalCountedMaterialsBuffer");
 
@@ -149,7 +157,7 @@ void FShadeTask::RecordCommands()
 				vkCmdDispatchIndirect(CommandBuffer, DispatchBuffer.Buffer, MaterialIndex * 3 * sizeof(uint32_t));
 			}
 
-			TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
+			TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, X, Y);
 		}, QueueFlagsBits);
 
 		V::SetName(LogicalDevice, CommandBuffers[i], Name, i);

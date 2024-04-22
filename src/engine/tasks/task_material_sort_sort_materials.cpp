@@ -42,7 +42,7 @@ FSortMaterialsTask::~FSortMaterialsTask()
 
 void FSortMaterialsTask::Init()
 {
-    TIMING_MANAGER()->RegisterTiming(Name, TotalSize);
+    TIMING_MANAGER()->RegisterTiming(Name, SubmitX, SubmitY);
 
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
@@ -78,7 +78,14 @@ void FSortMaterialsTask::RecordCommands()
     {
         CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
-            TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
+			uint32_t X = i % SubmitX;
+			uint32_t Y = i / SubmitX;
+
+			if (X == 0)
+			{
+				TIMING_MANAGER()->TimestampReset(Name, CommandBuffer, Y);
+			}
+			TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, X, Y);
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
             auto ComputeDescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, MATERIAL_SORT_SORT_MATERIALS_LAYOUT_INDEX, i);
@@ -93,7 +100,7 @@ void FSortMaterialsTask::RecordCommands()
 
             vkCmdDispatch(CommandBuffer, CalculateGroupCount(Width * Height, BASIC_CHUNK_SIZE), 1, 1);
 
-            TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
+            TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, X, Y);
         }, QueueFlagsBits);
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name, i);

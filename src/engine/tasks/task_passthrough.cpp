@@ -36,7 +36,7 @@ FPassthroughTask::~FPassthroughTask()
 
 void FPassthroughTask::Init()
 {
-    TIMING_MANAGER()->RegisterTiming(Name, TotalSize);
+    TIMING_MANAGER()->RegisterTiming(Name, SubmitX, SubmitY);
 
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
@@ -81,7 +81,14 @@ void FPassthroughTask::RecordCommands()
     {
         CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
-            TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
+			uint32_t X = i % SubmitX;
+			uint32_t Y = i / SubmitX;
+
+			if (X == 0)
+			{
+				TIMING_MANAGER()->TimestampReset(Name, CommandBuffer, Y);
+			}
+			TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, X, Y);
 
             VkRenderPassBeginInfo RenderPassInfo{};
             RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -105,7 +112,7 @@ void FPassthroughTask::RecordCommands()
             vkCmdDraw(CommandBuffer, 3, 1, 0, 0);
             vkCmdEndRenderPass(CommandBuffer);
 
-            TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
+            TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, X, Y);
         }, QueueFlagsBits);
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name, i);

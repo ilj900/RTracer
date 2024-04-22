@@ -47,7 +47,7 @@ void FImguiTask::Init()
 
 void FImguiTask::Init(std::vector<ImagePtr> Images)
 {
-	TIMING_MANAGER()->RegisterTiming(Name, TotalSize);
+	TIMING_MANAGER()->RegisterTiming(Name, SubmitX, SubmitY);
 	bFirstCall = true;
 
 	ExternalImages = std::move(Images);
@@ -165,7 +165,11 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 	COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer)
 	{
 		{
-			TIMING_MANAGER()->TimestampStart(Name, CommandBuffers[SubmitIndex], SubmitIndex);
+			if (X == 0)
+			{
+				TIMING_MANAGER()->TimestampReset(Name, CommandBuffers[SubmitIndex], Y);
+			}
+			TIMING_MANAGER()->TimestampStart(Name, CommandBuffers[SubmitIndex], X, Y);
 
 			VkRenderPassBeginInfo RenderPassBeginInfo{};
 			RenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -176,7 +180,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 			RenderPassBeginInfo.clearValueCount = 0;
 			vkCmdBeginRenderPass(CommandBuffers[SubmitIndex], &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-			TIMING_MANAGER()->TimestampEnd(Name, CommandBuffers[SubmitIndex], SubmitIndex);
+			TIMING_MANAGER()->TimestampEnd(Name, CommandBuffers[SubmitIndex], X, Y);
 		}
 
 		ImGui::Render();
