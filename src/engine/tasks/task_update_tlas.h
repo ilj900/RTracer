@@ -5,7 +5,7 @@
 class FUpdateTLASTask : public FExecutableTask
 {
 public:
-	FUpdateTLASTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+	FUpdateTLASTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice);
 	~FUpdateTLASTask() override;
 
     void Init() override;

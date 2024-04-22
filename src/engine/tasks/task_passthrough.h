@@ -9,7 +9,7 @@ class FVulkanContext;
 class FPassthroughTask : public FExecutableTask
 {
 public:
-    FPassthroughTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+    FPassthroughTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice);
     ~FPassthroughTask() override;
 
     void Init() override;

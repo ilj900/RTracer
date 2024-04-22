@@ -7,8 +7,8 @@
 #include "texture_manager.h"
 #include "vk_debug.h"
 
-FPassthroughTask::FPassthroughTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
-        FExecutableTask(WidthIn, HeightIn, NumberOfSimultaneousSubmits, LogicalDevice)
+FPassthroughTask::FPassthroughTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
+        FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice)
 {
     Name = "Passthrough pipeline";
 
@@ -36,7 +36,7 @@ FPassthroughTask::~FPassthroughTask()
 
 void FPassthroughTask::Init()
 {
-    TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+    TIMING_MANAGER()->RegisterTiming(Name, TotalSize);
 
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
@@ -51,14 +51,14 @@ void FPassthroughTask::Init()
     Pipeline = VK_CONTEXT()->CreateGraphicsPipeline(VertexShader(), FragmentShader(), Width, Height, GraphicsPipelineOptions);
     RenderPass = GraphicsPipelineOptions.RenderPass;
 
-    PassthroughFramebuffers.resize(NumberOfSimultaneousSubmits);
+    PassthroughFramebuffers.resize(TotalSize);
     for (std::size_t i = 0; i < PassthroughFramebuffers.size(); ++i)
     {
         PassthroughFramebuffers[i] = VK_CONTEXT()->CreateFramebuffer(Width, Height, {Outputs[i]}, RenderPass, "V_Passthrough_fb_" + std::to_string(i));
     }
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-    DescriptorSetManager->ReserveDescriptorSet(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
+    DescriptorSetManager->ReserveDescriptorSet(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, TotalSize);
 
     DescriptorSetManager->ReserveDescriptorPool(Name);
 
@@ -67,7 +67,7 @@ void FPassthroughTask::Init()
 
 void FPassthroughTask::UpdateDescriptorSets()
 {
-    for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
+    for (int i = 0; i < TotalSize; ++i)
     {
         UpdateDescriptorSet(PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("EstimatedImage"), Sampler);
     }
@@ -75,9 +75,9 @@ void FPassthroughTask::UpdateDescriptorSets()
 
 void FPassthroughTask::RecordCommands()
 {
-    CommandBuffers.resize(NumberOfSimultaneousSubmits);
+    CommandBuffers.resize(TotalSize);
 
-    for (int i = 0; i < CommandBuffers.size(); ++i)
+    for (int i = 0; i < TotalSize; ++i)
     {
         CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
@@ -108,6 +108,6 @@ void FPassthroughTask::RecordCommands()
             TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
         }, QueueFlagsBits);
 
-        V::SetName(LogicalDevice, CommandBuffers[i], Name);
+        V::SetName(LogicalDevice, CommandBuffers[i], Name, i);
     }
 }

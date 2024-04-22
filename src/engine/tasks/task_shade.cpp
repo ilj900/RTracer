@@ -18,8 +18,8 @@
 
 #include "task_shade.h"
 
-FShadeTask::FShadeTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
-        FExecutableTask(WidthIn, HeightIn, NumberOfSimultaneousSubmits, LogicalDevice)
+FShadeTask::FShadeTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
+        FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice)
 {
     Name = "Shade pipeline";
 
@@ -73,7 +73,7 @@ FShadeTask::~FShadeTask()
 
 void FShadeTask::Init()
 {
-    TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+    TIMING_MANAGER()->RegisterTiming(Name, TotalSize);
 
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
@@ -92,7 +92,7 @@ void FShadeTask::Init()
     MaterialTextureSampler = VK_CONTEXT()->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-    DescriptorSetManager->ReserveDescriptorSet(Name, COMPUTE_SHADE_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
+    DescriptorSetManager->ReserveDescriptorSet(Name, COMPUTE_SHADE_LAYOUT_INDEX, TotalSize);
 
     DescriptorSetManager->ReserveDescriptorPool(Name);
 
@@ -101,7 +101,7 @@ void FShadeTask::Init()
 
 void FShadeTask::UpdateDescriptorSets()
 {
-    for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
+    for (uint32_t i = 0; i < TotalSize; ++i)
     {
         UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_OUTPUT_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("RayTracingColorImage"));
         UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_RENDERABLE_BUFFER_INDEX, i, RENDERABLE_SYSTEM()->DeviceBuffer);
@@ -125,34 +125,33 @@ void FShadeTask::UpdateDescriptorSets()
 
 void FShadeTask::RecordCommands()
 {
-    CommandBuffers.resize(NumberOfSimultaneousSubmits);
+    CommandBuffers.resize(TotalSize);
 
-    for (std::size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
-    {
-        CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
-        {
-            TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
+	for (uint32_t i = 0; i < TotalSize; ++i)
+	{
+		CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer) {
+			TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
 
-            auto DispatchBuffer = RESOURCE_ALLOCATOR()->GetBuffer("TotalCountedMaterialsBuffer");
+			auto DispatchBuffer = RESOURCE_ALLOCATOR()->GetBuffer("TotalCountedMaterialsBuffer");
 
-            for (auto& Material : *MATERIAL_SYSTEM())
-            {
-                uint32_t MaterialIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
+			for (auto& Material : *MATERIAL_SYSTEM())
+			{
+				uint32_t MaterialIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
 
-                vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, MaterialIndexToPipelineMap[MaterialIndex]);
-                auto RayTracingDescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, COMPUTE_SHADE_LAYOUT_INDEX, i);
-                vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
-                                        0, 1, &RayTracingDescriptorSet, 0, nullptr);
+				vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, MaterialIndexToPipelineMap[MaterialIndex]);
+				auto RayTracingDescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, COMPUTE_SHADE_LAYOUT_INDEX, i);
+				vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
+					0, 1, &RayTracingDescriptorSet, 0, nullptr);
 
-                FPushConstants PushConstants = {Width, Height, 1.f / float(Width), 1.f / float(Height), Width * Height, MaterialIndex};
-                vkCmdPushConstants(CommandBuffer, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
+				FPushConstants PushConstants = { Width, Height, 1.f / float(Width), 1.f / float(Height), Width * Height, MaterialIndex };
+				vkCmdPushConstants(CommandBuffer, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
 
-                vkCmdDispatchIndirect(CommandBuffer, DispatchBuffer.Buffer, MaterialIndex * 3 * sizeof(uint32_t));
-            }
+				vkCmdDispatchIndirect(CommandBuffer, DispatchBuffer.Buffer, MaterialIndex * 3 * sizeof(uint32_t));
+			}
 
-            TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
-        }, QueueFlagsBits);
+			TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
+		}, QueueFlagsBits);
 
-        V::SetName(LogicalDevice, CommandBuffers[i], Name);
+		V::SetName(LogicalDevice, CommandBuffers[i], Name, i);
     }
 };

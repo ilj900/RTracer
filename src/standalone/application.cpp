@@ -22,7 +22,7 @@ FApplication::FApplication()
 	Controller = std::make_shared<FController>(Render);
 	Controller->SetWindow(WindowManager->GetWindow());
 	WindowManager->SetController(Controller.get());
-	ImguiTask = std::make_shared<FImguiTask>(Width, Height, int(Swapchain->Size()), VK_CONTEXT()->LogicalDevice);
+	ImguiTask = std::make_shared<FImguiTask>(Width, Height, 1, int(Swapchain->Size()), VK_CONTEXT()->LogicalDevice);
 	ImguiTask->SetGLFWWindow(WindowManager->GetWindow());
 	ImguiTask->Init(Swapchain->GetImages());
 	ImguiTask->UpdateDescriptorSets();
@@ -54,7 +54,7 @@ int FApplication::Run()
 			ImguiTask = nullptr;
 			Swapchain = std::make_shared<FSwapchain>(Width, Height, VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, VK_PRESENT_MODE_MAILBOX_KHR);
 			Render->RegisterExternalOutputs(Swapchain->GetImages(), Swapchain->GetSemaphores());
-			ImguiTask = std::make_shared<FImguiTask>(Width, Height, int(Swapchain->Size()), VK_CONTEXT()->LogicalDevice);
+			ImguiTask = std::make_shared<FImguiTask>(Width, Height, 1, int(Swapchain->Size()), VK_CONTEXT()->LogicalDevice);
 			ImguiTask->SetGLFWWindow(WindowManager->GetWindow());
 			ImguiTask->Init(Swapchain->GetImages());
 			ImguiTask->UpdateDescriptorSets();

@@ -8,8 +8,8 @@
 
 #include "task_material_sort_compute_offsets_per_material.h"
 
-FComputeOffsetsPerMaterialTask::FComputeOffsetsPerMaterialTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
-        FExecutableTask(WidthIn, HeightIn, NumberOfSimultaneousSubmits, LogicalDevice)
+FComputeOffsetsPerMaterialTask::FComputeOffsetsPerMaterialTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
+        FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice)
 {
     Name = "Material sort compute offsets per material pipeline";
 
@@ -36,7 +36,7 @@ FComputeOffsetsPerMaterialTask::~FComputeOffsetsPerMaterialTask()
 
 void FComputeOffsetsPerMaterialTask::Init()
 {
-    TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+    TIMING_MANAGER()->RegisterTiming(Name, TotalSize);
 
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
@@ -46,7 +46,7 @@ void FComputeOffsetsPerMaterialTask::Init()
     Pipeline = VK_CONTEXT()->CreateComputePipeline(MaterialCountShader(), PipelineLayout);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-    DescriptorSetManager->ReserveDescriptorSet(Name, MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
+    DescriptorSetManager->ReserveDescriptorSet(Name, MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_LAYOUT_INDEX, TotalSize);
 
     DescriptorSetManager->ReserveDescriptorPool(Name);
 
@@ -55,7 +55,7 @@ void FComputeOffsetsPerMaterialTask::Init()
 
 void FComputeOffsetsPerMaterialTask::UpdateDescriptorSets()
 {
-    for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
+    for (uint32_t i = 0; i < TotalSize; ++i)
     {
         UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_TOTAL_MATERIAL_COUNT_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("TotalCountedMaterialsBuffer"));
         UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_MATERIAL_OFFSETS_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("MaterialsOffsetsPerMaterialBuffer"));
@@ -64,9 +64,9 @@ void FComputeOffsetsPerMaterialTask::UpdateDescriptorSets()
 
 void FComputeOffsetsPerMaterialTask::RecordCommands()
 {
-    CommandBuffers.resize(NumberOfSimultaneousSubmits);
+    CommandBuffers.resize(TotalSize);
 
-    for (std::size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
+    for (uint32_t i = 0; i < TotalSize; ++i)
     {
         CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
@@ -83,6 +83,6 @@ void FComputeOffsetsPerMaterialTask::RecordCommands()
             TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
         }, QueueFlagsBits);
 
-        V::SetName(LogicalDevice, CommandBuffers[i], Name);
+        V::SetName(LogicalDevice, CommandBuffers[i], Name, i);
     }
 };

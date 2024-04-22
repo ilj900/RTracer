@@ -13,8 +13,8 @@
 
 #include "task_miss.h"
 
-FMissTask::FMissTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
-        FExecutableTask(WidthIn, HeightIn, NumberOfSimultaneousSubmits, LogicalDevice)
+FMissTask::FMissTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
+        FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice)
 {
     Name = "Miss pipeline";
 
@@ -47,7 +47,7 @@ FMissTask::~FMissTask()
 
 void FMissTask::Init()
 {
-    TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+    TIMING_MANAGER()->RegisterTiming(Name, TotalSize);
 
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
@@ -60,7 +60,7 @@ void FMissTask::Init()
     IBLImageSampler = VK_CONTEXT()->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-    DescriptorSetManager->ReserveDescriptorSet(Name, COMPUTE_MISS_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
+    DescriptorSetManager->ReserveDescriptorSet(Name, COMPUTE_MISS_LAYOUT_INDEX, TotalSize);
 
     DescriptorSetManager->ReserveDescriptorPool(Name);
 
@@ -69,7 +69,7 @@ void FMissTask::Init()
 
 void FMissTask::UpdateDescriptorSets()
 {
-    for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
+    for (size_t i = 0; i < TotalSize; ++i)
     {
         UpdateDescriptorSet(COMPUTE_MISS_LAYOUT_INDEX, COMPUTE_MISS_OUTPUT_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("RayTracingColorImage"));
         UpdateDescriptorSet(COMPUTE_MISS_LAYOUT_INDEX, COMPUTE_MISS_RAYS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer("InitialRaysBuffer"));
@@ -82,9 +82,9 @@ void FMissTask::UpdateDescriptorSets()
 
 void FMissTask::RecordCommands()
 {
-    CommandBuffers.resize(NumberOfSimultaneousSubmits);
+    CommandBuffers.resize(TotalSize);
 
-    for (std::size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
+    for (std::size_t i = 0; i < TotalSize; ++i)
     {
         CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
@@ -107,6 +107,6 @@ void FMissTask::RecordCommands()
             TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
         }, QueueFlagsBits);
 
-        V::SetName(LogicalDevice, CommandBuffers[i], Name);
+        V::SetName(LogicalDevice, CommandBuffers[i], Name, i);
     }
 };

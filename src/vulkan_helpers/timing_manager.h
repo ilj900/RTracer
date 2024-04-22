@@ -25,7 +25,6 @@ private:
     std::chrono::time_point<std::chrono::steady_clock> Time;
     std::chrono::time_point<std::chrono::steady_clock> PreviousTime;
     std::unordered_map<std::string, VkQueryPool> NameToQueryPool;
-    std::unordered_map<std::string, std::vector<float>> TimingHistory;
 };
 
 FTimingManager* GetTimingManager();

@@ -6,7 +6,7 @@
 class FRaytraceTask : public FExecutableTask
 {
 public:
-    FRaytraceTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+    FRaytraceTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice);
     ~FRaytraceTask() override;
 
     void Init() override;

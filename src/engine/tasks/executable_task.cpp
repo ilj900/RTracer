@@ -9,10 +9,11 @@ bool CheckFlag(uint32_t Flags, uint32_t Flag)
 	return (Flags & Flag) == Flag;
 }
 
-FExecutableTask::FExecutableTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
+FExecutableTask::FExecutableTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
         Width(WidthIn), Height(HeightIn),
-        NumberOfSimultaneousSubmits(NumberOfSimultaneousSubmits), LogicalDevice(LogicalDevice)
+        SubmitX(SubmitXIn), SubmitY(SubmitYIn), LogicalDevice(LogicalDevice)
 {
+	TotalSize = SubmitX * SubmitY;
     CreateSyncObjects();
 	DitryFlags |= UNINITIALIZED | OUTDATED_DESCRIPTOR_SET | OUTDATED_COMMAND_BUFFER;
 }
@@ -41,7 +42,9 @@ FExecutableTask::~FExecutableTask()
 
 void FExecutableTask::CreateSyncObjects()
 {
-    for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
+	SignalSemaphores.reserve(TotalSize);
+
+    for (int i = 0; i < TotalSize; ++i)
     {
         SignalSemaphores.push_back(VK_CONTEXT()->CreateSemaphore());
         V::SetName(LogicalDevice, SignalSemaphores.back(), Name);
@@ -50,7 +53,7 @@ void FExecutableTask::CreateSyncObjects()
 
 void FExecutableTask::FreeSyncObjects()
 {
-    for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
+    for (int i = 0; i < TotalSize; ++i)
     {
         if (SignalSemaphores[i] != VK_NULL_HANDLE)
         {
@@ -100,8 +103,10 @@ void FExecutableTask::Reload()
 	DitryFlags = 0u;
 }
 
-FSynchronizationPoint FExecutableTask::Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex)
+FSynchronizationPoint FExecutableTask::Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t X, uint32_t Y)
 {
+	uint32_t SubmitIndex = Y * SubmitX + X;
+
     VkPipelineStageFlags WaitStages[] = {PipelineStageFlagsIn};
     VkSubmitInfo SubmitInfo{};
     SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -109,10 +114,10 @@ FSynchronizationPoint FExecutableTask::Submit(VkPipelineStageFlags& PipelineStag
     SubmitInfo.pWaitSemaphores = SynchronizationPoint.SemaphoresToWait.empty() ? nullptr : SynchronizationPoint.SemaphoresToWait.data();
     SubmitInfo.pWaitDstStageMask = WaitStages;
     SubmitInfo.commandBufferCount = 1;
-    SubmitInfo.pCommandBuffers = &CommandBuffers[IterationIndex];
+    SubmitInfo.pCommandBuffers = &CommandBuffers[SubmitIndex];
 
 	/// We push the task's semaphore to the list of signal semaphores
-	SynchronizationPoint.SemaphoresToSignal.push_back(SignalSemaphores[IterationIndex]);
+	SynchronizationPoint.SemaphoresToSignal.push_back(SignalSemaphores[SubmitIndex]);
     SubmitInfo.signalSemaphoreCount = SynchronizationPoint.SemaphoresToSignal.size();
     SubmitInfo.pSignalSemaphores = SynchronizationPoint.SemaphoresToSignal.data();
 
@@ -141,7 +146,7 @@ FSynchronizationPoint FExecutableTask::Submit(VkPipelineStageFlags& PipelineStag
 
 	PipelineStageFlagsIn = PipelineStageFlags;
 
-	return {{SignalSemaphores[IterationIndex]}, {}, {}, {}};
+	return {{SignalSemaphores[SubmitIndex]}, {}, {}, {}};
 }
 
 void FExecutableTask::UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t LayoutIndex, int FrameIndex, const FBuffer& Buffer)

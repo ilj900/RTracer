@@ -5,7 +5,7 @@
 class FCountMaterialsPerChunkTask : public FExecutableTask
 {
 public:
-    FCountMaterialsPerChunkTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+    FCountMaterialsPerChunkTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice);
 
     void Init() override;
     void UpdateDescriptorSets() override;

@@ -11,8 +11,8 @@
 
 #include <iostream>
 
-FImguiTask::FImguiTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
-	FExecutableTask(WidthIn, HeightIn, NumberOfSimultaneousSubmits, LogicalDevice)
+FImguiTask::FImguiTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
+	FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice)
 {
 	Name = "Imgui pipeline";
 
@@ -47,7 +47,7 @@ void FImguiTask::Init()
 
 void FImguiTask::Init(std::vector<ImagePtr> Images)
 {
-	TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+	TIMING_MANAGER()->RegisterTiming(Name, TotalSize);
 	bFirstCall = true;
 
 	ExternalImages = std::move(Images);
@@ -59,9 +59,9 @@ void FImguiTask::Init(std::vector<ImagePtr> Images)
 
 	V::SetName(LogicalDevice, RenderPass, Name);
 
-	ImguiFramebuffers.resize(NumberOfSimultaneousSubmits);
+	ImguiFramebuffers.resize(TotalSize);
 
-	for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
+	for (int i = 0; i < TotalSize; ++i)
 	{
 		ImguiFramebuffers[i] = VK_CONTEXT()->CreateFramebuffer(Width, Height, {ExternalImages[i]}, RenderPass, Name);
 	}
@@ -98,8 +98,8 @@ void FImguiTask::Init(std::vector<ImagePtr> Images)
 	InitInfo.Queue = VK_CONTEXT()->GetGraphicsQueue();
 	InitInfo.DescriptorPool = DescriptorPool;
 	InitInfo.RenderPass = RenderPass;
-	InitInfo.MinImageCount = NumberOfSimultaneousSubmits;
-	InitInfo.ImageCount = NumberOfSimultaneousSubmits;
+	InitInfo.MinImageCount = TotalSize;
+	InitInfo.ImageCount = TotalSize;
 	InitInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 	InitInfo.CheckVkResultFn = CheckResultFunction;
 	ImGui_ImplVulkan_Init(&InitInfo);
@@ -107,7 +107,7 @@ void FImguiTask::Init(std::vector<ImagePtr> Images)
 
 void FImguiTask::UpdateDescriptorSets()
 {
-	for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
+	for (int i = 0; i < TotalSize; ++i)
 	{
 		RegisterOutput(i, ExternalImages[i]);
 	}
@@ -115,10 +115,10 @@ void FImguiTask::UpdateDescriptorSets()
 
 void FImguiTask::RecordCommands()
 {
-	CommandBuffers.resize(NumberOfSimultaneousSubmits);
+	CommandBuffers.resize(TotalSize);
 }
 
-FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex)
+FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t X, uint32_t Y)
 {
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
@@ -156,32 +156,34 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 		ProfilerData.Render();
 	}
 
-	CommandBuffers[IterationIndex] = COMMAND_BUFFER_MANAGER()->BeginSingleTimeCommand(QueueFlagsBits);
+	uint32_t SubmitIndex = Y * SubmitX + X;
 
-	V::SetName(LogicalDevice, CommandBuffers[IterationIndex], Name);
+	CommandBuffers[SubmitIndex] = COMMAND_BUFFER_MANAGER()->BeginSingleTimeCommand(QueueFlagsBits);
+
+	V::SetName(LogicalDevice, CommandBuffers[SubmitIndex], Name, SubmitIndex);
 
 	COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer)
 	{
 		{
-			TIMING_MANAGER()->TimestampStart(Name, CommandBuffers[IterationIndex], IterationIndex);
+			TIMING_MANAGER()->TimestampStart(Name, CommandBuffers[SubmitIndex], SubmitIndex);
 
 			VkRenderPassBeginInfo RenderPassBeginInfo{};
 			RenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			RenderPassBeginInfo.renderPass = RenderPass;
-			RenderPassBeginInfo.framebuffer = ImguiFramebuffers[IterationIndex % NumberOfSimultaneousSubmits];
+			RenderPassBeginInfo.framebuffer = ImguiFramebuffers[SubmitIndex % TotalSize];
 			/// TODO: find a better way to pass extent
 			RenderPassBeginInfo.renderArea.extent = {uint32_t(Width), uint32_t(Height)};
 			RenderPassBeginInfo.clearValueCount = 0;
-			vkCmdBeginRenderPass(CommandBuffers[IterationIndex], &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBeginRenderPass(CommandBuffers[SubmitIndex], &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-			TIMING_MANAGER()->TimestampEnd(Name, CommandBuffers[IterationIndex], IterationIndex);
+			TIMING_MANAGER()->TimestampEnd(Name, CommandBuffers[SubmitIndex], SubmitIndex);
 		}
 
 		ImGui::Render();
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), CommandBuffers[IterationIndex]);
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), CommandBuffers[SubmitIndex]);
 
-		vkCmdEndRenderPass(CommandBuffers[IterationIndex]);
-		vkEndCommandBuffer(CommandBuffers[IterationIndex]);
+		vkCmdEndRenderPass(CommandBuffers[SubmitIndex]);
+		vkEndCommandBuffer(CommandBuffers[SubmitIndex]);
 	}, QueueFlagsBits);
 
 	if (bFirstCall)
@@ -189,7 +191,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 		bFirstCall = false;
 	}
 
-	PreviousIterationIndex = IterationIndex;
+	PreviousIterationIndex = SubmitIndex;
 
-	return FExecutableTask::Submit(PipelineStageFlags, SynchronizationPoint, IterationIndex);
+	return FExecutableTask::Submit(PipelineStageFlags, SynchronizationPoint, X, Y);
 }

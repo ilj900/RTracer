@@ -11,8 +11,8 @@
 #include "task_raytrace.h"
 #include "texture_manager.h"
 
-FRaytraceTask::FRaytraceTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
-        FExecutableTask(WidthIn, HeightIn, NumberOfSimultaneousSubmits, LogicalDevice)
+FRaytraceTask::FRaytraceTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
+        FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice)
 {
     Name = "RayTracing pipeline";
 
@@ -50,7 +50,7 @@ FRaytraceTask::~FRaytraceTask()
 
 void FRaytraceTask::Init()
 {
-    TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+    TIMING_MANAGER()->RegisterTiming(Name, TotalSize);
 
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
@@ -63,7 +63,7 @@ void FRaytraceTask::Init()
     Pipeline = VK_CONTEXT()->CreateRayTracingPipeline(RayGenerationShader(), RayMissShader(), RayClosestHitShader(), Width, Height, PipelineLayout);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-    DescriptorSetManager->ReserveDescriptorSet(Name, RAYTRACE_LAYOUT_INDEX, NumberOfSimultaneousSubmits);
+    DescriptorSetManager->ReserveDescriptorSet(Name, RAYTRACE_LAYOUT_INDEX, TotalSize);
 
     DescriptorSetManager->ReserveDescriptorPool(Name);
 
@@ -130,7 +130,7 @@ void FRaytraceTask::Init()
 
 void FRaytraceTask::UpdateDescriptorSets()
 {
-    for (size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
+    for (size_t i = 0; i < TotalSize; ++i)
     {
         VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_LAYOUT_INDEX, i, &ACCELERATION_STRUCTURE_SYSTEM()->TLAS.AccelerationStructure);
         UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_RAYS_DATA_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("InitialRaysBuffer"));
@@ -142,9 +142,9 @@ void FRaytraceTask::UpdateDescriptorSets()
 
 void FRaytraceTask::RecordCommands()
 {
-    CommandBuffers.resize(NumberOfSimultaneousSubmits);
+    CommandBuffers.resize(TotalSize);
 
-    for (std::size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
+    for (std::size_t i = 0; i < TotalSize; ++i)
     {
         CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
@@ -159,6 +159,6 @@ void FRaytraceTask::RecordCommands()
             TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
         }, QueueFlagsBits);
 
-        V::SetName(LogicalDevice, CommandBuffers[i], Name);
+        V::SetName(LogicalDevice, CommandBuffers[i], Name, i);
     }
 };

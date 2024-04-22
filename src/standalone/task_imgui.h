@@ -9,7 +9,7 @@ struct GLFWwindow;
 class FImguiTask : public FExecutableTask
 {
 public:
-	FImguiTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+	FImguiTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice);
 	~FImguiTask() override;
 
 	void SetGLFWWindow(GLFWwindow* WindowIn);
@@ -18,7 +18,7 @@ public:
 	void Init() override;
 	void UpdateDescriptorSets() override;
 	void RecordCommands() override;
-	FSynchronizationPoint Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex) override;
+	FSynchronizationPoint Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t X, uint32_t Y) override;
 
 	FGraphicsPipelineOptions GraphicsPipelineOptions;
 

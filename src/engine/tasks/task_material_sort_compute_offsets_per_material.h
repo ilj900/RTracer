@@ -5,7 +5,7 @@
 class FComputeOffsetsPerMaterialTask : public FExecutableTask
 {
 public:
-    FComputeOffsetsPerMaterialTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+    FComputeOffsetsPerMaterialTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice);
     ~FComputeOffsetsPerMaterialTask() override;
 
     void Init() override;

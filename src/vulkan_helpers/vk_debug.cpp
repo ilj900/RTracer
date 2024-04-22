@@ -32,7 +32,13 @@ namespace V
                 {VK_OBJECT_TYPE_SWAPCHAIN_KHR, " Swapchain KHR "},
                 {VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR, " Acceleration structure KHR "},
         };
-        std::string FullName = "V::" + Name + TypeToPostfixMap[ObjectType] + std::to_string(Index);
+        std::string FullName = "V::" + Name + TypeToPostfixMap[ObjectType];
+
+		if (Index != UINT32_MAX)
+		{
+			FullName += std::to_string(Index);
+		}
+
         VkDebugUtilsObjectNameInfoEXT DebugUtilsObjectNameInfo{};
         DebugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
         DebugUtilsObjectNameInfo.objectType = ObjectType;

@@ -8,8 +8,8 @@
 
 #include "task_update_tlas.h"
 
-FUpdateTLASTask::FUpdateTLASTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice) :
-        FExecutableTask(WidthIn, HeightIn, NumberOfSimultaneousSubmits, LogicalDevice)
+FUpdateTLASTask::FUpdateTLASTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
+        FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice)
 {
     Name = "Update TLAS pipeline";
 
@@ -24,7 +24,7 @@ FUpdateTLASTask::~FUpdateTLASTask()
 
 void FUpdateTLASTask::Init()
 {
-    TIMING_MANAGER()->RegisterTiming(Name, NumberOfSimultaneousSubmits);
+    TIMING_MANAGER()->RegisterTiming(Name, TotalSize);
 };
 
 void FUpdateTLASTask::UpdateDescriptorSets()
@@ -33,7 +33,7 @@ void FUpdateTLASTask::UpdateDescriptorSets()
 
 void FUpdateTLASTask::RecordCommands()
 {
-    CommandBuffers.resize(NumberOfSimultaneousSubmits);
+    CommandBuffers.resize(TotalSize);
 
 	VkAccelerationStructureGeometryInstancesDataKHR AccelerationStructureGeometryInstancesData = VK_CONTEXT()->GetAccelerationStructureGeometryInstancesData(ACCELERATION_STRUCTURE_SYSTEM()->DeviceBuffer);
 	VkAccelerationStructureGeometryKHR AccelerationStructureGeometry = VK_CONTEXT()->GetAccelerationStructureGeometry(AccelerationStructureGeometryInstancesData);
@@ -55,11 +55,10 @@ void FUpdateTLASTask::RecordCommands()
 	AccelerationStructureBuildRangeInfo.primitiveCount = ACCELERATION_STRUCTURE_SYSTEM()->InstanceCount;
 	const VkAccelerationStructureBuildRangeInfoKHR* AccelerationStructureBuildRangeInfoPtr = &AccelerationStructureBuildRangeInfo;
 
-    for (std::size_t i = 0; i < NumberOfSimultaneousSubmits; ++i)
+    for (uint32_t i = 0; i < TotalSize; ++i)
     {
-        CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
-        {
-            TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
+		CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer) {
+			TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, i);
 
 			VkMemoryBarrier MemoryBarrier{};
 			MemoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
@@ -68,12 +67,11 @@ void FUpdateTLASTask::RecordCommands()
 			vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, 0, 1,
 				&MemoryBarrier, 0, nullptr, 0, nullptr);
 
-
 			V::vkCmdBuildAccelerationStructuresKHR(CommandBuffer, 1, &AccelerationStructureBuildGeometry, &AccelerationStructureBuildRangeInfoPtr);
 
-            TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
-        }, QueueFlagsBits);
+			TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, i);
+		},QueueFlagsBits);
 
-        V::SetName(LogicalDevice, CommandBuffers[i], Name);
+		V::SetName(LogicalDevice, CommandBuffers[i], Name, i);
     }
 };

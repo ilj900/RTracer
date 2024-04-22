@@ -13,7 +13,10 @@ class FVulkanContext;
 class FExecutableTask
 {
 public:
-    FExecutableTask(uint32_t WidthIn, uint32_t HeightIn, int NumberOfSimultaneousSubmits, VkDevice LogicalDevice);
+	/// Creates a task that can be submitted to a queue for an execution
+	/// SubmitXIn parameter describes how many times a task might be submitted during one render() call (for multiple bounces)
+	/// SubmitYIn parameter describes how many frames will be submitted in parallel
+    FExecutableTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice);
     virtual ~FExecutableTask();
 
     virtual void Init() = 0;
@@ -21,7 +24,9 @@ public:
     virtual void RecordCommands() = 0;
 	virtual void Reload();
 	/// SynchronizationPoint will be updated after this
-    virtual FSynchronizationPoint Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t IterationIndex);
+	/// X - for bounce
+	/// Y - for frame
+    virtual FSynchronizationPoint Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t X, uint32_t Y);
 
     void RegisterInput(int Index, ImagePtr Image);
     void RegisterOutput(int Index, ImagePtr Image);
@@ -45,7 +50,9 @@ public:
     uint32_t Width = 0;
     uint32_t Height = 0;
 
-    int NumberOfSimultaneousSubmits;
+    uint32_t SubmitX;
+	uint32_t SubmitY;
+	uint32_t TotalSize;
     VkDevice LogicalDevice = VK_NULL_HANDLE;
     VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
     VkPipeline Pipeline = VK_NULL_HANDLE;

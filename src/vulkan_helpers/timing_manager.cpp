@@ -48,7 +48,6 @@ void FTimingManager::RegisterTiming(const std::string& TimingName, uint32_t Numb
     }
 
     NameToQueryPool[TimingName] = VK_NULL_HANDLE;
-    TimingHistory[TimingName] = std::vector<float>(NumberOfSimultaneousSubmitsIn * 2);
 
     VkQueryPoolCreateInfo QueryPoolCreateInfo{};
     QueryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
