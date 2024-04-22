@@ -37,6 +37,7 @@ void main()
 
     if ((RayData.RayFlags & RAY_DATA_RAY_MISSED) == RAY_DATA_RAY_MISSED)
     {
+        MaterialIndicesAOV[RayIndex] = TOTAL_MATERIALS - 1;
         return;
     }
 

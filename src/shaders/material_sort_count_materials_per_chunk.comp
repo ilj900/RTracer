@@ -35,7 +35,7 @@ void main()
     uint MaterialIndex = MaterialIndicesAOV[PixelIndex];
 
     uint XPos = PixelIndex / BASIC_CHUNK_SIZE;
-    uint YPos = (MaterialIndex == UINT_MAX) ? (TOTAL_MATERIALS - 1) : MaterialIndex;
+    uint YPos = MaterialIndex;
     uint BufferIndex = YPos * PushConstantsCountMaterialsPerChunk.MaxGroupSize + XPos;
     atomicAdd(MaterialCount[BufferIndex], 1);
 }

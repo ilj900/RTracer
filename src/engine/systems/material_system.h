@@ -24,7 +24,7 @@ namespace ECS
             FMaterialSystem& SetNormal(FEntity MaterialEntity, FEntity TextureEntity);
             std::string GenerateMaterialCode(FEntity MaterialEntity);
 
-            const uint32_t MAX_MATERIALS = TOTAL_MATERIALS - 1;
+            const uint32_t MAX_MATERIALS = TOTAL_MATERIALS - 2;
         };
     }
 }

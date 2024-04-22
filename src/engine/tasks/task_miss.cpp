@@ -104,7 +104,7 @@ void FMissTask::RecordCommands()
 
             auto DispatchBuffer = RESOURCE_ALLOCATOR()->GetBuffer("TotalCountedMaterialsBuffer");
 
-            uint32_t MaterialIndex = TOTAL_MATERIALS - 1;
+            uint32_t MaterialIndex = TOTAL_MATERIALS - 2;
             FPushConstants PushConstants = {Width, Height, 1.f / Width, 1.f / Height, Width * Height, MaterialIndex};
             vkCmdPushConstants(CommandBuffer, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
                                VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
