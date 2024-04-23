@@ -48,6 +48,12 @@ struct FDeviceCamera
     float dummy_3;
 };
 
+struct FDeviceTransform
+{
+	FMatrix4 ModelMatrix;
+	FMatrix4 InverseModelMatrix;
+};
+
 struct FLight
 {
     FVector3 Position;

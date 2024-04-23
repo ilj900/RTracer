@@ -17,7 +17,7 @@ layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_RENDERABLE_BUF
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_TRANSFORM_INDEX) buffer TransformsBufferObject
 {
-    FMatrix4 Transforms[];
+    FDeviceTransform DeviceTransforms[];
 };
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_HITS_BUFFER_INDEX) buffer HitsBufferObject
@@ -74,9 +74,9 @@ FHit FetchHit(uint HitIndex)
     return Hits[HitIndex];
 }
 
-mat4 FetchTransform(uint TransformIndex)
+FDeviceTransform FetchTransform(uint TransformIndex)
 {
-    return Transforms[nonuniformEXT(TransformIndex)];
+    return DeviceTransforms[nonuniformEXT(TransformIndex)];
 }
 
 FRayData FetchRayData(uint RayIndex)
@@ -154,7 +154,7 @@ void main()
 
     Vertices Verts = Vertices(Renderable.VertexBufferAddress);
     Indices Inds = Indices(Renderable.IndexBufferAddress);
-    mat4 Transform = FetchTransform(Renderable.TransformIndex);
+    FDeviceTransform Transform = FetchTransform(Renderable.TransformIndex);
     const vec3 Barycentrics = vec3(1.0 - Hit.HitUV.x - Hit.HitUV.y, Hit.HitUV.x, Hit.HitUV.y);
 
     FVertex V0;
@@ -186,9 +186,9 @@ void main()
 
     vec3 Normal = vec3(1.f, 1.f, 1.f);
     Normal = V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z;
-    vec3 NormalInWorldSpace = Normal * transpose(inverse(mat3(Transform)));
+    vec3 NormalInWorldSpace = Normal * mat3(Transform.InverseModelMatrix);
     vec3 PointOfIntersectionInLocalSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
-    vec3 PointOfIntersectionInWorldSpace = vec3(Transform * vec4(PointOfIntersectionInLocalSpace, 1.f));
+    vec3 PointOfIntersectionInWorldSpace = vec3(Transform.ModelMatrix * vec4(PointOfIntersectionInLocalSpace, 1.f));
 
     vec2 TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
     FDeviceMaterial Material = GetMaterial(TextureCoords);

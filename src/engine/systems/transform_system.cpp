@@ -1,5 +1,5 @@
-#include "transform_component.h"
 #include "device_transform_component.h"
+#include "transform_component.h"
 #include "transform_system.h"
 
 namespace ECS
@@ -20,6 +20,7 @@ namespace ECS
                 {
                     auto& DeviceTransformComponent = GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
                     DeviceTransformComponent.ModelMatrix = GetModelMatrix(Entity);
+					DeviceTransformComponent.InverseModelMatrix = FMatrix3(DeviceTransformComponent.ModelMatrix).GetInverse().Transpose();
                 }
             }
 
@@ -32,6 +33,7 @@ namespace ECS
             {
                 auto& DeviceTransformComponent = GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
                 DeviceTransformComponent.ModelMatrix = GetModelMatrix(Entity);
+				DeviceTransformComponent.InverseModelMatrix = FMatrix3(DeviceTransformComponent.ModelMatrix).GetInverse().Transpose();
             }
 
             FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceTransformComponent>(Index);

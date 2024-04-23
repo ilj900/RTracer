@@ -1,18 +1,20 @@
 #pragma once
 
 #include "maths.h"
+#include "common_structures.h"
 
 namespace ECS
 {
     namespace COMPONENTS
     {
-        struct FDeviceTransformComponent
+        struct FDeviceTransformComponent : FDeviceTransform
         {
             FDeviceTransformComponent() = default;
-            FDeviceTransformComponent(FMatrix4& ModelMatrix) :
-                ModelMatrix(ModelMatrix) {};
-
-            FMatrix4 ModelMatrix;
+            explicit FDeviceTransformComponent(FMatrix4& ModelMatrixIn)
+			{
+				ModelMatrix = ModelMatrixIn;
+				InverseModelMatrix = FMatrix3(ModelMatrix).GetInverse().Transpose();
+			};
         };
     }
 }

@@ -315,6 +315,70 @@ FVector2 operator+(const FVector2& A, const FVector2& B)
 }
 
 ///****************************************************************
+///FMatrix3 and it's operations
+///****************************************************************
+
+FMatrix3::FMatrix3(const FMatrix4& M) :
+	Data({FVector3{M.Data[0].X, M.Data[0].Y, M.Data[0].Z},
+		 FVector3{M.Data[1].X, M.Data[1].Y, M.Data[1].Z},
+		 FVector3{M.Data[1].X, M.Data[2].Y, M.Data[2].Z}})
+{
+}
+
+FMatrix3 FMatrix3::GetInverse()
+{
+	FMatrix3 Result{};
+
+	float Determinant = Data[0].X * Data[1].Y * Data[2].Z +
+		                Data[0].Y * Data[1].Z * Data[2].X +
+		                Data[0].Z * Data[1].X * Data[2].Y +
+		                Data[0].X * Data[1].Z * Data[2].Y -
+		                Data[0].Y * Data[1].X * Data[2].Z -
+		                Data[0].Z * Data[1].Y * Data[2].X;
+
+	if (Determinant == 0.f)
+	{
+		throw std::runtime_error("You are about to divide by zero");
+	}
+
+	Result.Data[0].X = Data[0].X * Data[1].Y * Data[2].Z - Data[0].X * Data[1].Z * Data[2].Y;
+	Result.Data[0].Y = Data[0].Y * Data[1].Z * Data[2].X - Data[0].Y * Data[1].X * Data[2].Z;
+	Result.Data[0].Z = Data[0].Z * Data[1].X * Data[2].Y - Data[0].Z * Data[1].Y * Data[2].X;
+
+	Result.Data[1].X = Data[1].X * Data[0].Y * Data[2].Z - Data[1].X * Data[0].Z * Data[2].Y;
+	Result.Data[1].Y = Data[1].Y * Data[0].Z * Data[2].X - Data[1].Y * Data[0].X * Data[2].Z;
+	Result.Data[1].Z = Data[1].Z * Data[0].X * Data[2].Y - Data[1].Z * Data[0].Y * Data[2].X;
+
+	Result.Data[2].X = Data[2].X * Data[0].Y * Data[1].Z - Data[2].X * Data[0].Z * Data[1].Y;
+	Result.Data[2].Y = Data[2].Y * Data[0].Z * Data[1].X - Data[2].Y * Data[0].X * Data[1].Z;
+	Result.Data[2].Z = Data[2].Z * Data[0].X * Data[1].Y - Data[2].Z * Data[0].Y * Data[1].X;
+
+	return Result / Determinant;;
+}
+
+FMatrix3& FMatrix3::Transpose()
+{
+	float Tmp = Data[0].Y;
+	Data[0].Y = Data[1].X;
+	Data[1].X = Tmp;
+
+	Tmp = Data[0].Z;
+	Data[0].Z = Data[2].X;
+	Data[2].X = Tmp;
+
+	Tmp = Data[1].Z;
+	Data[1].Z = Data[2].Y;
+	Data[2].Y = Tmp;
+
+	return *this;
+}
+
+FMatrix3 operator/(const FMatrix3& A, float Val)
+{
+	return {A.Data[0].X / Val, A.Data[0].Y / Val, A.Data[0].Z / Val, A.Data[1].X / Val, A.Data[1].Y / Val, A.Data[1].Z / Val, A.Data[2].X / Val, A.Data[2].Y / Val, A.Data[2].Z / Val};
+}
+
+///****************************************************************
 ///FMatrix4 and it's operations
 ///****************************************************************
 

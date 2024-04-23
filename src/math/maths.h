@@ -138,10 +138,15 @@ struct FMatrix3
              float A10, float A11, float A12,
              float A20, float A21, float A22) :
              Data({FVector3{A00, A01, A02}, FVector3{A10, A11, A12}, FVector3{A20, A21, A22}}) {};
+	FMatrix3(const FMatrix4& M);
 
+	FMatrix3 GetInverse();
+	FMatrix3& Transpose();
     /// Data
     std::array<FVector3, 3> Data;
 };
+
+FMatrix3 operator/(const FMatrix3& A, float Val);
 
 struct FMatrix4
 {
@@ -154,6 +159,8 @@ struct FMatrix4
              Data({FVector4{A00, A01, A02, A03}, FVector4{A10, A11, A12, A13}, FVector4{A20, A21, A22, A23}, FVector4{A30, A31, A32, A33}}) {};
     FMatrix4(FVector4& Vec1, FVector4& Vec2, FVector4& Vec3, FVector4& Vec4) :
              Data({Vec1, Vec2, Vec3, Vec4}) {};
+	FMatrix4(const FMatrix3& M) :
+ 			Data({FVector4{M.Data[0].X, M.Data[0].Y, M.Data[0].Z, 0}, FVector4{M.Data[1].X, M.Data[1].Y, M.Data[1].Z, 0}, FVector4{M.Data[2].X, M.Data[2].Y, M.Data[2].Z, 0}, FVector4{0, 0, 0, 1}}) {};
 
     /// Data
     std::array<FVector4, 4> Data;
