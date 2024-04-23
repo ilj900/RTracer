@@ -1346,7 +1346,7 @@ VkPipeline FVulkanContext::CreateGraphicsPipeline(VkShaderModule VertexShader, V
     return Pipeline;
 }
 
-VkPipeline FVulkanContext::CreateRayTracingPipeline(VkShaderModule RayGenShader, VkShaderModule RayMissShader, VkShaderModule RayClosestHitShader, std::uint32_t Width, std::uint32_t Height, VkPipelineLayout PipelineLayout)
+VkPipeline FVulkanContext::CreateRayTracingPipeline(VkShaderModule RayGenShader, VkShaderModule RayMissShader, VkShaderModule RayClosestHitShader, VkPipelineLayout PipelineLayout)
 {
     std::vector<VkPipelineShaderStageCreateInfo> Stages(3);
 

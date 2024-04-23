@@ -121,7 +121,7 @@ public:
 
     VkRenderPass CreateRenderpass(VkDevice LogicalDevice, FGraphicsPipelineOptions& GraphicsPipelineOptions);
     VkPipeline CreateGraphicsPipeline(VkShaderModule VertexShader, VkShaderModule FragmentShader, std::uint32_t Width, std::uint32_t Height, FGraphicsPipelineOptions& GraphicsPipelineOptions);
-    VkPipeline CreateRayTracingPipeline(VkShaderModule RayGenShader, VkShaderModule RayMissShader, VkShaderModule VertexShader, std::uint32_t Width, std::uint32_t Height, VkPipelineLayout PipelineLayout);
+    VkPipeline CreateRayTracingPipeline(VkShaderModule RayGenShader, VkShaderModule RayMissShader, VkShaderModule VertexShader, VkPipelineLayout PipelineLayout);
     VkPipeline CreateComputePipeline(VkShaderModule ComputeShader, VkPipelineLayout PipelineLayout);
 
     VkSemaphore CreateSemaphore() const;
