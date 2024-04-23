@@ -72,7 +72,7 @@ float FTimingManager::GetDeltaTime(const std::string& TimingName, uint32_t Y)
 
 	for (int i = 0; i < TimingSizes[TimingName].first; ++i)
 	{
-		DeltaUint += (TimeStamps[1] - TimeStamps[0]);
+		DeltaUint += (TimeStamps[i * 2 + 1] - TimeStamps[i * 2]);
 	}
 
     float Delta = float(DeltaUint * VK_CONTEXT()->TimestampPeriod) / 1000000000.f;
