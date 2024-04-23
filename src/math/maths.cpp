@@ -353,7 +353,7 @@ FMatrix3 FMatrix3::GetInverse()
 	Result.Data[2].Y = Data[2].Y * Data[0].Z * Data[1].X - Data[2].Y * Data[0].X * Data[1].Z;
 	Result.Data[2].Z = Data[2].Z * Data[0].X * Data[1].Y - Data[2].Z * Data[0].Y * Data[1].X;
 
-	return Result / Determinant;;
+	return Result / Determinant;
 }
 
 FMatrix3& FMatrix3::Transpose()
@@ -381,6 +381,199 @@ FMatrix3 operator/(const FMatrix3& A, float Val)
 ///****************************************************************
 ///FMatrix4 and it's operations
 ///****************************************************************
+
+FMatrix4 FMatrix4::GetInverse()
+{
+	FMatrix4 Result{};
+
+	Result.Data[0].X = Data[1].Y  * Data[2].Z * Data[3].W -
+		Data[1].Y  * Data[2].W * Data[3].Z -
+		Data[2].Y  * Data[1].Z  * Data[3].W +
+		Data[2].Y  * Data[1].W  * Data[3].Z +
+		Data[3].Y * Data[1].Z  * Data[2].W -
+		Data[3].Y * Data[1].W  * Data[2].Z;
+
+	Result.Data[1].X = -Data[1].X  * Data[2].Z * Data[3].W +
+		Data[1].X  * Data[2].W * Data[3].Z +
+		Data[2].X  * Data[1].Z  * Data[3].W -
+		Data[2].X  * Data[1].W  * Data[3].Z -
+		Data[3].X * Data[1].Z  * Data[2].W +
+		Data[3].X * Data[1].W  * Data[2].Z;
+
+	Result.Data[2].X = Data[1].X  * Data[2].Y * Data[3].W -
+		Data[1].X  * Data[2].W * Data[3].Y -
+		Data[2].X  * Data[1].Y * Data[3].W +
+		Data[2].X  * Data[1].W * Data[3].Y +
+		Data[3].X * Data[1].Y * Data[2].W -
+		Data[3].X * Data[1].W * Data[2].Y;
+
+	Result.Data[3].X = -Data[1].X  * Data[2].Y * Data[3].Z +
+		Data[1].X  * Data[2].Z * Data[3].Y +
+		Data[2].X  * Data[1].Y * Data[3].Z -
+		Data[2].X  * Data[1].Z * Data[3].Y -
+		Data[3].X * Data[1].Y * Data[2].Z +
+		Data[3].X * Data[1].Z * Data[2].Y;
+
+	Result.Data[0].Y = -Data[0].Y  * Data[2].Z * Data[3].W +
+		Data[0].Y  * Data[2].W * Data[3].Z +
+		Data[2].Y  * Data[0].Z * Data[3].W -
+		Data[2].Y  * Data[0].W * Data[3].Z -
+		Data[3].Y * Data[0].Z * Data[2].W +
+		Data[3].Y * Data[0].W * Data[2].Z;
+
+	Result.Data[1].Y = Data[0].X  * Data[2].Z * Data[3].W -
+		Data[0].X  * Data[2].W * Data[3].Z -
+		Data[2].X  * Data[0].Z * Data[3].W +
+		Data[2].X  * Data[0].W * Data[3].Z +
+		Data[3].X * Data[0].Z * Data[2].W -
+		Data[3].X * Data[0].W * Data[2].Z;
+
+	Result.Data[2].Y = -Data[0].X  * Data[2].Y * Data[3].W +
+		Data[0].X  * Data[2].W * Data[3].Y +
+		Data[2].X  * Data[0].Y * Data[3].W -
+		Data[2].X  * Data[0].W * Data[3].Y -
+		Data[3].X * Data[0].Y * Data[2].W +
+		Data[3].X * Data[0].W * Data[2].Y;
+
+	Result.Data[3].Y = Data[0].X  * Data[2].Y * Data[3].Z -
+		Data[0].X  * Data[2].Z * Data[3].Y -
+		Data[2].X  * Data[0].Y * Data[3].Z +
+		Data[2].X  * Data[0].Z * Data[3].Y +
+		Data[3].X * Data[0].Y * Data[2].Z -
+		Data[3].X * Data[0].Z * Data[2].Y;
+
+	Result.Data[0].Z = Data[0].Y  * Data[1].Z * Data[3].W -
+		Data[0].Y  * Data[1].W * Data[3].Z -
+		Data[1].Y  * Data[0].Z * Data[3].W +
+		Data[1].Y  * Data[0].W * Data[3].Z +
+		Data[3].Y * Data[0].Z * Data[1].W -
+		Data[3].Y * Data[0].W * Data[1].Z;
+
+	Result.Data[1].Z = -Data[0].X  * Data[1].Z * Data[3].W +
+		Data[0].X  * Data[1].W * Data[3].Z +
+		Data[1].X  * Data[0].Z * Data[3].W -
+		Data[1].X  * Data[0].W * Data[3].Z -
+		Data[3].X * Data[0].Z * Data[1].W +
+		Data[3].X * Data[0].W * Data[1].Z;
+
+	Result.Data[2].Z = Data[0].X  * Data[1].Y * Data[3].W -
+		Data[0].X  * Data[1].W * Data[3].Y -
+		Data[1].X  * Data[0].Y * Data[3].W +
+		Data[1].X  * Data[0].W * Data[3].Y +
+		Data[3].X * Data[0].Y * Data[1].W -
+		Data[3].X * Data[0].W * Data[1].Y;
+
+	Result.Data[3].Z = -Data[0].X  * Data[1].Y * Data[3].Z +
+		Data[0].X  * Data[1].Z * Data[3].Y +
+		Data[1].X  * Data[0].Y * Data[3].Z -
+		Data[1].X  * Data[0].Z * Data[3].Y -
+		Data[3].X * Data[0].Y * Data[1].Z +
+		Data[3].X * Data[0].Z * Data[1].Y;
+
+	Result.Data[0].W = -Data[0].Y * Data[1].Z * Data[2].W +
+		Data[0].Y * Data[1].W * Data[2].Z +
+		Data[1].Y * Data[0].Z * Data[2].W -
+		Data[1].Y * Data[0].W * Data[2].Z -
+		Data[2].Y * Data[0].Z * Data[1].W +
+		Data[2].Y * Data[0].W * Data[1].Z;
+
+	Result.Data[1].W = Data[0].X * Data[1].Z * Data[2].W -
+		Data[0].X * Data[1].W * Data[2].Z -
+		Data[1].X * Data[0].Z * Data[2].W +
+		Data[1].X * Data[0].W * Data[2].Z +
+		Data[2].X * Data[0].Z * Data[1].W -
+		Data[2].X * Data[0].W * Data[1].Z;
+
+	Result.Data[2].W = -Data[0].X * Data[1].Y * Data[2].W +
+		Data[0].X * Data[1].W * Data[2].Y +
+		Data[1].X * Data[0].Y * Data[2].W -
+		Data[1].X * Data[0].W * Data[2].Y -
+		Data[2].X * Data[0].Y * Data[1].W +
+		Data[2].X * Data[0].W * Data[1].Y;
+
+	Result.Data[3].W = Data[0].X * Data[1].Y * Data[2].Z -
+		Data[0].X * Data[1].Z * Data[2].Y -
+		Data[1].X * Data[0].Y * Data[2].Z +
+		Data[1].X * Data[0].Z * Data[2].Y +
+		Data[2].X * Data[0].Y * Data[1].Z -
+		Data[2].X * Data[0].Z * Data[1].Y;
+
+	float Determinant = Data[0].X * Result.Data[0].X + Data[0].Y * Result.Data[1].X + Data[0].Z * Result.Data[2].X + Data[0].W * Result.Data[3].X;
+
+	if (Determinant == 0)
+	{
+		throw std::runtime_error("You are about to divide by zero");
+	}
+
+	Determinant = 1.0 / Determinant;
+
+	Result = Result * Determinant;
+
+	return Result;
+
+}
+
+FMatrix4& FMatrix4::Transpose()
+{
+	float Tmp = Data[0].Y;
+	Data[0].Y = Data[1].X;
+	Data[1].X = Tmp;
+
+	Tmp = Data[0].Z;
+	Data[0].Z = Data[2].X;
+	Data[2].X = Tmp;
+
+	Tmp = Data[0].W;
+	Data[0].W = Data[3].X;
+	Data[3].X = Tmp;
+
+	Tmp = Data[1].Z;
+	Data[1].Z = Data[2].Y;
+	Data[2].Y = Tmp;
+
+	Tmp = Data[1].W;
+	Data[1].W = Data[3].Y;
+	Data[3].Y = Tmp;
+
+	Tmp = Data[2].W;
+	Data[2].W = Data[3].Z;
+	Data[3].Z = Tmp;
+
+	return *this;
+}
+
+FMatrix4 operator*(const FMatrix4& A, float Val)
+{
+	FMatrix4 Result = A;
+
+	Result.Data[0].X *= Val;
+	Result.Data[0].Y *= Val;
+	Result.Data[0].Z *= Val;
+	Result.Data[0].W *= Val;
+
+	Result.Data[1].X *= Val;
+	Result.Data[1].Y *= Val;
+	Result.Data[1].Z *= Val;
+	Result.Data[1].W *= Val;
+
+	Result.Data[2].X *= Val;
+	Result.Data[2].Y *= Val;
+	Result.Data[2].Z *= Val;
+	Result.Data[2].W *= Val;
+
+	Result.Data[3].X *= Val;
+	Result.Data[3].Y *= Val;
+	Result.Data[3].Z *= Val;
+	Result.Data[3].W *= Val;
+
+	return Result;
+}
+
+FMatrix4 operator/(const FMatrix4& A, float Val)
+{
+	float InvVal = 1.f / Val;
+	return A * InvVal;
+}
 
 FMatrix4 operator*(const FMatrix4& A, const FMatrix4& B)
 {

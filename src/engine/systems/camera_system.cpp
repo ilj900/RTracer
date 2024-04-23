@@ -21,7 +21,9 @@ namespace ECS
                     auto& DeviceCameraComponent = COORDINATOR().GetComponent<COMPONENTS::FDeviceCameraComponent>(Entity);
                     auto& CameraComponent = COORDINATOR().GetComponent<COMPONENTS::FCameraComponent>(Entity);
                     DeviceCameraComponent.ViewMatrix = LookAt(CameraComponent.Position, CameraComponent.Position + CameraComponent.Direction, CameraComponent.Up);
+					DeviceCameraComponent.InverseViewMatrix = DeviceCameraComponent.ViewMatrix.GetInverse();
                     DeviceCameraComponent.ProjectionMatrix = GetPerspective(CameraComponent.FOV / 90.f, CameraComponent.Ratio, CameraComponent.ZNear, CameraComponent.ZFar);
+					DeviceCameraComponent.InverseProjectionMatrix = DeviceCameraComponent.ProjectionMatrix.GetInverse();
                     DeviceCameraComponent.FOV = CameraComponent.FOV;
                     DeviceCameraComponent.Origin = CameraComponent.Position;
                     DeviceCameraComponent.ViewDirection = CameraComponent.Direction;
@@ -42,7 +44,9 @@ namespace ECS
                     auto& DeviceCameraComponent = COORDINATOR().GetComponent<COMPONENTS::FDeviceCameraComponent>(Entity);
                     auto& CameraComponent = COORDINATOR().GetComponent<COMPONENTS::FCameraComponent>(Entity);
                     DeviceCameraComponent.ViewMatrix = LookAt(CameraComponent.Position, CameraComponent.Position + CameraComponent.Direction, CameraComponent.Up);
+					DeviceCameraComponent.InverseViewMatrix = DeviceCameraComponent.ViewMatrix.GetInverse();
                     DeviceCameraComponent.ProjectionMatrix = GetPerspective(CameraComponent.FOV / 90.f, CameraComponent.Ratio, CameraComponent.ZNear, CameraComponent.ZFar);
+					DeviceCameraComponent.InverseProjectionMatrix = DeviceCameraComponent.ProjectionMatrix.GetInverse();
                     DeviceCameraComponent.FOV = CameraComponent.FOV;
                     DeviceCameraComponent.Origin = CameraComponent.Position;
                     DeviceCameraComponent.ViewDirection = CameraComponent.Direction;

@@ -37,8 +37,8 @@ void main()
     vec2 D = InUV * 2.0f - 1.f;
 
     vec4 Origin = vec4(DeviceCamera.Origin, 1.f);
-    vec4 Target = inverse(DeviceCamera.ProjectionMatrix) * vec4(D.x, D.y, 1.f, 1.f);
-    vec4 Direction = inverse(DeviceCamera.ViewMatrix) * vec4(normalize(Target.xyz), 0.f);
+    vec4 Target = DeviceCamera.InverseProjectionMatrix * vec4(D.x, D.y, 1.f, 1.f);
+    vec4 Direction = DeviceCamera.InverseViewMatrix * vec4(normalize(Target.xyz), 0.f);
 
     float tMin = 0.001f;
     float tMax = 10000.f;

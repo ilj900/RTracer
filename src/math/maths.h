@@ -162,10 +162,15 @@ struct FMatrix4
 	FMatrix4(const FMatrix3& M) :
  			Data({FVector4{M.Data[0].X, M.Data[0].Y, M.Data[0].Z, 0}, FVector4{M.Data[1].X, M.Data[1].Y, M.Data[1].Z, 0}, FVector4{M.Data[2].X, M.Data[2].Y, M.Data[2].Z, 0}, FVector4{0, 0, 0, 1}}) {};
 
+	FMatrix4 GetInverse();
+	FMatrix4& Transpose();
+
     /// Data
     std::array<FVector4, 4> Data;
 };
 
+FMatrix4 operator*(const FMatrix4& A, float Val);
+FMatrix4 operator/(const FMatrix4& A, float Val);
 FMatrix4 operator*(const FMatrix4& A, const FMatrix4& B);
 FVector3 operator*(const FMatrix4& A, const FVector3& B);
 

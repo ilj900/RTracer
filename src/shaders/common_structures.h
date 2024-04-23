@@ -37,7 +37,9 @@ struct FRayData
 struct FDeviceCamera
 {
     FMatrix4 ViewMatrix;
+	FMatrix4 InverseViewMatrix;
     FMatrix4 ProjectionMatrix;
+	FMatrix4 InverseProjectionMatrix;
     FVector3 Origin;
     float ZNear;
     FVector3 ViewDirection;
