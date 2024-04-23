@@ -20,7 +20,7 @@ namespace ECS
                 {
                     auto& DeviceTransformComponent = GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
                     DeviceTransformComponent.ModelMatrix = GetModelMatrix(Entity);
-					DeviceTransformComponent.InverseModelMatrix = FMatrix3(DeviceTransformComponent.ModelMatrix).GetInverse().Transpose();
+					DeviceTransformComponent.InverseModelMatrix = DeviceTransformComponent.ModelMatrix.GetInverse().Transpose();
                 }
             }
 
@@ -33,7 +33,7 @@ namespace ECS
             {
                 auto& DeviceTransformComponent = GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
                 DeviceTransformComponent.ModelMatrix = GetModelMatrix(Entity);
-				DeviceTransformComponent.InverseModelMatrix = FMatrix3(DeviceTransformComponent.ModelMatrix).GetInverse().Transpose();
+				DeviceTransformComponent.InverseModelMatrix = DeviceTransformComponent.ModelMatrix.GetInverse().Transpose();
             }
 
             FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceTransformComponent>(Index);
