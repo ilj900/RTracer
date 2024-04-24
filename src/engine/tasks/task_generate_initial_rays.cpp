@@ -24,12 +24,17 @@ FGenerateInitialRays::FGenerateInitialRays(uint32_t WidthIn, uint32_t HeightIn, 
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
     DescriptorSetManager->AddDescriptorLayout(Name, GENERATE_RAYS_LAYOUT_INDEX, CAMERA_POSITION_BUFFER,
                                               {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
+	DescriptorSetManager->AddDescriptorLayout(Name, GENERATE_RAYS_LAYOUT_INDEX, GENERATE_RAYS_PIXEL_INDEX_BUFFER,
+											  {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
     VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants)};
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
     FBuffer InitialRaysBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FRayData) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Name);
     RESOURCE_ALLOCATOR()->RegisterBuffer(InitialRaysBuffer, "InitialRaysBuffer");
+
+	FBuffer PixelIndexBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Name);
+	RESOURCE_ALLOCATOR()->RegisterBuffer(PixelIndexBuffer, "PixelIndexBuffer");
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
@@ -38,6 +43,7 @@ FGenerateInitialRays::FGenerateInitialRays(uint32_t WidthIn, uint32_t HeightIn, 
 FGenerateInitialRays::~FGenerateInitialRays()
 {
     RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("InitialRaysBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("PixelIndexBuffer");
 };
 
 void FGenerateInitialRays::Init()
@@ -65,6 +71,7 @@ void FGenerateInitialRays::UpdateDescriptorSets()
     {
         UpdateDescriptorSet(GENERATE_RAYS_LAYOUT_INDEX, CAMERA_RAYS_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("InitialRaysBuffer"));
         UpdateDescriptorSet(GENERATE_RAYS_LAYOUT_INDEX, CAMERA_POSITION_BUFFER, i, CAMERA_SYSTEM()->DeviceBuffer);
+		UpdateDescriptorSet(GENERATE_RAYS_LAYOUT_INDEX, GENERATE_RAYS_PIXEL_INDEX_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("PixelIndexBuffer"));
     }
 };
 

@@ -117,7 +117,7 @@ void FShadeTask::UpdateDescriptorSets()
         VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_TEXTURE_ARRAY, i, TextureSampler);
 
         UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_LIGHTS_BUFFER_INDEX, i, LIGHT_SYSTEM()->DeviceBuffer);
-        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_MATERIAL_INDEX_MAP, i, RESOURCE_ALLOCATOR()->GetBuffer("SortedMaterialsIndexMapBuffer"));
+        UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_MATERIAL_INDEX_MAP, i, RESOURCE_ALLOCATOR()->GetBuffer("PixelIndexBuffer"));
         UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_MATERIAL_INDEX_AOV_MAP, i, RESOURCE_ALLOCATOR()->GetBuffer("MaterialIndicesAOVBuffer"));
         UpdateDescriptorSet(COMPUTE_SHADE_LAYOUT_INDEX, COMPUTE_SHADE_MATERIALS_OFFSETS, i, RESOURCE_ALLOCATOR()->GetBuffer("MaterialsOffsetsPerMaterialBuffer"));
     }

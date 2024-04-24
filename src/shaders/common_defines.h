@@ -72,6 +72,7 @@
 
 #define CAMERA_RAYS_BUFFER 0u
 #define CAMERA_POSITION_BUFFER 1u
+#define GENERATE_RAYS_PIXEL_INDEX_BUFFER 2u
 
 /// Task material sort count materials set layout defines
 #define MATERIAL_SORT_COUNT_MATERIALS_PER_CHUNK_INDEX 0u
