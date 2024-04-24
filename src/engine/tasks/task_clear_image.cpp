@@ -7,6 +7,10 @@
 
 #include "task_clear_image.h"
 
+#include "common_structures.h"
+
+#include "utils.h"
+
 FClearImageTask::FClearImageTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice)
 {
@@ -17,7 +21,8 @@ FClearImageTask::FClearImageTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t S
     DescriptorSetManager->AddDescriptorLayout(Name, CLEAR_IMAGE_LAYOUT_INDEX, IMAGE_TO_CLEAR,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_COMPUTE_BIT});
 
-    DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
+	VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants)};
+	DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
@@ -73,10 +78,11 @@ void FClearImageTask::RecordCommands()
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &RayTracingDescriptorSet, 0, nullptr);
 
-            int GroupSizeX = (Width % 8 == 0) ? (Width / 8) : (Width / 8) + 1;
-            int GroupSizeY = (Height % 8 == 0) ? (Height / 8) : (Height / 8) + 1;
+			uint32_t GroupCount = CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE);
+			FPushConstants PushConstants = {Width, Height, 1.f / float(Width), 1.f / float(Height), Width * Height, 0};
+			vkCmdPushConstants(CommandBuffer, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
 
-            vkCmdDispatch(CommandBuffer, GroupSizeX, GroupSizeY, 1);
+            vkCmdDispatch(CommandBuffer, GroupCount, 1, 1);
 
             TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, X, Y);
         }, QueueFlagsBits);
