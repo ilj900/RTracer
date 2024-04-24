@@ -1,0 +1,22 @@
+#version 460
+
+#include "common_defines.h"
+
+layout (set = RESET_ACTIVE_RAY_COUNT_LAYOUT_INDEX, binding = ACTIVE_RAY_COUNT_BUFFER) buffer writeonly ActiveRayCountBufferObject
+{
+    uint ActiveRayCount[];
+};
+
+layout (push_constant) uniform PushConstantsBlock
+{
+    uint TotalSize;
+};
+
+layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    ActiveRayCount[0] = TotalSize;
+    ActiveRayCount[1] = 1;
+    ActiveRayCount[2] = 1;
+}

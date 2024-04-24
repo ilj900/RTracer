@@ -22,6 +22,7 @@
 #include "tasks/task_accumulate.h"
 #include "tasks/task_passthrough.h"
 #include "tasks/task_clear_image.h"
+#include "tasks/task_reset_active_ray_count.h"
 
 #include <string>
 #include <vector>
@@ -90,6 +91,7 @@ public:
 
 	std::shared_ptr<FUpdateTLASTask> UpdateTLASTask = nullptr;
     std::shared_ptr<FGenerateInitialRays> GenerateRaysTask = nullptr;
+	std::shared_ptr<FResetActiveRayCountTask> ResetActiveRayCountTask = nullptr;
     std::shared_ptr<FRaytraceTask> RayTraceTask = nullptr;
     std::shared_ptr<FClearMaterialsCountPerChunkTask> ClearMaterialsCountPerChunkTask = nullptr;
     std::shared_ptr<FClearTotalMaterialsCountTask> ClearTotalMaterialsCountTask = nullptr;

@@ -43,6 +43,11 @@
 
 #define IMAGE_TO_CLEAR 0u
 
+/// Task reset active ray count descriptor set layout defines
+#define RESET_ACTIVE_RAY_COUNT_LAYOUT_INDEX 0u
+
+#define ACTIVE_RAY_COUNT_BUFFER 0u
+
 /// Task shade descriptor set layout defines
 #define COMPUTE_SHADE_LAYOUT_INDEX 0u
 
