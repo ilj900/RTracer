@@ -15,6 +15,11 @@ layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_RAYS_DATA_BUFFER) buffer
     FRayData RayData[];
 };
 
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_PIXEL_INDEX_BUFFER) buffer PixelIndexIndexMapBufferObject
+{
+    uint PixelIndexIndexMap[];
+};
+
 layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_HIT_BUFFER) buffer HitBufferObject
 {
     FHit HitData[];
@@ -32,19 +37,20 @@ FRayData FetchRayData(uint RayIndex)
 
 void main()
 {
-    uint RayIndex = gl_LaunchIDEXT.x;
-    FRayData RayData = FetchRayData(RayIndex);
+    uint OriginalPixelIndex = gl_LaunchIDEXT.x;
+    uint NewPixelIndex = PixelIndexIndexMap[OriginalPixelIndex];
+    FRayData RayData = FetchRayData(NewPixelIndex);
 
     if ((RayData.RayFlags & RAY_DATA_RAY_MISSED) == RAY_DATA_RAY_MISSED)
     {
-        MaterialIndicesAOV[RayIndex] = TOTAL_MATERIALS - 1;
+        MaterialIndicesAOV[NewPixelIndex] = TOTAL_MATERIALS - 1;
         return;
     }
 
     traceRayEXT(TopLevelAS, RayData.RayFlags, 0xFF, 0, 0, 0, RayData.Origin.xyz, RayData.TMin, RayData.Direction.xyz, RayData.TMax, 0);
 
-    HitData[RayIndex].RenderableIndex = HitPayload.RenderableIndex;
-    HitData[RayIndex].PrimitiveIndex = HitPayload.PrimitiveIndex;
-    HitData[RayIndex].HitUV = HitPayload.HitUV;
-    MaterialIndicesAOV[RayIndex] = HitPayload.MaterialIndex;
+    HitData[NewPixelIndex].RenderableIndex = HitPayload.RenderableIndex;
+    HitData[NewPixelIndex].PrimitiveIndex = HitPayload.PrimitiveIndex;
+    HitData[NewPixelIndex].HitUV = HitPayload.HitUV;
+    MaterialIndicesAOV[NewPixelIndex] = HitPayload.MaterialIndex;
 }
