@@ -12,6 +12,11 @@ layout (set = MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_LAYOUT_INDEX, binding =
     uint MaterialOffsets[];
 };
 
+layout (set = MATERIAL_SORT_COMPUTE_OFFSETS_PER_MATERIAL_LAYOUT_INDEX, binding = MATERIAL_SORT_ACTIVE_RAY_COUNT_BUFFER) buffer writeonly ActiveRayCountBufferObject
+{
+    uint ActiveRayCount[];
+};
+
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 void main()
@@ -22,6 +27,8 @@ void main()
     {
         MaterialOffsets[i] = MaterialOffsets[i - 1u] + TotalMaterialCount[(i - 1u) * 3];
     }
+
+    ActiveRayCount[0] = MaterialOffsets[TOTAL_MATERIALS - 1];
 
     for (uint i = 0; i < TOTAL_MATERIALS; ++i)
     {
