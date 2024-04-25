@@ -519,6 +519,12 @@ uint32_t FVulkanContext::GetPresentIndex() const
     return PresentQueue.QueueIndex;
 }
 
+int FVulkanContext::SaveEXRWrapper(const float *Data, int Width, int Height, int Components, const int SaveAsFp16, const std::string& Name)
+{
+	const char* Err = NULL;
+	return SaveEXR(Data, Width, Height, Components, SaveAsFp16, Name.data(), &Err);
+}
+
 void FVulkanContext::SaveBufferFloat(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name)
 {
     if (WidthIn * HeightIn != (Buffer.BufferSize / sizeof(float)))
@@ -528,8 +534,7 @@ void FVulkanContext::SaveBufferFloat(FBuffer& Buffer, uint32_t WidthIn, uint32_t
 
     auto Data = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<float>(Buffer, Buffer.BufferSize, 0);
 
-    const char* Err = NULL;
-    SaveEXR(Data.data(), WidthIn, HeightIn, 1, false, Name.c_str(), &Err);
+	SaveEXRWrapper(Data.data(), WidthIn, HeightIn, 1, false, Name);
 }
 
 void FVulkanContext::SaveBufferFloat3(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name)
@@ -541,8 +546,7 @@ void FVulkanContext::SaveBufferFloat3(FBuffer& Buffer, uint32_t WidthIn, uint32_
 
     auto Data = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<float>(Buffer, Buffer.BufferSize * 3, 0);
 
-    const char* Err = NULL;
-    SaveEXR(Data.data(), WidthIn, HeightIn, 3, false, Name.c_str(), &Err);
+	SaveEXRWrapper(Data.data(), WidthIn, HeightIn, 3, false, Name.c_str());
 }
 
 void FVulkanContext::SaveBufferUint(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name)
@@ -559,8 +563,7 @@ void FVulkanContext::SaveBufferUint(FBuffer& Buffer, uint32_t WidthIn, uint32_t 
         NewData[i] = float(Data[i]);
     }
 
-    const char* Err = NULL;
-    SaveEXR(NewData.data(), WidthIn, HeightIn, 1, false, Name.c_str(), &Err);
+	SaveEXRWrapper(NewData.data(), WidthIn, HeightIn, 1, false, Name.c_str());
 }
 
 void FVulkanContext::SaveBufferUint3(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name)
@@ -577,8 +580,7 @@ void FVulkanContext::SaveBufferUint3(FBuffer& Buffer, uint32_t WidthIn, uint32_t
         NewData[i] = float(Data[i]);
     }
 
-    const char* Err = NULL;
-    SaveEXR(NewData.data(), WidthIn, HeightIn, 3, false, Name.c_str(), &Err);
+	SaveEXRWrapper(NewData.data(), WidthIn, HeightIn, 3, false, Name.c_str());
 }
 
 FAccelerationStructure FVulkanContext::CreateAccelerationStructure(VkDeviceSize Size, VkAccelerationStructureTypeKHR Type, const std::string& DebugName)

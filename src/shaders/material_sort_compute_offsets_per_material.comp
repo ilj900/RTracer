@@ -21,6 +21,7 @@ layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 void main()
 {
+
     MaterialOffsets[0] = 0u;
 
     for (uint i = 1u; i < TOTAL_MATERIALS; ++i)
@@ -28,7 +29,7 @@ void main()
         MaterialOffsets[i] = MaterialOffsets[i - 1u] + TotalMaterialCount[(i - 1u) * 3];
     }
 
-    ActiveRayCount[0] = MaterialOffsets[TOTAL_MATERIALS - 1];
+    ActiveRayCount[0] = MaterialOffsets[TOTAL_MATERIALS - 2];
 
     for (uint i = 0; i < TOTAL_MATERIALS; ++i)
     {
