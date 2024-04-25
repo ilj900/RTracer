@@ -83,6 +83,7 @@ void FMissTask::UpdateDescriptorSets()
 void FMissTask::RecordCommands()
 {
     CommandBuffers.resize(TotalSize);
+	auto DispatchBuffer = RESOURCE_ALLOCATOR()->GetBuffer("TotalCountedMaterialsBuffer");
 
     for (std::size_t i = 0; i < TotalSize; ++i)
     {
@@ -101,8 +102,6 @@ void FMissTask::RecordCommands()
             auto DescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, COMPUTE_MISS_LAYOUT_INDEX, i);
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &DescriptorSet, 0, nullptr);
-
-            auto DispatchBuffer = RESOURCE_ALLOCATOR()->GetBuffer("TotalCountedMaterialsBuffer");
 
             uint32_t MaterialIndex = TOTAL_MATERIALS - 2;
             FPushConstants PushConstants = {Width, Height, 1.f / Width, 1.f / Height, Width * Height, MaterialIndex};

@@ -126,6 +126,7 @@ void FShadeTask::UpdateDescriptorSets()
 void FShadeTask::RecordCommands()
 {
     CommandBuffers.resize(TotalSize);
+	auto DispatchBuffer = RESOURCE_ALLOCATOR()->GetBuffer("TotalCountedMaterialsBuffer");
 
 	for (uint32_t i = 0; i < TotalSize; ++i)
 	{
@@ -139,8 +140,6 @@ void FShadeTask::RecordCommands()
 				TIMING_MANAGER()->TimestampReset(Name, CommandBuffer, Y);
 			}
 			TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, X, Y);
-
-			auto DispatchBuffer = RESOURCE_ALLOCATOR()->GetBuffer("TotalCountedMaterialsBuffer");
 
 			for (auto& Material : *MATERIAL_SYSTEM())
 			{

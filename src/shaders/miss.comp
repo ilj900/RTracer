@@ -19,7 +19,7 @@ layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_MATERIAL_INDEX_M
     uint MaterialsIndexMap[];
 };
 
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_MATERIAL_INDEX_AOV_MAP) buffer readonly MaterialIndexAOVBufferObject
+layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_MATERIAL_INDEX_AOV_MAP) buffer MaterialIndexAOVBufferObject
 {
     uint MaterialsIndexAOV[];
 };
@@ -75,4 +75,5 @@ void main()
     imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(vec3(texture(IBITextureSampler, vec2(Phi, Theta))), 1.f));
 
     MarkRayMissed(NewPixelIndex);
+    MaterialsIndexAOV[NewPixelIndex] = TOTAL_MATERIALS - 1;
 }
