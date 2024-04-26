@@ -319,7 +319,7 @@ namespace ImGuiUtils
       ImVec2 canvasSize = ImGui::GetContentRegionAvail();
 
       int sizeMargin = int(ImGui::GetStyle().ItemSpacing.y);
-      int maxGraphHeight = 300;
+      int maxGraphHeight = 400;
       int availableGraphHeight = (int(canvasSize.y) - sizeMargin) / 2;
       int graphHeight = std::min(maxGraphHeight, availableGraphHeight);
       int legendWidth = 400;
