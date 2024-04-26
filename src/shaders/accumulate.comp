@@ -5,9 +5,9 @@
 #include "common_defines.h"
 #include "common_structures.h"
 
-layout (set = ACCUMULATE_PER_FRAME_LAYOUT_INDEX, binding = INCOMING_IMAGE_TO_SAMPLE, rgba32f) uniform image2D IncomingImage;
+layout (set = ACCUMULATE_PER_FRAME_LAYOUT_INDEX, binding = INCOMING_IMAGE_TO_SAMPLE, rgba32f) uniform readonly image2D IncomingImage;
 layout (set = ACCUMULATE_PER_FRAME_LAYOUT_INDEX, binding = ACCUMULATE_IMAGE_INDEX, rgba32f) uniform image2D AccumulatorImage;
-layout (set = ACCUMULATE_PER_FRAME_LAYOUT_INDEX, binding = ESTIMATED_IMAGE_INDEX, rgba32f) uniform image2D EstimatedImage;
+layout (set = ACCUMULATE_PER_FRAME_LAYOUT_INDEX, binding = ESTIMATED_IMAGE_INDEX, rgba32f) uniform writeonly image2D EstimatedImage;
 
 layout (push_constant) uniform PushConstantsBlock
 {
