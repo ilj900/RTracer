@@ -108,9 +108,9 @@ void main()
         return;
     }
 
-    const vec2 PixelCenter = PixelCoords + vec2(0.5);//CMJ(gl_GlobalInvocationID.x, 64, 64, 1);
+    const vec2 PixelCenter = PixelCoords + CMJ(gl_GlobalInvocationID.x, 64, 64, 1);
 
-    DebugBuffer[PixelIndex] = vec4(PixelCenter, 0.f, 1.f);
+    DebugBuffer[PixelIndex] = vec4(CMJ(gl_GlobalInvocationID.x % 16, 4, 4, gl_GlobalInvocationID.x / 16), 0.f, 1.f);
 
     const vec2 InUV = PixelCenter * vec2(PushConstants.InvWidth, PushConstants.InvHeight);
     vec2 D = InUV * 2.0f - 1.f;
