@@ -43,7 +43,7 @@ FGenerateInitialRays::FGenerateInitialRays(uint32_t WidthIn, uint32_t HeightIn, 
 	FBuffer RandomSeedBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "RandomSeedBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(RandomSeedBuffer, "RandomSeedBuffer");
 
-	FBuffer DebugBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector3) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "DebugBuffer");
+	FBuffer DebugBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "DebugBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(DebugBuffer, "DebugBuffer");
 
 	COMMAND_BUFFER_MANAGER()->RunSingletimeCommand([&, this](VkCommandBuffer& CommandBuffer)

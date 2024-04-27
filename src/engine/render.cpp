@@ -405,7 +405,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 		WaitIdle();
 		auto DebugBuffer = RESOURCE_ALLOCATOR()->GetBuffer("DebugBuffer");
-		VK_CONTEXT()->SaveBufferFloat3(DebugBuffer, Width, Height, "DebugBuffer.exr");
+		VK_CONTEXT()->SaveBufferFloat4(DebugBuffer, Width, Height, "DebugBuffer.exr");
 
 		SynchronizationPoint = ClearMaterialsCountPerChunkTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 

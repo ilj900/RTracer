@@ -86,6 +86,7 @@ public:
 	int SaveEXRWrapper(const float *Data, int Width, int Height, int Components, const int SaveAsFp16, const std::string& Name);
     void SaveBufferFloat(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name);
     void SaveBufferFloat3(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name);
+	void SaveBufferFloat4(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name);
     void SaveBufferUint(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name);
     void SaveBufferUint3(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name);
 

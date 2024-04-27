@@ -549,6 +549,18 @@ void FVulkanContext::SaveBufferFloat3(FBuffer& Buffer, uint32_t WidthIn, uint32_
 	SaveEXRWrapper(Data.data(), WidthIn, HeightIn, 3, false, Name.c_str());
 }
 
+void FVulkanContext::SaveBufferFloat4(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name)
+{
+	if (WidthIn * HeightIn != (Buffer.BufferSize / sizeof(FVector4)))
+	{
+		throw std::runtime_error("You are trying to fetch data of the wrong size from buffer");
+	}
+
+	auto Data = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<float>(Buffer, Buffer.BufferSize, 0);
+
+	SaveEXRWrapper(Data.data(), WidthIn, HeightIn, 4, false, Name.c_str());
+}
+
 void FVulkanContext::SaveBufferUint(FBuffer& Buffer, uint32_t WidthIn, uint32_t HeightIn, const std::string& Name)
 {
     if (WidthIn * HeightIn > (Buffer.BufferSize / sizeof(uint32_t)))

@@ -27,7 +27,7 @@ layout (set = GENERATE_RAYS_LAYOUT_INDEX, binding = GENERATE_RAYS_RANDOM_SEEDS_B
 
 layout (set = GENERATE_RAYS_LAYOUT_INDEX, binding = GENERATE_RAYS_DEBUG_BUFFER) buffer DebugBufferObject
 {
-    vec3 DebugBuffer[];
+    vec4 DebugBuffer[];
 };
 
 layout (push_constant) uniform PushConstantsBlock
@@ -108,9 +108,9 @@ void main()
         return;
     }
 
-    const vec2 PixelCenter = PixelCoords + CMJ(gl_GlobalInvocationID.x, 64, 64, 1);
+    const vec2 PixelCenter = PixelCoords + vec2(0.5);//CMJ(gl_GlobalInvocationID.x, 64, 64, 1);
 
-    DebugBuffer[PixelIndex] = vec3(PixelCoords, 0.f);
+    DebugBuffer[PixelIndex] = vec4(PixelCenter, 0.f, 1.f);
 
     const vec2 InUV = PixelCenter * vec2(PushConstants.InvWidth, PushConstants.InvHeight);
     vec2 D = InUV * 2.0f - 1.f;
