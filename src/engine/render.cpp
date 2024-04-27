@@ -403,6 +403,10 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	{
 		SynchronizationPoint = RayTraceTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
+		WaitIdle();
+		auto DebugBuffer = RESOURCE_ALLOCATOR()->GetBuffer("DebugBuffer");
+		VK_CONTEXT()->SaveBufferFloat3(DebugBuffer, Width, Height, "DebugBuffer.exr");
+
 		SynchronizationPoint = ClearMaterialsCountPerChunkTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = ClearTotalMaterialsCountTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
