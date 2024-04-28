@@ -380,7 +380,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	ClearImageTask->Reload();
 	PassthroughTask->Reload();
 
-    bool NeedUpdate = true;
+    bool NeedUpdate = false;
 	FSynchronizationPoint SynchronizationPoint = {{}, {ImagesInFlight[CurrentFrame]}, {}, {}};
 
 	/// If we have no external semaphores

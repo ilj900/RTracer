@@ -53,7 +53,7 @@ void main()
         return;
     }
 
-    const vec2 PixelCenter = PixelCoords + CMJ((gl_GlobalInvocationID.x + 1489 * RenderIteration) % CMJ_TOTAL_GRID_SIZE, CMJ_GRID_LINEAR_SIZE, CMJ_GRID_LINEAR_SIZE, RenderIteration);
+    const vec2 PixelCenter = PixelCoords + CMJ((gl_GlobalInvocationID.x * 227 + 1489 * RenderIteration) % 16, CMJ_GRID_LINEAR_SIZE, CMJ_GRID_LINEAR_SIZE, 227 + 1489 * RenderIteration * gl_GlobalInvocationID.x);
 
     const vec2 InUV = PixelCenter * vec2(PushConstants.InvWidth, PushConstants.InvHeight);
     vec2 D = InUV * 2.0f - 1.f;
