@@ -13,8 +13,8 @@ namespace ECS
         {
         public:
             void Init(uint32_t NumberOfSimultaneousSubmits) override;
-            void Update() override;
-            void Update(int Index) override;
+            bool Update() override;
+            bool Update(int Index) override;
 
             void MoveCameraForward(FEntity CameraEntity, float Value);
             void MoveCameraRight(FEntity CameraEntity, float Value);

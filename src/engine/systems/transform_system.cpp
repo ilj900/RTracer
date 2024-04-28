@@ -12,10 +12,14 @@ namespace ECS
                                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Transform_Buffer");
         }
 
-        void FTransformSystem::Update()
+        bool FTransformSystem::Update()
         {
+			bool bAnyUpdate = false;
+
             for (int i = 0; i < NumberOfSimultaneousSubmits; ++i)
             {
+				bAnyUpdate |= !EntitiesToUpdate[i].empty();
+
                 for (auto Entity: EntitiesToUpdate[i])
                 {
                     auto& DeviceTransformComponent = GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
@@ -24,11 +28,18 @@ namespace ECS
                 }
             }
 
-            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceTransformComponent>();
+			if (bAnyUpdate)
+			{
+				FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceTransformComponent>();
+			}
+
+			return bAnyUpdate;
         }
 
-        void FTransformSystem::Update(int Index)
+        bool FTransformSystem::Update(int Index)
         {
+			bool bAnyUpdate = !EntitiesToUpdate[Index].empty();
+
             for (auto Entity: EntitiesToUpdate[Index])
             {
                 auto& DeviceTransformComponent = GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
@@ -36,7 +47,12 @@ namespace ECS
 				DeviceTransformComponent.InverseModelMatrix = DeviceTransformComponent.ModelMatrix.GetInverse().Transpose();
             }
 
-            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceTransformComponent>(Index);
+			if (bAnyUpdate)
+			{
+				FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceTransformComponent>(Index);
+			}
+
+			return bAnyUpdate;
         }
 
         void FTransformSystem::MoveForward(FEntity Entity, float Value)

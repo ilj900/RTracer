@@ -12,10 +12,14 @@ namespace ECS
                                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Camera");
         }
 
-        void FCameraSystem::Update()
+        bool FCameraSystem::Update()
         {
+			bool bAnyUpdate = false;
+
             for (auto& Entry : EntitiesToUpdate)
             {
+				bAnyUpdate |= !Entry.empty();
+
                 for (auto Entity : Entry)
                 {
                     auto& DeviceCameraComponent = COORDINATOR().GetComponent<COMPONENTS::FDeviceCameraComponent>(Entity);
@@ -32,13 +36,22 @@ namespace ECS
                 }
             }
 
-            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceCameraComponent>();
+			if (bAnyUpdate)
+			{
+				FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceCameraComponent>();
+			}
+
+			return bAnyUpdate;
         }
 
-        void FCameraSystem::Update(int Index)
+        bool FCameraSystem::Update(int Index)
         {
+			bool bAnyUpdate = !EntitiesToUpdate.empty();
+
             for (auto& Entry : EntitiesToUpdate)
             {
+				bAnyUpdate |= !Entry.empty();
+
                 for (auto Entity : Entry)
                 {
                     auto& DeviceCameraComponent = COORDINATOR().GetComponent<COMPONENTS::FDeviceCameraComponent>(Entity);
@@ -55,7 +68,12 @@ namespace ECS
                 }
             }
 
-            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceCameraComponent>(Index);
+			if (bAnyUpdate)
+			{
+				FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceCameraComponent>(Index);
+			}
+
+			return bAnyUpdate;
         }
 
         void FCameraSystem::MoveCameraForward(FEntity CameraEntity, float Value)

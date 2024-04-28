@@ -26,16 +26,6 @@ layout (set = GENERATE_RAYS_LAYOUT_INDEX, binding = GENERATE_RAYS_RENDER_ITERATI
     uint RenderIteration;
 };
 
-layout (set = GENERATE_RAYS_LAYOUT_INDEX, binding = GENERATE_RAYS_RANDOM_SEEDS_BUFFER) buffer RandomSeedBufferObject
-{
-    uint RandomSeed[];
-};
-
-layout (set = GENERATE_RAYS_LAYOUT_INDEX, binding = GENERATE_RAYS_DEBUG_BUFFER) buffer DebugBufferObject
-{
-    vec4 DebugBuffer[];
-};
-
 layout (push_constant) uniform PushConstantsBlock
 {
     FPushConstants PushConstants;

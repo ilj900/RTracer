@@ -19,8 +19,8 @@ namespace ECS
             virtual void Init(uint32_t NumberOfSimultaneousSubmits) = 0;
             void MarkDirty(FEntity Entity);
             int GetTotalSize();
-            virtual void Update() = 0;
-            virtual void Update(int Index) = 0;
+            virtual bool Update() = 0;
+            virtual bool Update(int Index) = 0;
 
             void RegisterEntity(FEntity Entity) override;
             void UnregisterEntity(FEntity Entity) override;
@@ -37,13 +37,12 @@ namespace ECS
             template<typename T>
             void UpdateTemplate(int Index)
             {
-                VkDeviceSize DeviceBufferBaseOffset = Index * GetTotalSize() / NumberOfSimultaneousSubmits;
-
                 if (BufferPartThatNeedsUpdate[Index])
                 {
                     std::vector<VkDeviceSize> Sizes;
                     std::vector<VkDeviceSize> Offsets;
                     std::vector<void*> Data;
+					VkDeviceSize DeviceBufferBaseOffset = Index * GetTotalSize() / NumberOfSimultaneousSubmits;
 
                     for (auto Entity : EntitiesToUpdate[Index])
                     {

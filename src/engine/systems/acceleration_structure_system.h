@@ -18,8 +18,8 @@ namespace ECS
         {
         public:
             void Init(uint32_t NumberOfSimultaneousSubmits) override;
-            void Update() override;
-            void Update(int Index) override;
+            bool Update() override;
+            bool Update(int Index) override;
             void Terminate();
 
             FEntity CreateInstance(FEntity Entity, const FVector3& Position, const FVector3& Direction, const FVector3& Up);

@@ -11,14 +11,38 @@ namespace ECS
                                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Light");
         }
 
-        void FLightSystem::Update()
+        bool FLightSystem::Update()
         {
-            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FLightComponent>();
+			bool bAnyUpdate = false;
+
+			for (auto& Entry : EntitiesToUpdate)
+			{
+				bAnyUpdate |= !Entry.empty();
+			}
+
+			if (bAnyUpdate)
+			{
+				FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FLightComponent>();
+			}
+
+			return bAnyUpdate;
         }
 
-        void FLightSystem::Update(int Index)
+        bool FLightSystem::Update(int Index)
         {
-            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FLightComponent>(Index);
+			bool bAnyUpdate = false;
+
+			for (auto& Entry : EntitiesToUpdate)
+			{
+				bAnyUpdate |= !Entry.empty();
+			}
+
+			if (bAnyUpdate)
+			{
+				FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FLightComponent>(Index);
+			}
+
+			return bAnyUpdate;
         }
 
         FLightSystem& FLightSystem::SetLightPosition(FEntity LightEntity, float X, float Y, float Z)

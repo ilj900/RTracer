@@ -380,7 +380,6 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	ClearImageTask->Reload();
 	PassthroughTask->Reload();
 
-    bool NeedUpdate = false;
 	FSynchronizationPoint SynchronizationPoint = {{}, {ImagesInFlight[CurrentFrame]}, {}, {}};
 
 	/// If we have no external semaphores
@@ -401,7 +400,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 	SynchronizationPoint = UpdateTLASTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
-	if (NeedUpdate || RenderFrameIndex == 0)
+	if (bAnyUpdate || RenderFrameIndex == 0)
 	{
 		SynchronizationPoint = ResetTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 	}
@@ -437,7 +436,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 	SynchronizationPoint = AdvanceRenderCountTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
-    if (NeedUpdate)
+    if (bAnyUpdate)
     {
 		SynchronizationPoint = ClearImageTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
     }
@@ -473,11 +472,12 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 int FRender::Update()
 {
-	CAMERA_SYSTEM()->Update();
-	TRANSFORM_SYSTEM()->Update();
-	RENDERABLE_SYSTEM()->Update();
-	LIGHT_SYSTEM()->Update();
-	ACCELERATION_STRUCTURE_SYSTEM()->Update();
+	bAnyUpdate = false;
+	bAnyUpdate |= CAMERA_SYSTEM()->Update();
+	bAnyUpdate |= TRANSFORM_SYSTEM()->Update();
+	bAnyUpdate |= RENDERABLE_SYSTEM()->Update();
+	bAnyUpdate |= LIGHT_SYSTEM()->Update();
+	bAnyUpdate |= ACCELERATION_STRUCTURE_SYSTEM()->Update();
 
     if (bWasResized)
     {

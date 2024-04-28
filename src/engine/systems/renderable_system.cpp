@@ -15,14 +15,38 @@ namespace ECS
                                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Renderable_Buffer");
         }
 
-        void FRenderableSystem::Update()
+        bool FRenderableSystem::Update()
         {
-            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceRenderableComponent>();
+			bool bAnyUpdate = false;
+
+			for (auto& Entry : EntitiesToUpdate)
+			{
+				bAnyUpdate |= !Entry.empty();
+			}
+
+			if (bAnyUpdate)
+			{
+				FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceRenderableComponent>();
+			}
+
+			return bAnyUpdate;
         }
 
-        void FRenderableSystem::Update(int Index)
+        bool FRenderableSystem::Update(int Index)
         {
-            FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceRenderableComponent>(Index);
+			bool bAnyUpdate = false;
+
+			for (auto& Entry : EntitiesToUpdate)
+			{
+				bAnyUpdate |= !Entry.empty();
+			}
+
+			if (bAnyUpdate)
+			{
+				FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FDeviceRenderableComponent>(Index);
+			}
+
+			return bAnyUpdate;
         }
 
         void FRenderableSystem::SetRenderableColor(FEntity Entity, float Red, float Green, float Blue)

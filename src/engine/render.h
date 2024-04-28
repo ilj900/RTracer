@@ -123,4 +123,5 @@ private:
     int Width;
     int Height;
 	uint32_t RecursionDepth = 5;
+	bool bAnyUpdate = false;
 };

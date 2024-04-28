@@ -32,18 +32,40 @@ namespace ECS
             VK_CONTEXT()->DestroyAccelerationStructure(TLAS);
         }
 
-        void FAccelerationStructureSystem::Update()
+        bool FAccelerationStructureSystem::Update()
         {
-            FGPUBufferableSystem::UpdateTemplate<COMPONENTS::FMeshInstanceComponent>();
+			bool bAnyUpdate = false;
 
-            UpdateTLAS();
+			for (auto& Entry : EntitiesToUpdate)
+			{
+				bAnyUpdate |= !Entry.empty();
+			}
+
+			if (bAnyUpdate)
+			{
+				FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FMeshInstanceComponent>();
+				UpdateTLAS();
+			}
+
+			return bAnyUpdate;
         }
 
-        void FAccelerationStructureSystem::Update(int Index)
+        bool FAccelerationStructureSystem::Update(int Index)
         {
-            FGPUBufferableSystem::UpdateTemplate<COMPONENTS::FMeshInstanceComponent>(Index);
+			bool bAnyUpdate = false;
 
-            UpdateTLAS();
+			for (auto& Entry : EntitiesToUpdate)
+			{
+				bAnyUpdate |= !Entry.empty();
+			}
+
+			if (bAnyUpdate)
+			{
+				FGPUBufferableSystem::UpdateTemplate<ECS::COMPONENTS::FMeshInstanceComponent>(Index);
+				UpdateTLAS();
+			}
+
+			return bAnyUpdate;
         }
 
         FEntity FAccelerationStructureSystem::CreateInstance(FEntity Entity, const FVector3& Position, const FVector3& Direction, const FVector3& Up)

@@ -15,8 +15,8 @@ namespace ECS
         {
         public:
             void Init(uint32_t NumberOfSimultaneousSubmits) override;
-            void Update() override;
-            void Update(int Index) override;
+            bool Update() override;
+            bool Update(int Index) override;
 
             FLightSystem& SetLightPosition(FEntity LightEntity, const FVector3& Position);
             FLightSystem& SetLightPosition(FEntity LightEntity, float X, float Y, float Z);
