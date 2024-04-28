@@ -23,6 +23,8 @@
 #include "tasks/task_passthrough.h"
 #include "tasks/task_clear_image.h"
 #include "tasks/task_reset_active_ray_count.h"
+#include "tasks/task_reset.h"
+#include "tasks/task_advance_render_count.h"
 
 #include <string>
 #include <vector>
@@ -106,6 +108,8 @@ public:
     std::shared_ptr<FAccumulateTask> AccumulateTask = nullptr;
     std::shared_ptr<FPassthroughTask> PassthroughTask = nullptr;
     std::shared_ptr<FClearImageTask> ClearImageTask = nullptr;
+	std::shared_ptr<FReset> ResetTask = nullptr;
+	std::shared_ptr<FAdvanceRenderCount> AdvanceRenderCountTask = nullptr;
 	std::vector<std::shared_ptr<FExecutableTask>> ExternalTasks;
 
     std::vector<FSynchronizationPoint> ImageAvailable;

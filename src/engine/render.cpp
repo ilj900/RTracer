@@ -173,6 +173,7 @@ int FRender::Init()
     }
 
 	UpdateTLASTask 						= std::make_shared<FUpdateTLASTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ResetTask							= std::make_shared<FReset>							(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     GenerateRaysTask 					= std::make_shared<FGenerateInitialRays>			(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetActiveRayCountTask 			= std::make_shared<FResetActiveRayCountTask>		(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     RayTraceTask 						= std::make_shared<FRaytraceTask>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -186,6 +187,7 @@ int FRender::Init()
     SortMaterialsTask 					= std::make_shared<FSortMaterialsTask>				(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ShadeTask 							= std::make_shared<FShadeTask>						(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     MissTask 							= std::make_shared<FMissTask>						(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	AdvanceRenderCountTask 				= std::make_shared<FAdvanceRenderCount>				(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     AccumulateTask 						= std::make_shared<FAccumulateTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ClearImageTask 						= std::make_shared<FClearImageTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     PassthroughTask 					= std::make_shared<FPassthroughTask>				(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -205,23 +207,25 @@ int FRender::Cleanup()
 {
 	VK_CONTEXT()->WaitIdle();
 
-	UpdateTLASTask = nullptr;
-    GenerateRaysTask = nullptr;
-	ResetActiveRayCountTask = nullptr;
-    RayTraceTask = nullptr;
+	UpdateTLASTask 					= nullptr;
+	ResetTask 						= nullptr;
+    GenerateRaysTask 				= nullptr;
+	ResetActiveRayCountTask 		= nullptr;
+    RayTraceTask 					= nullptr;
     ClearMaterialsCountPerChunkTask = nullptr;
-    ClearTotalMaterialsCountTask = nullptr;
-    ComputeOffsetsPerMaterialTask = nullptr;
-    CountMaterialsPerChunkTask = nullptr;
-    SortMaterialsTask = nullptr;
-    ComputePrefixSumsUpSweepTask = nullptr;
-    ComputePrefixSumsZeroOutTask = nullptr;
-    ComputePrefixSumsDownSweepTask = nullptr;
-    ShadeTask = nullptr;
-    MissTask = nullptr;
-    AccumulateTask = nullptr;
-    ClearImageTask = nullptr;
-    PassthroughTask = nullptr;
+    ClearTotalMaterialsCountTask 	= nullptr;
+    ComputeOffsetsPerMaterialTask 	= nullptr;
+    CountMaterialsPerChunkTask 		= nullptr;
+    SortMaterialsTask 				= nullptr;
+    ComputePrefixSumsUpSweepTask 	= nullptr;
+    ComputePrefixSumsZeroOutTask 	= nullptr;
+    ComputePrefixSumsDownSweepTask 	= nullptr;
+    ShadeTask 						= nullptr;
+    MissTask 						= nullptr;
+	AdvanceRenderCountTask			= nullptr;
+    AccumulateTask 					= nullptr;
+    ClearImageTask 					= nullptr;
+    PassthroughTask 				= nullptr;
 
 	ExternalTasks.clear();
 
@@ -357,6 +361,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
     uint32_t CurrentFrame = RenderFrameIndex % MaxFramesInFlight;
 
 	UpdateTLASTask->Reload();
+	ResetTask->Reload();
 	GenerateRaysTask->Reload();
 	ResetActiveRayCountTask->Reload();
 	RayTraceTask->Reload();
@@ -370,6 +375,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	SortMaterialsTask->Reload();
 	ShadeTask->Reload();
 	MissTask->Reload();
+	AdvanceRenderCountTask->Reload();
 	AccumulateTask->Reload();
 	ClearImageTask->Reload();
 	PassthroughTask->Reload();
@@ -395,6 +401,11 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 	SynchronizationPoint = UpdateTLASTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
+	if (NeedUpdate || RenderFrameIndex == 0)
+	{
+		SynchronizationPoint = ResetTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
+	}
+
 	SynchronizationPoint = GenerateRaysTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
 	SynchronizationPoint = ResetActiveRayCountTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
@@ -402,10 +413,6 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	for (uint32_t i = 0; i < RecursionDepth; ++i)
 	{
 		SynchronizationPoint = RayTraceTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
-
-		WaitIdle();
-		auto DebugBuffer = RESOURCE_ALLOCATOR()->GetBuffer("DebugBuffer");
-		VK_CONTEXT()->SaveBufferFloat4(DebugBuffer, Width, Height, "DebugBuffer.exr");
 
 		SynchronizationPoint = ClearMaterialsCountPerChunkTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
@@ -427,6 +434,8 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 		SynchronizationPoint = MissTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 	}
+
+	SynchronizationPoint = AdvanceRenderCountTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
     if (NeedUpdate)
     {

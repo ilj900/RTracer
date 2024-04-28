@@ -61,6 +61,8 @@ set(INCLUDE
         tasks/task_generate_initial_rays.h
         tasks/task_reset_active_ray_count.h
         tasks/task_update_tlas.h
+        tasks/task_reset.h
+        tasks/task_advance_render_count.h
         ${ECS_INCLUDE})
 
 set(SOURCE
@@ -83,6 +85,8 @@ set(SOURCE
         tasks/task_generate_initial_rays.cpp
         tasks/task_reset_active_ray_count.cpp
         tasks/task_update_tlas.cpp
+        tasks/task_reset.cpp
+        tasks/task_advance_render_count.cpp
         ${ECS_SOURCE})
 
 add_library(Renderer ${SOURCE} ${INCLUDE})

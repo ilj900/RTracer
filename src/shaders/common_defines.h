@@ -8,6 +8,8 @@
 #define MAX_TEXTURES 512
 #define TOTAL_MATERIALS 128 /// 126 Materials + IBL + material for inactive ray
 #define BASIC_CHUNK_SIZE 256
+#define CMJ_GRID_LINEAR_SIZE 4
+#define CMJ_TOTAL_GRID_SIZE CMJ_GRID_LINEAR_SIZE * CMJ_GRID_LINEAR_SIZE
 
 #define RAY_DATA_RAY_MISSED 1u
 
@@ -73,6 +75,16 @@
 #define COMPUTE_MISS_MATERIAL_INDEX_AOV_MAP 4u
 #define COMPUTE_MISS_MATERIALS_OFFSETS 5u
 
+/// Task reset descriptor set layout defines
+#define RESET_LAYOUT_INDEX 0u
+
+#define RESET_RENDER_ITERATION_BUFFER 0u
+
+/// Task advance render count descriptor set layout defines
+#define ADVANCE_RENDER_COUNT_LAYOUT_INDEX 0u
+
+#define ADVANCE_RENDER_COUNT_RENDER_ITERATION_BUFFER 0u
+
 /// Task generate rays descriptor set layout defines
 #define GENERATE_RAYS_LAYOUT_INDEX 0u
 
@@ -81,6 +93,7 @@
 #define GENERATE_RAYS_PIXEL_INDEX_BUFFER 2u
 #define GENERATE_RAYS_RANDOM_SEEDS_BUFFER 3u
 #define GENERATE_RAYS_DEBUG_BUFFER 4u
+#define GENERATE_RAYS_RENDER_ITERATION_BUFFER 5u
 
 /// Task material sort count materials set layout defines
 #define MATERIAL_SORT_COUNT_MATERIALS_PER_CHUNK_INDEX 0u
