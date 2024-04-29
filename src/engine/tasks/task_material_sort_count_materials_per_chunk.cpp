@@ -31,8 +31,6 @@ FCountMaterialsPerChunkTask::FCountMaterialsPerChunkTask(uint32_t WidthIn, uint3
 
 void FCountMaterialsPerChunkTask::Init()
 {
-    TIMING_MANAGER()->RegisterTiming(Name, SubmitX, SubmitY);
-
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
     auto MaterialCountShader = FShader("../../../src/shaders/material_sort_count_materials_per_chunk.comp");
@@ -68,12 +66,6 @@ void FCountMaterialsPerChunkTask::RecordCommands()
 			uint32_t X = i % SubmitX;
 			uint32_t Y = i / SubmitX;
 
-			if (X == 0)
-			{
-				TIMING_MANAGER()->TimestampReset(Name, CommandBuffer, Y);
-			}
-			TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, X, Y);
-
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
             auto ComputeDescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, MATERIAL_SORT_COUNT_MATERIALS_PER_CHUNK_INDEX, i);
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
@@ -83,8 +75,6 @@ void FCountMaterialsPerChunkTask::RecordCommands()
             vkCmdPushConstants(CommandBuffer, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstantsCountMaterialsPerChunk), &PushConstantsCountMaterialsPerChunk);
 
             vkCmdDispatch(CommandBuffer, PushConstantsCountMaterialsPerChunk.GroupSize, 1, 1);
-
-            TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, X, Y);
         }, QueueFlagsBits);
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name, i);

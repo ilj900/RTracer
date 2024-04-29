@@ -73,8 +73,6 @@ FShadeTask::~FShadeTask()
 
 void FShadeTask::Init()
 {
-    TIMING_MANAGER()->RegisterTiming(Name, SubmitX, SubmitY);
-
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
@@ -135,12 +133,6 @@ void FShadeTask::RecordCommands()
 			uint32_t X = i % SubmitX;
 			uint32_t Y = i / SubmitX;
 
-			if (X == 0)
-			{
-				TIMING_MANAGER()->TimestampReset(Name, CommandBuffer, Y);
-			}
-			TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, X, Y);
-
 			for (auto& Material : *MATERIAL_SYSTEM())
 			{
 				uint32_t MaterialIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
@@ -155,8 +147,6 @@ void FShadeTask::RecordCommands()
 
 				vkCmdDispatchIndirect(CommandBuffer, DispatchBuffer.Buffer, MaterialIndex * 3 * sizeof(uint32_t));
 			}
-
-			TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, X, Y);
 		}, QueueFlagsBits);
 
 		V::SetName(LogicalDevice, CommandBuffers[i], Name, i);

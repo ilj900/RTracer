@@ -52,8 +52,6 @@ FRaytraceTask::~FRaytraceTask()
 
 void FRaytraceTask::Init()
 {
-    TIMING_MANAGER()->RegisterTiming(Name, SubmitX, SubmitY);
-
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
     auto RayGenerationShader = FShader("../../../src/shaders/raytrace.rgen");
@@ -155,19 +153,11 @@ void FRaytraceTask::RecordCommands()
 			uint32_t X = i % SubmitX;
 			uint32_t Y = i / SubmitX;
 
-			if (X == 0)
-			{
-				TIMING_MANAGER()->TimestampReset(Name, CommandBuffer, Y);
-			}
-			TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, X, Y);
-
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, Pipeline);
             auto RayTracingDescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, RAYTRACE_LAYOUT_INDEX, i);
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &RayTracingDescriptorSet, 0, nullptr);
             V::vkCmdTraceRaysIndirectKHR(CommandBuffer, &RGenRegion, &RMissRegion, &RHitRegion, &RCallRegion, ActiveRayCountBufferDeviceAddress);
-
-            TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, X, Y);
         }, QueueFlagsBits);
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name, i);

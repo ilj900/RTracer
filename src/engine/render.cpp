@@ -356,8 +356,6 @@ FSynchronizationPoint FRender::Render()
 
 FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 {
-    TIMING_MANAGER()->NewTime();
-
     uint32_t CurrentFrame = RenderFrameIndex % MaxFramesInFlight;
 
 	UpdateTLASTask->Reload();

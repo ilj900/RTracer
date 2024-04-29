@@ -30,8 +30,6 @@ FComputePrefixSumsDownSweepTask::FComputePrefixSumsDownSweepTask(uint32_t WidthI
 
 void FComputePrefixSumsDownSweepTask::Init()
 {
-    TIMING_MANAGER()->RegisterTiming(Name, SubmitX, SubmitY);
-
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
     auto MaterialCountShader = FShader("../../../src/shaders/material_sort_compute_prefix_sums_down_sweep.comp");
@@ -66,12 +64,6 @@ void FComputePrefixSumsDownSweepTask::RecordCommands()
 			uint32_t X = i % SubmitX;
 			uint32_t Y = i / SubmitX;
 
-			if (X == 0)
-			{
-				TIMING_MANAGER()->TimestampReset(Name, CommandBuffer, Y);
-			}
-			TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, X, Y);
-
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
             auto ComputeDescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_DOWN_SWEEP_LAYOUT_INDEX, i);
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
@@ -98,8 +90,6 @@ void FComputePrefixSumsDownSweepTask::RecordCommands()
 
                 vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &MemoryBarrier, 0, nullptr, 0, nullptr);
             }
-
-            TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, X, Y);
         }, QueueFlagsBits);
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name, i);

@@ -47,8 +47,6 @@ FMissTask::~FMissTask()
 
 void FMissTask::Init()
 {
-    TIMING_MANAGER()->RegisterTiming(Name, SubmitX, SubmitY);
-
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
     auto ShadeShader = FShader("../../../src/shaders/miss.comp");
@@ -92,12 +90,6 @@ void FMissTask::RecordCommands()
 			uint32_t X = i % SubmitX;
 			uint32_t Y = i / SubmitX;
 
-			if (X == 0)
-			{
-				TIMING_MANAGER()->TimestampReset(Name, CommandBuffer, Y);
-			}
-			TIMING_MANAGER()->TimestampStart(Name, CommandBuffer, X, Y);
-
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
             auto DescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, COMPUTE_MISS_LAYOUT_INDEX, i);
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
@@ -109,8 +101,6 @@ void FMissTask::RecordCommands()
                                VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
 
             vkCmdDispatchIndirect(CommandBuffer, DispatchBuffer.Buffer, MaterialIndex * 3 * sizeof(uint32_t));
-
-            TIMING_MANAGER()->TimestampEnd(Name, CommandBuffer, X, Y);
         }, QueueFlagsBits);
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name, i);

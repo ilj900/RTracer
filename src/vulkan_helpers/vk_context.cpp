@@ -249,7 +249,6 @@ void FVulkanContext::InitManagerResources()
     DescriptorSetManager = std::make_shared<FDescriptorSetManager>(LogicalDevice);
 
     COMMAND_BUFFER_MANAGER();
-    TIMING_MANAGER();
 }
 
 void FVulkanContext::QueuePhysicalDeviceProperties()
@@ -1619,7 +1618,6 @@ void FVulkanContext::CleanUp()
     DescriptorSetManager = nullptr;
     FREE_COMMAND_BUFFER_MANAGER();
     FREE_RESOURCE_ALLOCATOR();
-    FREE_TIMING_MANAGER();
 
     vkDestroyDevice(LogicalDevice, nullptr);
 

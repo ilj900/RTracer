@@ -4,7 +4,6 @@
 
 #include "resource_allocation.h"
 #include "command_buffer_manager.h"
-#include "timing_manager.h"
 #include "maths.h"
 #include "buffer.h"
 #include "descriptors.h"

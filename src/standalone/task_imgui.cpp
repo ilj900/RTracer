@@ -47,7 +47,6 @@ void FImguiTask::Init()
 
 void FImguiTask::Init(std::vector<ImagePtr> Images)
 {
-	TIMING_MANAGER()->RegisterTiming(Name, SubmitX, SubmitY);
 	bFirstCall = true;
 
 	ExternalImages = std::move(Images);
@@ -132,30 +131,6 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 		return Color;
 	};
 
-	static ImGuiUtils::ProfilersWindow ProfilerData;
-	if (!bFirstCall)
-	{
-		std::vector<std::string> Names;
-		std::vector<float> Timings;
-		float DeltaTime = 0;
-		TIMING_MANAGER()->GetAllTimings(Names, Timings, DeltaTime, PreviousIterationIndex);
-		std::vector<legit::ProfilerTask> GPUTasks(Timings.size());
-
-		float StartTime = 0.f;
-		float EndTime = 0.f;
-
-		for (int i = 0; i < Names.size(); ++i)
-		{
-			EndTime = StartTime + Timings[i];
-			GPUTasks[i] = {StartTime, EndTime, Names[i], StringToColor(Names[i])};
-			StartTime = EndTime;
-		}
-
-		ProfilerData.gpuGraph.LoadFrameData(GPUTasks.data(), GPUTasks.size());
-
-		ProfilerData.Render();
-	}
-
 	uint32_t SubmitIndex = Y * SubmitX + X;
 
 	CommandBuffers[SubmitIndex] = COMMAND_BUFFER_MANAGER()->BeginSingleTimeCommand(QueueFlagsBits);
@@ -165,12 +140,6 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 	COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer)
 	{
 		{
-			if (X == 0)
-			{
-				TIMING_MANAGER()->TimestampReset(Name, CommandBuffers[SubmitIndex], Y);
-			}
-			TIMING_MANAGER()->TimestampStart(Name, CommandBuffers[SubmitIndex], X, Y);
-
 			VkRenderPassBeginInfo RenderPassBeginInfo{};
 			RenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			RenderPassBeginInfo.renderPass = RenderPass;
@@ -179,8 +148,6 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 			RenderPassBeginInfo.renderArea.extent = {uint32_t(Width), uint32_t(Height)};
 			RenderPassBeginInfo.clearValueCount = 0;
 			vkCmdBeginRenderPass(CommandBuffers[SubmitIndex], &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-			TIMING_MANAGER()->TimestampEnd(Name, CommandBuffers[SubmitIndex], X, Y);
 		}
 
 		ImGui::Render();
