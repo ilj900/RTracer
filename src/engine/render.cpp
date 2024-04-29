@@ -109,6 +109,9 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     LIGHT_SYSTEM()->Init(MaxFramesInFlight);
     TRANSFORM_SYSTEM()->Init(MaxFramesInFlight);
     ACCELERATION_STRUCTURE_SYSTEM()->Init(MaxFramesInFlight);
+
+	Time = std::chrono::high_resolution_clock::now();
+	PreviousTime = Time;
 }
 
 FRender::~FRender()
@@ -357,6 +360,8 @@ FSynchronizationPoint FRender::Render()
 FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 {
     uint32_t CurrentFrame = RenderFrameIndex % MaxFramesInFlight;
+	PreviousTime = Time;
+	Time = std::chrono::high_resolution_clock::now();
 
 	UpdateTLASTask->Reload();
 	ResetTask->Reload();
@@ -550,6 +555,77 @@ int FRender::SetIBL(const std::string& Path)
 	MissTask->SetDirty(OUTDATED_DESCRIPTOR_SET | OUTDATED_COMMAND_BUFFER);
 
     return 0;
+}
+
+void FRender::GetAllTimings(std::vector<std::string>& Names, std::vector<std::vector<float>>& Timings, float& FrameTime, uint32_t FrameIndex)
+{
+	Names.clear();
+	Timings.clear();
+
+	FrameTime = std::chrono::duration<float, std::chrono::milliseconds ::period>(Time - PreviousTime).count();
+
+	Names.push_back(UpdateTLASTask->Name);
+	Timings.push_back(UpdateTLASTask->RequestTiming(FrameIndex));
+
+	Names.push_back(GenerateRaysTask->Name);
+	Timings.push_back(GenerateRaysTask->RequestTiming(FrameIndex));
+
+	Names.push_back(ResetActiveRayCountTask->Name);
+	Timings.push_back(ResetActiveRayCountTask->RequestTiming(FrameIndex));
+
+	Names.push_back(RayTraceTask->Name);
+	Timings.push_back(RayTraceTask->RequestTiming(FrameIndex));
+
+	Names.push_back(ClearMaterialsCountPerChunkTask->Name);
+	Timings.push_back(ClearMaterialsCountPerChunkTask->RequestTiming(FrameIndex));
+
+	Names.push_back(ClearTotalMaterialsCountTask->Name);
+	Timings.push_back(ClearTotalMaterialsCountTask->RequestTiming(FrameIndex));
+
+	Names.push_back(ComputeOffsetsPerMaterialTask->Name);
+	Timings.push_back(ComputeOffsetsPerMaterialTask->RequestTiming(FrameIndex));
+
+	Names.push_back(CountMaterialsPerChunkTask->Name);
+	Timings.push_back(CountMaterialsPerChunkTask->RequestTiming(FrameIndex));
+
+	Names.push_back(SortMaterialsTask->Name);
+	Timings.push_back(SortMaterialsTask->RequestTiming(FrameIndex));
+
+	Names.push_back(ComputePrefixSumsDownSweepTask->Name);
+	Timings.push_back(ComputePrefixSumsDownSweepTask->RequestTiming(FrameIndex));
+
+	Names.push_back(ComputePrefixSumsUpSweepTask->Name);
+	Timings.push_back(ComputePrefixSumsUpSweepTask->RequestTiming(FrameIndex));
+
+	Names.push_back(ComputePrefixSumsZeroOutTask->Name);
+	Timings.push_back(ComputePrefixSumsZeroOutTask->RequestTiming(FrameIndex));
+
+	Names.push_back(ShadeTask->Name);
+	Timings.push_back(ShadeTask->RequestTiming(FrameIndex));
+
+	Names.push_back(MissTask->Name);
+	Timings.push_back(MissTask->RequestTiming(FrameIndex));
+
+	Names.push_back(AccumulateTask->Name);
+	Timings.push_back(AccumulateTask->RequestTiming(FrameIndex));
+
+	Names.push_back(PassthroughTask->Name);
+	Timings.push_back(PassthroughTask->RequestTiming(FrameIndex));
+
+	Names.push_back(ClearImageTask->Name);
+	Timings.push_back(ClearImageTask->RequestTiming(FrameIndex));
+
+	Names.push_back(ResetTask->Name);
+	Timings.push_back(ResetTask->RequestTiming(FrameIndex));
+
+	Names.push_back(AdvanceRenderCountTask->Name);
+	Timings.push_back(AdvanceRenderCountTask->RequestTiming(FrameIndex));
+
+	for (auto& Task : ExternalTasks)
+	{
+		Names.push_back(Task->Name);
+		Timings.push_back(Task->RequestTiming(FrameIndex));
+	}
 }
 
 ECS::FEntity FRender::CreatePlane(const FVector2& Size)

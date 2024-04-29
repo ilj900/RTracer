@@ -79,8 +79,8 @@ void FPassthroughTask::RecordCommands()
     {
         CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
-			uint32_t X = i % SubmitX;
-			uint32_t Y = i / SubmitX;
+			ResetQueryPool(CommandBuffer, i);
+			GPU_TIMER();
 
             VkRenderPassBeginInfo RenderPassInfo{};
             RenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

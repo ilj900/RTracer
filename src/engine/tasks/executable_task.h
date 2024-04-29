@@ -4,11 +4,15 @@
 #include "vk_pipeline.h"
 #include "vk_utils.h"
 
-enum DirtyType {UNINITIALIZED = 1u,
+enum DirtyType {UNINITIALIZED 			= 1u,
 				OUTDATED_DESCRIPTOR_SET = 1u << 1,
 				OUTDATED_COMMAND_BUFFER = 1u << 2};
 
 class FVulkanContext;
+
+enum TaskState {UNDEFINED 	= 1u,
+				SUBMITTED 	= 1u << 1,
+				QUERIED 	= 1u << 2};
 
 class FGPUTimer
 {
@@ -53,6 +57,10 @@ public:
     VkPipelineStageFlags GetPipelineStageFlags();
     ImagePtr GetInput(int Index);
     ImagePtr GetOutput(int Index);
+
+	void ResetQueryPool(VkCommandBuffer CommandBuffer, uint32_t Index);
+	std::vector<float> RequestTiming(uint32_t Y);
+	std::vector<TaskState> TaskStates;
 
     std::vector<ImagePtr> Inputs;
     std::vector<ImagePtr> Outputs;

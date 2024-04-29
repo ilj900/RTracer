@@ -22,6 +22,8 @@ FImguiTask::FImguiTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, 
 
 FImguiTask::~FImguiTask()
 {
+	Render = nullptr;
+
 	ImGui_ImplVulkan_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
@@ -39,6 +41,11 @@ FImguiTask::~FImguiTask()
 void FImguiTask::SetGLFWWindow(GLFWwindow* WindowIn)
 {
 	Window = WindowIn;
+}
+
+void FImguiTask::SetRender(std::shared_ptr<FRender> RenderIn)
+{
+	Render = RenderIn;
 }
 
 void FImguiTask::Init()
@@ -130,6 +137,38 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 		Color |= 255 << 24;
 		return Color;
 	};
+
+	static ImGuiUtils::ProfilersWindow ProfilerData;
+
+	if (!bFirstCall)
+	{
+		std::vector<std::string> Names;
+		std::vector<std::vector<float>> Timings;
+		float DeltaTime = 0;
+		Render->GetAllTimings(Names, Timings, DeltaTime, PreviousIterationIndex);
+		std::vector<legit::ProfilerTask> GPUTasks(Timings.size());
+
+		float StartTime = 0.f;
+		float EndTime = 0.f;
+
+		for (int i = 0; i < Names.size(); ++i)
+		{
+			float TaskTime = 0;
+
+			for (int j = 0; j < Timings[i].size(); j+=2)
+			{
+				TaskTime += Timings[i][j + 1] - Timings[i][j];
+			}
+
+			EndTime = StartTime + TaskTime;
+			GPUTasks[i] = {StartTime, EndTime, Names[i], StringToColor(Names[i])};
+			StartTime = EndTime;
+		}
+
+		ProfilerData.gpuGraph.LoadFrameData(GPUTasks.data(), GPUTasks.size());
+
+		ProfilerData.Render();
+	}
 
 	uint32_t SubmitIndex = Y * SubmitX + X;
 

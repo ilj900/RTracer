@@ -84,6 +84,8 @@ public:
 	FVector3 GetLightPosition(ECS::FEntity Light);
     int SetIBL(const std::string& Path);
 
+	void GetAllTimings(std::vector<std::string>& Names, std::vector<std::vector<float>>& Timings, float& FrameTime, uint32_t FrameIndex);
+
     bool bWasResized = false;
 
     uint32_t MaxFramesInFlight = 2;
@@ -124,4 +126,6 @@ private:
     int Height;
 	uint32_t RecursionDepth = 5;
 	bool bAnyUpdate = false;
+	std::chrono::time_point<std::chrono::steady_clock> Time;
+	std::chrono::time_point<std::chrono::steady_clock> PreviousTime;
 };

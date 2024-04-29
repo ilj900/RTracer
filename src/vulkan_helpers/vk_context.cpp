@@ -1504,14 +1504,14 @@ VkFence FVulkanContext::CreateUnsignalledFence() const
     return Fence;
 }
 
-VkQueryPool FVulkanContext::CreateQueryPool(uint32_t QueryCount, VkQueryPoolCreateFlags QueryPoolCreateFlags)
+VkQueryPool FVulkanContext::CreateQueryPool(uint32_t QueryCount, VkQueryType QueryType)
 {
 	VkQueryPool QueryPool = VK_NULL_HANDLE;
 
 	VkQueryPoolCreateInfo QueryPoolCreateInfo{};
 	QueryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
 	QueryPoolCreateInfo.queryCount = QueryCount;
-	QueryPoolCreateInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
+	QueryPoolCreateInfo.queryType = QueryType;
 
 	if (vkCreateQueryPool(VK_CONTEXT()->LogicalDevice, &QueryPoolCreateInfo, nullptr, &QueryPool) != VK_SUCCESS)
 	{

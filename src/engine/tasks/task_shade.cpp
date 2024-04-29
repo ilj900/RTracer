@@ -130,8 +130,8 @@ void FShadeTask::RecordCommands()
 	{
 		CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
 		{
-			uint32_t X = i % SubmitX;
-			uint32_t Y = i / SubmitX;
+			ResetQueryPool(CommandBuffer, i);
+			GPU_TIMER();
 
 			for (auto& Material : *MATERIAL_SYSTEM())
 			{

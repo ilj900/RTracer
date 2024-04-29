@@ -2,6 +2,7 @@
 
 #include "tasks/executable_task.h"
 #include "vk_pipeline.h"
+#include "render.h"
 
 class FVulkanContext;
 struct GLFWwindow;
@@ -13,6 +14,7 @@ public:
 	~FImguiTask() override;
 
 	void SetGLFWWindow(GLFWwindow* WindowIn);
+	void SetRender(std::shared_ptr<FRender> RenderIn);
 
 	void Init(std::vector<ImagePtr> Images);
 	void Init() override;
@@ -32,4 +34,5 @@ public:
 	GLFWwindow* Window = nullptr;
 	uint32_t PreviousIterationIndex = 0;
 	bool bFirstCall = true;
+	std::shared_ptr<FRender> Render = nullptr;
 };

@@ -24,6 +24,7 @@ FApplication::FApplication()
 	WindowManager->SetController(Controller.get());
 	ImguiTask = std::make_shared<FImguiTask>(Width, Height, 1, int(Swapchain->Size()), VK_CONTEXT()->LogicalDevice);
 	ImguiTask->SetGLFWWindow(WindowManager->GetWindow());
+	ImguiTask->SetRender(Render);
 	ImguiTask->Init(Swapchain->GetImages());
 	ImguiTask->UpdateDescriptorSets();
 	ImguiTask->RecordCommands();

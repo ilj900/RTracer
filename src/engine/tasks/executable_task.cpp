@@ -12,17 +12,17 @@ bool CheckFlag(uint32_t Flags, uint32_t Flag)
 FGPUTimer::FGPUTimer(VkCommandBuffer CommandBufferIn, VkPipelineStageFlagBits PipelineStageFlagBitsStartIn, VkPipelineStageFlagBits PipelineStageFlagBitsEndIn, VkQueryPool QueryPoolIn, uint32_t QueryIn) :
 	CommandBuffer(CommandBufferIn), PipelineStageFlagBitsStart(PipelineStageFlagBitsStartIn), PipelineStageFlagBitsEnd(PipelineStageFlagBitsEndIn), QueryPool(QueryPoolIn), Query(QueryIn)
 {
-	vkCmdWriteTimestamp(CommandBuffer, PipelineStageFlagBitsStart, QueryPool, Query);
+	vkCmdWriteTimestamp(CommandBuffer, PipelineStageFlagBitsStart, QueryPool, Query * 2);
 }
 
 FGPUTimer::~FGPUTimer()
 {
-	vkCmdWriteTimestamp(CommandBuffer, PipelineStageFlagBitsEnd, QueryPool, Query + 1);
+	vkCmdWriteTimestamp(CommandBuffer, PipelineStageFlagBitsEnd, QueryPool, Query * 2 + 1);
 }
 
 FExecutableTask::FExecutableTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
         Width(WidthIn), Height(HeightIn),
-        SubmitX(SubmitXIn), SubmitY(SubmitYIn), LogicalDevice(LogicalDevice)
+        SubmitX(SubmitXIn), SubmitY(SubmitYIn), LogicalDevice(LogicalDevice), TaskStates(SubmitYIn, UNDEFINED)
 {
 	TotalSize = SubmitX * SubmitY;
     CreateSyncObjects();
@@ -159,6 +159,7 @@ FSynchronizationPoint FExecutableTask::Submit(VkPipelineStageFlags& PipelineStag
     }
 
 	PipelineStageFlagsIn = PipelineStageFlags;
+	TaskStates[Y] = SUBMITTED;
 
 	return {{SignalSemaphores[SubmitIndex]}, {}, {}, {}};
 }
@@ -215,4 +216,35 @@ ImagePtr FExecutableTask::GetOutput(int Index)
         return Outputs[Index];
     }
     throw std::runtime_error("Wrong output index.");
+}
+
+void FExecutableTask::ResetQueryPool(VkCommandBuffer CommandBuffer, uint32_t Index)
+{
+	if ((Index % SubmitX) == 0)
+	{
+		uint32_t Y = Index / SubmitX;
+		vkCmdResetQueryPool(CommandBuffer, QueryPool, Y * 2 * SubmitX, 2 * SubmitX);
+	}
+}
+
+std::vector<float> FExecutableTask::RequestTiming(uint32_t Y)
+{
+	if (TaskStates[Y] != SUBMITTED)
+	{
+		return {};
+	}
+
+	std::vector<uint64_t> TimeStamps(SubmitX * 2);
+	vkGetQueryPoolResults(VK_CONTEXT()->LogicalDevice, QueryPool, Y * 2 * SubmitX, 2 * SubmitX, sizeof(uint64_t) * TimeStamps.size(), TimeStamps.data(), sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+
+	std::vector<float> Timings(SubmitX, 0.f);
+
+	for (int i = 0; i < SubmitX; ++i)
+	{
+		Timings[i] = float(TimeStamps[i * 2 + 1] - TimeStamps[i * 2]) * VK_CONTEXT()->TimestampPeriod / 1000000000.f;
+	}
+
+	TaskStates[Y] = QUERIED;
+
+	return Timings;
 }

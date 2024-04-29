@@ -84,6 +84,7 @@ void FGenerateInitialRays::RecordCommands()
     {
         CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
+			ResetQueryPool(CommandBuffer, i);
 			GPU_TIMER();
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);

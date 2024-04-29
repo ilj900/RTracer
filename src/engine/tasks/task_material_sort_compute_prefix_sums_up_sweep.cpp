@@ -61,8 +61,8 @@ void FComputePrefixSumsUpSweepTask::RecordCommands()
     {
         CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
-			uint32_t X = i % SubmitX;
-			uint32_t Y = i / SubmitX;
+			ResetQueryPool(CommandBuffer, i);
+			GPU_TIMER();
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
             auto ComputeDescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_UP_SWEEP_LAYOUT_INDEX, i);

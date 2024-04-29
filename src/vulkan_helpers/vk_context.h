@@ -129,7 +129,7 @@ public:
     VkFence CreateSignalledFence() const;
     VkFence CreateUnsignalledFence() const;
 
-	VkQueryPool CreateQueryPool(uint32_t QueryCount, VkQueryPoolCreateFlags QueryPoolCreateFlags);
+	VkQueryPool CreateQueryPool(uint32_t QueryCount, VkQueryType QueryType);
 
 	static void SetSurfaceCreationFunction(std::function<VkSurfaceKHR(VkInstance)> SurfaceCreationFunctionIn);
 	static std::function<VkSurfaceKHR(VkInstance)> SurfaceCreationFunction;
