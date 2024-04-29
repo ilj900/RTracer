@@ -10,6 +10,22 @@ enum DirtyType {UNINITIALIZED = 1u,
 
 class FVulkanContext;
 
+class FGPUTimer
+{
+public:
+	FGPUTimer(VkCommandBuffer CommandBufferIn, VkPipelineStageFlagBits PipelineStageFlagBitsStartIn, VkPipelineStageFlagBits PipelineStageFlagBitsEndIn, VkQueryPool QueryPoolIn, uint32_t QueryIn);
+	~FGPUTimer();
+
+private:
+	VkCommandBuffer CommandBuffer;
+	VkQueryPool QueryPool;
+	uint32_t Query;
+	VkPipelineStageFlagBits PipelineStageFlagBitsStart;
+	VkPipelineStageFlagBits PipelineStageFlagBitsEnd;
+};
+
+#define GPU_TIMER() FGPUTimer GPUTimer(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, QueryPool, i)
+
 class FExecutableTask
 {
 public:
@@ -58,6 +74,7 @@ public:
     VkPipeline Pipeline = VK_NULL_HANDLE;
     VkPipelineStageFlags PipelineStageFlags;
     VkQueueFlagBits QueueFlagsBits;
+	VkQueryPool QueryPool = VK_NULL_HANDLE;
 	uint32_t DitryFlags = true;
 
 protected:

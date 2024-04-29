@@ -9,6 +9,17 @@ bool CheckFlag(uint32_t Flags, uint32_t Flag)
 	return (Flags & Flag) == Flag;
 }
 
+FGPUTimer::FGPUTimer(VkCommandBuffer CommandBufferIn, VkPipelineStageFlagBits PipelineStageFlagBitsStartIn, VkPipelineStageFlagBits PipelineStageFlagBitsEndIn, VkQueryPool QueryPoolIn, uint32_t QueryIn) :
+	CommandBuffer(CommandBufferIn), PipelineStageFlagBitsStart(PipelineStageFlagBitsStartIn), PipelineStageFlagBitsEnd(PipelineStageFlagBitsEndIn), QueryPool(QueryPoolIn), Query(QueryIn)
+{
+	vkCmdWriteTimestamp(CommandBuffer, PipelineStageFlagBitsStart, QueryPool, Query);
+}
+
+FGPUTimer::~FGPUTimer()
+{
+	vkCmdWriteTimestamp(CommandBuffer, PipelineStageFlagBitsEnd, QueryPool, Query + 1);
+}
+
 FExecutableTask::FExecutableTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
         Width(WidthIn), Height(HeightIn),
         SubmitX(SubmitXIn), SubmitY(SubmitYIn), LogicalDevice(LogicalDevice)
@@ -16,6 +27,7 @@ FExecutableTask::FExecutableTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t S
 	TotalSize = SubmitX * SubmitY;
     CreateSyncObjects();
 	DitryFlags |= UNINITIALIZED | OUTDATED_DESCRIPTOR_SET | OUTDATED_COMMAND_BUFFER;
+	QueryPool = VK_CONTEXT()->CreateQueryPool( SubmitXIn * SubmitYIn * 2, VK_QUERY_TYPE_TIMESTAMP);
 }
 
 FExecutableTask::~FExecutableTask()
@@ -38,6 +50,8 @@ FExecutableTask::~FExecutableTask()
     VK_CONTEXT()->DescriptorSetManager->Reset(Name);
 
     FreeSyncObjects();
+
+	vkDestroyQueryPool(LogicalDevice, QueryPool, nullptr);
 }
 
 void FExecutableTask::CreateSyncObjects()

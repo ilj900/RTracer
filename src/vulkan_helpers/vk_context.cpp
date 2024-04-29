@@ -1504,6 +1504,23 @@ VkFence FVulkanContext::CreateUnsignalledFence() const
     return Fence;
 }
 
+VkQueryPool FVulkanContext::CreateQueryPool(uint32_t QueryCount, VkQueryPoolCreateFlags QueryPoolCreateFlags)
+{
+	VkQueryPool QueryPool = VK_NULL_HANDLE;
+
+	VkQueryPoolCreateInfo QueryPoolCreateInfo{};
+	QueryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+	QueryPoolCreateInfo.queryCount = QueryCount;
+	QueryPoolCreateInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
+
+	if (vkCreateQueryPool(VK_CONTEXT()->LogicalDevice, &QueryPoolCreateInfo, nullptr, &QueryPool) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create query pool!");
+	}
+
+	return QueryPool;
+}
+
 VkFormat FVulkanContext::FindSupportedFormat(const std::vector<VkFormat>& Candidates, VkImageTiling Tiling, VkFormatFeatureFlags Features) const
 {
     for (VkFormat Format : Candidates)
