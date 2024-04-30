@@ -155,9 +155,9 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 		{
 			float TaskTime = 0;
 
-			for (int j = 0; j < Timings[i].size(); j+=2)
+			for (int j = 0; j < Timings[i].size(); j++)
 			{
-				TaskTime += Timings[i][j + 1] - Timings[i][j];
+				TaskTime += Timings[i][j];
 			}
 
 			EndTime = StartTime + TaskTime;
@@ -172,13 +172,12 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 
 	uint32_t SubmitIndex = Y * SubmitX + X;
 
-	CommandBuffers[SubmitIndex] = COMMAND_BUFFER_MANAGER()->BeginSingleTimeCommand(QueueFlagsBits);
-
-	V::SetName(LogicalDevice, CommandBuffers[SubmitIndex], Name, SubmitIndex);
-
-	COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer)
+	CommandBuffers[SubmitIndex] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
 	{
 		{
+			ResetQueryPool(CommandBuffer, SubmitIndex);
+			FGPUTimer GPUTimer(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, QueryPool, SubmitIndex);
+
 			VkRenderPassBeginInfo RenderPassBeginInfo{};
 			RenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			RenderPassBeginInfo.renderPass = RenderPass;
@@ -186,15 +185,16 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 			/// TODO: find a better way to pass extent
 			RenderPassBeginInfo.renderArea.extent = {uint32_t(Width), uint32_t(Height)};
 			RenderPassBeginInfo.clearValueCount = 0;
-			vkCmdBeginRenderPass(CommandBuffers[SubmitIndex], &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBeginRenderPass(CommandBuffer, &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 		}
 
 		ImGui::Render();
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), CommandBuffers[SubmitIndex]);
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), CommandBuffer);
 
-		vkCmdEndRenderPass(CommandBuffers[SubmitIndex]);
-		vkEndCommandBuffer(CommandBuffers[SubmitIndex]);
+		vkCmdEndRenderPass(CommandBuffer);
 	}, QueueFlagsBits);
+
+	V::SetName(LogicalDevice, CommandBuffers[SubmitIndex], Name, SubmitIndex);
 
 	if (bFirstCall)
 	{

@@ -123,7 +123,7 @@ void FCommandBufferManager::SubmitCommandBuffer(VkCommandBuffer &CommandBuffer, 
 
 VkCommandBuffer FCommandBufferManager::RecordCommand(const std::function<void(VkCommandBuffer&)> & Lambda, VkQueueFlagBits QueueType)
 {
-    auto CommandBuffer = BeginCommand(QueueType);
+	auto CommandBuffer = BeginCommand(QueueType);
     Lambda(CommandBuffer);
     vkEndCommandBuffer(CommandBuffer);
     return CommandBuffer;
