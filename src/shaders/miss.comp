@@ -29,6 +29,11 @@ layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_MATERIALS_OFFSET
     uint MaterialsOffsets[];
 };
 
+layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_THROUGHPUT_BUFFER) buffer ThroughputBufferObject
+{
+    vec4 ThroughputBuffer[];
+};
+
 FRayData FetchRayData(uint RayIndex)
 {
     return RayData[RayIndex];

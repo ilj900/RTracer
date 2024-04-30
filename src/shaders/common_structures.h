@@ -124,7 +124,6 @@ struct FDeviceMaterial
 
     FVector3 Opacity;
     uint32_t ThinWalled;
-
 };
 
 const uint32_t RENDERABLE_SELECTED_BIT = 1 << 5;
@@ -160,6 +159,7 @@ struct FPushConstants
     float InvHeight;
     uint32_t TotalSize;
     uint32_t MaterialIndex;
+	uint32_t BounceIndex;
 };
 
 struct FPushConstantsCountMaterialsPerChunk

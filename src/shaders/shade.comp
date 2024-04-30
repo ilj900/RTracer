@@ -7,6 +7,8 @@
 
 #include "common_defines.h"
 #include "common_structures.h"
+#include "cmj.h"
+#include "process_material_interaction.h"
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_OUTPUT_IMAGE_INDEX, rgba32f) uniform image2D OutcomingImage;
 
@@ -52,6 +54,11 @@ layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_MATERIAL_INDEX
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_MATERIALS_OFFSETS) buffer MaterialsOffsetsBufferObject
 {
     uint MaterialsOffsets[];
+};
+
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_THROUGHPUT_BUFFER) buffer ThroughputBufferObject
+{
+    vec4 ThroughputBuffer[];
 };
 
 layout (buffer_reference, scalar) buffer Vertices
@@ -192,6 +199,16 @@ void main()
 
     vec2 TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
     FDeviceMaterial Material = GetMaterial(TextureCoords);
+
+    vec3 SamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace);
+    RayData.Origin.xyz = PointOfIntersectionInWorldSpace + RayData.Direction.xyz * 0.000001f;;
+
+    ThroughputBuffer[NewPixelIndex] += SamplingResult;
+
+    if (PushConstants.BounceIndex == LAST_BOUNCE)
+    {
+        imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(ThroughputBuffer[NewPixelIndex].xyz, 1.f));
+    }
     
     ///FLight Light = FetchLightData(0);
     ///vec3 PointOfIntersectioToLightDirection = Light.Position - PointOfIntersectionInWorldSpace;
@@ -203,7 +220,5 @@ void main()
 
     ///imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(ColorOut, 1.f));
 
-    RayData.Origin.xyz = PointOfIntersectionInWorldSpace;
-    RayData.Direction.xyz = -reflect(-RayData.Direction.xyz, NormalInWorldSpace);
     SetRayData(NewPixelIndex, RayData);
 }
