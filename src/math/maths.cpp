@@ -217,7 +217,7 @@ bool operator==(const FVector3& A, const FVector3& B)
 
 FVector3 operator*(const FVector3& A, const FVector3& B)
 {
-    return FVector3(A.Y * B.X, A.Y * B.Y, A.Z * B.Z);
+    return FVector3(A.X * B.X, A.Y * B.Y, A.Z * B.Z);
 }
 
 FVector3 operator+(const FVector3& A, const FVector3& B)
