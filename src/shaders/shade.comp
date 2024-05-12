@@ -61,6 +61,11 @@ layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_THROUGHPUT_BUF
     vec4 ThroughputBuffer[];
 };
 
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_RENDER_ITERATION_BUFFER) buffer RenderIterationBufferObject
+{
+    uint RenderIteration;
+};
+
 layout (buffer_reference, scalar) buffer Vertices
 {
     FVertex V[];
@@ -200,10 +205,11 @@ void main()
     vec2 TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
     FDeviceMaterial Material = GetMaterial(TextureCoords);
 
-    vec3 SamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace);
+    FSamplingState SamplingState = FSamplingState(gl_GlobalInvocationID.x, 0, RenderIteration);
+    vec3 SamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace, SamplingState);
     RayData.Origin.xyz = PointOfIntersectionInWorldSpace + RayData.Direction.xyz * 0.000001f;;
 
-    ThroughputBuffer[NewPixelIndex] += SamplingResult;
+    ThroughputBuffer[NewPixelIndex].xyz = ThroughputBuffer[NewPixelIndex].xyz * SamplingResult;
 
     if (PushConstants.BounceIndex == LAST_BOUNCE)
     {

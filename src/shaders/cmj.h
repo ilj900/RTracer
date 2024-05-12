@@ -1,6 +1,16 @@
 #ifndef CMJ_H
 #define CMJ_H
 
+#define CMJ_GRID_LINEAR_SIZE 4
+#define CMJ_TOTAL_GRID_SIZE (CMJ_GRID_LINEAR_SIZE * CMJ_GRID_LINEAR_SIZE)
+
+struct FSamplingState
+{
+	uint Seed;
+	uint Bounce;
+	uint SampleIndex;
+};
+
 uint Permute(uint I, uint L, uint P)
 {
 	uint W = L - 1;
@@ -60,6 +70,18 @@ vec2 CMJ(uint S, uint M, uint N, uint P)
 	vec2 Result = {(S % M + (SY + JX) / N) / M, (S / M + (SX + JY) /M) / N};
 
 	return Result;
+}
+
+vec2 Sample2D(FSamplingState SamplingState)
+{
+	uint Hash = 227 + SamplingState.Seed * 1489 + SamplingState.Bounce * 1399 + SamplingState.SampleIndex * 401;
+	return CMJ(Hash % CMJ_TOTAL_GRID_SIZE, CMJ_GRID_LINEAR_SIZE, CMJ_GRID_LINEAR_SIZE, Hash);
+}
+
+float RandomFloat(FSamplingState SamplingState)
+{
+	uint Hash = 227 + SamplingState.Seed * 1489 + SamplingState.Bounce * 1399 + SamplingState.SampleIndex * 401;
+	return RandomFloat(0, Hash);
 }
 
 #endif // CMJ_H

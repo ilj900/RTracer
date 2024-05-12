@@ -37,27 +37,33 @@ uint SelectLayer(FDeviceMaterial Material, float MaterialSample)
 	return COAT_LAYER;
 }
 
-vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 NormalInWorldSpace, float MaterialSample)
+vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 NormalInWorldSpace, FSamplingState SamplingState)
 {
-	uint Layer = SelectLayer(Material);
+	float LayerSample = RandomFloat(SamplingState);
+	uint Layer = SelectLayer(Material, LayerSample);
 	vec3 Color = vec3(0);
 
 	switch (Layer)
 	{
 	case DIFFUSE_LAYER:
-		Color += Material.BaseColor;
+		Color = Material.BaseColor;
 		RayData.Direction.xyz = -reflect(-RayData.Direction.xyz, NormalInWorldSpace);
 		break;
 	case SPECULAR_LAYER:
+		Color = Material.SpecularColor;
 		RayData.Direction.xyz = -reflect(-RayData.Direction.xyz, NormalInWorldSpace);
 		break;
 	case TRANSMISSION_LAYER:
+		Color = Material.TransmissionColor;
 		break;
 	case SUBSURFACE_LAYER:
+		Color = Material.SubsurfaceColor;
 		break;
 	case SHEEN_LAYER:
+		Color = Material.SheenColor;
 		break;
 	case COAT_LAYER:
+		Color = Material.CoatColor;
 		break;
 	}
 

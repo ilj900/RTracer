@@ -28,9 +28,14 @@ FGenerateInitialRays::FGenerateInitialRays(uint32_t WidthIn, uint32_t HeightIn, 
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 	DescriptorSetManager->AddDescriptorLayout(Name, GENERATE_RAYS_LAYOUT_INDEX, GENERATE_RAYS_RENDER_ITERATION_BUFFER,
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
+	DescriptorSetManager->AddDescriptorLayout(Name, GENERATE_RAYS_LAYOUT_INDEX, GENERATE_RAYS_THROUGHPUT_BUFFER,
+		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
     VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants)};
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
+
+	FBuffer ThroughputBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(4 * sizeof(float ) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "ThroughputBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(ThroughputBuffer, "ThroughputBuffer");
 
     FBuffer InitialRaysBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FRayData) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "InitialRaysBuffer");
     RESOURCE_ALLOCATOR()->RegisterBuffer(InitialRaysBuffer, "InitialRaysBuffer");
@@ -44,6 +49,7 @@ FGenerateInitialRays::FGenerateInitialRays(uint32_t WidthIn, uint32_t HeightIn, 
 
 FGenerateInitialRays::~FGenerateInitialRays()
 {
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("ThroughputBuffer");
     RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("InitialRaysBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("PixelIndexBuffer");
 };
@@ -73,6 +79,7 @@ void FGenerateInitialRays::UpdateDescriptorSets()
         UpdateDescriptorSet(GENERATE_RAYS_LAYOUT_INDEX, CAMERA_POSITION_BUFFER, i, CAMERA_SYSTEM()->DeviceBuffer);
 		UpdateDescriptorSet(GENERATE_RAYS_LAYOUT_INDEX, GENERATE_RAYS_PIXEL_INDEX_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("PixelIndexBuffer"));
 		UpdateDescriptorSet(GENERATE_RAYS_LAYOUT_INDEX, GENERATE_RAYS_RENDER_ITERATION_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("RenderIterationBuffer"));
+		UpdateDescriptorSet(GENERATE_RAYS_LAYOUT_INDEX, GENERATE_RAYS_THROUGHPUT_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("ThroughputBuffer"));
     }
 };
 

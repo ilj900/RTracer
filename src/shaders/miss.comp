@@ -77,7 +77,10 @@ void main()
     Phi /= 2.f * 3.14159265357;
     Theta /= 3.14159265357;
 
-    imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(vec3(texture(IBITextureSampler, vec2(Phi, Theta))), 1.f));
+    vec3 SampledColor = vec3(texture(IBITextureSampler, vec2(Phi, Theta)));
+    vec3 ThroughputColor = ThroughputBuffer[NewPixelIndex].xyz;
+
+    imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(SampledColor * ThroughputColor, 1.f));
 
     MarkRayMissed(NewPixelIndex);
     MaterialsIndexAOV[NewPixelIndex] = TOTAL_MATERIALS - 1;

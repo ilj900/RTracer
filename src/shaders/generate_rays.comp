@@ -26,6 +26,11 @@ layout (set = GENERATE_RAYS_LAYOUT_INDEX, binding = GENERATE_RAYS_RENDER_ITERATI
     uint RenderIteration;
 };
 
+layout (set = GENERATE_RAYS_LAYOUT_INDEX, binding = GENERATE_RAYS_THROUGHPUT_BUFFER) buffer ThroughputBufferObject
+{
+    vec4 ThroughputBuffer[];
+};
+
 layout (push_constant) uniform PushConstantsBlock
 {
     FPushConstants PushConstants;
@@ -43,7 +48,8 @@ void main()
         return;
     }
 
-    const vec2 PixelCenter = PixelCoords + CMJ((gl_GlobalInvocationID.x * 227 + 1489 * RenderIteration) % 16, CMJ_GRID_LINEAR_SIZE, CMJ_GRID_LINEAR_SIZE, 227 + 1489 * RenderIteration * gl_GlobalInvocationID.x);
+    FSamplingState SamplingState = FSamplingState(gl_GlobalInvocationID.x, 0, RenderIteration);
+    const vec2 PixelCenter = PixelCoords + Sample2D(SamplingState);
 
     const vec2 InUV = PixelCenter * vec2(PushConstants.InvWidth, PushConstants.InvHeight);
     vec2 D = InUV * 2.0f - 1.f;
@@ -56,5 +62,6 @@ void main()
     float tMax = 10000.f;
 
     RayData[gl_GlobalInvocationID.x] = FRayData(Origin, Direction, 0, tMin, tMax, 0.f);
+    ThroughputBuffer[gl_GlobalInvocationID.x] = vec4(1);
     PixelIndexIndexMap[gl_GlobalInvocationID.x] = gl_GlobalInvocationID.x;
 }
