@@ -37,6 +37,31 @@ uint SelectLayer(FDeviceMaterial Material, float MaterialSample)
 	return COAT_LAYER;
 }
 
+vec3 Transform(vec3 NormalInWorldSpace, vec3 VectorInLocalSpace)
+{
+	vec3 U = (abs(NormalInWorldSpace.x) > 0.9) ? vec3(0, 1, 0) : vec3(1, 0, 0);
+	vec3 V = cross(NormalInWorldSpace, U);
+	U = cross(NormalInWorldSpace, V);
+
+	return VectorInLocalSpace.x * U + VectorInLocalSpace.y * V + VectorInLocalSpace.z * NormalInWorldSpace;
+}
+
+vec3 ScatterDiffuse(vec3 NormalInWorldSpace, FSamplingState SamplingState)
+{
+	vec2 Sample = Sample2D(SamplingState);
+
+	float Phi = Sample.x * M_2_PI;
+	float Theta = acos(1. - (2 * Sample.y));
+
+	vec3 Result;
+
+	Result.x = sin(Phi) * sin(Theta);
+	Result.y = sin(Theta);
+	Result.z = sin(Phi) * cos(Theta);
+
+	return Transform(NormalInWorldSpace, Result);
+}
+
 vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 NormalInWorldSpace, FSamplingState SamplingState)
 {
 	float LayerSample = RandomFloat(SamplingState);
@@ -47,7 +72,8 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 	{
 	case DIFFUSE_LAYER:
 		Color = Material.BaseColor;
-		RayData.Direction.xyz = -reflect(-RayData.Direction.xyz, NormalInWorldSpace);
+		vec3 ReflectionDirection = ScatterDiffuse(NormalInWorldSpace, SamplingState);
+		RayData.Direction.xyz = ReflectionDirection;
 		break;
 	case SPECULAR_LAYER:
 		Color = Material.SpecularColor;

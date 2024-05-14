@@ -5,6 +5,16 @@
 #define UINT_MAX 4294967295
 #endif
 
+#ifndef M_PI
+#define M_PI 3.141592653589
+#endif
+#ifndef M_2_PI
+#define M_2_PI 6.28318530718
+#endif
+#ifndef M_PI_2
+#define M_PI_2 1.57079632679
+#endif
+
 #define MAX_TEXTURES 512
 #define TOTAL_MATERIALS 128 /// 126 Materials + IBL + material for inactive ray
 #define BASIC_CHUNK_SIZE 256
