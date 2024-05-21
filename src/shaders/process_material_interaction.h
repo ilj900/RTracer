@@ -39,27 +39,29 @@ uint SelectLayer(FDeviceMaterial Material, float MaterialSample)
 
 vec3 Transform(vec3 NormalInWorldSpace, vec3 VectorInLocalSpace)
 {
-	vec3 U = (abs(NormalInWorldSpace.x) > 0.9) ? vec3(0, 1, 0) : vec3(1, 0, 0);
-	vec3 V = cross(NormalInWorldSpace, U);
-	U = cross(NormalInWorldSpace, V);
+	vec3 A = (abs(NormalInWorldSpace.x) > 0.0) ? vec3(0, 1, 0) : vec3(1, 0, 0);
+	vec3 V = cross(NormalInWorldSpace, A);
+	vec3 U = cross(NormalInWorldSpace, V);
 
-	return VectorInLocalSpace.x * U + VectorInLocalSpace.y * V + VectorInLocalSpace.z * NormalInWorldSpace;
+	return VectorInLocalSpace.x * U + VectorInLocalSpace.y * NormalInWorldSpace + VectorInLocalSpace.z * V;
 }
 
 vec3 ScatterDiffuse(vec3 NormalInWorldSpace, FSamplingState SamplingState)
 {
-	vec2 Sample = Sample2D(SamplingState);
+	vec2 Sample = vec2(RandomFloat(SamplingState), RandomFloat(SamplingState));
 
 	float Phi = Sample.x * M_2_PI;
-	float Theta = acos(1. - (2 * Sample.y));
+	float Theta = Sample.y * M_PI_2;
 
 	vec3 Result;
 
-	Result.x = sin(Phi) * sin(Theta);
+	Result.z = cos(Theta) * sin(Phi);
 	Result.y = sin(Theta);
-	Result.z = sin(Phi) * cos(Theta);
+	Result.x = cos(Theta) * cos(Phi);
 
-	return Transform(NormalInWorldSpace, Result);
+	Result = Transform(NormalInWorldSpace, normalize(Result));
+
+	return normalize(Result + NormalInWorldSpace);
 }
 
 vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 NormalInWorldSpace, FSamplingState SamplingState)

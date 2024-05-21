@@ -85,7 +85,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 	}
 	else if (Name == "Three Spheres")
 	{
-		auto Sphere = Render->CreateIcosahedronSphere(0.5f, 5, false);
+		auto Sphere = Render->CreateIcosahedronSphere(1.5f, 5, false);
 		auto Sphere1 = Render->CreateInstance(Sphere, {0, -1.5, 1});
 		auto Sphere2 = Render->CreateInstance(Sphere, {1, -1.5, -1});
 		auto Sphere3 = Render->CreateInstance(Sphere, {-1, -1.5, -1});

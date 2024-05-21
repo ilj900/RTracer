@@ -22,9 +22,9 @@
 #endif
 
 ///The selected coordinate system is right handed
-///X positive direction goes to the right
-///Y positive direction goes to the top
-///Z positive direction goes "from the screen"
+///X positive direction goes right
+///Y positive direction goes up
+///Z positive direction goes "from the screen" to "you"
 ///Vector multiplication works as in glsl - componentwise
 
 

@@ -11,13 +11,13 @@ namespace ECS
         {
             FMaterialComponent()
             {
-                BaseWeight = 0.8f;
+                BaseWeight = 1.f;
                 BaseColor = {1, 1, 1};
                 DiffuseRoughness = 0.f;
                 Metalness = 0.f;
                 Normal = {0, 1, 0};
 
-                SpecularWeight = 1.f;
+                SpecularWeight = 0.f;
                 SpecularColor = {1, 1, 1};
                 SpecularRoughness = 0.2f;
                 SpecularIOR = 1.5;
