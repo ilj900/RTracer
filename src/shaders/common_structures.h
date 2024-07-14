@@ -151,6 +151,12 @@ struct FVertex
     FVector2 TexCoord;
 };
 
+struct FDeviceVertex
+{
+	FVector4 A;
+	FVector4 B;
+};
+
 struct FPushConstants
 {
     uint32_t Width;

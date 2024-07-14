@@ -68,12 +68,12 @@ layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_RENDER_ITERATI
 
 layout (buffer_reference, scalar) buffer Vertices
 {
-    FVertex V[];
+    FDeviceVertex V[];
 };
 
 layout (buffer_reference, scalar) buffer Indices
 {
-    ivec3 I[];
+    int I[];
 };
 
 FRenderable FetchRenderable(uint RenderableIndex)
@@ -126,6 +126,20 @@ float SampleFloat(uint TextureIndex, vec2 TextureCoords)
     return texture(sampler2D(Textures[TextureIndex], Sampler), TextureCoords).r;
 }
 
+FVertex UnpackDeviceVertex(FDeviceVertex DV)
+{
+    FVertex V;
+    V.Position.x = DV.A.x;
+    V.Position.y = DV.A.y;
+    V.Position.z = DV.A.z;
+    V.Normal.x = DV.A.w;
+    V.Normal.y = DV.B.x;
+    V.Normal.z = DV.B.y;
+    V.TexCoord.x = DV.B.z;
+    V.TexCoord.y = DV.B.w;
+    return V;
+}
+
 FDeviceMaterial GetMaterial(vec2 TextureCoords);
 
 layout (push_constant) uniform PushConstantsBlock
@@ -169,9 +183,9 @@ void main()
     FDeviceTransform Transform = FetchTransform(Renderable.TransformIndex);
     const vec3 Barycentrics = vec3(1.0 - Hit.HitUV.x - Hit.HitUV.y, Hit.HitUV.x, Hit.HitUV.y);
 
-    FVertex V0;
-    FVertex V1;
-    FVertex V2;
+    FDeviceVertex DV0;
+    FDeviceVertex DV1;
+    FDeviceVertex DV2;
 
     if (IsIndexed(Renderable))
     {
@@ -179,22 +193,25 @@ void main()
         uint I1 = 1;
         uint I2 = 2;
 
-        uvec3 I =  Inds.I[Hit.PrimitiveIndex];
-        I0 = I.x;
-        I1 = I.y;
-        I2 = I.z;
+        I0 = Hit.PrimitiveIndex * 3;
+        I1 = Hit.PrimitiveIndex * 3 + 1;
+        I2 = Hit.PrimitiveIndex * 3 + 2;
 
-        V0 = Verts.V[I0];
-        V1 = Verts.V[I1];
-        V2 = Verts.V[I2];
+        DV0 = Verts.V[I0];
+        DV1 = Verts.V[I1];
+        DV2 = Verts.V[I2];
     }
     else
     {
         uint Index = Hit.PrimitiveIndex * 3;
-        V0 = Verts.V[Index];
-        V1 = Verts.V[Index + 1];
-        V2 = Verts.V[Index + 2];
+        DV0 = Verts.V[Index];
+        DV1 = Verts.V[Index + 1];
+        DV2 = Verts.V[Index + 2];
     }
+
+    FVertex V0 = UnpackDeviceVertex(DV0);
+    FVertex V1 = UnpackDeviceVertex(DV1);
+    FVertex V2 = UnpackDeviceVertex(DV2);
 
     vec3 Normal = vec3(1.f, 1.f, 1.f);
     Normal = V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z;

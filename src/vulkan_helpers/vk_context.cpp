@@ -651,6 +651,11 @@ VkAccelerationStructureGeometryTrianglesDataKHR FVulkanContext::GetAccelerationS
         AccelerationStructureGeometryTrianglesData.indexType = VK_INDEX_TYPE_UINT32;
         AccelerationStructureGeometryTrianglesData.indexData.deviceAddress = GetBufferDeviceAddressInfo(IndexBuffer) + IndexBufferPtr.Offset;
     }
+	else
+	{
+		AccelerationStructureGeometryTrianglesData.indexType = VK_INDEX_TYPE_NONE_KHR;
+	}
+
     AccelerationStructureGeometryTrianglesData.maxVertex = MaxVertices;
 
     return AccelerationStructureGeometryTrianglesData;

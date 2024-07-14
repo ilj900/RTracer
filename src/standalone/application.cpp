@@ -74,7 +74,7 @@ int FApplication::Run()
 		SceneLoader->UpdateScene(DeltaTime, Time);
 		Controller->Update(DeltaTime);
 		Render->Update();
-		Swapchain->GetNextImage( ImageIndex);
+		auto ImageReadySemaphore = Swapchain->GetNextImage( ImageIndex);
 		auto RenderingFinished = Render->Render(ImageIndex);
 		Swapchain->Present(RenderingFinished, ImageIndex);
 		WindowManager->PollEvents();
