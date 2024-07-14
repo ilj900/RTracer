@@ -446,7 +446,6 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 	SynchronizationPoint = AccumulateTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
-	std::vector<VkFence> FencesToSignal;
 	/// If no external work to be done, then use the internal fence in passthrough
 	if (ExternalTasks.empty())
 	{
@@ -466,6 +465,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 		SynchronizationPoint = ExternalTasks.back()->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 	}
 
+	SynchronizationPoint.FencesToWait.push_back(ImagesInFlight[CurrentFrame]);
 	ImageAvailable[CurrentFrame] = SynchronizationPoint;
 
     RenderFrameIndex++;
@@ -494,6 +494,14 @@ int FRender::Update()
 void FRender::WaitIdle()
 {
 	VK_CONTEXT()->WaitIdle();
+}
+
+void FRender::Wait(FSynchronizationPoint& SynchronizationPoint)
+{
+	if(!SynchronizationPoint.FencesToWait.empty())
+	{
+		vkWaitForFences(VK_CONTEXT()->LogicalDevice, SynchronizationPoint.FencesToWait.size(), SynchronizationPoint.FencesToWait.data(), VK_TRUE, UINT64_MAX);
+	}
 }
 
 ECS::FEntity FRender::CreateTexture(const std::string& FilePath)

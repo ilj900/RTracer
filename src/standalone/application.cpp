@@ -46,6 +46,8 @@ int FApplication::Run()
 	uint32_t ImageIndex = UINT32_MAX;
 	SceneLoader->LoadScene("Three Spheres");
 
+	FSynchronizationPoint RenderingFinished;
+
     while (!WindowManager->ShouldClose())
     {
 		if (bSwapchainWasResized)
@@ -74,8 +76,9 @@ int FApplication::Run()
 		SceneLoader->UpdateScene(DeltaTime, Time);
 		Controller->Update(DeltaTime);
 		Render->Update();
+		Render->Wait(RenderingFinished);
 		auto ImageReadySemaphore = Swapchain->GetNextImage( ImageIndex);
-		auto RenderingFinished = Render->Render(ImageIndex);
+		RenderingFinished = Render->Render(ImageIndex);
 		Swapchain->Present(RenderingFinished, ImageIndex);
 		WindowManager->PollEvents();
     }

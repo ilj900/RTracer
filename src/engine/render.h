@@ -59,6 +59,7 @@ public:
     FSynchronizationPoint Render(uint32_t OutputImageIndex);
     int Update();
 	void WaitIdle();
+	void Wait(FSynchronizationPoint& SynchronizationPoint);
 
     ECS::FEntity CreateTexture(const std::string& FilePath);
     ECS::FEntity CreateMaterial(const FVector3& BaseColor);
