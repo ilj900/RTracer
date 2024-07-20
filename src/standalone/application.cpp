@@ -44,7 +44,7 @@ FApplication::~FApplication()
 int FApplication::Run()
 {
 	uint32_t ImageIndex = UINT32_MAX;
-	SceneLoader->LoadScene("Three Spheres");
+	SceneLoader->LoadScene("Cornell Box Animated");
 
 	FSynchronizationPoint RenderingFinished;
 

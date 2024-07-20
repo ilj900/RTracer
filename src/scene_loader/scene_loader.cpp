@@ -83,6 +83,52 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		};
 
 	}
+	else if (Name == "Cornell Box Animated")
+	{
+		auto Wall = Render->CreatePlane({4, 4});
+		auto Sphere = Render->CreateIcosahedronSphere(0.5f, 5, false);
+		auto Cube = Render->CreateCube();
+
+		auto BackWall = Render->CreateInstance(Wall, {0, 0, -2}, {0, 0, -1}, {0, 1, 0});
+		auto TopWall = Render->CreateInstance(Wall, {0, 2, 0}, {0, -1, 0}, {0, 0, 1});
+		auto BottomWall = Render->CreateInstance(Wall, {0, -2, 0}, {0, 1, 0}, {0, 0, -1});
+		auto LeftWall = Render->CreateInstance(Wall, {-2, 0, 0}, {1, 0, 0}, {0, 1, 0});
+		auto RightWall = Render->CreateInstance(Wall, {2, 0, 0}, {-1, 0, 0}, {0, 1, 0});
+		auto Sphere1 = Render->CreateInstance(Sphere, {0, -1.5, 1});
+		auto Sphere2 = Render->CreateInstance(Sphere, {1, -1.5, -1});
+		auto Sphere3 = Render->CreateInstance(Sphere, {-1, -1.5, -1});
+		Instances.emplace_back(Render->CreateInstance(Cube, {0, 0, 0}));
+
+		auto WhiteMaterial = Render->CreateMaterial({1, 1, 1});
+		auto RedMaterial = Render->CreateMaterial({1, 0, 0});
+		auto GreenMaterial = Render->CreateMaterial({0, 1, 0});
+		auto GlassMaterial = Render->CreateMaterial({0, 1, 1});
+		auto DiffuseMaterial = Render->CreateMaterial({1, 1, 0});
+		auto PlasticMaterial = Render->CreateMaterial({1, 0, 1});
+
+		Render->ShapeSetMaterial(BackWall, WhiteMaterial);
+		Render->ShapeSetMaterial(TopWall, WhiteMaterial);
+		Render->ShapeSetMaterial(BottomWall, WhiteMaterial);
+		Render->ShapeSetMaterial(LeftWall, RedMaterial);
+		Render->ShapeSetMaterial(RightWall, GreenMaterial);
+		Render->ShapeSetMaterial(Sphere1, GlassMaterial);
+		Render->ShapeSetMaterial(Sphere2, DiffuseMaterial);
+		Render->ShapeSetMaterial(Sphere3, PlasticMaterial);
+		Render->ShapeSetMaterial(Instances.back(), PlasticMaterial);
+
+		auto Light = Render->CreateLight({0, 1.95, 0});
+
+		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
+
+		Updater = [&](float, float CurrentTime)
+		{
+			auto NewInstanceCoordinates = Render->GetInstancePosition(Instances.back());
+			float R = sqrt(NewInstanceCoordinates.X * NewInstanceCoordinates.X + NewInstanceCoordinates.Z * NewInstanceCoordinates.Z);
+			NewInstanceCoordinates.Y = sin((R / 4 + CurrentTime)) * 2;
+			Render->SetInstancePosition(Instances.back(), NewInstanceCoordinates);
+		};
+
+	}
 	else if (Name == "Three Spheres")
 	{
 		auto Sphere = Render->CreateIcosahedronSphere(1.5f, 5, false);
