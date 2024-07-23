@@ -33,7 +33,7 @@ layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_MATERIAL_INDEX_BUFFER) b
 FRayData FetchRayData(uint RayIndex)
 {
     return RayData[RayIndex];
-}
+};
 
 void main()
 {

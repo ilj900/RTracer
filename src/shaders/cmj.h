@@ -78,9 +78,10 @@ vec2 Sample2D(FSamplingState SamplingState)
 	return CMJ(Hash % CMJ_TOTAL_GRID_SIZE, CMJ_GRID_LINEAR_SIZE, CMJ_GRID_LINEAR_SIZE, Hash);
 }
 
-float RandomFloat(FSamplingState SamplingState)
+float RandomFloat(inout FSamplingState SamplingState)
 {
 	uint Hash = 227 + SamplingState.Seed * 1489 + SamplingState.Bounce * 1399 + SamplingState.SampleIndex * 401;
+	SamplingState.SampleIndex += 1;
 	return RandomFloat(0, Hash);
 }
 

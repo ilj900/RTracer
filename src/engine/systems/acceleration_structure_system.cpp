@@ -20,11 +20,6 @@ namespace ECS
         {
             FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(COMPONENTS::FMeshInstanceComponent) * MAX_INSTANCE_COUNT,
                                        VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Acceleration_Structure");
-
-            for (uint32_t i = 0; i < MAX_INSTANCE_COUNT; ++i)
-            {
-                AvailableIndices.push(i);
-            }
         }
 
         void FAccelerationStructureSystem::Terminate()
@@ -81,20 +76,18 @@ namespace ECS
             DeviceRenderableComponent.MeshIndex = Entity;
 
             auto& ModelMatrix = COORDINATOR().GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(NewMeshInstance).ModelMatrix.Data;
-            uint32_t NewIndex = AvailableIndices.front();
-            AvailableIndices.pop();
             auto& BLAS = GetComponent<ECS::COMPONENTS::FAccelerationStructureComponent>(Entity);
 
-            COMPONENTS::FMeshInstanceComponent MeshInstanceComponent{};
+			COORDINATOR().AddComponent<ECS::COMPONENTS::FMeshInstanceComponent>(NewMeshInstance, {});
+            auto& MeshInstanceComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FMeshInstanceComponent>(NewMeshInstance);
             MeshInstanceComponent.transform = { ModelMatrix[0].X, ModelMatrix[1].X, ModelMatrix[2].X, ModelMatrix[3].X,
                                                 ModelMatrix[0].Y, ModelMatrix[1].Y, ModelMatrix[2].Y, ModelMatrix[3].Y,
                                                 ModelMatrix[0].Z, ModelMatrix[1].Z, ModelMatrix[2].Z, ModelMatrix[3].Z,};
-            MeshInstanceComponent.instanceCustomIndex = NewIndex;
+            MeshInstanceComponent.instanceCustomIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FMeshInstanceComponent>(NewMeshInstance);
             MeshInstanceComponent.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
             MeshInstanceComponent.mask = 0xFF;
             MeshInstanceComponent.accelerationStructureReference = VK_CONTEXT()->GetASDeviceAddressInfo(BLAS.AccelerationStructure);
             MeshInstanceComponent.instanceShaderBindingTableRecordOffset = 0;
-            COORDINATOR().AddComponent<ECS::COMPONENTS::FMeshInstanceComponent>(NewMeshInstance, MeshInstanceComponent);
 
             MarkDirty(NewMeshInstance);
             bIsDirty = true;

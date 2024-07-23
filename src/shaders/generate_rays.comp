@@ -41,14 +41,14 @@ layout (local_size_x = BASIC_CHUNK_SIZE, local_size_y = 1, local_size_z = 1) in;
 void main()
 {
     uint PixelIndex = gl_GlobalInvocationID.x;
-    uvec2 PixelCoords = uvec2(gl_GlobalInvocationID.x % PushConstants.Width, gl_GlobalInvocationID.x / PushConstants.Width);
+    uvec2 PixelCoords = uvec2(PixelIndex % PushConstants.Width, PixelIndex / PushConstants.Width);
 
     if (PixelIndex >= PushConstants.TotalSize)
     {
         return;
     }
 
-    FSamplingState SamplingState = FSamplingState(gl_GlobalInvocationID.x, 0, RenderIteration);
+    FSamplingState SamplingState = FSamplingState(PixelIndex, 0, RenderIteration);
     const vec2 PixelCenter = PixelCoords + Sample2D(SamplingState);
 
     const vec2 InUV = PixelCenter * vec2(PushConstants.InvWidth, PushConstants.InvHeight);
@@ -61,7 +61,7 @@ void main()
     float tMin = 0.001f;
     float tMax = 10000.f;
 
-    RayData[gl_GlobalInvocationID.x] = FRayData(Origin, Direction, 0, tMin, tMax, 0.f);
-    ThroughputBuffer[gl_GlobalInvocationID.x] = vec4(1);
-    PixelIndexIndexMap[gl_GlobalInvocationID.x] = gl_GlobalInvocationID.x;
+    RayData[PixelIndex] = FRayData(Origin, Direction, 0, tMin, tMax, 0.f);
+    ThroughputBuffer[PixelIndex] = vec4(1);
+    PixelIndexIndexMap[PixelIndex] = PixelIndex;
 }

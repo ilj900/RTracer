@@ -51,13 +51,13 @@ vec3 ScatterDiffuse(vec3 NormalInWorldSpace, FSamplingState SamplingState)
 	vec2 Sample = vec2(RandomFloat(SamplingState), RandomFloat(SamplingState));
 
 	float Phi = Sample.x * M_2_PI;
-	float Theta = Sample.y * M_PI_2;
+	float Theta = Sample.y * M_PI;
 
 	vec3 Result;
 
-	Result.z = cos(Theta) * sin(Phi);
-	Result.y = sin(Theta);
-	Result.x = cos(Theta) * cos(Phi);
+	Result.z = sin(Theta) * cos(Phi);
+	Result.y = cos(Theta);
+	Result.x = sin(Theta) * sin(Phi);
 
 	Result = Transform(NormalInWorldSpace, normalize(Result));
 

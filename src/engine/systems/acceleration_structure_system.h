@@ -27,7 +27,6 @@ namespace ECS
             void UpdateTLAS();
 
             const uint32_t MAX_INSTANCE_COUNT = 512u * 1024u;
-            std::queue<uint32_t> AvailableIndices;
 
             FAccelerationStructure TLAS = {};
 
