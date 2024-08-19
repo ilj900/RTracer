@@ -146,6 +146,23 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
 	}
+	else if (Name == "Big Plane")
+	{
+		auto Wall = Render->CreatePlane({100, 100});
+		auto BackWall = Render->CreateInstance(Wall, {0, 0, -2}, {0, 0, -1}, {0, 1, 0});
+		auto BackWall1 = Render->CreateInstance(Wall, {0, 0, -3}, {0, 0, -1}, {0, 1, 0});
+		auto BackWall2 = Render->CreateInstance(Wall, {0, 0, -4}, {0, 0, -1}, {0, 1, 0});
+		auto BackWall3 = Render->CreateInstance(Wall, {0, 0, -5}, {0, 0, -1}, {0, 1, 0});
+
+		auto RedMaterial = Render->CreateMaterial({1, 0, 0});
+
+		Render->ShapeSetMaterial(BackWall, RedMaterial);
+		Render->ShapeSetMaterial(BackWall1, RedMaterial);
+		Render->ShapeSetMaterial(BackWall2, RedMaterial);
+		Render->ShapeSetMaterial(BackWall3, RedMaterial);
+
+		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
+	}
 	else
 	{
 		throw std::runtime_error("Scene not found");
