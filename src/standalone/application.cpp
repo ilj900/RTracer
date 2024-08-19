@@ -44,7 +44,7 @@ FApplication::~FApplication()
 int FApplication::Run()
 {
 	uint32_t ImageIndex = UINT32_MAX;
-	SceneLoader->LoadScene("Cornell Box Animated");
+	SceneLoader->LoadScene(SCENE_BIG_PLANE);
 
 	FSynchronizationPoint RenderingFinished;
 

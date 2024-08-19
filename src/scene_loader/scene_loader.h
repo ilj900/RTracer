@@ -4,6 +4,12 @@
 
 #include "render.h"
 
+#define SCENE_BIG_PLANE "Big Plane"
+#define SCENE_THREE_SPHERES "Three Spheres"
+#define SCENE_CORNELL_BOX_ANIMATED "Cornell Box Animated"
+#define SCENE_CORNELL_BOX "Cornell Box"
+#define SCENE_FLOATING_SPHERES "Floating spheres"
+
 class FSceneLoader
 {
 public:
