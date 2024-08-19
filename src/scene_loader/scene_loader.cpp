@@ -146,11 +146,11 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
 	}
-	else if (Name == SCENE_BIG_PLANE)
+	else if (Name == SCENE_BIG_PLANES)
 	{
 		auto Wall = Render->CreatePlane({100, 100});
-		auto BackWall = Render->CreateInstance(Wall, {0, 0, 4}, {0, 0, -1}, {0, 1, 0});
 		auto BackWall1 = Render->CreateInstance(Wall, {0, 0, 3}, {0, 0, -1}, {0, 1, 0});
+		auto BackWall = Render->CreateInstance(Wall, {0, 0, 4}, {0, 0, -1}, {0, 1, 0});
 
 		auto RedMaterial = Render->CreateMaterial({1, 0, 0});
 		auto GreenMaterial = Render->CreateMaterial({0, 1, 0});

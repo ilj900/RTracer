@@ -4,7 +4,7 @@
 
 #include "render.h"
 
-#define SCENE_BIG_PLANE "Big Plane"
+#define SCENE_BIG_PLANES "Big Planes"
 #define SCENE_THREE_SPHERES "Three Spheres"
 #define SCENE_CORNELL_BOX_ANIMATED "Cornell Box Animated"
 #define SCENE_CORNELL_BOX "Cornell Box"
