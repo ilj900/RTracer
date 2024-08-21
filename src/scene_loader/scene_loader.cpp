@@ -160,6 +160,26 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
 	}
+	else if (Name == SCENE_COORDINATE_SYSTEM_REMINDER)
+	{
+		auto Sphere = Render->CreateUVSphere(32, 16);
+		auto SphereX = Render->CreateInstance(Sphere, {3, 0, 0}, {1, 0, 0}, {0, 1, 0});
+		auto SphereY = Render->CreateInstance(Sphere, {0, 3, 0}, {1, 0, 0}, {0, 1, 0});
+		auto SphereZ = Render->CreateInstance(Sphere, {0, 0, 3}, {1, 0, 0}, {0, 1, 0});
+		auto SphereC = Render->CreateInstance(Sphere, {0, 0, 0}, {1, 0, 0}, {0, 1, 0});
+
+		auto RedMaterial = Render->CreateMaterial({1, 0, 0});
+		auto GreenMaterial = Render->CreateMaterial({0, 1, 0});
+		auto BlueMaterial = Render->CreateMaterial({0, 0, 1});
+		auto WhiteMaterial = Render->CreateMaterial({1, 1, 1});
+
+		Render->ShapeSetMaterial(SphereX, RedMaterial);
+		Render->ShapeSetMaterial(SphereY, GreenMaterial);
+		Render->ShapeSetMaterial(SphereZ, BlueMaterial);
+		Render->ShapeSetMaterial(SphereC, WhiteMaterial);
+
+		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
+	}
 	else
 	{
 		throw std::runtime_error("Scene not found");

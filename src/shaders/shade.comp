@@ -193,9 +193,9 @@ void main()
         uint I1 = 1;
         uint I2 = 2;
 
-        I0 = Hit.PrimitiveIndex * 3;
-        I1 = Hit.PrimitiveIndex * 3 + 1;
-        I2 = Hit.PrimitiveIndex * 3 + 2;
+        I0 = Inds.I[Hit.PrimitiveIndex * 3];
+        I1 = Inds.I[Hit.PrimitiveIndex * 3 + 1];
+        I2 = Inds.I[Hit.PrimitiveIndex * 3 + 2];
 
         DV0 = Verts.V[I0];
         DV1 = Verts.V[I1];
@@ -215,7 +215,10 @@ void main()
 
     vec3 Normal = vec3(1.f, 1.f, 1.f);
     Normal = V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z;
+    vec3 GeometricNormal = vec3(1.f, 1.f, 1.f);
+    GeometricNormal = normalize(cross((V1.Position - V0.Position), (V2.Position - V0.Position)));
     vec3 NormalInWorldSpace = Normal * mat3(Transform.InverseModelMatrix);
+
     vec3 PointOfIntersectionInLocalSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
     vec3 PointOfIntersectionInWorldSpace = vec3(Transform.ModelMatrix * vec4(PointOfIntersectionInLocalSpace, 1.f));
 

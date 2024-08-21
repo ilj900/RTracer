@@ -71,7 +71,7 @@ void FClearImageTask::RecordCommands()
                                     0, 1, &RayTracingDescriptorSet, 0, nullptr);
 
 			uint32_t GroupCount = CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE);
-			FPushConstants PushConstants = {Width, Height, 1.f / float(Width), 1.f / float(Height), Width * Height, 0};
+			FPushConstants PushConstants = {Width, Height, 1.f / float(Width), 1.f / float(Height), Width * Height, 0, 0};
 			vkCmdPushConstants(CommandBuffer, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
 
             vkCmdDispatch(CommandBuffer, GroupCount, 1, 1);
