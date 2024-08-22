@@ -168,6 +168,7 @@ void main()
 
     uvec2 NewPixelCoords = uvec2(NewPixelIndex % PushConstants.Width, NewPixelIndex / PushConstants.Width);
 
+
     FRayData RayData = FetchRayData(NewPixelIndex);
 
     if ((RayData.RayFlags & RAY_DATA_RAY_MISSED) == RAY_DATA_RAY_MISSED)
@@ -218,6 +219,12 @@ void main()
     vec3 GeometricNormal = vec3(1.f, 1.f, 1.f);
     GeometricNormal = normalize(cross((V1.Position - V0.Position), (V2.Position - V0.Position)));
     vec3 NormalInWorldSpace = Normal * mat3(Transform.InverseModelMatrix);
+
+    // Invert normal if it's back facing
+    if (dot(GeometricNormal, RayData.Direction.xyz) < 0)
+    {
+        NormalInWorldSpace = -NormalInWorldSpace;
+    }
 
     vec3 PointOfIntersectionInLocalSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
     vec3 PointOfIntersectionInWorldSpace = vec3(Transform.ModelMatrix * vec4(PointOfIntersectionInLocalSpace, 1.f));
