@@ -44,7 +44,7 @@ FApplication::~FApplication()
 int FApplication::Run()
 {
 	uint32_t ImageIndex = UINT32_MAX;
-	SceneLoader->LoadScene(SCENE_BIG_PLANES);
+	SceneLoader->LoadScene(SCENE_THREE_SPHERES);
 
 	FSynchronizationPoint RenderingFinished;
 

@@ -406,6 +406,8 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	if (bAnyUpdate || RenderFrameIndex == 0)
 	{
 		SynchronizationPoint = ResetTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
+
+		SynchronizationPoint = ClearImageTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 	}
 
 	SynchronizationPoint = GenerateRaysTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
@@ -437,14 +439,9 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 		SynchronizationPoint = MissTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 	}
 
-	SynchronizationPoint = AdvanceRenderCountTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
-
-    if (bAnyUpdate)
-    {
-		SynchronizationPoint = ClearImageTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
-    }
-
 	SynchronizationPoint = AccumulateTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
+
+	SynchronizationPoint = AdvanceRenderCountTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
 	/// If no external work to be done, then use the internal fence in passthrough
 	if (ExternalTasks.empty())
