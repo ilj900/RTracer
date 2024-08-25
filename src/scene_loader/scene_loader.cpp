@@ -144,7 +144,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		Render->ShapeSetMaterial(Sphere2, DiffuseMaterial);
 		Render->ShapeSetMaterial(Sphere3, PlasticMaterial);
 
-		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
+		Render->SetIBL("../../../resources/hdr_image.exr");
 	}
 	else if (Name == SCENE_BIG_PLANES)
 	{
@@ -158,7 +158,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		Render->ShapeSetMaterial(BackWall1, RedMaterial);
 		Render->ShapeSetMaterial(BackWall, GreenMaterial);
 
-		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
+		Render->SetIBL("../../../resources/hdr_image.exr");
 	}
 	else if (Name == SCENE_COORDINATE_SYSTEM_REMINDER)
 	{
