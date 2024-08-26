@@ -91,7 +91,7 @@ void FShadeTask::Init()
         MaterialIndexToPipelineMap[MaterialIndex] = VK_CONTEXT()->CreateComputePipeline(ShadeShader(), PipelineLayout);
     }
 
-    MaterialTextureSampler = VK_CONTEXT()->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT);
+    MaterialTextureSampler = VK_CONTEXT()->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT, VK_FILTER_LINEAR);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
     DescriptorSetManager->ReserveDescriptorSet(Name, COMPUTE_SHADE_LAYOUT_INDEX, TotalSize);

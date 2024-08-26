@@ -38,7 +38,7 @@ void FPassthroughTask::Init()
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
-    Sampler = VK_CONTEXT()->CreateTextureSampler(VK_CONTEXT()->MipLevels);
+    Sampler = VK_CONTEXT()->CreateTextureSampler(VK_CONTEXT()->MipLevels, VK_FILTER_LINEAR);
 
     auto VertexShader = FShader("../../../src/shaders/passthrough.vert");
     auto FragmentShader = FShader("../../../src/shaders/passthrough.frag");

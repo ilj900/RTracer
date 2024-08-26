@@ -12,7 +12,8 @@ layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_RAYS_BUFFER_INDE
     FRayData RayData[];
 };
 
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_IBL_IMAGE_INDEX) uniform sampler2D IBITextureSampler;
+layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_IBL_IMAGE_SAMPLER_LINEAR_INDEX) uniform sampler2D IBITextureSamplerLinear;
+layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_IBL_IMAGE_SAMPLER_NEAREST_INDEX) uniform sampler2D IBITextureSamplerNearest;
 
 layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_MATERIAL_INDEX_MAP) buffer readonly MaterialIndexBufferObject
 {
@@ -77,7 +78,17 @@ void main()
     Phi /= 2.f * 3.14159265357;
     Theta /= 3.14159265357;
 
-    vec3 SampledColor = vec3(texture(IBITextureSampler, vec2(Phi, Theta)));
+    vec3 SampledColor = vec3(1, 0, 1);
+
+    if (PushConstants.BounceIndex == 0)
+    {
+        SampledColor = vec3(texture(IBITextureSamplerLinear, vec2(Phi, Theta)));
+    }
+    else
+    {
+        SampledColor = vec3(texture(IBITextureSamplerNearest, vec2(Phi, Theta)));
+    }
+
     vec3 ThroughputColor = ThroughputBuffer[NewPixelIndex].xyz;
 
     imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(SampledColor * ThroughputColor, 1.f));

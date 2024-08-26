@@ -1560,19 +1560,19 @@ bool FVulkanContext::HasStensilComponent(VkFormat Format)
     return Format == VK_FORMAT_D32_SFLOAT_S8_UINT || Format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-VkSampler FVulkanContext::CreateTextureSampler(uint32_t MipLevel)
+VkSampler FVulkanContext::CreateTextureSampler(uint32_t MipLevel, VkFilter Filter)
 {
+	VkPhysicalDeviceProperties Properties{};
+	vkGetPhysicalDeviceProperties(PhysicalDevice, &Properties);
+
     VkSamplerCreateInfo SamplerInfo{};
     SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    SamplerInfo.magFilter = VK_FILTER_LINEAR;
-    SamplerInfo.minFilter = VK_FILTER_LINEAR;
+    SamplerInfo.magFilter = Filter;
+    SamplerInfo.minFilter = Filter;
     SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     SamplerInfo.anisotropyEnable = VK_TRUE;
-
-    VkPhysicalDeviceProperties Properties{};
-    vkGetPhysicalDeviceProperties(PhysicalDevice, &Properties);
     SamplerInfo.maxAnisotropy = Properties.limits.maxSamplerAnisotropy;
     SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
     SamplerInfo.unnormalizedCoordinates = VK_FALSE;

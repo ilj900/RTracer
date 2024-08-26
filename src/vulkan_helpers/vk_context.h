@@ -113,7 +113,7 @@ public:
     template <typename T>
     void FetchImageData(const FImage& Image, std::vector<T>& Data);
 
-    VkSampler CreateTextureSampler(uint32_t MipLevel);
+    VkSampler CreateTextureSampler(uint32_t MipLevel, VkFilter Filter);
 
     VkFramebuffer CreateFramebuffer(uint32_t Width, uint32_t Height, std::vector<ImagePtr> Images, VkRenderPass RenderPass, const std::string& debug_name) const;
 
