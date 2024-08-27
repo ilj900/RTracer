@@ -1,5 +1,6 @@
 #include "application.h"
 #include "controller.h"
+#include "utility_functions.h"
 #include "window_manager.h"
 
 FWindowManager::FWindowManager(uint32_t& WidthIn, uint32_t& HeightIn, bool bFullscreenIn, FApplication* ApplicationIn, const std::string& NameIn) : Width(WidthIn), Height(HeightIn), bFullscreen(bFullscreenIn), Application(ApplicationIn), Name(NameIn)
@@ -94,9 +95,22 @@ void FWindowManager::KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, i
         {
             if (Action == GLFW_PRESS)
             {
+				auto* WindowManager = (FWindowManager*)glfwGetWindowUserPointer(Window);
+				SaveCamera(WindowManager->Controller->Camera, "Test");
             }
             break;
         }
+
+		case GLFW_KEY_I:
+		{
+			if (Action == GLFW_PRESS)
+			{
+				auto* WindowManager = (FWindowManager*)glfwGetWindowUserPointer(Window);
+				LoadCamera(WindowManager->Controller->Camera, "Test");
+			}
+			break;
+		}
+
     }
 }
 

@@ -3,6 +3,7 @@ set(INCLUDE
         controller.h
         swapchain.h
         task_imgui.h
+        utility_functions.h
         window_manager.h)
 
 set(SOURCE
@@ -11,6 +12,7 @@ set(SOURCE
         main.cpp
         swapchain.cpp
         task_imgui.cpp
+        utility_functions.cpp
         window_manager.cpp)
 
 add_executable(RTracer ${SOURCE} ${INCLUDE})

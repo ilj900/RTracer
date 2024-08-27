@@ -21,9 +21,11 @@ void main()
     ivec2 UV = ivec2(gl_GlobalInvocationID.x % PushConstants.Width, gl_GlobalInvocationID.x / PushConstants.Width);
 
     vec4 AccumulatedValue = imageLoad(AccumulatorImage, UV);
-    vec4 IncomingValue = imageLoad(IncomingImage, UV);
+    vec3 IncomingValue = imageLoad(IncomingImage, UV).xyz;
+    IncomingValue = IncomingValue / (vec3(1) + IncomingValue);
+    IncomingValue = pow(IncomingValue, vec3(1.f / 2.2f));
 
-    AccumulatedValue += vec4(IncomingValue.xyz, 1.f);
+    AccumulatedValue += vec4(IncomingValue, 1.f);
     vec3 EstimatedValue = AccumulatedValue.xyz / AccumulatedValue.w;
 
     imageStore(AccumulatorImage, UV, AccumulatedValue);

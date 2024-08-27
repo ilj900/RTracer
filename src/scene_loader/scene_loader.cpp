@@ -148,9 +148,9 @@ void FSceneLoader::LoadScene(const std::string& Name)
 	}
 	else if (Name == SCENE_BIG_PLANES)
 	{
-		auto Wall = Render->CreatePlane({100, 100});
-		auto BackWall1 = Render->CreateInstance(Wall, {0, 0, 3}, {0, 0, -1}, {0, 1, 0});
-		auto BackWall = Render->CreateInstance(Wall, {0, 0, 4}, {0, 0, -1}, {0, 1, 0});
+		auto Wall = Render->CreatePlane({10, 10});
+		auto BackWall1 = Render->CreateInstance(Wall, {0, 0, 0}, {0, 0, -1}, {0, 1, 0});
+		auto BackWall = Render->CreateInstance(Wall, {0, 0, 1}, {0, 0, -1}, {0, 1, 0});
 
 		auto RedMaterial = Render->CreateMaterial({1, 0, 0});
 		auto GreenMaterial = Render->CreateMaterial({0, 1, 0});

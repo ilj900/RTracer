@@ -1,5 +1,5 @@
-#include "controller.h"
 #include "systems/camera_system.h"
+#include "controller.h"
 
 FController::FController(std::shared_ptr<FRender> RenderIn)
 {
