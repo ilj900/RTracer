@@ -73,15 +73,9 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		Render->ShapeSetMaterial(Sphere2, DiffuseMaterial);
 		Render->ShapeSetMaterial(Sphere3, PlasticMaterial);
 
-		auto Light = Render->CreateLight({0, 1.95, 0});
+		//auto Light = Render->CreateLight({0, 1.95, 0});
 
 		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
-
-		Updater = [&](float, float)
-		{
-			Render->SetIBL("../../../resources/the_sky_is_on_fire_4k.exr");
-		};
-
 	}
 	else if (Name == SCENE_CORNELL_BOX_ANIMATED)
 	{

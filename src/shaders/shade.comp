@@ -237,11 +237,6 @@ void main()
     RayData.Origin.xyz = PointOfIntersectionInWorldSpace + RayData.Direction.xyz * 0.000001f;;
 
     ThroughputBuffer[NewPixelIndex].xyz = ThroughputBuffer[NewPixelIndex].xyz * SamplingResult;
-
-    if (PushConstants.BounceIndex == LAST_BOUNCE)
-    {
-        imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(ThroughputBuffer[NewPixelIndex].xyz, 1.f));
-    }
     
     ///FLight Light = FetchLightData(0);
     ///vec3 PointOfIntersectioToLightDirection = Light.Position - PointOfIntersectionInWorldSpace;
