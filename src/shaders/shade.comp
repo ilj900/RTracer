@@ -168,7 +168,6 @@ void main()
 
     uvec2 NewPixelCoords = uvec2(NewPixelIndex % PushConstants.Width, NewPixelIndex / PushConstants.Width);
 
-
     FRayData RayData = FetchRayData(NewPixelIndex);
 
     if ((RayData.RayFlags & RAY_DATA_RAY_MISSED) == RAY_DATA_RAY_MISSED)
@@ -216,16 +215,11 @@ void main()
 
     vec3 Normal = vec3(1.f, 1.f, 1.f);
     Normal = V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z;
-    vec3 GeometricNormal = vec3(1.f, 1.f, 1.f);
-    vec3 V0WorldSpacePosition = vec3(Transform.ModelMatrix * vec4(V0.Position, 1.f));
-    vec3 V1WorldSpacePosition = vec3(Transform.ModelMatrix * vec4(V1.Position, 1.f));
-    vec3 V2WorldSpacePosition = vec3(Transform.ModelMatrix * vec4(V2.Position, 1.f));
 
-    GeometricNormal = normalize(cross((V1WorldSpacePosition - V0WorldSpacePosition), (V2WorldSpacePosition - V0WorldSpacePosition)));
     vec3 NormalInWorldSpace = Normal * mat3(Transform.InverseModelMatrix);
 
     // Invert normal if it's back facing
-    if (dot(GeometricNormal, RayData.Direction.xyz) > 0)
+    if (dot(NormalInWorldSpace, RayData.Direction.xyz) > 0)
     {
         NormalInWorldSpace = -NormalInWorldSpace;
     }
@@ -241,7 +235,7 @@ void main()
     RayData.Origin.xyz = PointOfIntersectionInWorldSpace + RayData.Direction.xyz * 0.000001f;;
 
     ThroughputBuffer[NewPixelIndex].xyz = ThroughputBuffer[NewPixelIndex].xyz * SamplingResult;
-    
+
     ///FLight Light = FetchLightData(0);
     ///vec3 PointOfIntersectioToLightDirection = Light.Position - PointOfIntersectionInWorldSpace;
     ///float CosNormalToLightAngle = dot(normalize(PointOfIntersectioToLightDirection), Normal);
