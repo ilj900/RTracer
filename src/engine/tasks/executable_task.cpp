@@ -79,22 +79,24 @@ void FExecutableTask::FreeSyncObjects()
     SignalSemaphores.clear();
 }
 
-void FExecutableTask::RegisterInput(int Index, ImagePtr Image)
+void FExecutableTask::RegisterInput(const std::string& InputName, ImagePtr Image)
 {
-    if (Inputs.size() <= Index)
+    if (Inputs.find(InputName) != Inputs.end())
     {
-        Inputs.resize(Index + 1);
+		throw std::runtime_error("An attempt to override an existing Input");
     }
-    Inputs[Index] = std::move(Image);
+
+    Inputs[InputName] = std::move(Image);
 }
 
-void FExecutableTask::RegisterOutput(int Index, ImagePtr Image)
+void FExecutableTask::RegisterOutput(const std::string& InputName, ImagePtr Image)
 {
-    if (Outputs.size() <= Index)
-    {
-        Outputs.resize(Index + 1);
-    }
-    Outputs[Index] = std::move(Image);
+	if (Inputs.find(InputName) != Inputs.end())
+	{
+		throw std::runtime_error("An attempt to override an existing Output");
+	}
+
+    Outputs[InputName] = std::move(Image);
 }
 
 void FExecutableTask::Reload()
@@ -200,22 +202,23 @@ VkPipelineStageFlags FExecutableTask::GetPipelineStageFlags()
     return PipelineStageFlags;
 }
 
-ImagePtr FExecutableTask::GetInput(int Index)
+ImagePtr FExecutableTask::GetInput(const std::string& InputName)
 {
-    if (Inputs.size() > Index)
-    {
-        return Inputs[Index];
-    }
-    throw std::runtime_error("Wrong input index.");
+	if (Inputs.find(InputName) != Inputs.end())
+	{
+		return Inputs[InputName];
+	}
+
+    throw std::runtime_error("No image registered for the input " + InputName);
 }
 
-ImagePtr FExecutableTask::GetOutput(int Index)
+ImagePtr FExecutableTask::GetOutput(const std::string& InputName)
 {
-    if (Outputs.size() > Index)
+	if (Outputs.find(InputName) != Outputs.end())
     {
-        return Outputs[Index];
+        return Outputs[InputName];
     }
-    throw std::runtime_error("Wrong output index.");
+    throw std::runtime_error("No image registered for the output " + InputName);
 }
 
 void FExecutableTask::ResetQueryPool(VkCommandBuffer CommandBuffer, uint32_t Index)

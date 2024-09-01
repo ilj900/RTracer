@@ -113,10 +113,6 @@ void FImguiTask::Init(std::vector<ImagePtr> Images)
 
 void FImguiTask::UpdateDescriptorSets()
 {
-	for (int i = 0; i < TotalSize; ++i)
-	{
-		RegisterOutput(i, ExternalImages[i]);
-	}
 }
 
 void FImguiTask::RecordCommands()
@@ -133,7 +129,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 	auto StringToColor = [](const std::string& String)
 	{
 		static std::hash<std::string> HashingFunction;
-		uint32_t Color = (uint32_t)HashingFunction(String);
+		auto Color = (uint32_t)HashingFunction(String);
 		Color |= 255 << 24;
 		return Color;
 	};

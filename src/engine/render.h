@@ -29,7 +29,7 @@
 #include <string>
 #include <vector>
 
-enum class OutputType {Color0 = 0, Color1 = 1, Color2 = 2, Normal, UV};
+enum class EOutputType {Color = 0, Normal = 1, UV = 2, Max = 3};
 
 class FRender
 {
@@ -41,6 +41,7 @@ public:
     int Init();
     int Cleanup();
     int SetSize(int WidthIn, int HeightIn);
+	void SetRenderTarget(EOutputType OutputType);
 
     ECS::FEntity CreateCamera();
     ECS::FEntity CreateFramebuffer(int WidthIn, int HeightIn, const std::string& DebugName = "");
@@ -48,10 +49,7 @@ public:
     ECS::FEntity CreateFramebufferFromExternalImage(ImagePtr ImageIn, const std::string& DebugName = "");
 	ECS::FEntity CreateColorAttachment(int WidthIn, int HeightIn, const std::string& DebugName = "");
     void SetActiveCamera(ECS::FEntity Camera);
-    void SetOutput(OutputType OutputTypeIn, ECS::FEntity Framebuffer);
-    ECS::FEntity GetOutput(OutputType OutputTypeIn);
     void SaveFramebuffer(ECS::FEntity Framebuffer, const std::string& Filename = "");
-	void SaveOutput(OutputType OutputTypeIn, const std::string& Filename);
     void GetFramebufferData(ECS::FEntity Framebuffer);
 
 	void AddExternalTaskAfterRender(std::shared_ptr<FExecutableTask> Task);
@@ -89,6 +87,8 @@ public:
 
     bool bWasResized = false;
 
+	EOutputType RenderTarget = EOutputType::Color;
+
     uint32_t MaxFramesInFlight = 2;
     uint32_t RenderFrameIndex = 0;
 
@@ -119,7 +119,7 @@ public:
     std::vector<VkFence> ImagesInFlight;
 
 	std::vector<FSynchronizationPoint> ExternalImageAvailable;
-    std::unordered_map<OutputType, ECS::FEntity> OutputToFramebufferMap;
+    std::vector<ECS::FEntity> OutputFramebuffers;
 
 private:
     ECS::FEntity CreateEmptyModel();

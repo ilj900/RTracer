@@ -132,16 +132,15 @@ void FRender::RegisterExternalOutputs(std::vector<ImagePtr> OutputImagesIn, cons
 		throw std::runtime_error("Number of semaphores should be the same as number of images provided!");
 	}
 
-	/// Free previous Framebuffers
-	for (int i = 0; i < MaxFramesInFlight; ++i)
+	/// Free previously registered Framebuffers
+	for (int i = 0; i < OutputFramebuffers.size(); ++i)
 	{
-		if (OutputToFramebufferMap.find(OutputType(i)) != OutputToFramebufferMap.end())
-		{
-			auto FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(OutputToFramebufferMap[OutputType(i)]);
-			TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer(FramebufferComponent.FramebufferImageIndex);
-			SetOutput(OutputType(i), ECS::INVALID_ENTITY);
-		}
+		auto FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(OutputFramebuffers[i]);
+		TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer(FramebufferComponent.FramebufferImageIndex);
+		OutputFramebuffers[i] = ECS::INVALID_ENTITY;
 	}
+
+	OutputFramebuffers.clear();
 
 	MaxFramesInFlight = OutputImagesIn.size();
 
@@ -151,8 +150,7 @@ void FRender::RegisterExternalOutputs(std::vector<ImagePtr> OutputImagesIn, cons
 	///Register new framebuffers  as outputs
 	for (int i = 0; i < OutputImagesIn.size(); ++i)
 	{
-		auto Framebuffer = CreateFramebufferFromExternalImage(OutputImagesIn[i]);
-		SetOutput(OutputType(i), Framebuffer);
+		OutputFramebuffers.emplace_back(CreateFramebufferFromExternalImage(OutputImagesIn[i]));
 	}
 }
 
@@ -164,7 +162,7 @@ int FRender::Init()
 		for (int i = 0; i < MaxFramesInFlight; ++i)
 		{
 			auto Framebuffer = CreateColorAttachment(Width, Height, "Output Image" + std::to_string(i));
-			SetOutput(OutputType(i), Framebuffer);
+			OutputFramebuffers[i] = Framebuffer;
 		}
 	}
 
@@ -197,8 +195,8 @@ int FRender::Init()
 
     for (int i = 0; i < MaxFramesInFlight; ++i)
     {
-        auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(OutputToFramebufferMap[OutputType(i)]);
-        PassthroughTask->RegisterOutput(i, TEXTURE_MANAGER()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex));
+        auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(OutputFramebuffers[i]);
+        PassthroughTask->RegisterOutput("PassthroughOutput" + std::to_string(i), TEXTURE_MANAGER()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex));
     }
 
     RenderFrameIndex = 0;
@@ -252,6 +250,11 @@ int FRender::SetSize(int WidthIn, int HeightIn)
 	Cleanup();
 	CAMERA_SYSTEM()->SetAspectRatio(ActiveCamera, float(Width) / float(Height));
     return 0;
+}
+
+void FRender::SetRenderTarget(EOutputType OutputType)
+{
+	RenderTarget = OutputType;
 }
 
 ECS::FEntity FRender::CreateCamera()
@@ -311,31 +314,10 @@ void FRender::SetActiveCamera(ECS::FEntity Camera)
     ActiveCamera = Camera;
 }
 
-void FRender::SetOutput(OutputType OutputTypeIn, ECS::FEntity Framebuffer)
-{
-    OutputToFramebufferMap[OutputTypeIn] = Framebuffer;
-}
-
-ECS::FEntity FRender::GetOutput(OutputType OutputTypeIn)
-{
-    return OutputToFramebufferMap[OutputTypeIn];
-}
-
 void FRender::SaveFramebuffer(ECS::FEntity Framebuffer, const std::string& Filename)
 {
     auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);
     VK_CONTEXT()->SaveImage(*TEXTURE_MANAGER()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex), Filename);
-}
-
-void FRender::SaveOutput(OutputType OutputTypeIn, const std::string& Filename)
-{
-	if (OutputToFramebufferMap.find(OutputTypeIn) == OutputToFramebufferMap.end())
-	{
-		return;
-	}
-
-	auto Framebuffer = OutputToFramebufferMap[OutputTypeIn];
-	SaveFramebuffer(Framebuffer, Filename);
 }
 
 void FRender::GetFramebufferData(ECS::FEntity Framebuffer)

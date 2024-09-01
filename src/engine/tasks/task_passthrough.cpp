@@ -43,16 +43,17 @@ void FPassthroughTask::Init()
     auto VertexShader = FShader("../../../src/shaders/passthrough.vert");
     auto FragmentShader = FShader("../../../src/shaders/passthrough.frag");
 
-    GraphicsPipelineOptions.RegisterColorAttachment(0, Outputs[0], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    GraphicsPipelineOptions.RegisterColorAttachment(0, Outputs["PassthroughOutput" + std::to_string(0)], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
     GraphicsPipelineOptions.SetPipelineLayout(DescriptorSetManager->GetPipelineLayout(Name));
 
     Pipeline = VK_CONTEXT()->CreateGraphicsPipeline(VertexShader(), FragmentShader(), Width, Height, GraphicsPipelineOptions);
     RenderPass = GraphicsPipelineOptions.RenderPass;
 
     PassthroughFramebuffers.resize(TotalSize);
+
     for (std::size_t i = 0; i < PassthroughFramebuffers.size(); ++i)
     {
-        PassthroughFramebuffers[i] = VK_CONTEXT()->CreateFramebuffer(Width, Height, {Outputs[i]}, RenderPass, "V_Passthrough_fb_" + std::to_string(i));
+        PassthroughFramebuffers[i] = VK_CONTEXT()->CreateFramebuffer(Width, Height, {Outputs["PassthroughOutput" + std::to_string(i)]}, RenderPass, "V_Passthrough_fb_" + std::to_string(i));
     }
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects

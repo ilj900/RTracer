@@ -48,22 +48,22 @@ public:
 	/// Y - for frame
     virtual FSynchronizationPoint Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t X, uint32_t Y);
 
-    void RegisterInput(int Index, ImagePtr Image);
-    void RegisterOutput(int Index, ImagePtr Image);
+    void RegisterInput(const std::string& InputName, ImagePtr Image);
+    void RegisterOutput(const std::string& InputName, ImagePtr Image);
     void UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t LayoutIndex, int FrameIndex, const FBuffer& Buffer);
     void UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t LayoutIndex, int FrameIndex, ImagePtr Image);
     void UpdateDescriptorSet(uint32_t LayoutSetIndex, uint32_t LayoutIndex, int FrameIndex, ImagePtr Image, VkSampler Sampler);
 	void SetDirty(uint32_t Flags);
     VkPipelineStageFlags GetPipelineStageFlags();
-    ImagePtr GetInput(int Index);
-    ImagePtr GetOutput(int Index);
+    ImagePtr GetInput(const std::string& InputName);
+    ImagePtr GetOutput(const std::string& InputName);
 
 	void ResetQueryPool(VkCommandBuffer CommandBuffer, uint32_t Index);
 	std::vector<float> RequestTiming(uint32_t Y);
 	std::vector<TaskState> TaskStates;
 
-    std::vector<ImagePtr> Inputs;
-    std::vector<ImagePtr> Outputs;
+    std::unordered_map<std::string, ImagePtr> Inputs;
+    std::unordered_map<std::string, ImagePtr> Outputs;
 
     std::vector<VkCommandBuffer> CommandBuffers;
 
