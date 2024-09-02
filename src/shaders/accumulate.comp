@@ -22,6 +22,7 @@ void main()
 
     vec4 AccumulatedValue = imageLoad(AccumulatorImage, UV);
     vec4 IncomingValue = imageLoad(IncomingImage, UV);
+
     if (IncomingValue.w != 0)
     {
         IncomingValue.xyz = IncomingValue.xyz / (vec3(1) + IncomingValue.xyz);

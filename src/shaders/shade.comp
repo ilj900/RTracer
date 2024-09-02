@@ -76,6 +76,10 @@ layout (buffer_reference, scalar) buffer Indices
     int I[];
 };
 
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_NORMAL_AOV_IMAGE_INDEX, rgba32f) uniform image2D NormalAOVImage;
+
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_UV_AOV_IMAGE_INDEX, rgba32f) uniform image2D UVAOVImage;
+
 FRenderable FetchRenderable(uint RenderableIndex)
 {
     return Renderables[RenderableIndex];
@@ -222,6 +226,12 @@ void main()
     if (dot(NormalInWorldSpace, RayData.Direction.xyz) > 0)
     {
         NormalInWorldSpace = -NormalInWorldSpace;
+    }
+
+    if (PushConstants.BounceIndex == 0)
+    {
+        imageStore(NormalAOVImage, ivec2(NewPixelCoords), vec4(NormalInWorldSpace, 1.f));
+        imageStore(UVAOVImage, ivec2(NewPixelCoords), vec4(Hit.HitUV, 0.f, 1.f));
     }
 
     vec3 PointOfIntersectionInLocalSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;

@@ -43,6 +43,7 @@ set(ECS_SOURCE
 
 set(INCLUDE
         render.h
+        renderer_options.h
         tasks/executable_task.h
         tasks/task_accumulate.h
         tasks/task_clear_image.h
@@ -67,6 +68,7 @@ set(INCLUDE
 
 set(SOURCE
         render.cpp
+        renderer_options.cpp
         tasks/executable_task.cpp
         tasks/task_passthrough.cpp
         tasks/task_material_sort_clear_materials_count_per_chunk.cpp

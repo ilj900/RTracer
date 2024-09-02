@@ -52,7 +52,7 @@
 /// Task clear image descriptor set layout defines
 #define CLEAR_IMAGE_LAYOUT_INDEX 0u
 
-#define IMAGE_TO_CLEAR 0u
+#define CLEAR_IMAGE_COLOR_ACCUMULATOR_IMAGE 0u
 
 /// Task reset active ray count descriptor set layout defines
 #define RESET_ACTIVE_RAY_COUNT_LAYOUT_INDEX 0u
@@ -75,6 +75,8 @@
 #define COMPUTE_SHADE_MATERIALS_OFFSETS 10u
 #define COMPUTE_SHADE_THROUGHPUT_BUFFER 11u
 #define COMPUTE_SHADE_RENDER_ITERATION_BUFFER 12u
+#define COMPUTE_SHADE_NORMAL_AOV_IMAGE_INDEX 13u
+#define COMPUTE_SHADE_UV_AOV_IMAGE_INDEX 14u
 
 /// Task miss descriptor set layout defines
 #define COMPUTE_MISS_LAYOUT_INDEX 0u

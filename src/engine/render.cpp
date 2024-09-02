@@ -28,6 +28,8 @@
 
 #include "utils.h"
 
+#include "renderer_options.h"
+
 #include "logging.h"
 
 FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(HeightIn)
@@ -254,7 +256,7 @@ int FRender::SetSize(int WidthIn, int HeightIn)
 
 void FRender::SetRenderTarget(EOutputType OutputType)
 {
-	RenderTarget = OutputType;
+	RENDER_STATE()->RenderTarget = OutputType;
 }
 
 ECS::FEntity FRender::CreateCamera()

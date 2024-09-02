@@ -26,10 +26,10 @@
 #include "tasks/task_reset.h"
 #include "tasks/task_advance_render_count.h"
 
+#include "renderer_options.h"
+
 #include <string>
 #include <vector>
-
-enum class EOutputType {Color = 0, Normal = 1, UV = 2, Max = 3};
 
 class FRender
 {
@@ -86,8 +86,6 @@ public:
 	void GetAllTimings(std::vector<std::string>& Names, std::vector<std::vector<float>>& Timings, float& FrameTime, uint32_t FrameIndex);
 
     bool bWasResized = false;
-
-	EOutputType RenderTarget = EOutputType::Color;
 
     uint32_t MaxFramesInFlight = 2;
     uint32_t RenderFrameIndex = 0;

@@ -5,7 +5,7 @@
 #include "common_defines.h"
 #include "common_structures.h"
 
-layout (set = CLEAR_IMAGE_LAYOUT_INDEX, binding = IMAGE_TO_CLEAR, rgba32f) uniform image2D ImageToClear;
+layout (set = CLEAR_IMAGE_LAYOUT_INDEX, binding = CLEAR_IMAGE_COLOR_ACCUMULATOR_IMAGE, rgba32f) uniform image2D AccumulatorImage;
 
 layout (push_constant) uniform PushConstantsBlock
 {
@@ -18,5 +18,5 @@ void main()
 {
     ivec2 UV = ivec2(gl_GlobalInvocationID.x % PushConstants.Width, gl_GlobalInvocationID.x / PushConstants.Width);
 
-    imageStore(ImageToClear, UV, vec4(0.f));
+    imageStore(AccumulatorImage, UV, vec4(0.f));
 }

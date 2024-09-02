@@ -18,7 +18,7 @@ FClearImageTask::FClearImageTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t S
 
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
-    DescriptorSetManager->AddDescriptorLayout(Name, CLEAR_IMAGE_LAYOUT_INDEX, IMAGE_TO_CLEAR,
+    DescriptorSetManager->AddDescriptorLayout(Name, CLEAR_IMAGE_LAYOUT_INDEX, CLEAR_IMAGE_COLOR_ACCUMULATOR_IMAGE,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_COMPUTE_BIT});
 
 	VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants)};
@@ -50,7 +50,7 @@ void FClearImageTask::UpdateDescriptorSets()
 {
     for (uint32_t i = 0; i < TotalSize; ++i)
     {
-        UpdateDescriptorSet(CLEAR_IMAGE_LAYOUT_INDEX, IMAGE_TO_CLEAR, i, TEXTURE_MANAGER()->GetFramebufferImage("AccumulatorImage"));
+        UpdateDescriptorSet(CLEAR_IMAGE_LAYOUT_INDEX, CLEAR_IMAGE_COLOR_ACCUMULATOR_IMAGE, i, TEXTURE_MANAGER()->GetFramebufferImage("AccumulatorImage"));
     }
 };
 

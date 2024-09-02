@@ -11,6 +11,8 @@
 
 #include "utils.h"
 
+#include "renderer_options.h"
+
 FAccumulateTask::FAccumulateTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice)
 {
@@ -62,7 +64,21 @@ void FAccumulateTask::UpdateDescriptorSets()
 {
     for (uint32_t i = 0; i < TotalSize; ++i)
     {
-        UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("RayTracingColorImage"));
+		switch (RENDER_STATE()->RenderTarget)
+		{
+			case EOutputType::Color:
+				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("RayTracingColorImage"));
+				break;
+			case EOutputType::Normal:
+				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("RayTracingNormalAOVImage"));
+				break;
+			case EOutputType::UV:
+				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("RayTracingUVAOVImage"));
+				break;
+			default:
+				throw std::runtime_error("Unsupported AOV input.");
+		}
+
         UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, ACCUMULATE_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("AccumulatorImage"));
         UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, ESTIMATED_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("EstimatedImage"));
     }
