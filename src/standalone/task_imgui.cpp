@@ -166,6 +166,31 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 		ProfilerData.Render();
 	}
 
+	{
+		std::vector<const char*> Names = {"Color", "Normal", "UV"};
+		static EOutputType CurrentAOV = EOutputType::Color;
+
+		if (ImGui::BeginCombo("Select AOV", Names[int(CurrentAOV)]))
+		{
+			for (int i = 0; i < Names.size(); ++i)
+			{
+				bool IsSelected = i == int(CurrentAOV);
+				if (ImGui::Selectable(Names[i], IsSelected))
+				{
+					CurrentAOV = EOutputType(i);
+					Render->SetRenderTarget(CurrentAOV);
+				}
+
+				if (IsSelected)
+				{
+					ImGui::SetItemDefaultFocus();
+				}
+			}
+
+			ImGui::EndCombo();
+		}
+	}
+
 	uint32_t SubmitIndex = Y * SubmitX + X;
 
 	CommandBuffers[SubmitIndex] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)

@@ -256,7 +256,12 @@ int FRender::SetSize(int WidthIn, int HeightIn)
 
 void FRender::SetRenderTarget(EOutputType OutputType)
 {
-	RENDER_STATE()->RenderTarget = OutputType;
+	if (RENDER_STATE()->RenderTarget != OutputType)
+	{
+		RENDER_STATE()->RenderTarget = OutputType;
+		AccumulateTask->SetDirty(OUTDATED_DESCRIPTOR_SET | OUTDATED_COMMAND_BUFFER);
+		bAnyUpdate = true;
+	}
 }
 
 ECS::FEntity FRender::CreateCamera()
@@ -435,6 +440,8 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 	SynchronizationPoint = PassthroughTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
+	bAnyUpdate = false;
+
 	if (!ExternalTasks.empty())
 	{
 		for (uint32_t i = 0; i < ExternalTasks.size() - 1; ++i)
@@ -456,7 +463,6 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 int FRender::Update()
 {
-	bAnyUpdate = false;
 	bAnyUpdate |= CAMERA_SYSTEM()->Update();
 	bAnyUpdate |= TRANSFORM_SYSTEM()->Update();
 	bAnyUpdate |= RENDERABLE_SYSTEM()->Update();
