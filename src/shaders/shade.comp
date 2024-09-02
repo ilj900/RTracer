@@ -230,8 +230,8 @@ void main()
 
     if (PushConstants.BounceIndex == 0)
     {
-        imageStore(NormalAOVImage, ivec2(NewPixelCoords), vec4(NormalInWorldSpace, 1.f));
-        imageStore(UVAOVImage, ivec2(NewPixelCoords), vec4(Hit.HitUV, 0.f, 1.f));
+        imageStore(NormalAOVImage, ivec2(NewPixelCoords), vec4(NormalInWorldSpace, 0.f));
+        imageStore(UVAOVImage, ivec2(NewPixelCoords), vec4(Hit.HitUV, 0.f, 0.f));
     }
 
     vec3 PointOfIntersectionInLocalSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
