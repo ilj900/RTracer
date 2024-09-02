@@ -35,6 +35,10 @@ layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_THROUGHPUT_BUFFE
     vec4 ThroughputBuffer[];
 };
 
+layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_NORMAL_AOV_IMAGE_INDEX, rgba32f) uniform image2D NormalAOVImage;
+
+layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_UV_AOV_IMAGE_INDEX, rgba32f) uniform image2D UVAOVImage;
+
 FRayData FetchRayData(uint RayIndex)
 {
     return RayData[RayIndex];
@@ -83,6 +87,8 @@ void main()
     if (PushConstants.BounceIndex == 0)
     {
         SampledColor = vec3(texture(IBITextureSamplerLinear, vec2(Phi, Theta)));
+        imageStore(NormalAOVImage, ivec2(NewPixelCoords), vec4(0, 0, 0, 0));
+        imageStore(UVAOVImage, ivec2(NewPixelCoords), vec4(0, 0, 0, 0));
     }
     else
     {
