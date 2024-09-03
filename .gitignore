@@ -1,7 +1,7 @@
-.idea/*
+**/.idea/
+**/.vs/
 .PVS-Studio/*
 cmake-build-debug/*
 cmake-build-release/*
 *.spv
 *.rdc
-Tools/.idea/*
