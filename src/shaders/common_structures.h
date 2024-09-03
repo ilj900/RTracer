@@ -168,6 +168,12 @@ struct FPushConstants
 	uint32_t BounceIndex;
 };
 
+struct FPassthroughPushConstants
+{
+	uint32_t Width;
+	uint32_t Height;
+};
+
 struct FPushConstantsCountMaterialsPerChunk
 {
     uint32_t TotalSize;
