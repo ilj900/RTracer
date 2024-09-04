@@ -244,7 +244,14 @@ void main()
     vec3 SamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace, SamplingState);
     RayData.Origin.xyz = PointOfIntersectionInWorldSpace + RayData.Direction.xyz * 0.000001f;;
 
-    ThroughputBuffer[NewPixelIndex].xyz = ThroughputBuffer[NewPixelIndex].xyz * SamplingResult;
+    if (PushConstants.BounceIndex == LAST_BOUNCE)
+    {
+        imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(0));
+    }
+    else
+    {
+        ThroughputBuffer[NewPixelIndex].xyz = ThroughputBuffer[NewPixelIndex].xyz * SamplingResult;
+    }
 
     ///FLight Light = FetchLightData(0);
     ///vec3 PointOfIntersectioToLightDirection = Light.Position - PointOfIntersectionInWorldSpace;

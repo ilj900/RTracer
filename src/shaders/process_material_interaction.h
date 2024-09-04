@@ -59,7 +59,6 @@ vec3 ScatterDiffuse(vec3 NormalInWorldSpace, FSamplingState SamplingState)
 	Result.y = cos(Theta);
 	Result.x = sin(Theta) * sin(Phi);
 
-	Result = Transform(NormalInWorldSpace, normalize(Result));
 
 	return normalize(Result + NormalInWorldSpace);
 }

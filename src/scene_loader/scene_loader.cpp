@@ -75,7 +75,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		//auto Light = Render->CreateLight({0, 1.95, 0});
 
-		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
+		Render->SetIBL("../../../resources/sun.exr");
 	}
 	else if (Name == SCENE_CORNELL_BOX_ANIMATED)
 	{
