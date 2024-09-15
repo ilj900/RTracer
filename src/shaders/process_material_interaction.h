@@ -82,6 +82,7 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 		break;
 	case TRANSMISSION_LAYER:
 		Color = Material.TransmissionColor;
+		RayData.Direction.xyz = -reflect(-RayData.Direction.xyz, NormalInWorldSpace);
 		break;
 	case SUBSURFACE_LAYER:
 		Color = Material.SubsurfaceColor;

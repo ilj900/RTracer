@@ -14,6 +14,7 @@ namespace ECS
         {
         public:
             FEntity			 CreateDefaultMaterial();
+			FEntity			 CreateEmptyMaterial();
 			/// Albedo
 			FMaterialSystem& SetBaseColorWeight(FEntity MaterialEntity, float Weight);
 			FMaterialSystem& SetBaseColorWeight(FEntity MaterialEntity, FEntity TextureEntity);
@@ -114,6 +115,7 @@ namespace ECS
 
 			/// Thin walled
 			FMaterialSystem& SetThinWalled(FEntity MaterialEntity, bool ThinWalled);
+			FMaterialSystem& SetThinWalled(FEntity MaterialEntity, FEntity TextureEntity);
 
 			std::string GenerateMaterialCode(FEntity MaterialEntity);
 

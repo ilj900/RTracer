@@ -505,6 +505,39 @@ ECS::FEntity FRender::CreateMaterial(const FVector3& BaseColor)
     return NewMaterial;
 }
 
+ECS::FEntity FRender::CreateDiffuseMaterial(const FVector3& BaseColor)
+{
+	auto NewMaterial = MATERIAL_SYSTEM()->CreateEmptyMaterial();
+
+	MATERIAL_SYSTEM()->SetBaseColorWeight(NewMaterial, 1.f);
+	MATERIAL_SYSTEM()->SetBaseColor(NewMaterial, BaseColor);
+	MATERIAL_SYSTEM()->SetAlbedoNormal(NewMaterial, {0, 1, 0});
+
+	return NewMaterial;
+}
+
+ECS::FEntity FRender::CreateReflectiveMaterial(const FVector3& BaseColor)
+{
+	auto NewMaterial = MATERIAL_SYSTEM()->CreateEmptyMaterial();
+
+	MATERIAL_SYSTEM()->SetSpecularWeight(NewMaterial, 1.f);
+	MATERIAL_SYSTEM()->SetSpecularColor(NewMaterial, BaseColor);
+
+	return NewMaterial;
+}
+
+ECS::FEntity FRender::CreateRefractiveMaterial(const FVector3& BaseColor)
+{
+	auto NewMaterial = MATERIAL_SYSTEM()->CreateEmptyMaterial();
+
+	MATERIAL_SYSTEM()->SetTransmissionWeight(NewMaterial, 1.f);
+	MATERIAL_SYSTEM()->SetTransmissionColor(NewMaterial, BaseColor);
+	MATERIAL_SYSTEM()->SetSpecularIOR(NewMaterial, 2.2f);
+
+	return NewMaterial;
+}
+
+
 ECS::FEntity FRender::ShapeSetMaterial(ECS::FEntity Shape, ECS::FEntity Material)
 {
     RENDERABLE_SYSTEM()->SetMaterial(Shape, Material);

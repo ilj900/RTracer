@@ -57,12 +57,12 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto Sphere2 = Render->CreateInstance(Sphere, {1, -1.5, -1});
 		auto Sphere3 = Render->CreateInstance(Sphere, {-1, -1.5, -1});
 
-		auto WhiteMaterial = Render->CreateMaterial({1, 1, 1});
-		auto RedMaterial = Render->CreateMaterial({1, 0, 0});
-		auto GreenMaterial = Render->CreateMaterial({0, 1, 0});
-		auto GlassMaterial = Render->CreateMaterial({0, 1, 1});
-		auto DiffuseMaterial = Render->CreateMaterial({1, 1, 0});
-		auto PlasticMaterial = Render->CreateMaterial({1, 0, 1});
+		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
+		auto RedMaterial = Render->CreateDiffuseMaterial({1, 0, 0});
+		auto GreenMaterial = Render->CreateDiffuseMaterial({0, 1, 0});
+		auto GlassMaterial = Render->CreateRefractiveMaterial({0, 1, 1});
+		auto DiffuseMaterial = Render->CreateDiffuseMaterial({1, 1, 0});
+		auto MetalMaterial = Render->CreateReflectiveMaterial({1, 0, 1});
 
 		Render->ShapeSetMaterial(BackWall, WhiteMaterial);
 		Render->ShapeSetMaterial(TopWall, WhiteMaterial);
@@ -71,7 +71,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		Render->ShapeSetMaterial(RightWall, GreenMaterial);
 		Render->ShapeSetMaterial(Sphere1, GlassMaterial);
 		Render->ShapeSetMaterial(Sphere2, DiffuseMaterial);
-		Render->ShapeSetMaterial(Sphere3, PlasticMaterial);
+		Render->ShapeSetMaterial(Sphere3, MetalMaterial);
 
 		//auto Light = Render->CreateLight({0, 1.95, 0});
 

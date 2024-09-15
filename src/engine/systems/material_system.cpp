@@ -15,6 +15,57 @@ namespace ECS
             return Material;
         }
 
+		FEntity FMaterialSystem::CreateEmptyMaterial()
+		{
+			FEntity Material = COORDINATOR().CreateEntity();
+			COORDINATOR().AddComponent<ECS::COMPONENTS::FMaterialComponent>(Material, {});
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(Material);
+
+			MaterialComponent.BaseWeight = 0.f;
+			MaterialComponent.BaseColor = {0.f, 0.f, 0.f};
+			MaterialComponent.DiffuseRoughness = 0.f;
+			MaterialComponent.Metalness = 0.f;
+			MaterialComponent.Normal = {0.f, 0.f, 0.f};
+			MaterialComponent.SpecularWeight = 0.f;
+			MaterialComponent.SpecularColor = {0.f, 0.f, 0.f};
+			MaterialComponent.SpecularRoughness = 0.f;
+			MaterialComponent.SpecularIOR = 0.f;
+			MaterialComponent.SpecularAnisotropy = 0.f;
+			MaterialComponent.SpecularRotation = 0.f;
+			MaterialComponent.TransmissionWeight = 0.f;
+			MaterialComponent.TransmissionColor = {0.f, 0.f, 0.f};
+			MaterialComponent.TransmissionDepth = 0.f;
+			MaterialComponent.TransmissionScatter = {0.f, 0.f, 0.f};
+			MaterialComponent.TransmissionAnisotropy = 0.f;
+			MaterialComponent.TransmissionDispersion = 0.f;
+			MaterialComponent.TransmissionRoughness = 0.f;
+			MaterialComponent.SubsurfaceWeight = 0.f;
+			MaterialComponent.SubsurfaceColor = {0.f, 0.f, 0.f};
+			MaterialComponent.SubsurfaceRadius = {0.f, 0.f, 0.f};
+			MaterialComponent.SubsurfaceScale = 0.f;
+			MaterialComponent.SubsurfaceAnisotropy = 0.f;
+			MaterialComponent.SheenWeight = 0.f;
+			MaterialComponent.SheenColor = {0.f, 0.f, 0.f};
+			MaterialComponent.SheenRoughness = 0.f;
+			MaterialComponent.CoatWeight = 0.f;
+			MaterialComponent.CoatColor = {0.f, 0.f, 0.f};
+			MaterialComponent.CoatRoughness = 0.f;
+			MaterialComponent.CoatAnisotropy = 0.f;
+			MaterialComponent.CoatRotation = 0.f;
+			MaterialComponent.CoatIOR = 0.f;
+			MaterialComponent.CoatNormal = {0, 0.f, 0};
+			MaterialComponent.CoatAffectColor = 0.f;
+			MaterialComponent.CoatAffectRoughness = 0.f;
+			MaterialComponent.ThinFilmThickness = 0.f;
+			MaterialComponent.ThinFilmIOR = 0.f;
+			MaterialComponent.EmissionWeight = 0;
+			MaterialComponent.EmissionColor = {0.f, 0.f, 0.f};
+			MaterialComponent.Opacity = {0.f, 0.f, 0.f};
+			MaterialComponent.ThinWalled = false;
+
+			return Material;
+		}
+
 		/// Albedo
 		FMaterialSystem& FMaterialSystem::SetBaseColorWeight(FEntity MaterialEntity, float Weight)
 		{
@@ -635,13 +686,13 @@ namespace ECS
 			return *this;
 		}
 
-
-
-
-
-
-
-
+		FMaterialSystem& FMaterialSystem::SetThinWalled(FEntity MaterialEntity, FEntity TextureEntity)
+		{
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
+			MaterialComponent.ThinWalledTexture = TextureComponent.TextureIndex;
+			return *this;
+		}
 
         std::string FMaterialSystem::GenerateMaterialCode(FEntity MaterialEntity)
         {

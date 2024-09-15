@@ -61,6 +61,9 @@ public:
 
     ECS::FEntity CreateTexture(const std::string& FilePath);
     ECS::FEntity CreateMaterial(const FVector3& BaseColor);
+	ECS::FEntity CreateDiffuseMaterial(const FVector3& BaseColor);
+	ECS::FEntity CreateReflectiveMaterial(const FVector3& BaseColor);
+	ECS::FEntity CreateRefractiveMaterial(const FVector3& BaseColor);
     ECS::FEntity ShapeSetMaterial(ECS::FEntity Shape, ECS::FEntity Material);
     void MaterialSetBaseColor(ECS::FEntity Material, ECS::FEntity Image);
     void MaterialSetBaseColor(ECS::FEntity Material, const FVector3& Color);
