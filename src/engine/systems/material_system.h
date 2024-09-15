@@ -13,7 +13,7 @@ namespace ECS
         class FMaterialSystem : public FSystem
         {
         public:
-            FEntity CreateMaterial();
+            FEntity			 CreateDefaultMaterial();
             FMaterialSystem& SetBaseColor(FEntity MaterialEntity, float Red, float Green, float Blue);
             FMaterialSystem& SetBaseColor(FEntity MaterialEntity, FEntity TextureEntity);
             FMaterialSystem& SetDiffuseRoughness(FEntity MaterialEntity, float DiffuseRoughness);

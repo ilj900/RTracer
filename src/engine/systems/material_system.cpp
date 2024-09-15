@@ -8,7 +8,7 @@ namespace ECS
 {
     namespace SYSTEMS
     {
-        FEntity FMaterialSystem::CreateMaterial()
+        FEntity FMaterialSystem::CreateDefaultMaterial()
         {
             FEntity Material = COORDINATOR().CreateEntity();
             COORDINATOR().AddComponent<ECS::COMPONENTS::FMaterialComponent>(Material, {});
