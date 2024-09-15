@@ -63,10 +63,10 @@ public:
     ECS::FEntity CreateMaterial(const FVector3& BaseColor);
     ECS::FEntity ShapeSetMaterial(ECS::FEntity Shape, ECS::FEntity Material);
     void MaterialSetBaseColor(ECS::FEntity Material, ECS::FEntity Image);
-    void MaterialSetBaseColor(ECS::FEntity Material, const FVector3& Value);
+    void MaterialSetBaseColor(ECS::FEntity Material, const FVector3& Color);
     void MaterialSetDiffuseRoughness(ECS::FEntity Material, ECS::FEntity Image);
     void MaterialSetDiffuseRoughness(ECS::FEntity Material, float Value);
-    void MaterialSetNormal(ECS::FEntity Material, const FVector3& Value);
+    void MaterialSetNormal(ECS::FEntity Material, const FVector3& Normal);
     void MaterialSetNormal(ECS::FEntity Material, ECS::FEntity Image);
     ECS::FEntity CreatePlane(const FVector2& Size);
     ECS::FEntity CreatePyramid();

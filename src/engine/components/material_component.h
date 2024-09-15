@@ -55,7 +55,7 @@ namespace ECS
                 ThinFilmThickness = 0.f;
                 ThinFilmIOR = 1.5f;
 
-                Emission = 0;
+				EmissionWeight = 0;
                 EmissionColor = {1, 1, 1};
 
                 Opacity = {1, 1, 1};
@@ -106,7 +106,7 @@ namespace ECS
             uint32_t ThinFilmThicknessTexture = UINT32_MAX;
             uint32_t ThinFilmIORTexture = UINT32_MAX;
 
-            uint32_t EmissionTexture = UINT32_MAX;
+            uint32_t EmissionWeightTexture = UINT32_MAX;
             uint32_t EmissionColorTexture = UINT32_MAX;
 
             uint32_t OpacityTexture = UINT32_MAX;

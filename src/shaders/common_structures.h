@@ -119,7 +119,7 @@ struct FDeviceMaterial
     float ThinFilmThickness;
     float ThinFilmIOR;
 
-    float Emission;
+    float EmissionWeight;
     FVector3 EmissionColor;
 
     FVector3 Opacity;

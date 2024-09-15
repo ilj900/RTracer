@@ -500,7 +500,7 @@ ECS::FEntity FRender::CreateMaterial(const FVector3& BaseColor)
 {
     auto NewMaterial = MATERIAL_SYSTEM()->CreateDefaultMaterial();
 
-    MATERIAL_SYSTEM()->SetBaseColor(NewMaterial, BaseColor.X, BaseColor.Y, BaseColor.Z);
+    MATERIAL_SYSTEM()->SetBaseColor(NewMaterial, BaseColor);
 
     return NewMaterial;
 }
@@ -517,9 +517,9 @@ void FRender::MaterialSetBaseColor(ECS::FEntity Material, ECS::FEntity Image)
     MATERIAL_SYSTEM()->SetBaseColor(Material, Image);
 }
 
-void FRender::MaterialSetBaseColor(ECS::FEntity Material, const FVector3& Value)
+void FRender::MaterialSetBaseColor(ECS::FEntity Material, const FVector3& Color)
 {
-    MATERIAL_SYSTEM()->SetBaseColor(Material, Value.X, Value.Y, Value.Z);
+    MATERIAL_SYSTEM()->SetBaseColor(Material, Color);
 }
 
 void FRender::MaterialSetDiffuseRoughness(ECS::FEntity Material, ECS::FEntity Image)
@@ -532,14 +532,14 @@ void FRender::MaterialSetDiffuseRoughness(ECS::FEntity Material, float Value)
     MATERIAL_SYSTEM()->SetDiffuseRoughness(Material, Value);
 }
 
-void FRender::MaterialSetNormal(ECS::FEntity Material, const FVector3& Value)
+void FRender::MaterialSetNormal(ECS::FEntity Material, const FVector3& Normal)
 {
-    MATERIAL_SYSTEM()->SetNormal(Material, Value);
+    MATERIAL_SYSTEM()->SetAlbedoNormal(Material, Normal);
 }
 
 void FRender::MaterialSetNormal(ECS::FEntity Material, ECS::FEntity Image)
 {
-    MATERIAL_SYSTEM()->SetNormal(Material, Image);
+    MATERIAL_SYSTEM()->SetAlbedoNormal(Material, Image);
 }
 
 int FRender::SetIBL(const std::string& Path)
