@@ -60,7 +60,8 @@ public:
 	void Wait(FSynchronizationPoint& SynchronizationPoint);
 
     ECS::FEntity CreateTexture(const std::string& FilePath);
-    ECS::FEntity CreateMaterial(const FVector3& BaseColor);
+	ECS::FEntity CreateEmptyMaterial();
+    ECS::FEntity CreateMaterial();
 	ECS::FEntity CreateDiffuseMaterial(const FVector3& BaseColor);
 	ECS::FEntity CreateReflectiveMaterial(const FVector3& BaseColor);
 	ECS::FEntity CreateRefractiveMaterial(const FVector3& BaseColor);

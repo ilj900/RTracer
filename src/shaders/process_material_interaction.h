@@ -63,7 +63,7 @@ vec3 ScatterDiffuse(vec3 NormalInWorldSpace, FSamplingState SamplingState)
 	return normalize(Result + NormalInWorldSpace);
 }
 
-vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 NormalInWorldSpace, FSamplingState SamplingState)
+vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 NormalInWorldSpace, FSamplingState SamplingState, bool bFrontFacing)
 {
 	float LayerSample = RandomFloat(SamplingState);
 	uint Layer = SelectLayer(Material, LayerSample);
@@ -82,7 +82,15 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 		break;
 	case TRANSMISSION_LAYER:
 		Color = Material.TransmissionColor;
-		RayData.Direction.xyz = -reflect(-RayData.Direction.xyz, NormalInWorldSpace);
+		float EtaRatio = RayData.Eta / Material.SpecularIOR;
+
+		if (!bFrontFacing)
+		{
+			EtaRatio = 1.f / EtaRatio;
+		}
+
+		RayData.Direction.xyz = refract(RayData.Direction.xyz, NormalInWorldSpace, EtaRatio);
+		RayData.Eta = Material.SpecularIOR;
 		break;
 	case SUBSURFACE_LAYER:
 		Color = Material.SubsurfaceColor;

@@ -496,12 +496,15 @@ ECS::FEntity FRender::CreateTexture(const std::string& FilePath)
     return TEXTURE_SYSTEM()->CreateTextureFromFile(FilePath);
 }
 
-ECS::FEntity FRender::CreateMaterial(const FVector3& BaseColor)
+ECS::FEntity FRender::CreateEmptyMaterial()
+{
+	auto NewMaterial = MATERIAL_SYSTEM()->CreateEmptyMaterial();
+	return NewMaterial;
+}
+
+ECS::FEntity FRender::CreateMaterial()
 {
     auto NewMaterial = MATERIAL_SYSTEM()->CreateDefaultMaterial();
-
-    MATERIAL_SYSTEM()->SetBaseColor(NewMaterial, BaseColor);
-
     return NewMaterial;
 }
 

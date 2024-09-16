@@ -14,7 +14,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 	if (Name == SCENE_FLOATING_SPHERES)
 	{
 		Meshes.emplace_back(Render->CreateIcosahedronSphere(1, 5, false));
-		Materials.emplace_back(Render->CreateMaterial({0, 1, 0}));
+		Materials.emplace_back(Render->CreateDiffuseMaterial({0, 1, 0}));
 
 		for (int i = -20; i < 20; ++i)
 		{
@@ -60,7 +60,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
 		auto RedMaterial = Render->CreateDiffuseMaterial({1, 0, 0});
 		auto GreenMaterial = Render->CreateDiffuseMaterial({0, 1, 0});
-		auto GlassMaterial = Render->CreateRefractiveMaterial({0, 1, 1});
+		auto GlassMaterial = Render->CreateRefractiveMaterial({1, 1, 1});
 		auto DiffuseMaterial = Render->CreateDiffuseMaterial({1, 1, 0});
 		auto MetalMaterial = Render->CreateReflectiveMaterial({1, 0, 1});
 
@@ -93,12 +93,12 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto Sphere3 = Render->CreateInstance(Sphere, {-1, -1.5, -1});
 		Instances.emplace_back(Render->CreateInstance(Cube, {0, 0, 0}));
 
-		auto WhiteMaterial = Render->CreateMaterial({1, 1, 1});
-		auto RedMaterial = Render->CreateMaterial({1, 0, 0});
-		auto GreenMaterial = Render->CreateMaterial({0, 1, 0});
-		auto GlassMaterial = Render->CreateMaterial({0, 1, 1});
-		auto DiffuseMaterial = Render->CreateMaterial({1, 1, 0});
-		auto PlasticMaterial = Render->CreateMaterial({1, 0, 1});
+		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
+		auto RedMaterial = Render->CreateDiffuseMaterial({1, 0, 0});
+		auto GreenMaterial = Render->CreateDiffuseMaterial({0, 1, 0});
+		auto GlassMaterial = Render->CreateDiffuseMaterial({0, 1, 1});
+		auto DiffuseMaterial = Render->CreateDiffuseMaterial({1, 1, 0});
+		auto PlasticMaterial = Render->CreateDiffuseMaterial({1, 0, 1});
 
 		Render->ShapeSetMaterial(BackWall, WhiteMaterial);
 		Render->ShapeSetMaterial(TopWall, WhiteMaterial);
@@ -130,9 +130,9 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto Sphere2 = Render->CreateInstance(Sphere, {1, -1.5, -1});
 		auto Sphere3 = Render->CreateInstance(Sphere, {-1, -1.5, -1});
 
-		auto GlassMaterial = Render->CreateMaterial({0, 1, 1});
-		auto DiffuseMaterial = Render->CreateMaterial({1, 1, 0});
-		auto PlasticMaterial = Render->CreateMaterial({1, 0, 1});
+		auto GlassMaterial = Render->CreateDiffuseMaterial({0, 1, 1});
+		auto DiffuseMaterial = Render->CreateDiffuseMaterial({1, 1, 0});
+		auto PlasticMaterial = Render->CreateDiffuseMaterial({1, 0, 1});
 
 		Render->ShapeSetMaterial(Sphere1, GlassMaterial);
 		Render->ShapeSetMaterial(Sphere2, DiffuseMaterial);
@@ -146,8 +146,8 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto BackWall1 = Render->CreateInstance(Wall, {0, 0, 0}, {0, 0, -1}, {0, 1, 0});
 		auto BackWall = Render->CreateInstance(Wall, {0, 0, 1}, {0, 0, -1}, {0, 1, 0});
 
-		auto RedMaterial = Render->CreateMaterial({1, 0, 0});
-		auto GreenMaterial = Render->CreateMaterial({0, 1, 0});
+		auto RedMaterial = Render->CreateDiffuseMaterial({1, 0, 0});
+		auto GreenMaterial = Render->CreateDiffuseMaterial({0, 1, 0});
 
 		Render->ShapeSetMaterial(BackWall1, RedMaterial);
 		Render->ShapeSetMaterial(BackWall, GreenMaterial);
@@ -162,15 +162,29 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto SphereZ = Render->CreateInstance(Sphere, {0, 0, 3}, {1, 0, 0}, {0, 1, 0});
 		auto SphereC = Render->CreateInstance(Sphere, {0, 0, 0}, {1, 0, 0}, {0, 1, 0});
 
-		auto RedMaterial = Render->CreateMaterial({1, 0, 0});
-		auto GreenMaterial = Render->CreateMaterial({0, 1, 0});
-		auto BlueMaterial = Render->CreateMaterial({0, 0, 1});
-		auto WhiteMaterial = Render->CreateMaterial({1, 1, 1});
+		auto RedMaterial = Render->CreateDiffuseMaterial({1, 0, 0});
+		auto GreenMaterial = Render->CreateDiffuseMaterial({0, 1, 0});
+		auto BlueMaterial = Render->CreateDiffuseMaterial({0, 0, 1});
+		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
 
 		Render->ShapeSetMaterial(SphereX, RedMaterial);
 		Render->ShapeSetMaterial(SphereY, GreenMaterial);
 		Render->ShapeSetMaterial(SphereZ, BlueMaterial);
 		Render->ShapeSetMaterial(SphereC, WhiteMaterial);
+
+		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
+	}
+	else if (Name == SCENE_VIKINGS_ROOM)
+	{
+		auto Model = Render->CreateModel("../../../models/viking_room/viking_room.obj");
+		auto ModelInstance = Render->CreateInstance(Model, {3, 0, 0}, {1, 0, 0}, {0, 1, 0});
+
+		auto Texture = Render->CreateTexture("../../../models/viking_room/viking_room.png");
+
+		auto Material =  Render->CreateEmptyMaterial();
+		Render->MaterialSetBaseColor(Material, Texture);
+
+		Render->ShapeSetMaterial(ModelInstance, Material);
 
 		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
 	}

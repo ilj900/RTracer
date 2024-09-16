@@ -10,6 +10,7 @@
 #define SCENE_CORNELL_BOX "Cornell Box"
 #define SCENE_FLOATING_SPHERES "Floating spheres"
 #define SCENE_COORDINATE_SYSTEM_REMINDER "Coordinate system reminder"
+#define SCENE_VIKINGS_ROOM "Vikings room"
 
 class FSceneLoader
 {

@@ -221,10 +221,12 @@ void main()
     Normal = V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z;
 
     vec3 NormalInWorldSpace = Normal * mat3(Transform.InverseModelMatrix);
+    bool bFrontFacing = true;
 
     // Invert normal if it's back facing
     if (dot(NormalInWorldSpace, RayData.Direction.xyz) > 0)
     {
+        bFrontFacing = false;
         NormalInWorldSpace = -NormalInWorldSpace;
     }
 
@@ -241,7 +243,7 @@ void main()
     FDeviceMaterial Material = GetMaterial(TextureCoords);
 
     FSamplingState SamplingState = FSamplingState(gl_GlobalInvocationID.x, 0, RenderIteration);
-    vec3 SamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace, SamplingState);
+    vec3 SamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace, SamplingState, bFrontFacing);
     RayData.Origin.xyz = PointOfIntersectionInWorldSpace + RayData.Direction.xyz * 0.000001f;;
 
     if (PushConstants.BounceIndex == LAST_BOUNCE)

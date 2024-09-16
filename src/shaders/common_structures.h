@@ -31,7 +31,7 @@ struct FRayData
     uint32_t RayFlags;
     float TMin;
     float TMax;
-    float Dummy;
+    float Eta;
 };
 
 struct FDeviceCamera
