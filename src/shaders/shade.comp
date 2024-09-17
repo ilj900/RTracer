@@ -230,12 +230,6 @@ void main()
         NormalInWorldSpace = -NormalInWorldSpace;
     }
 
-    if (PushConstants.BounceIndex == 0)
-    {
-        imageStore(NormalAOVImage, ivec2(NewPixelCoords), vec4(NormalInWorldSpace, 0.f));
-        imageStore(UVAOVImage, ivec2(NewPixelCoords), vec4(Hit.HitUV, 0.f, 0.f));
-    }
-
     vec3 PointOfIntersectionInLocalSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
     vec3 PointOfIntersectionInWorldSpace = vec3(Transform.ModelMatrix * vec4(PointOfIntersectionInLocalSpace, 1.f));
 
@@ -253,6 +247,12 @@ void main()
     else
     {
         ThroughputBuffer[NewPixelIndex].xyz = ThroughputBuffer[NewPixelIndex].xyz * SamplingResult;
+    }
+
+    if (PushConstants.BounceIndex == 0)
+    {
+        imageStore(NormalAOVImage, ivec2(NewPixelCoords), vec4(NormalInWorldSpace, 0.f));
+        imageStore(UVAOVImage, ivec2(NewPixelCoords), vec4(TextureCoords, 0.f, 0.f));
     }
 
     ///FLight Light = FetchLightData(0);
