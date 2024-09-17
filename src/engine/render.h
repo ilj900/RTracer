@@ -50,6 +50,7 @@ public:
 	ECS::FEntity CreateColorAttachment(int WidthIn, int HeightIn, const std::string& DebugName = "");
     void SetActiveCamera(ECS::FEntity Camera);
     void SaveFramebuffer(ECS::FEntity Framebuffer, const std::string& Filename = "");
+	void SaveOutput(EOutputType OutputType, const std::string& Filename = "");
     void GetFramebufferData(ECS::FEntity Framebuffer);
 
 	void AddExternalTaskAfterRender(std::shared_ptr<FExecutableTask> Task);

@@ -161,6 +161,8 @@ int FRender::Init()
 	/// If no external Framebuffers provided Create internal ones
 	if (ExternalImageAvailable.empty())
 	{
+		OutputFramebuffers.resize(MaxFramesInFlight);
+
 		for (int i = 0; i < MaxFramesInFlight; ++i)
 		{
 			auto Framebuffer = CreateColorAttachment(Width, Height, "Output Image" + std::to_string(i));
@@ -325,6 +327,11 @@ void FRender::SaveFramebuffer(ECS::FEntity Framebuffer, const std::string& Filen
 {
     auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);
     VK_CONTEXT()->SaveImage(*TEXTURE_MANAGER()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex), Filename);
+}
+
+void FRender::SaveOutput(EOutputType OutputType, const std::string& Filename)
+{
+	SaveFramebuffer(OutputFramebuffers[0], Filename);
 }
 
 void FRender::GetFramebufferData(ECS::FEntity Framebuffer)
@@ -973,6 +980,7 @@ int FRender::SetIBL(const std::string& Path)
     IBLImage->Transition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	TEXTURE_MANAGER()->RegisterTexture(IBLImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, "IBL Image");
 	MissTask->SetDirty(OUTDATED_DESCRIPTOR_SET | OUTDATED_COMMAND_BUFFER);
+	bAnyUpdate = true;
 
     return 0;
 }

@@ -15,25 +15,26 @@ TEST_CASE( "Basic scene loading", "[Basic]" )
 	auto SceneLoader = std::make_shared<FSceneLoader>(Render);
 	SceneLoader->LoadScene("Cornell Box");
 
-	for (int i = 0; i < 10; ++i)
+	for (int i = 0; i < 100; ++i)
 	{
 		Render->Update();
 		Render->Render();
 	}
 
 	Render->WaitIdle();
-	Render->SaveOutput(OutputType(0), "Basic scene loading");
+	Render->SaveOutput(EOutputType::Color, "Basic scene loading");
 
 	SceneLoader->UpdateScene(0, 0);
+	Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
 
-	for (int i = 0; i < 10; ++i)
+	for (int i = 0; i < 100; ++i)
 	{
 		Render->Update();
 		Render->Render();
 	}
 
 	Render->WaitIdle();
-	Render->SaveOutput(OutputType(0), "Basic scene loading_1");
+	Render->SaveOutput(EOutputType::Color, "Basic scene loading_1");
 
 	Render = nullptr;
 }
