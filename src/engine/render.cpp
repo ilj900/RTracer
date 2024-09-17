@@ -548,34 +548,423 @@ ECS::FEntity FRender::ShapeSetMaterial(ECS::FEntity Shape, ECS::FEntity Material
     return Shape;
 }
 
-void FRender::MaterialSetBaseColor(ECS::FEntity Material, ECS::FEntity Image)
+void FRender::MaterialSetBaseColorWeight(ECS::FEntity MaterialEntity, float Weight)
 {
-    MATERIAL_SYSTEM()->SetBaseColor(Material, Image);
+	MATERIAL_SYSTEM()->SetBaseColorWeight(MaterialEntity, Weight);
 }
 
-void FRender::MaterialSetBaseColor(ECS::FEntity Material, const FVector3& Color)
+void FRender::MaterialSetBaseColorWeight(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
 {
-    MATERIAL_SYSTEM()->SetBaseColor(Material, Color);
+	MATERIAL_SYSTEM()->SetBaseColorWeight(MaterialEntity, TextureEntity);
 }
 
-void FRender::MaterialSetDiffuseRoughness(ECS::FEntity Material, ECS::FEntity Image)
+void FRender::MaterialSetBaseColor(ECS::FEntity MaterialEntity, const FVector3& Color)
 {
-    MATERIAL_SYSTEM()->SetDiffuseRoughness(Material, Image);
+	MATERIAL_SYSTEM()->SetBaseColor(MaterialEntity, Color);
 }
 
-void FRender::MaterialSetDiffuseRoughness(ECS::FEntity Material, float Value)
+void FRender::MaterialSetBaseColor(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
 {
-    MATERIAL_SYSTEM()->SetDiffuseRoughness(Material, Value);
+	MATERIAL_SYSTEM()->SetBaseColor(MaterialEntity, TextureEntity);
 }
 
-void FRender::MaterialSetNormal(ECS::FEntity Material, const FVector3& Normal)
+void FRender::MaterialSetDiffuseRoughness(ECS::FEntity MaterialEntity, float Roughness)
 {
-    MATERIAL_SYSTEM()->SetAlbedoNormal(Material, Normal);
+	MATERIAL_SYSTEM()->SetDiffuseRoughness(MaterialEntity, Roughness);
 }
 
-void FRender::MaterialSetNormal(ECS::FEntity Material, ECS::FEntity Image)
+void FRender::MaterialSetDiffuseRoughness(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
 {
-    MATERIAL_SYSTEM()->SetAlbedoNormal(Material, Image);
+	MATERIAL_SYSTEM()->SetDiffuseRoughness(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetMetalness(ECS::FEntity MaterialEntity, float Metalness)
+{
+	MATERIAL_SYSTEM()->SetMetalness(MaterialEntity, Metalness);
+}
+
+void FRender::MaterialSetMetalness(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetMetalness(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetAlbedoNormal(ECS::FEntity MaterialEntity, FVector3 Normal)
+{
+	MATERIAL_SYSTEM()->SetAlbedoNormal(MaterialEntity, Normal);
+}
+
+void FRender::MaterialSetAlbedoNormal(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetAlbedoNormal(MaterialEntity, TextureEntity);
+}
+
+/// Specular
+void FRender::MaterialSetSpecularWeight(ECS::FEntity MaterialEntity, float Weight)
+{
+	MATERIAL_SYSTEM()->SetSpecularWeight(MaterialEntity, Weight);
+}
+
+void FRender::MaterialSetSpecularWeight(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetSpecularWeight(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetSpecularColor(ECS::FEntity MaterialEntity, const FVector3& Color)
+{
+	MATERIAL_SYSTEM()->SetSpecularColor(MaterialEntity, Color);
+}
+
+void FRender::MaterialSetSpecularColor(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetSpecularColor(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetSpecularRoughness(ECS::FEntity MaterialEntity, float Roughness)
+{
+	MATERIAL_SYSTEM()->SetSpecularRoughness(MaterialEntity, Roughness);
+}
+
+void FRender::MaterialSetSpecularRoughness(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetSpecularRoughness(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetSpecularIOR(ECS::FEntity MaterialEntity, float SpecularIOR)
+{
+	MATERIAL_SYSTEM()->SetSpecularIOR(MaterialEntity, SpecularIOR);
+}
+
+void FRender::MaterialSetSpecularIOR(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetSpecularIOR(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetSpecularAnisotropy(ECS::FEntity MaterialEntity, float Anisotropy)
+{
+	MATERIAL_SYSTEM()->SetSpecularAnisotropy(MaterialEntity, Anisotropy);
+}
+
+void FRender::MaterialSetSpecularAnisotropy(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetSpecularAnisotropy(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetSpecularRotation(ECS::FEntity MaterialEntity, float Rotation)
+{
+	MATERIAL_SYSTEM()->SetSpecularRotation(MaterialEntity, Rotation);
+}
+
+void FRender::MaterialSetSpecularRotation(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetSpecularRotation(MaterialEntity, TextureEntity);
+}
+
+/// Transmission
+void FRender::MaterialSetTransmissionWeight(ECS::FEntity MaterialEntity, float Weight)
+{
+	MATERIAL_SYSTEM()->SetTransmissionWeight(MaterialEntity, Weight);
+}
+
+void FRender::MaterialSetTransmissionWeight(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetTransmissionWeight(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetTransmissionColor(ECS::FEntity MaterialEntity, const FVector3& Color)
+{
+	MATERIAL_SYSTEM()->SetTransmissionColor(MaterialEntity, Color);
+}
+
+void FRender::MaterialSetTransmissionColor(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetTransmissionColor(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetTransmissionDepth(ECS::FEntity MaterialEntity, float Depth)
+{
+	MATERIAL_SYSTEM()->SetTransmissionDepth(MaterialEntity, Depth);
+}
+
+void FRender::MaterialSetTransmissionDepth(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetTransmissionDepth(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetTransmissionScatter(ECS::FEntity MaterialEntity, const FVector3& Color)
+{
+	MATERIAL_SYSTEM()->SetTransmissionScatter(MaterialEntity, Color);
+}
+
+void FRender::MaterialSetTransmissionScatter(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetTransmissionScatter(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetTransmissionAnisotropy(ECS::FEntity MaterialEntity, float Anisotropy)
+{
+	MATERIAL_SYSTEM()->SetTransmissionAnisotropy(MaterialEntity, Anisotropy);
+}
+
+void FRender::MaterialSetTransmissionAnisotropy(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetTransmissionAnisotropy(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetTransmissionDispersion(ECS::FEntity MaterialEntity, float Dispersion)
+{
+	MATERIAL_SYSTEM()->SetTransmissionDispersion(MaterialEntity, Dispersion);
+}
+
+void FRender::MaterialSetTransmissionDispersion(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetTransmissionDispersion(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetTransmissionRoughness(ECS::FEntity MaterialEntity, float Roughness)
+{
+	MATERIAL_SYSTEM()->SetTransmissionRoughness(MaterialEntity, Roughness);
+}
+
+void FRender::MaterialSetTransmissionRoughness(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetTransmissionRoughness(MaterialEntity, TextureEntity);
+}
+
+/// Subsurface
+void FRender::MaterialSetSubsurfaceWeight(ECS::FEntity MaterialEntity, float Weight)
+{
+	MATERIAL_SYSTEM()->SetSubsurfaceWeight(MaterialEntity, Weight);
+}
+
+void FRender::MaterialSetSubsurfaceWeight(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetSubsurfaceWeight(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetSubsurfaceColor(ECS::FEntity MaterialEntity, const FVector3& Color)
+{
+	MATERIAL_SYSTEM()->SetSubsurfaceColor(MaterialEntity, Color);
+}
+
+void FRender::MaterialSetSubsurfaceColor(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetSubsurfaceColor(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetSubsurfaceRadius(ECS::FEntity MaterialEntity, const FVector3& Color)
+{
+	MATERIAL_SYSTEM()->SetSubsurfaceRadius(MaterialEntity, Color);
+}
+
+void FRender::MaterialSetSubsurfaceRadius(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetSubsurfaceRadius(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetSubsurfaceScale(ECS::FEntity MaterialEntity, float Scale)
+{
+	MATERIAL_SYSTEM()->SetSubsurfaceScale(MaterialEntity, Scale);
+}
+
+void FRender::MaterialSetSubsurfaceScale(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetSubsurfaceScale(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetSubsurfaceAnisotropy(ECS::FEntity MaterialEntity, float Anisotropy)
+{
+	MATERIAL_SYSTEM()->SetSubsurfaceAnisotropy(MaterialEntity, Anisotropy);
+}
+
+void FRender::MaterialSetSubsurfaceAnisotropy(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetSubsurfaceAnisotropy(MaterialEntity, TextureEntity);
+}
+
+/// Sheen
+void FRender::MaterialSetSheenWeight(ECS::FEntity MaterialEntity, float Weight)
+{
+	MATERIAL_SYSTEM()->SetSheenWeight(MaterialEntity, Weight);
+}
+
+void FRender::MaterialSetSheenWeight(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetSheenWeight(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetSheenColor(ECS::FEntity MaterialEntity, const FVector3& Color)
+{
+	MATERIAL_SYSTEM()->SetSheenColor(MaterialEntity, Color);
+}
+
+void FRender::MaterialSetSheenColor(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetSheenColor(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetSheenRoughness(ECS::FEntity MaterialEntity, float Roughness)
+{
+	MATERIAL_SYSTEM()->SetSheenRoughness(MaterialEntity, Roughness);
+}
+
+void FRender::MaterialSetSheenRoughness(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetSheenRoughness(MaterialEntity, TextureEntity);
+}
+
+/// Coat
+void FRender::MaterialSetCoatWeight(ECS::FEntity MaterialEntity, float Weight)
+{
+	MATERIAL_SYSTEM()->SetCoatWeight(MaterialEntity, Weight);
+}
+
+void FRender::MaterialSetCoatWeight(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetCoatWeight(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetCoatColor(ECS::FEntity MaterialEntity, const FVector3& Color)
+{
+	MATERIAL_SYSTEM()->SetCoatColor(MaterialEntity, Color);
+}
+
+void FRender::MaterialSetCoatColor(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetCoatColor(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetCoatRoughness(ECS::FEntity MaterialEntity, float Roughness)
+{
+	MATERIAL_SYSTEM()->SetCoatRoughness(MaterialEntity, Roughness);
+}
+
+void FRender::MaterialSetCoatRoughness(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetCoatRoughness(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetCoatAnisotropy(ECS::FEntity MaterialEntity, float Anisotropy)
+{
+	MATERIAL_SYSTEM()->SetCoatAnisotropy(MaterialEntity, Anisotropy);
+}
+
+void FRender::MaterialSetCoatAnisotropy(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetCoatAnisotropy(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetCoatRotation(ECS::FEntity MaterialEntity, float Rotation)
+{
+	MATERIAL_SYSTEM()->SetCoatRotation(MaterialEntity, Rotation);
+}
+
+void FRender::MaterialSetCoatRotation(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetCoatRotation(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetCoatIOR(ECS::FEntity MaterialEntity, float CoatIOR)
+{
+	MATERIAL_SYSTEM()->SetCoatIOR(MaterialEntity, CoatIOR);
+}
+
+void FRender::MaterialSetCoatIOR(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetCoatIOR(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetCoatNormal(ECS::FEntity MaterialEntity, FVector3 Normal)
+{
+	MATERIAL_SYSTEM()->SetCoatNormal(MaterialEntity, Normal);
+}
+
+void FRender::MaterialSetCoatNormal(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetCoatNormal(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetCoatAffectColor(ECS::FEntity MaterialEntity, float Color)
+{
+	MATERIAL_SYSTEM()->SetCoatAffectColor(MaterialEntity, Color);
+}
+
+void FRender::MaterialSetCoatAffectColor(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetCoatAffectColor(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetCoatAffectRoughness(ECS::FEntity MaterialEntity, float Roughness)
+{
+	MATERIAL_SYSTEM()->SetCoatAffectRoughness(MaterialEntity, Roughness);
+}
+
+void FRender::MaterialSetCoatAffectRoughness(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetCoatAffectRoughness(MaterialEntity, TextureEntity);
+}
+
+/// Thin film
+void FRender::MaterialSetThinFilmThickness(ECS::FEntity MaterialEntity, float Thickness)
+{
+	MATERIAL_SYSTEM()->SetThinFilmThickness(MaterialEntity, Thickness);
+}
+
+void FRender::MaterialSetThinFilmThickness(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetThinFilmThickness(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetThinFilmIOR(ECS::FEntity MaterialEntity, float ThinFilmIOR)
+{
+	MATERIAL_SYSTEM()->SetThinFilmIOR(MaterialEntity, ThinFilmIOR);
+}
+
+void FRender::MaterialSetThinFilmIOR(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetThinFilmIOR(MaterialEntity, TextureEntity);
+}
+
+/// Emission
+void FRender::MaterialSetEmissionWeight(ECS::FEntity MaterialEntity, float Weight)
+{
+	MATERIAL_SYSTEM()->SetEmissionWeight(MaterialEntity, Weight);
+}
+
+void FRender::MaterialSetEmissionWeight(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetEmissionWeight(MaterialEntity, TextureEntity);
+}
+
+void FRender::MaterialSetEmissionColor(ECS::FEntity MaterialEntity, const FVector3& Color)
+{
+	MATERIAL_SYSTEM()->SetEmissionColor(MaterialEntity, Color);
+}
+
+void FRender::MaterialSetEmissionColor(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetEmissionColor(MaterialEntity, TextureEntity);
+}
+
+/// Opacity
+void FRender::MaterialSetOpacity(ECS::FEntity MaterialEntity, const FVector3& Color)
+{
+	MATERIAL_SYSTEM()->SetOpacity(MaterialEntity, Color);
+}
+
+void FRender::MaterialSetOpacity(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetOpacity(MaterialEntity, TextureEntity);
+}
+
+/// Thin walled
+void FRender::MaterialSetThinWalled(ECS::FEntity MaterialEntity, bool ThinWalled)
+{
+	MATERIAL_SYSTEM()->SetThinWalled(MaterialEntity, ThinWalled);
+}
+
+void FRender::MaterialSetThinWalled(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity)
+{
+	MATERIAL_SYSTEM()->SetThinWalled(MaterialEntity, TextureEntity);
 }
 
 int FRender::SetIBL(const std::string& Path)
