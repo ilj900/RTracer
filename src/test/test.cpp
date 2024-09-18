@@ -13,7 +13,7 @@ TEST_CASE( "Basic scene loading", "[Basic]" )
 	auto Camera = Render->CreateCamera();
 	Render->SetActiveCamera(Camera);
 	auto SceneLoader = std::make_shared<FSceneLoader>(Render);
-	SceneLoader->LoadScene("Cornell Box");
+	SceneLoader->LoadScene(SCENE_CORNELL_BOX);
 
 	for (int i = 0; i < 100; ++i)
 	{

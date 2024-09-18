@@ -5,6 +5,12 @@
 #extension GL_EXT_scalar_block_layout : enable
 #extension GL_EXT_buffer_reference2 : require
 
+//#define DEBUG_PRINTF
+#ifdef DEBUG_PRINTF
+#extension GL_EXT_debug_printf : enable
+bool b = false;
+#endif
+
 #include "common_defines.h"
 #include "common_structures.h"
 #include "cmj.h"
@@ -172,6 +178,13 @@ void main()
 
     uvec2 NewPixelCoords = uvec2(NewPixelIndex % PushConstants.Width, NewPixelIndex / PushConstants.Width);
 
+#ifdef DEBUGPRINTF
+    if (NewPixelCoords.x == PushConstants.Width / 2 && NewPixelCoords.y == PushConstants.Height / 2 && PushConstants.BounceIndex == 0)
+    {
+        b = true;
+    }
+#endif
+
     FRayData RayData = FetchRayData(NewPixelIndex);
 
     if ((RayData.RayFlags & RAY_DATA_RAY_MISSED) == RAY_DATA_RAY_MISSED)
@@ -238,7 +251,7 @@ void main()
 
     FSamplingState SamplingState = FSamplingState(gl_GlobalInvocationID.x, 0, RenderIteration);
     vec3 SamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace, SamplingState, bFrontFacing);
-    RayData.Origin.xyz = PointOfIntersectionInWorldSpace + RayData.Direction.xyz * 0.000001f;;
+    RayData.Origin.xyz = PointOfIntersectionInWorldSpace + RayData.Direction.xyz * 0.000001f;
 
     if (PushConstants.BounceIndex == LAST_BOUNCE)
     {

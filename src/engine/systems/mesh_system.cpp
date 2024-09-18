@@ -356,13 +356,13 @@ namespace ECS
             }
         }
 
-		void FMeshSystem::CreateUVSphere(FEntity Entity, uint32_t LongitudeCount, uint32_t LatitudeCount)
+		void FMeshSystem::CreateUVSphere(FEntity Entity, uint32_t LongitudeCount, uint32_t LatitudeCount, float Radius)
 		{
 			auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
 			auto& Vertices = MeshComponent.Vertices;
 			Vertices.resize((LongitudeCount + 1) * (LatitudeCount - 1) + 2);
 
-			Vertices[0] = {0, 1, 0, 0, 1, 0, 0, 0};
+			Vertices[0] = {0, Radius, 0, 0, 1, 0, 0, 0};
 
 			float LongitudeAngleStep = M_2_PI / float(LongitudeCount);
 			float LatitudeAngleStep = M_PI / float(LatitudeCount);
@@ -385,14 +385,14 @@ namespace ECS
 					float Z = abs(cos(CurrentLatitudeAngle)) * cos(CurrentLongitudeAngle);
 					FVector3 Coordinates = {X, Y, Z};
 					uint32_t Index = i * (LongitudeCount + 1) + j + 1;
-					Vertices[Index] = {Coordinates.X, Coordinates.Y, Coordinates.Z, Coordinates.X, Coordinates.Y, Coordinates.Z, UV.X, UV.Y};
+					Vertices[Index] = {Coordinates.X * Radius, Coordinates.Y * Radius, Coordinates.Z * Radius, Coordinates.X, Coordinates.Y, Coordinates.Z, UV.X, UV.Y};
 
 					CurrentLongitudeAngle += LongitudeAngleStep;
 					UV.X += UVLongitudeStep;
 				}
 			}
 
-			Vertices.back() = {0, -1, 0, 0, -1, 0, 1, 1};
+			Vertices.back() = {0, -Radius, 0, 0, -1, 0, 1, 1};
 
 			MeshComponent.Indexed = true;
 			auto& Indices = MeshComponent.Indices;

@@ -1089,11 +1089,11 @@ ECS::FEntity FRender::CreateIcosahedronSphere(float Radius, int LevelOfComplexit
     return NewModel;
 }
 
-ECS::FEntity FRender::CreateUVSphere(uint32_t LongitudeCount, uint32_t LatitudeCount)
+ECS::FEntity FRender::CreateUVSphere(uint32_t LongitudeCount, uint32_t LatitudeCount, float Radius)
 {
 	auto NewModel = CreateEmptyModel();
 
-	MESH_SYSTEM()->CreateUVSphere(NewModel, LongitudeCount, LatitudeCount);
+	MESH_SYSTEM()->CreateUVSphere(NewModel, LongitudeCount, LatitudeCount, Radius);
 	MESH_SYSTEM()->LoadToGPU(NewModel);
 	MESH_SYSTEM()->GenerateBLAS(NewModel);
 

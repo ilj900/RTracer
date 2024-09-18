@@ -86,7 +86,7 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 
 		if (!bFrontFacing)
 		{
-			EtaRatio = 1.f / EtaRatio;
+			EtaRatio = RayData.Eta;
 		}
 
 		RayData.Direction.xyz = refract(RayData.Direction.xyz, NormalInWorldSpace, EtaRatio);

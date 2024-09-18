@@ -46,16 +46,16 @@ void FSceneLoader::LoadScene(const std::string& Name)
 	else if (Name == SCENE_CORNELL_BOX)
 	{
 		auto Wall = Render->CreatePlane({4, 4});
-		auto Sphere = Render->CreateIcosahedronSphere(0.5f, 5, false);
+		auto Sphere = Render->CreateUVSphere(512, 256, 0.5f);
 
 		auto BackWall = Render->CreateInstance(Wall, {0, 0, -2}, {0, 0, -1}, {0, 1, 0});
 		auto TopWall = Render->CreateInstance(Wall, {0, 2, 0}, {0, -1, 0}, {0, 0, 1});
 		auto BottomWall = Render->CreateInstance(Wall, {0, -2, 0}, {0, 1, 0}, {0, 0, -1});
 		auto LeftWall = Render->CreateInstance(Wall, {-2, 0, 0}, {1, 0, 0}, {0, 1, 0});
 		auto RightWall = Render->CreateInstance(Wall, {2, 0, 0}, {-1, 0, 0}, {0, 1, 0});
-		auto Sphere1 = Render->CreateInstance(Sphere, {0, -1.5, 1});
-		auto Sphere2 = Render->CreateInstance(Sphere, {1, -1.5, -1});
-		auto Sphere3 = Render->CreateInstance(Sphere, {-1, -1.5, -1});
+		auto Sphere1 = Render->CreateInstance(Sphere, {0, -1.499, 1});
+		auto Sphere2 = Render->CreateInstance(Sphere, {1, -1.499, -1});
+		auto Sphere3 = Render->CreateInstance(Sphere, {-1, -1.499, -1});
 
 		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
 		auto RedMaterial = Render->CreateDiffuseMaterial({1, 0, 0});
@@ -156,7 +156,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 	}
 	else if (Name == SCENE_COORDINATE_SYSTEM_REMINDER)
 	{
-		auto Sphere = Render->CreateUVSphere(32, 16);
+		auto Sphere = Render->CreateUVSphere(64, 32, 0.5f);
 		auto SphereX = Render->CreateInstance(Sphere, {3, 0, 0}, {1, 0, 0}, {0, 1, 0});
 		auto SphereY = Render->CreateInstance(Sphere, {0, 3, 0}, {1, 0, 0}, {0, 1, 0});
 		auto SphereZ = Render->CreateInstance(Sphere, {0, 0, 3}, {1, 0, 0}, {0, 1, 0});
