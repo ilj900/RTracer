@@ -205,6 +205,10 @@ int FRender::Init()
 
     RenderFrameIndex = 0;
 
+	OutputToFramebufferNameMap[EOutputType::Color] = "RayTracingColorImage";
+	OutputToFramebufferNameMap[EOutputType::Normal] = "RayTracingNormalAOVImage";
+	OutputToFramebufferNameMap[EOutputType::UV] = "RayTracingUVAOVImage";
+
     return 0;
 }
 
@@ -331,7 +335,14 @@ void FRender::SaveFramebuffer(ECS::FEntity Framebuffer, const std::string& Filen
 
 void FRender::SaveOutput(EOutputType OutputType, const std::string& Filename)
 {
-	SaveFramebuffer(OutputFramebuffers[0], Filename);
+	auto FramebufferImage = TEXTURE_MANAGER()->GetFramebufferImage(OutputToFramebufferNameMap[OutputType]);
+	VK_CONTEXT()->SaveImage(*FramebufferImage, Filename);
+}
+
+void FRender::PrintScreen(const std::string& Filename)
+{
+	auto FramebufferImage = TEXTURE_MANAGER()->GetFramebufferImage("EstimatedImage");
+	VK_CONTEXT()->SaveImage(*FramebufferImage, Filename);
 }
 
 void FRender::GetFramebufferData(ECS::FEntity Framebuffer)

@@ -111,6 +111,16 @@ void FWindowManager::KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, i
 			break;
 		}
 
+		case GLFW_KEY_O:
+		{
+			if (Action == GLFW_PRESS)
+			{
+				auto* WindowManager = (FWindowManager*)glfwGetWindowUserPointer(Window);
+				WindowManager->Controller->Render->PrintScreen("EstimatedImage");
+			}
+			break;
+		}
+
     }
 }
 

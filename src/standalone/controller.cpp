@@ -1,7 +1,7 @@
 #include "systems/camera_system.h"
 #include "controller.h"
 
-FController::FController(std::shared_ptr<FRender> RenderIn)
+FController::FController(std::shared_ptr<FRender> RenderIn) : Render(RenderIn)
 {
     Camera = RenderIn->CreateCamera();
 	RenderIn->SetActiveCamera(Camera);

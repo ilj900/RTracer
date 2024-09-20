@@ -51,6 +51,7 @@ public:
     void SetActiveCamera(ECS::FEntity Camera);
     void SaveFramebuffer(ECS::FEntity Framebuffer, const std::string& Filename = "");
 	void SaveOutput(EOutputType OutputType, const std::string& Filename = "");
+	void PrintScreen(const std::string& Filename = "");
     void GetFramebufferData(ECS::FEntity Framebuffer);
 
 	void AddExternalTaskAfterRender(std::shared_ptr<FExecutableTask> Task);
@@ -214,6 +215,8 @@ public:
 
 	std::vector<FSynchronizationPoint> ExternalImageAvailable;
     std::vector<ECS::FEntity> OutputFramebuffers;
+
+	std::unordered_map<EOutputType, std::string> OutputToFramebufferNameMap;
 
 private:
     ECS::FEntity CreateEmptyModel();
