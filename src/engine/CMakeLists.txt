@@ -6,7 +6,6 @@ include_directories(
 
 set(ECS_INCLUDE
         components/acceleration_structure_component.h
-        components/camera_component.h
         components/device_camera_component.h
         components/device_mesh_component.h
         components/device_renderable_component.h

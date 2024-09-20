@@ -22,10 +22,6 @@ namespace ECS
             void LookUp(FEntity CameraEntity, float Value);
             void LookRight(FEntity CameraEntity, float Value);
             void Roll(FEntity CameraEntity, float Value);
-            void SetAspectRatio(FEntity CameraEntity, float AspectRatio);
-            FMatrix4 GetProjectionMatrix(FEntity CameraEntity);
-            FMatrix4 GetViewMatrix(FEntity CameraEntity);
-            void Orthogonalize(FEntity CameraEntity);
 
             const uint32_t MAX_CAMERAS = 8;
         };

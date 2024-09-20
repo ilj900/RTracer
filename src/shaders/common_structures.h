@@ -36,18 +36,14 @@ struct FRayData
 
 struct FDeviceCamera
 {
-    FMatrix4 ViewMatrix;
-	FMatrix4 InverseViewMatrix;
-    FMatrix4 ProjectionMatrix;
-	FMatrix4 InverseProjectionMatrix;
     FVector3 Origin;
-    float ZNear;
-    FVector3 ViewDirection;
-    float ZFar;
-    float FOV;
-    float dummy_1;
-    float dummy_2;
-    float dummy_3;
+    float FocalDistance;
+	FVector3 Direction;
+	float SensorSizeX;
+	FVector3 Right;
+	float SensorSizeY;
+	FVector3 Up;
+	float Dummy;
 };
 
 struct FDeviceTransform

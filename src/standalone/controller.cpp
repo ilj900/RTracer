@@ -89,7 +89,7 @@ void FController::Update(float Time)
         else
         {
             static double Sensitivity = 0.001;
-            CAMERA_SYSTEM()->LookRight(Camera, float(-XDelta * Sensitivity));
+            CAMERA_SYSTEM()->LookRight(Camera, float(XDelta * Sensitivity));
             CAMERA_SYSTEM()->LookUp(Camera, float(-YDelta * Sensitivity));
         }
     }

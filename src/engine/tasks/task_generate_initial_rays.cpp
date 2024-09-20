@@ -8,10 +8,10 @@
 
 #include "utils.h"
 
-#include "components/device_camera_component.h"
 #include "systems/camera_system.h"
 
 #include "common_defines.h"
+#include "common_structures.h"
 
 FGenerateInitialRays::FGenerateInitialRays(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice)

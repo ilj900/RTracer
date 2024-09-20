@@ -18,7 +18,6 @@
 #include "device_transform_component.h"
 #include "material_component.h"
 #include "light_component.h"
-#include "camera_component.h"
 #include "texture_component.h"
 #include "material_system.h"
 
@@ -38,7 +37,6 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
 
     /// Register components
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FAccelerationStructureComponent>();
-    COORDINATOR().RegisterComponent<ECS::COMPONENTS::FCameraComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FDeviceCameraComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FDeviceMeshComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FDeviceRenderableComponent>();
@@ -63,7 +61,6 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
 
     /// Set camera system signature
     ECS::FSignature CameraSystemSignature;
-    CameraSystemSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FCameraComponent>());
     CameraSystemSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FDeviceCameraComponent>());
     COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FCameraSystem>(CameraSystemSignature);
 
@@ -256,7 +253,6 @@ int FRender::SetSize(int WidthIn, int HeightIn)
     Height = HeightIn;
 	bWasResized = true;
 	Cleanup();
-	CAMERA_SYSTEM()->SetAspectRatio(ActiveCamera, float(Width) / float(Height));
     return 0;
 }
 
@@ -274,7 +270,6 @@ ECS::FEntity FRender::CreateCamera()
 {
     ECS::FEntity Camera = COORDINATOR().CreateEntity();
     COORDINATOR().AddComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera, {});
-    COORDINATOR().AddComponent<ECS::COMPONENTS::FCameraComponent>(Camera, {});
 
     return Camera;
 }
@@ -418,6 +413,21 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	}
 
 	SynchronizationPoint = GenerateRaysTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
+
+//	WaitIdle();
+//
+//    auto Buffer = RESOURCE_ALLOCATOR()->GetBuffer("InitialRaysBuffer");
+//	auto BufferData = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<FRayData>("InitialRaysBuffer");
+//    std::vector<float> Directions(Width * Height * 4);
+//	for (int i = 0; i < Width * Height; ++i)
+//	{
+//		Directions[i * 4] = BufferData[i].Direction.X;
+//		Directions[i * 4 + 1] = BufferData[i].Direction.Y;
+//		Directions[i * 4 + 2] = BufferData[i].Direction.Z;
+//		Directions[i * 4 + 3] = 1;
+//	}
+//
+//	VK_CONTEXT()->SaveEXRWrapper(Directions.data(), Width, Height, 4, false, "Directions.exr");
 
 	SynchronizationPoint = ResetActiveRayCountTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
