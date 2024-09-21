@@ -67,11 +67,11 @@ void FController::Update(float Time)
     }
     if (glfwGetKey(Window, GLFW_KEY_Q))
     {
-        CAMERA_SYSTEM()->Roll(Camera, Time * CameraRotationSpeed);
+        CAMERA_SYSTEM()->Roll(Camera, -Time * CameraRotationSpeed);
     }
     if (glfwGetKey(Window, GLFW_KEY_E))
     {
-        CAMERA_SYSTEM()->Roll(Camera, -Time * CameraRotationSpeed);
+        CAMERA_SYSTEM()->Roll(Camera, Time * CameraRotationSpeed);
     }
 
     {
@@ -90,7 +90,7 @@ void FController::Update(float Time)
         {
             static double Sensitivity = 0.001;
             CAMERA_SYSTEM()->LookRight(Camera, float(XDelta * Sensitivity));
-            CAMERA_SYSTEM()->LookUp(Camera, float(-YDelta * Sensitivity));
+            CAMERA_SYSTEM()->LookUp(Camera, float(YDelta * Sensitivity));
         }
     }
 }

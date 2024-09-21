@@ -78,7 +78,7 @@ void main()
     vec3 NormalizedDirection = FetchRayData(NewPixelIndex).Direction.xyz;
     float Tmp = atan(NormalizedDirection.z, NormalizedDirection.x);
     float Phi = Tmp < 0.f ? (Tmp + (M_2_PI)) : Tmp;
-    Phi = -Phi + 3 * M_PI_2;
+    Phi += M_PI_2;
     float Theta = acos(NormalizedDirection.y);
     Phi /= M_2_PI;
     Theta /= M_PI;

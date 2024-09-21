@@ -56,7 +56,7 @@ namespace ECS
         void FCameraSystem::MoveCameraRight(FEntity CameraEntity, float Value)
         {
             auto& DeviceCameraComponent = GetComponent<ECS::COMPONENTS::FDeviceCameraComponent>(CameraEntity);
-			DeviceCameraComponent.Origin -= DeviceCameraComponent.Right * Value;
+			DeviceCameraComponent.Origin += DeviceCameraComponent.Right * Value;
             MarkDirty(CameraEntity);
         }
 
@@ -70,16 +70,16 @@ namespace ECS
         void FCameraSystem::LookUp(FEntity CameraEntity, float Value)
         {
             auto& DeviceCameraComponent = GetComponent<ECS::COMPONENTS::FDeviceCameraComponent>(CameraEntity);
-			DeviceCameraComponent.Direction = DeviceCameraComponent.Direction.Rotate(Value, DeviceCameraComponent.Right);
-			DeviceCameraComponent.Up = DeviceCameraComponent.Up.Rotate(Value, DeviceCameraComponent.Right);
+			DeviceCameraComponent.Direction = DeviceCameraComponent.Direction.Rotate(-Value, DeviceCameraComponent.Right);
+			DeviceCameraComponent.Up = DeviceCameraComponent.Up.Rotate(-Value, DeviceCameraComponent.Right);
             MarkDirty(CameraEntity);
         }
 
         void FCameraSystem::LookRight(FEntity CameraEntity, float Value)
         {
             auto& DeviceCameraComponent = GetComponent<ECS::COMPONENTS::FDeviceCameraComponent>(CameraEntity);
-			DeviceCameraComponent.Direction = DeviceCameraComponent.Direction.Rotate(Value, DeviceCameraComponent.Up);
-			DeviceCameraComponent.Right = DeviceCameraComponent.Right.Rotate(Value, DeviceCameraComponent.Up);
+			DeviceCameraComponent.Direction = DeviceCameraComponent.Direction.Rotate(-Value, DeviceCameraComponent.Up);
+			DeviceCameraComponent.Right = DeviceCameraComponent.Right.Rotate(-Value, DeviceCameraComponent.Up);
             MarkDirty(CameraEntity);
         }
 
