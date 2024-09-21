@@ -178,7 +178,7 @@ void main()
 
     uvec2 NewPixelCoords = uvec2(NewPixelIndex % PushConstants.Width, NewPixelIndex / PushConstants.Width);
 
-#ifdef DEBUGPRINTF
+#ifdef DEBUG_PRINTF
     if (NewPixelCoords.x == PushConstants.Width / 2 && NewPixelCoords.y == PushConstants.Height / 2 && PushConstants.BounceIndex == 0)
     {
         b = true;

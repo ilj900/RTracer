@@ -2,12 +2,6 @@
 
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 
-#define DEBUG_PRINTF
-#ifdef DEBUG_PRINTF
-#extension GL_EXT_debug_printf : enable
-bool b = false;
-#endif
-
 #include "common_defines.h"
 #include "common_structures.h"
 #include "cmj.h"
@@ -54,36 +48,17 @@ void main()
     }
 
     uvec2 PixelCoords = uvec2(PixelIndex % PushConstants.Width, PixelIndex / PushConstants.Width);
-
-    #ifdef DEBUG_PRINTF
-    if (PixelCoords.x == PushConstants.Width / 2 && PixelCoords.y == PushConstants.Height / 2 && PushConstants.BounceIndex == 0)
-    {
-        b = true;
-    }
-    #endif
-
     vec2 PixelCoordsF = PixelCoords / vec2(PushConstants.Width, PushConstants.Height);
     /// -= vec2(0.5) so that the center would be (0, 0)
     PixelCoordsF -= vec2(0.5);
 
     FSamplingState SamplingState = FSamplingState(PixelIndex, 0, RenderIteration);
     const vec2 PixelJitter = (Sample2D(SamplingState) - vec2(0.5)) / vec2(PushConstants.Width, PushConstants.Height);
-
     PixelCoordsF += PixelJitter;
 
-    if (b)
-    {
-        debugPrintfEXT("DeviceCamera.Origin is %f, %f, %f\n", DeviceCamera.Origin.x, DeviceCamera.Origin.y, DeviceCamera.Origin.z);
-        debugPrintfEXT("DeviceCamera.Direction is %f, %f, %f\n", DeviceCamera.Direction.x, DeviceCamera.Direction.y, DeviceCamera.Direction.z);
-        debugPrintfEXT("DeviceCamera.Up is %f, %f, %f\n", DeviceCamera.Up.x, DeviceCamera.Up.y, DeviceCamera.Up.z);
-        debugPrintfEXT("DeviceCamera.Right is %f, %f, %f\n", DeviceCamera.Right.x, DeviceCamera.Right.y, DeviceCamera.Right.z);
-        debugPrintfEXT("DeviceCamera.SensorSize is %f, %f\n", DeviceCamera.SensorSizeX, DeviceCamera.SensorSizeY);
-        debugPrintfEXT("DeviceCamera.FocalDistance is %f\n", DeviceCamera.FocalDistance);
-    }
-
     vec4 RayOrigin = vec4(DeviceCamera.Origin, 1.f);
-    const float AspectRation = (DeviceCamera.SensorSizeX / DeviceCamera.SensorSizeY) / (PushConstants.Width / PushConstants.Height);
-    const float AdjustedSensorSizeY = DeviceCamera.SensorSizeY *0.84375;
+    /// We need to adjust height of the sensor cause the framebuffer's aspect ratio might be different from the sensor's one
+    const float AdjustedSensorSizeY = DeviceCamera.SensorSizeY * ((DeviceCamera.SensorSizeX / DeviceCamera.SensorSizeY) / (float(PushConstants.Width) / float(PushConstants.Height)));
     vec3 SensorCenter = DeviceCamera.Origin - DeviceCamera.Direction * DeviceCamera.FocalDistance;
     vec3 PixelOrigin = SensorCenter + DeviceCamera.Right * DeviceCamera.SensorSizeX * PixelCoordsF.x + DeviceCamera.Up * AdjustedSensorSizeY * PixelCoordsF.y;
 

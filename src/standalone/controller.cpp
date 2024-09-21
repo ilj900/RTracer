@@ -59,19 +59,19 @@ void FController::Update(float Time)
     }
     if (glfwGetKey(Window, GLFW_KEY_Z))
     {
-        CAMERA_SYSTEM()->MoveCameraUpward(Camera, Time * CameraMovementSpeed);
+        CAMERA_SYSTEM()->MoveCameraUpward(Camera, -Time * CameraMovementSpeed);
     }
     if (glfwGetKey(Window, GLFW_KEY_C))
     {
-        CAMERA_SYSTEM()->MoveCameraUpward(Camera, -Time * CameraMovementSpeed);
+        CAMERA_SYSTEM()->MoveCameraUpward(Camera, Time * CameraMovementSpeed);
     }
     if (glfwGetKey(Window, GLFW_KEY_Q))
     {
-        CAMERA_SYSTEM()->Roll(Camera, -Time * CameraRotationSpeed);
+        CAMERA_SYSTEM()->Roll(Camera, Time * CameraRotationSpeed);
     }
     if (glfwGetKey(Window, GLFW_KEY_E))
     {
-        CAMERA_SYSTEM()->Roll(Camera, Time * CameraRotationSpeed);
+        CAMERA_SYSTEM()->Roll(Camera, -Time * CameraRotationSpeed);
     }
 
     {
