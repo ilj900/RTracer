@@ -77,10 +77,11 @@ void main()
 
     vec3 NormalizedDirection = FetchRayData(NewPixelIndex).Direction.xyz;
     float Tmp = atan(NormalizedDirection.z, NormalizedDirection.x);
-    float Phi = Tmp < 0.f ? (Tmp + (2 * 3.14159265357)) : Tmp;
+    float Phi = Tmp < 0.f ? (Tmp + (M_2_PI)) : Tmp;
+    Phi = -Phi + 3 * M_PI_2;
     float Theta = acos(NormalizedDirection.y);
-    Phi /= 2.f * 3.14159265357;
-    Theta /= 3.14159265357;
+    Phi /= M_2_PI;
+    Theta /= M_PI;
 
     vec3 SampledColor = vec3(1, 0, 1);
 
