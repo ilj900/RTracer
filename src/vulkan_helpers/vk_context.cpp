@@ -1019,6 +1019,52 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
     Image->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     RESOURCE_ALLOCATOR()->LoadDataToImage(*Image, Width * Height * 4 * sizeof(float), Out);
 
+	int BucketSize = 8;
+	int BucketBorder = BucketSize - 1;
+	int WidthBucketsCount = (Width + BucketBorder) / BucketSize;
+	int HeightBucketsCount = (Height + BucketBorder) / BucketSize;
+	std::vector<float> LuminosityBuckets(WidthBucketsCount * HeightBucketsCount);
+	float TotalLuminosity = 0.f;
+
+	for (int i = 0; i < Width * Height; ++i)
+	{
+		float Luminosity = 0.2126f * Out[i * 4] + 0.7152f * Out[i * 4 + 1] + 0.0722f * Out[i * 4 + 2];
+		TotalLuminosity += Luminosity;
+	}
+
+	float TotalLuminosity1 = 0.f;
+
+	for (int i = 0; i < Width * Height; ++i)
+	{
+		int W = ((i % Width) / 8);
+		int H = ((i / Width) / 8);
+		int BucketIndex = H * WidthBucketsCount + W;
+		float Luminosity = 0.2126f * Out[i * 4] + 0.7152f * Out[i * 4 + 1] + 0.0722f * Out[i * 4 + 2];
+		LuminosityBuckets[BucketIndex] += Luminosity;
+		TotalLuminosity1 += Luminosity;
+	}
+
+	float TotalLuminosity2 = 0.f;
+
+	for(int i =0; i < LuminosityBuckets.size(); ++i)
+	{
+		TotalLuminosity2 += LuminosityBuckets[i];
+		//LuminosityBuckets[i] /= TotalLuminosity;
+	}
+	SaveEXRWrapper(LuminosityBuckets.data(), WidthBucketsCount, HeightBucketsCount, 1, false, "Test.exr");
+
+	std::vector<float> CDF(WidthBucketsCount * HeightBucketsCount);
+	CDF[0] = 0;
+	for (int i = 1; i < WidthBucketsCount * HeightBucketsCount; ++i)
+	{
+		CDF[i] = CDF[0] + LuminosityBuckets[i - 1];
+	}
+
+	for(int i =0; i < LuminosityBuckets.size(); ++i)
+	{
+		std:: cout << CDF[i] << ' ';
+	}
+
     free(Out);
 
     return Image;
