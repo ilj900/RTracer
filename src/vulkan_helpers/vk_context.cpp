@@ -4,9 +4,10 @@
 
 #include "texture_manager.h"
 
-#include <stdexcept>
+#include <algorithm>
 #include <iostream>
 #include <set>
+#include <stdexcept>
 #include <unordered_map>
 
 #include "stb_image.h"
@@ -1019,51 +1020,104 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
     Image->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     RESOURCE_ALLOCATOR()->LoadDataToImage(*Image, Width * Height * 4 * sizeof(float), Out);
 
+	/// Initialize some variables
 	int BucketSize = 8;
 	int BucketBorder = BucketSize - 1;
 	int WidthBucketsCount = (Width + BucketBorder) / BucketSize;
 	int HeightBucketsCount = (Height + BucketBorder) / BucketSize;
 	std::vector<float> LuminosityBuckets(WidthBucketsCount * HeightBucketsCount);
 	float TotalLuminosity = 0.f;
+	std::vector<float> EachPixelLuminosity(Width * Height);
 
+	/// Calculate luminosity of each pixel
+	/// Do we need a luminosity or can we just use a raw value?
 	for (int i = 0; i < Width * Height; ++i)
 	{
 		float Luminosity = 0.2126f * Out[i * 4] + 0.7152f * Out[i * 4 + 1] + 0.0722f * Out[i * 4 + 2];
-		TotalLuminosity += Luminosity;
+		EachPixelLuminosity[i] = Luminosity;
 	}
 
-	float TotalLuminosity1 = 0.f;
+	/// When we sort it and only then accumulate it. This way the accuracy is better
+	auto Copy = EachPixelLuminosity;
+	std::sort(Copy.begin(), Copy.end());
 
-	for (int i = 0; i < Width * Height; ++i)
+	for(int i =0; i < Copy.size(); ++i)
 	{
-		int W = ((i % Width) / 8);
-		int H = ((i / Width) / 8);
-		int BucketIndex = H * WidthBucketsCount + W;
-		float Luminosity = 0.2126f * Out[i * 4] + 0.7152f * Out[i * 4 + 1] + 0.0722f * Out[i * 4 + 2];
-		LuminosityBuckets[BucketIndex] += Luminosity;
-		TotalLuminosity1 += Luminosity;
+		TotalLuminosity += Copy[i];
 	}
 
-	float TotalLuminosity2 = 0.f;
-
-	for(int i =0; i < LuminosityBuckets.size(); ++i)
+	/// We also need to sort buckets internally. Accuracy.
+	for (int i = 0; i < LuminosityBuckets.size(); ++i)
 	{
-		TotalLuminosity2 += LuminosityBuckets[i];
-		//LuminosityBuckets[i] /= TotalLuminosity;
-	}
-	SaveEXRWrapper(LuminosityBuckets.data(), WidthBucketsCount, HeightBucketsCount, 1, false, "Test.exr");
+		std::vector<float> LuminositySubBlock;
+		LuminositySubBlock.reserve(BucketSize * BucketSize);
 
+		/// Copy an 8x8 block
+		for (int j = 0; j < BucketSize; ++j)
+		{
+			for (int k = 0; k < BucketSize; ++k)
+			{
+				int x = ((i % WidthBucketsCount) * 8) + j;
+				int y = ((i / WidthBucketsCount) * 8) + k;
+				LuminositySubBlock.push_back(EachPixelLuminosity[y * Width + x]);
+			}
+		}
+
+		/// Sort that 8x8 block
+		std::sort(LuminositySubBlock.begin(), LuminositySubBlock.end());
+
+		/// Calculate total luminosity of a block
+		for (int j = 0; j < LuminositySubBlock.size(); ++j)
+		{
+			LuminosityBuckets[i] += LuminositySubBlock[j];
+		}
+	}
+
+	/// Luminosity to PDF
+	for (int i = 0; i < LuminosityBuckets.size(); ++i)
+	{
+		LuminosityBuckets[i] /= TotalLuminosity;
+	}
+
+	//SaveEXRWrapper(LuminosityBuckets.data(), WidthBucketsCount, HeightBucketsCount, 1, false, "Test.exr");
+
+	/// Calculate CDF
 	std::vector<float> CDF(WidthBucketsCount * HeightBucketsCount);
 	CDF[0] = 0;
-	for (int i = 1; i < WidthBucketsCount * HeightBucketsCount; ++i)
+
+	for (int i = 1; i < LuminosityBuckets.size(); ++i)
 	{
 		CDF[i] = CDF[0] + LuminosityBuckets[i - 1];
 	}
 
-	for(int i =0; i < LuminosityBuckets.size(); ++i)
+	CDF.push_back(1);
+
+	std::vector<int> TextureMap(1024 * 1024);
+	float Step = 1.f / TextureMap.size();
+	float U = 0;
+	int StartingBlock = 0;
+	int EndingBlock = StartingBlock;
+	float AccumulatedCDF = 0;
+
+	for (int i = 0; i < TextureMap.size(); ++i)
 	{
-		std:: cout << CDF[i] << ' ';
+		if (U > AccumulatedCDF)
+		{
+
+		}
 	}
+	while (UV <= 1.f)
+	{
+		if (UV * TotalLuminosity )
+		while (AccumulatedCDF + LuminosityBuckets[CurrentBucket] < UV * TotalLuminosity)
+		{
+			AccumulatedCDF += LuminosityBuckets[CurrentBucket];
+			CurrentBucket++;
+		}
+
+		UV += Step;
+	}
+
 
     free(Out);
 
