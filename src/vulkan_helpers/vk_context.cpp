@@ -1021,7 +1021,63 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
     RESOURCE_ALLOCATOR()->LoadDataToImage(*Image, Width * Height * 4 * sizeof(float), Out);
 
 	/// Initialize some variables
-	int BucketSize = 8;
+	int BucketSize = 64;
+	int PixelsCount = Width * Height;
+
+	while (PixelsCount % BucketSize != 0)
+	{
+		BucketSize /= 2;
+	}
+
+	int BucketsCount = PixelsCount / BucketSize;
+	std::vector<float> EachPixelLuminosity(PixelsCount);
+	float TotalLuminosity = 0.f;
+
+	/// Calculate luminosity of each pixel
+	/// Do we need a luminosity or can we just use a raw value?
+	for (int i = 0; i < Width * Height; ++i)
+	{
+		float Luminosity = 0.2126f * Out[i * 4] + 0.7152f * Out[i * 4 + 1] + 0.0722f * Out[i * 4 + 2];
+		EachPixelLuminosity[i] = Luminosity;
+	}
+
+	/// Calculate total luminosity
+	auto Copy = EachPixelLuminosity;
+	std::sort(Copy.begin(), Copy.end());
+
+	for (auto Pixel : Copy)
+	{
+		TotalLuminosity += Pixel;
+	}
+
+	/// Calculate luminosity of each bucket
+	std::vector<float> LuminosityBuckets(BucketsCount);
+
+	for (int i = 0; i < BucketsCount; ++i)
+	{
+		std::vector<float> SubsetOfPixels(BucketSize);
+
+		for (int j = i; j < BucketSize; ++j)
+		{
+			SubsetOfPixels[j] = EachPixelLuminosity[i + j * BucketSize];
+		}
+
+		std::sort(SubsetOfPixels.begin(), SubsetOfPixels.end());
+
+		for (auto Pixel : SubsetOfPixels)
+		{
+			LuminosityBuckets[i] += Pixel;
+		}
+	}
+
+	/// Compute probability for each bucket
+	std::vector<float> LuminosityPDF(BucketsCount);
+
+	for (int i = 0; i < LuminosityBuckets.size(); ++i)
+	{
+		LuminosityPDF[i] /= TotalLuminosity;
+	}
+
 	int BucketBorder = BucketSize - 1;
 	int WidthBucketsCount = (Width + BucketBorder) / BucketSize;
 	int HeightBucketsCount = (Height + BucketBorder) / BucketSize;
@@ -1037,7 +1093,51 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
 		EachPixelLuminosity[i] = Luminosity;
 	}
 
+//	/// Lambda that will calculate the sum of elements in the incoming array
+//	/// The thing is that it first will create a copy of the data and then sort it.
+//	/// This way it's suitable for cases where machine lambda difference is involved.
+//	auto SortAndSum = [](const std::vector<float> &Data, int StartingIndex, int Count, int Stride = 0){
+//		std::vector<float> DataCopy(Count);
+//
+//		for (int i = 0; i < Count; ++i)
+//		{
+//			DataCopy[i] = Data[StartingIndex + Stride * i];
+//		}
+//
+//		std::sort(DataCopy.begin(), DataCopy.end());
+//
+//		float TotalSum = 0.f;
+//
+//		for (int i = 0; i < DataCopy.size(); ++i)
+//		{
+//			TotalSum += DataCopy[i];
+//		}
+//
+//		return std::make_pair(DataCopy, TotalSum);
+//	};
+
+	std::vector<float> VerticalLuminositySum(Height, 0);
+
+	for (int i = 0; i < Height; ++i)
+	{
+		auto Copy = std::vector<float>(EachPixelLuminosity.begin() + (i * Width), EachPixelLuminosity.begin() + ((i + 1) * Width));
+		std::sort(Copy.begin(), Copy.end());
+
+		for(int j = 0; j < Copy.size(); ++j)
+		{
+			VerticalLuminositySum[i] += Copy[j];
+		}
+	}
+
+
+
+
+
+
+
+
 	/// When we sort it and only then accumulate it. This way the accuracy is better
+	/// Or maybe just use double precision?
 	auto Copy = EachPixelLuminosity;
 	std::sort(Copy.begin(), Copy.end());
 
@@ -1045,6 +1145,8 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
 	{
 		TotalLuminosity += Copy[i];
 	}
+
+
 
 	/// We also need to sort buckets internally. Accuracy.
 	for (int i = 0; i < LuminosityBuckets.size(); ++i)

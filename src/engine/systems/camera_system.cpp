@@ -52,7 +52,6 @@ namespace ECS
             MarkDirty(CameraEntity);
         }
 
-
         void FCameraSystem::MoveCameraRight(FEntity CameraEntity, float Value)
         {
             auto& DeviceCameraComponent = GetComponent<ECS::COMPONENTS::FDeviceCameraComponent>(CameraEntity);
