@@ -1078,148 +1078,45 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
 		LuminosityPDF[i] /= TotalLuminosity;
 	}
 
-	int BucketBorder = BucketSize - 1;
-	int WidthBucketsCount = (Width + BucketBorder) / BucketSize;
-	int HeightBucketsCount = (Height + BucketBorder) / BucketSize;
-	std::vector<float> LuminosityBuckets(WidthBucketsCount * HeightBucketsCount);
-	float TotalLuminosity = 0.f;
-	std::vector<float> EachPixelLuminosity(Width * Height);
-
-	/// Calculate luminosity of each pixel
-	/// Do we need a luminosity or can we just use a raw value?
-	for (int i = 0; i < Width * Height; ++i)
-	{
-		float Luminosity = 0.2126f * Out[i * 4] + 0.7152f * Out[i * 4 + 1] + 0.0722f * Out[i * 4 + 2];
-		EachPixelLuminosity[i] = Luminosity;
-	}
-
-//	/// Lambda that will calculate the sum of elements in the incoming array
-//	/// The thing is that it first will create a copy of the data and then sort it.
-//	/// This way it's suitable for cases where machine lambda difference is involved.
-//	auto SortAndSum = [](const std::vector<float> &Data, int StartingIndex, int Count, int Stride = 0){
-//		std::vector<float> DataCopy(Count);
-//
-//		for (int i = 0; i < Count; ++i)
-//		{
-//			DataCopy[i] = Data[StartingIndex + Stride * i];
-//		}
-//
-//		std::sort(DataCopy.begin(), DataCopy.end());
-//
-//		float TotalSum = 0.f;
-//
-//		for (int i = 0; i < DataCopy.size(); ++i)
-//		{
-//			TotalSum += DataCopy[i];
-//		}
-//
-//		return std::make_pair(DataCopy, TotalSum);
-//	};
-
-	std::vector<float> VerticalLuminositySum(Height, 0);
-
-	for (int i = 0; i < Height; ++i)
-	{
-		auto Copy = std::vector<float>(EachPixelLuminosity.begin() + (i * Width), EachPixelLuminosity.begin() + ((i + 1) * Width));
-		std::sort(Copy.begin(), Copy.end());
-
-		for(int j = 0; j < Copy.size(); ++j)
-		{
-			VerticalLuminositySum[i] += Copy[j];
-		}
-	}
-
-
-
-
-
-
-
-
-	/// When we sort it and only then accumulate it. This way the accuracy is better
-	/// Or maybe just use double precision?
-	auto Copy = EachPixelLuminosity;
-	std::sort(Copy.begin(), Copy.end());
-
-	for(int i =0; i < Copy.size(); ++i)
-	{
-		TotalLuminosity += Copy[i];
-	}
-
-
-
-	/// We also need to sort buckets internally. Accuracy.
-	for (int i = 0; i < LuminosityBuckets.size(); ++i)
-	{
-		std::vector<float> LuminositySubBlock;
-		LuminositySubBlock.reserve(BucketSize * BucketSize);
-
-		/// Copy an 8x8 block
-		for (int j = 0; j < BucketSize; ++j)
-		{
-			for (int k = 0; k < BucketSize; ++k)
-			{
-				int x = ((i % WidthBucketsCount) * 8) + j;
-				int y = ((i / WidthBucketsCount) * 8) + k;
-				LuminositySubBlock.push_back(EachPixelLuminosity[y * Width + x]);
-			}
-		}
-
-		/// Sort that 8x8 block
-		std::sort(LuminositySubBlock.begin(), LuminositySubBlock.end());
-
-		/// Calculate total luminosity of a block
-		for (int j = 0; j < LuminositySubBlock.size(); ++j)
-		{
-			LuminosityBuckets[i] += LuminositySubBlock[j];
-		}
-	}
-
-	/// Luminosity to PDF
-	for (int i = 0; i < LuminosityBuckets.size(); ++i)
-	{
-		LuminosityBuckets[i] /= TotalLuminosity;
-	}
-
-	//SaveEXRWrapper(LuminosityBuckets.data(), WidthBucketsCount, HeightBucketsCount, 1, false, "Test.exr");
-
 	/// Calculate CDF
-	std::vector<float> CDF(WidthBucketsCount * HeightBucketsCount);
-	CDF[0] = 0;
+	std::vector<float> LuminosityCDF(BucketsCount + 1);
+	LuminosityCDF[0] = 0;
 
-	for (int i = 1; i < LuminosityBuckets.size(); ++i)
+	for (int i = 1; i < LuminosityCDF.size(); ++i)
 	{
-		CDF[i] = CDF[0] + LuminosityBuckets[i - 1];
+		LuminosityCDF[i] = LuminosityCDF[i - 1] + LuminosityPDF[i - 1];
 	}
 
-	CDF.push_back(1);
-
-	std::vector<int> TextureMap(1024 * 1024);
-	float Step = 1.f / TextureMap.size();
-	float U = 0;
-	int StartingBlock = 0;
-	int EndingBlock = StartingBlock;
-	float AccumulatedCDF = 0;
-
-	for (int i = 0; i < TextureMap.size(); ++i)
+	struct FMargin
 	{
-		if (U > AccumulatedCDF)
-		{
+		FMargin();
+		FMargin(int L, int R) : Left(L), Right(R) {};
+		int Left;
+		int Right;
+	};
 
-		}
-	}
-	while (UV <= 1.f)
+	std::vector<FMargin> IBLSamplingMap(Width * Height);
+	float Stride = 1.f / float(Width * Height);
+	int Slow = 0;
+	int Fast = 0;
+
+	for (int i = 0; i < IBLSamplingMap.size() - 1; ++i)
 	{
-		if (UV * TotalLuminosity )
-		while (AccumulatedCDF + LuminosityBuckets[CurrentBucket] < UV * TotalLuminosity)
+		float Left = i * Stride;
+		float Right = (i + 1) * Stride;
+
+		while (LuminosityCDF[Slow] < Left)
 		{
-			AccumulatedCDF += LuminosityBuckets[CurrentBucket];
-			CurrentBucket++;
+			Slow++;
 		}
 
-		UV += Step;
-	}
+		while (LuminosityCDF[Fast] < Right)
+		{
+			Fast++;
+		}
 
+		IBLSamplingMap[i] = {Slow, Fast};
+	}
 
     free(Out);
 
