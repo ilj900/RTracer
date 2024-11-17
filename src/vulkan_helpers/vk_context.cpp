@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <random>
 #include <set>
 #include <stdexcept>
 #include <unordered_map>
@@ -14,6 +15,16 @@
 #include "stb_image_write.h"
 
 #include "tinyexr.h"
+
+#include <iostream>
+
+struct FMargin
+{
+	FMargin() {};
+	FMargin(int L, int R) : Left(L), Right(R) {};
+	int Left;
+	int Right;
+};
 
 FVulkanContext* VulkanContext = nullptr;
 std::function<VkSurfaceKHR(VkInstance)> FVulkanContext::SurfaceCreationFunction = nullptr;
@@ -1021,9 +1032,11 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
     RESOURCE_ALLOCATOR()->LoadDataToImage(*Image, Width * Height * 4 * sizeof(float), Out);
 
 	/// Initialize some variables
-	int BucketSize = 64;
+	int BucketSize = 128;
 	int PixelsCount = Width * Height;
 
+	/// Calculate bucket size for cases when the image cant be fit
+	/// into an integer number of buckets
 	while (PixelsCount % BucketSize != 0)
 	{
 		BucketSize /= 2;
@@ -1057,9 +1070,10 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
 	{
 		std::vector<float> SubsetOfPixels(BucketSize);
 
-		for (int j = i; j < BucketSize; ++j)
+		/// Subset is a continues line of BucketSize pixels
+		for (int j = 0; j < BucketSize; ++j)
 		{
-			SubsetOfPixels[j] = EachPixelLuminosity[i + j * BucketSize];
+			SubsetOfPixels[j] = EachPixelLuminosity[i * BucketSize + j];
 		}
 
 		std::sort(SubsetOfPixels.begin(), SubsetOfPixels.end());
@@ -1075,7 +1089,7 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
 
 	for (int i = 0; i < LuminosityBuckets.size(); ++i)
 	{
-		LuminosityPDF[i] /= TotalLuminosity;
+		LuminosityPDF[i] = LuminosityBuckets[i] / TotalLuminosity;
 	}
 
 	/// Calculate CDF
@@ -1086,39 +1100,61 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
 	{
 		LuminosityCDF[i] = LuminosityCDF[i - 1] + LuminosityPDF[i - 1];
 	}
-
-	struct FMargin
-	{
-		FMargin();
-		FMargin(int L, int R) : Left(L), Right(R) {};
-		int Left;
-		int Right;
-	};
+	LuminosityCDF.back() = 1.f;
 
 	std::vector<FMargin> IBLSamplingMap(Width * Height);
 	float Stride = 1.f / float(Width * Height);
 	int Slow = 0;
 	int Fast = 0;
 
-	for (int i = 0; i < IBLSamplingMap.size() - 1; ++i)
+	for (int i = 0; i < IBLSamplingMap.size(); ++i)
 	{
 		float Left = i * Stride;
 		float Right = (i + 1) * Stride;
 
-		while (LuminosityCDF[Slow] < Left)
+		while (Slow < BucketsCount && LuminosityCDF[Slow] <= Left)
 		{
 			Slow++;
 		}
 
-		while (LuminosityCDF[Fast] < Right)
+		while (Fast < BucketsCount && LuminosityCDF[Fast] <= Right)
 		{
 			Fast++;
 		}
 
-		IBLSamplingMap[i] = {Slow, Fast};
+		IBLSamplingMap[i] = {Slow - 1, Fast - 1};
+	}
+
+	IBLSamplingMap[0].Left = 0;
+
+	for (int i = 0; i < IBLSamplingMap.size() / 2; ++i)
+	{
+		auto Tmp = IBLSamplingMap[i];
+		IBLSamplingMap[i] = IBLSamplingMap[IBLSamplingMap.size() - i - 1];
+		IBLSamplingMap[IBLSamplingMap.size() - i - 1] = Tmp;
+	}
+	std::cout << IBLSamplingMap.back().Left << " " << IBLSamplingMap.back().Right << std::endl;
+
+	std::random_device RandomDevice;  // Seed generator
+	std::mt19937 Generator(RandomDevice());  // Mersenne Twister engine seeded with random_device
+	std::uniform_int_distribution<int> DistIS(0, Width * Height);
+	std::uniform_int_distribution<int> SubBucketDist(0, BucketSize);
+	std::vector<float> DistributionImage(PixelsCount);
+
+	for (int i = 0; i < 100000; ++i)
+	{
+		auto Index = DistIS(Generator);
+		auto Margins =  IBLSamplingMap[Index];
+		std::uniform_int_distribution<int> Dist(Margins.Left, Margins.Right);
+		auto BucketIndex = Dist(Generator);
+		auto PixelSubIndex = SubBucketDist(Generator);
+		auto PixelIndex = BucketIndex * BucketSize + PixelSubIndex;
+		DistributionImage[PixelIndex] += 1.f;
 	}
 
     free(Out);
+
+	SaveEXRWrapper(DistributionImage.data(), Width, Height, 1, false, "Test.exr");
 
     return Image;
 }
