@@ -16,8 +16,6 @@
 
 #include "tinyexr.h"
 
-#include <iostream>
-
 struct FMargin
 {
 	FMargin() {};
@@ -1032,26 +1030,17 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
     RESOURCE_ALLOCATOR()->LoadDataToImage(*Image, Width * Height * 4 * sizeof(float), Out);
 
 	/// Initialize some variables
-	int BucketSize = 128;
 	int PixelsCount = Width * Height;
-
-	/// Calculate bucket size for cases when the image cant be fit
-	/// into an integer number of buckets
-	while (PixelsCount % BucketSize != 0)
-	{
-		BucketSize /= 2;
-	}
-
-	int BucketsCount = PixelsCount / BucketSize;
-	std::vector<float> EachPixelLuminosity(PixelsCount);
-	float TotalLuminosity = 0.f;
+	/// We have to use double, cause the precision of float might not be enough for IBLs with the sun
+	std::vector<double> EachPixelLuminosity(PixelsCount);
+	double TotalLuminosity = 0.f;
 
 	/// Calculate luminosity of each pixel
 	/// Do we need a luminosity or can we just use a raw value?
 	for (int i = 0; i < Width * Height; ++i)
 	{
-		float Luminosity = 0.2126f * Out[i * 4] + 0.7152f * Out[i * 4 + 1] + 0.0722f * Out[i * 4 + 2];
-		EachPixelLuminosity[i] = Luminosity;
+		double Luminosity = 0.2126 * Out[i * 4] + 0.7152 * Out[i * 4 + 1] + 0.0722 * Out[i * 4 + 2];
+		EachPixelLuminosity[i] = sqrt(Luminosity);
 	}
 
 	/// Calculate total luminosity
@@ -1063,37 +1052,16 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
 		TotalLuminosity += Pixel;
 	}
 
-	/// Calculate luminosity of each bucket
-	std::vector<float> LuminosityBuckets(BucketsCount);
-
-	for (int i = 0; i < BucketsCount; ++i)
-	{
-		std::vector<float> SubsetOfPixels(BucketSize);
-
-		/// Subset is a continues line of BucketSize pixels
-		for (int j = 0; j < BucketSize; ++j)
-		{
-			SubsetOfPixels[j] = EachPixelLuminosity[i * BucketSize + j];
-		}
-
-		std::sort(SubsetOfPixels.begin(), SubsetOfPixels.end());
-
-		for (auto Pixel : SubsetOfPixels)
-		{
-			LuminosityBuckets[i] += Pixel;
-		}
-	}
-
 	/// Compute probability for each bucket
-	std::vector<float> LuminosityPDF(BucketsCount);
+	std::vector<double> LuminosityPDF(PixelsCount);
 
-	for (int i = 0; i < LuminosityBuckets.size(); ++i)
+	for (int i = 0; i < PixelsCount; ++i)
 	{
-		LuminosityPDF[i] = LuminosityBuckets[i] / TotalLuminosity;
+		LuminosityPDF[i] = EachPixelLuminosity[i] / TotalLuminosity;
 	}
 
 	/// Calculate CDF
-	std::vector<float> LuminosityCDF(BucketsCount + 1);
+	std::vector<double> LuminosityCDF(PixelsCount + 1);
 	LuminosityCDF[0] = 0;
 
 	for (int i = 1; i < LuminosityCDF.size(); ++i)
@@ -1103,21 +1071,21 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
 	LuminosityCDF.back() = 1.f;
 
 	std::vector<FMargin> IBLSamplingMap(Width * Height);
-	float Stride = 1.f / float(Width * Height);
+	double Stride = 1. / double(Width * Height);
 	int Slow = 0;
 	int Fast = 0;
 
 	for (int i = 0; i < IBLSamplingMap.size(); ++i)
 	{
-		float Left = i * Stride;
-		float Right = (i + 1) * Stride;
+		double Left = i * Stride;
+		double Right = (i + 1) * Stride;
 
-		while (Slow < BucketsCount && LuminosityCDF[Slow] <= Left)
+		while (Slow < PixelsCount && LuminosityCDF[Slow] <= Left)
 		{
 			Slow++;
 		}
 
-		while (Fast < BucketsCount && LuminosityCDF[Fast] <= Right)
+		while (Fast < PixelsCount && LuminosityCDF[Fast] <= Right)
 		{
 			Fast++;
 		}
@@ -1133,28 +1101,31 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
 		IBLSamplingMap[i] = IBLSamplingMap[IBLSamplingMap.size() - i - 1];
 		IBLSamplingMap[IBLSamplingMap.size() - i - 1] = Tmp;
 	}
-	std::cout << IBLSamplingMap.back().Left << " " << IBLSamplingMap.back().Right << std::endl;
 
 	std::random_device RandomDevice;  // Seed generator
 	std::mt19937 Generator(RandomDevice());  // Mersenne Twister engine seeded with random_device
 	std::uniform_int_distribution<int> DistIS(0, Width * Height);
-	std::uniform_int_distribution<int> SubBucketDist(0, BucketSize);
-	std::vector<float> DistributionImage(PixelsCount);
+	std::vector<double> DistributionImage(PixelsCount);
 
 	for (int i = 0; i < 100000; ++i)
 	{
 		auto Index = DistIS(Generator);
 		auto Margins =  IBLSamplingMap[Index];
 		std::uniform_int_distribution<int> Dist(Margins.Left, Margins.Right);
-		auto BucketIndex = Dist(Generator);
-		auto PixelSubIndex = SubBucketDist(Generator);
-		auto PixelIndex = BucketIndex * BucketSize + PixelSubIndex;
-		DistributionImage[PixelIndex] += 1.f;
+		Index = Dist(Generator);
+		DistributionImage[Index] += 1.f;
 	}
 
     free(Out);
 
-	SaveEXRWrapper(DistributionImage.data(), Width, Height, 1, false, "Test.exr");
+	std::vector<float> FloatData(PixelsCount);
+
+	for (int i = 0; i < PixelsCount; ++i)
+	{
+		FloatData[i] = float(DistributionImage[i]);
+	}
+
+	SaveEXRWrapper(FloatData.data(), Width, Height, 1, false, "Test.exr");
 
     return Image;
 }
