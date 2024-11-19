@@ -38,6 +38,11 @@ layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_RAYS_BUFFER_IN
     FRayData RayData[];
 };
 
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_SHADING_INFO) buffer ShadingInfoBufferObject
+{
+    FShadingInfo ShadingInfo[];
+};
+
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_TEXTURE_SAMPLER) uniform sampler Sampler;
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_TEXTURE_ARRAY) uniform texture2D Textures[MAX_TEXTURES];

@@ -1008,7 +1008,7 @@ ImagePtr FVulkanContext::CreateImage2D(uint32_t Width, uint32_t Height, bool bMi
     return Image;
 }
 
-ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const std::string& DebugImageName)
+std::pair<ImagePtr, ImagePtr> FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const std::string& DebugImageName)
 {
     float* Out;
     int Width;
@@ -1095,39 +1095,17 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
 
 	IBLSamplingMap[0].Left = 0;
 
-	for (int i = 0; i < IBLSamplingMap.size() / 2; ++i)
-	{
-		auto Tmp = IBLSamplingMap[i];
-		IBLSamplingMap[i] = IBLSamplingMap[IBLSamplingMap.size() - i - 1];
-		IBLSamplingMap[IBLSamplingMap.size() - i - 1] = Tmp;
-	}
+	ImagePtr ImportanceImage = std::make_shared<FImage>(Width, Height, false, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32_UINT, VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, DebugImageName);
 
-	std::random_device RandomDevice;  // Seed generator
-	std::mt19937 Generator(RandomDevice());  // Mersenne Twister engine seeded with random_device
-	std::uniform_int_distribution<int> DistIS(0, Width * Height);
-	std::vector<double> DistributionImage(PixelsCount);
+	V::SetName(LogicalDevice, ImportanceImage->Image, DebugImageName + "Importance Image");
+	V::SetName(LogicalDevice, ImportanceImage->View, DebugImageName + "Importance Image View");
 
-	for (int i = 0; i < 100000; ++i)
-	{
-		auto Index = DistIS(Generator);
-		auto Margins =  IBLSamplingMap[Index];
-		std::uniform_int_distribution<int> Dist(Margins.Left, Margins.Right);
-		Index = Dist(Generator);
-		DistributionImage[Index] += 1.f;
-	}
+	ImportanceImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	RESOURCE_ALLOCATOR()->LoadDataToImage(*ImportanceImage, Width * Height * 2 * sizeof(uint32_t), IBLSamplingMap.data());
 
-    free(Out);
-
-	std::vector<float> FloatData(PixelsCount);
-
-	for (int i = 0; i < PixelsCount; ++i)
-	{
-		FloatData[i] = float(DistributionImage[i]);
-	}
-
-	SaveEXRWrapper(FloatData.data(), Width, Height, 1, false, "Test.exr");
-
-    return Image;
+    return {Image, ImportanceImage};
 }
 
 ImagePtr FVulkanContext::LoadImageFromFile(const std::string& Path, const std::string& DebugImageName)

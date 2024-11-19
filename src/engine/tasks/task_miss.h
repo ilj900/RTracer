@@ -12,6 +12,7 @@ public:
     void UpdateDescriptorSets() override;
     void RecordCommands() override;
 
+	VkSampler IBLImportanceSampler = VK_NULL_HANDLE;
     VkSampler IBLImageSamplerLinear = VK_NULL_HANDLE;
 	VkSampler IBLImageSamplerNearest = VK_NULL_HANDLE;
 };

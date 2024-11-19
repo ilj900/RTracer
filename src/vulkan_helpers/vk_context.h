@@ -12,12 +12,13 @@
 #include "vk_utils.h"
 #include "vk_pipeline.h"
 
-#include <functional>
-#include <vector>
-#include <string>
 #include <array>
-#include <memory>
+#include <functional>
 #include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 class FVulkanContext
 {
@@ -106,7 +107,7 @@ public:
     ImagePtr CreateImage2D(uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format,
                                VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties,
                                VkImageAspectFlags AspectFlags, VkDevice Device, const std::string& DebugImageName);
-    ImagePtr CreateEXRImageFromFile(const std::string& Path, const std::string& DebugImageName);
+    std::pair<ImagePtr, ImagePtr> CreateEXRImageFromFile(const std::string& Path, const std::string& DebugImageName);
     ImagePtr LoadImageFromFile(const std::string& Path, const std::string& DebugImageName);
     ImagePtr Wrap(VkImage ImageToWrap, uint32_t WidthIn, uint32_t HeightIn, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, const std::string& DebugImageName);
     void SaveImage(const FImage& Image, const std::string& FileName = "");

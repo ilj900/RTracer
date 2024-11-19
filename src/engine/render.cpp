@@ -997,9 +997,14 @@ void FRender::MaterialSetThinWalled(ECS::FEntity MaterialEntity, ECS::FEntity Te
 
 int FRender::SetIBL(const std::string& Path)
 {
-    ImagePtr IBLImage = VK_CONTEXT()->CreateEXRImageFromFile(Path, "V::IBL_Image");
+    auto [IBLImage, IBLImportanceImage] = VK_CONTEXT()->CreateEXRImageFromFile(Path, "V::IBL_Image");
+
     IBLImage->Transition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	TEXTURE_MANAGER()->RegisterTexture(IBLImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, "IBL Image");
+
+	IBLImportanceImage->Transition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	TEXTURE_MANAGER()->RegisterTexture(IBLImportanceImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, "IBL Image Importance");
+
 	MissTask->SetDirty(OUTDATED_DESCRIPTOR_SET | OUTDATED_COMMAND_BUFFER);
 	bAnyUpdate = true;
 

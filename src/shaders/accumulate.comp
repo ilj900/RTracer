@@ -26,7 +26,7 @@ void main()
     if (IncomingValue.w != 0)
     {
         /// Tone mapping
-        IncomingValue.xyz = IncomingValue.xyz / (vec3(1) + IncomingValue.xyz);
+        //IncomingValue.xyz = IncomingValue.xyz / (vec3(1) + IncomingValue.xyz);
         /// Gamma correction
         IncomingValue.xyz = pow(IncomingValue.xyz, vec3(1.f / 2.2f));
     }
