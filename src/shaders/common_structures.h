@@ -24,6 +24,11 @@ struct FHitPayload
     uint32_t MaterialIndex;
 };
 
+struct FIBLHitPayload
+{
+	FVector3 SampledColor;
+};
+
 struct FRayData
 {
     FVector4 Origin;
@@ -32,6 +37,13 @@ struct FRayData
     float TMin;
     float TMax;
     float Eta;
+};
+
+/// Information about geometry at intersection point
+struct FShadingInfo
+{
+	FVector4 Normal;
+	FVector4 WorldSpacePosition;
 };
 
 struct FDeviceCamera

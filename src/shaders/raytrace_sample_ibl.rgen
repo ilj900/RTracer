@@ -1,0 +1,76 @@
+#version 460
+
+#extension GL_EXT_ray_tracing : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+#include "common_defines.h"
+#include "common_structures.h"
+
+layout (location = 0) rayPayloadEXT FIBLHitPayload IBLHitPayload;
+
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_IBL_SAMPLE_TLAS_LAYOUT_INDEX) uniform accelerationStructureEXT TopLevelAS;
+
+layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = RAYTRACE_IBL_SAMPLE_IBL_IMAGE_IMPORTANCE_SAMPLER_INDEX) uniform sampler2D IBLImportanceSampler;
+layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = RAYTRACE_IBL_SAMPLE_IBL_IMAGE_SAMPLER_LINEAR_INDEX) uniform sampler2D IBLTextureSampler;
+
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_IBL_SAMPLE_SHADING_INFO_LAYOUT_INDEX) buffer ShadingInfoBufferObject
+{
+    FShadingInfo ShadingInfo[];
+};
+
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_IBL_SAMPLE_MATERIAL_INDEX_BUFFER) buffer SampledIBLBufferObject
+{
+    vec3 SampledIBL[];
+};
+
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_IBL_SAMPLE_MATERIAL_INDEX_BUFFER) buffer MaterialIndicesAOVBufferObject
+{
+    uint MaterialIndicesAOV[];
+};
+
+layout (set = GENERATE_RAYS_LAYOUT_INDEX, binding = GENERATE_RAYS_RENDER_ITERATION_BUFFER) buffer RenderIterationBufferObject
+{
+    uint RenderIteration;
+};
+
+void main()
+{
+    FSamplingState SamplingState = FSamplingState(gl_LaunchIDEXT.x, 0, RenderIteration);
+    /// Select a random UV
+    const vec2 ImportanceSampleUV = Sample2D(SamplingState);
+    /// Get the interval of pixels that we want to sample
+    vec2 ImportanceSampleInterval = vec2(texture(IBLImportanceSampler, ImportanceSampleUV));
+    /// Get texel index
+    int TexelIndex = ImportanceSampleInterval.x + (ImportanceSampleInterval.y - ImportanceSampleInterval.x) * RandomFloat(SamplingState);
+    const vec2 IBLImageSize = textureSize(IBLTextureSampler, 0);
+    vec2 UVCoordinates = vec2(float(TexelIndex % IBLImageSize.x) / float(IBLImageSize.x), float(TexelIndex % IBLImageSize.x) / float(IBLImageSize.y));
+    /// Map them to spherical coordinates
+    vec2 SphericalCoordinates = UVCoordinates * vec2(M_PI, M_2_PI)
+    vec3 CartesianCoordinates;
+    CartesianCoordinates.z = sin(SphericalCoordinates.y) * cos(SphericalCoordinates.x);
+    CartesianCoordinates.y = cos(SphericalCoordinates.y);
+    CartesianCoordinates.x = sin(SphericalCoordinates.y) * sin(SphericalCoordinates.x);
+
+    uint OriginalPixelIndex = gl_LaunchIDEXT.x;
+    uint NewPixelIndex = PixelIndexIndexMap[OriginalPixelIndex];
+
+    vec3 FragmentNormal = ShadingInfo[NewPixelIndex].Normal.xyz;
+
+    /// If sampling direction not in the hemisphere defined by fragment's normal
+    /// Then we ignore it
+    if (dot(CartesianCoordinates, FragmentNormal) < 0)
+    {
+        return;
+    }
+
+    /// Otherwise we prepare the ray for calculations
+    FRayData RayData;
+    RayData.RayFlags = 0;
+
+    RayData.Origin.xyz = ShadingInfo[NewPixelIndex].WorldSpacePosition.xyz;
+    RayData.Direction.xyz = CartesianCoordinates;
+
+    traceRayEXT(TopLevelAS, RayData.RayFlags, 0xFF, 0, 0, 0, RayData.Origin.xyz, RayData.TMin, RayData.Direction.xyz, RayData.TMax, 0);
+
+    SampledIBL[NewPixelIndex] = IBLHitPayload.SampledColor;
+}
