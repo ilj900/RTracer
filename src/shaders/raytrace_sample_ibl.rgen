@@ -39,11 +39,12 @@ void main()
     /// Select a random UV
     const vec2 ImportanceSampleUV = Sample2D(SamplingState);
     /// Get the interval of pixels that we want to sample
-    vec2 ImportanceSampleInterval = vec2(texture(IBLImportanceSampler, ImportanceSampleUV));
+    ivec2 ImportanceSampleInterval = vec2(texture(IBLImportanceSampler, ImportanceSampleUV));
     /// Get texel index
-    int TexelIndex = ImportanceSampleInterval.x + (ImportanceSampleInterval.y - ImportanceSampleInterval.x) * RandomFloat(SamplingState);
+    int TexelIndex = ImportanceSampleInterval.x + (ImportanceSampleInterval.y - ImportanceSampleInterval.x + 1) * RandomFloat(SamplingState);
     const vec2 IBLImageSize = textureSize(IBLTextureSampler, 0);
-    vec2 UVCoordinates = vec2(float(TexelIndex % IBLImageSize.x) / float(IBLImageSize.x), float(TexelIndex % IBLImageSize.x) / float(IBLImageSize.y));
+    /// Transform texel index into actual UV coordinates
+    vec2 UVCoordinates = vec2(float(TexelIndex % IBLImageSize.x + 0.5) / float(IBLImageSize.x), float(TexelIndex % IBLImageSize.x + 0.5) / float(IBLImageSize.y));
     /// Map them to spherical coordinates
     vec2 SphericalCoordinates = UVCoordinates * vec2(M_PI, M_2_PI)
     vec3 CartesianCoordinates;
@@ -57,8 +58,8 @@ void main()
     vec3 FragmentNormal = ShadingInfo[NewPixelIndex].Normal.xyz;
 
     /// If sampling direction not in the hemisphere defined by fragment's normal
-    /// Then we ignore it
-    if (dot(CartesianCoordinates, FragmentNormal) < 0)
+    /// Then we ignore it?
+    if (dot(CartesianCoordinates, FragmentNormal) <= 0)
     {
         return;
     }
@@ -66,11 +67,15 @@ void main()
     /// Otherwise we prepare the ray for calculations
     FRayData RayData;
     RayData.RayFlags = 0;
-
     RayData.Origin.xyz = ShadingInfo[NewPixelIndex].WorldSpacePosition.xyz;
     RayData.Direction.xyz = CartesianCoordinates;
 
+    /// Trace the ray
     traceRayEXT(TopLevelAS, RayData.RayFlags, 0xFF, 0, 0, 0, RayData.Origin.xyz, RayData.TMin, RayData.Direction.xyz, RayData.TMax, 0);
 
-    SampledIBL[NewPixelIndex] = IBLHitPayload.SampledColor;
+    /// And if we didn't hit any geometry, then we sample the IBL
+    if (IBLHitPayload.PayloadFlags != 0)
+    {
+        SampledIBL[NewPixelIndex] += texture(IBLTextureSampler, UVCoordinates);
+    }
 }

@@ -26,7 +26,7 @@ struct FHitPayload
 
 struct FIBLHitPayload
 {
-	FVector3 SampledColor;
+	uint32_t PayloadFlags;
 };
 
 struct FRayData

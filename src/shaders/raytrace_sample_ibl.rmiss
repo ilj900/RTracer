@@ -6,12 +6,10 @@
 #include "common_defines.h"
 #include "common_structures.h"
 
-layout (location = 0) rayPayloadInEXT FHitPayload HitPayload;
+layout (location = 0) rayPayloadInEXT FIBLHitPayload HitPayload;
 
 void main()
 {
-    HitPayload.RenderableIndex = UINT_MAX;
-    HitPayload.PrimitiveIndex = UINT_MAX;
-    HitPayload.HitUV = vec2(0);
-    HitPayload.MaterialIndex = TOTAL_MATERIALS - 2;
+    /// We only need to mark it that we missed any geometry
+    HitPayload.PayloadFlags = 0;
 }
