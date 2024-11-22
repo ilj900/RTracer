@@ -8,34 +8,36 @@
 
 layout (location = 0) rayPayloadEXT FIBLHitPayload IBLHitPayload;
 
-layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_IBL_SAMPLE_TLAS_LAYOUT_INDEX) uniform accelerationStructureEXT TopLevelAS;
+layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_TLAS_INDEX) uniform accelerationStructureEXT TLAS;
 
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = RAYTRACE_IBL_SAMPLE_IBL_IMAGE_IMPORTANCE_SAMPLER_INDEX) uniform sampler2D IBLImportanceSampler;
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = RAYTRACE_IBL_SAMPLE_IBL_IMAGE_SAMPLER_LINEAR_INDEX) uniform sampler2D IBLTextureSampler;
+layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_IMPORTANCE_SAMPLER_INDEX) uniform sampler2D IBLImportanceSampler;
+layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_IMAGE_SAMPLER_INDEX) uniform sampler2D IBLTextureSampler;
 
-layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_IBL_SAMPLE_SHADING_INFO_LAYOUT_INDEX) buffer ShadingInfoBufferObject
-{
-    FShadingInfo ShadingInfo[];
-};
+layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_NORMAL_AOV_IMAGE_INDEX, rgba32f) uniform image2D NormalAOVImage;
 
-layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_IBL_SAMPLE_MATERIAL_INDEX_BUFFER) buffer SampledIBLBufferObject
+layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_SAMPLED_IBL_BUFFER_INDEX) buffer SampledIBLBufferObject
 {
     vec3 SampledIBL[];
 };
 
-layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_IBL_SAMPLE_MATERIAL_INDEX_BUFFER) buffer MaterialIndicesAOVBufferObject
+layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_PIXEL_INDEX_BUFFER) buffer PixelIndexIndexMapBufferObject
 {
-    uint MaterialIndicesAOV[];
+    uint PixelIndexIndexMap[];
 };
 
-layout (set = GENERATE_RAYS_LAYOUT_INDEX, binding = GENERATE_RAYS_RENDER_ITERATION_BUFFER) buffer RenderIterationBufferObject
+layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_RENDER_ITERATION_BUFFER_INDEX) buffer RenderIterationBufferObject
 {
     uint RenderIteration;
 };
 
+layout (push_constant) uniform PushConstantsBlock
+{
+    FViewportResolutionPushConstants PushConstants;
+};
+
 void main()
 {
-    FSamplingState SamplingState = FSamplingState(gl_LaunchIDEXT.x, 0, RenderIteration);
+    FSamplingState SamplingState = FSamplingState(gl_GlobalInvocationID.x, 0, RenderIteration);
     /// Select a random UV
     const vec2 ImportanceSampleUV = Sample2D(SamplingState);
     /// Get the interval of pixels that we want to sample
@@ -52,10 +54,11 @@ void main()
     CartesianCoordinates.y = cos(SphericalCoordinates.y);
     CartesianCoordinates.x = sin(SphericalCoordinates.y) * sin(SphericalCoordinates.x);
 
-    uint OriginalPixelIndex = gl_LaunchIDEXT.x;
+    uint OriginalPixelIndex = gl_GlobalInvocationID.x;
     uint NewPixelIndex = PixelIndexIndexMap[OriginalPixelIndex];
 
-    vec3 FragmentNormal = ShadingInfo[NewPixelIndex].Normal.xyz;
+    vec2 NormalUV = vec2(float(gl_GlobalInvocationID.x % PushConstants.Width) / float(PushConstants.Width), float(gl_GlobalInvocationID.x / PushConstants.Width) / float(PushConstants.Height));
+    vec3 FragmentNormal = imageLoad(NormalAOVImage, NormalUV);
 
     /// If sampling direction not in the hemisphere defined by fragment's normal
     /// Then we ignore it?
@@ -71,7 +74,7 @@ void main()
     RayData.Direction.xyz = CartesianCoordinates;
 
     /// Trace the ray
-    traceRayEXT(TopLevelAS, RayData.RayFlags, 0xFF, 0, 0, 0, RayData.Origin.xyz, RayData.TMin, RayData.Direction.xyz, RayData.TMax, 0);
+    traceRayEXT(TLAS, RayData.RayFlags, 0xFF, 0, 0, 0, RayData.Origin.xyz, RayData.TMin, RayData.Direction.xyz, RayData.TMax, 0);
 
     /// And if we didn't hit any geometry, then we sample the IBL
     if (IBLHitPayload.PayloadFlags != 0)

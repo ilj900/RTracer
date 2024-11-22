@@ -58,6 +58,7 @@ set(INCLUDE
         tasks/task_passthrough.h
         tasks/task_raytrace.h
         tasks/task_shade.h
+        tasks/task_sample_ibl.h
         tasks/task_generate_initial_rays.h
         tasks/task_reset_active_ray_count.h
         tasks/task_update_tlas.h
@@ -83,6 +84,7 @@ set(SOURCE
         tasks/task_accumulate.cpp
         tasks/task_clear_image.cpp
         tasks/task_shade.cpp
+        tasks/task_sample_ibl.cpp
         tasks/task_generate_initial_rays.cpp
         tasks/task_reset_active_ray_count.cpp
         tasks/task_update_tlas.cpp
