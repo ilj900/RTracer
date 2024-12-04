@@ -25,6 +25,7 @@
 #include "tasks/task_reset_active_ray_count.h"
 #include "tasks/task_reset.h"
 #include "tasks/task_advance_render_count.h"
+#include "tasks/task_sample_ibl.h"
 
 #include "renderer_options.h"
 
@@ -203,6 +204,7 @@ public:
     std::shared_ptr<FComputePrefixSumsZeroOutTask> ComputePrefixSumsZeroOutTask = nullptr;
     std::shared_ptr<FShadeTask> ShadeTask = nullptr;
     std::shared_ptr<FMissTask> MissTask = nullptr;
+	std::shared_ptr<FSampleIBLTask> SampleIBLTask = nullptr;
     std::shared_ptr<FAccumulateTask> AccumulateTask = nullptr;
     std::shared_ptr<FPassthroughTask> PassthroughTask = nullptr;
     std::shared_ptr<FClearImageTask> ClearImageTask = nullptr;

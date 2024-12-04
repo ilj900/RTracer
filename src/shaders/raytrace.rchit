@@ -15,6 +15,11 @@ layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_RENDERABLE_BUFFER_INDEX)
     FRenderable Renderables[];
 };
 
+layout (set = RAYTRACE_LAYOUT_INDEX, binding = RAYTRACE_TOTAL_HITS_BUFFER_INDEX) buffer RenderableBufferObject
+{
+    uint HitsCount;
+};
+
 FRenderable FetchRenderable()
 {
     return Renderables[nonuniformEXT(gl_InstanceCustomIndexEXT)];
@@ -28,4 +33,6 @@ void main()
     HitPayload.PrimitiveIndex = gl_PrimitiveID;
     HitPayload.HitUV = HitAttributes;
     HitPayload.MaterialIndex = Renderable.MaterialIndex;
+
+    HitsCount++;
 }

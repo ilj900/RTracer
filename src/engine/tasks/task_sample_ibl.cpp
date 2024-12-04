@@ -18,26 +18,26 @@ FSampleIBLTask::FSampleIBLTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t Sub
 
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
-    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_TLAS_LAYOUT_INDEX,
-                                              {VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,  VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
-    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_RAYS_DATA_BUFFER,
-                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
-	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_PIXEL_INDEX_BUFFER,
-											   {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
-    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_RENDERABLE_BUFFER_INDEX,
-                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
-    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_HIT_BUFFER,
-                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
-    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_MATERIAL_INDEX_BUFFER,
-                                              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, RAYTRACE_SAMPLE_IBL_TLAS_INDEX,
+		{VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,  VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
+	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, RAYTRACE_SAMPLE_IBL_IMPORTANCE_SAMPLER_INDEX,
+		{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, RAYTRACE_SAMPLE_IBL_IMAGE_SAMPLER_INDEX,
+		{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, RAYTRACE_SAMPLE_IBL_NORMAL_AOV_IMAGE_INDEX,
+		{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, RAYTRACE_SAMPLE_IBL_SAMPLED_IBL_BUFFER_INDEX,
+		{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, RAYTRACE_SAMPLE_IBL_PIXEL_INDEX_BUFFER,
+		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, RAYTRACE_SAMPLE_IBL_RENDER_ITERATION_BUFFER_INDEX,
+		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 
-    FBuffer HitsBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FHit) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "HitsBuffer");
-    RESOURCE_ALLOCATOR()->RegisterBuffer(HitsBuffer, "HitsBuffer");
+    FBuffer SampledIBLBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "");
+    RESOURCE_ALLOCATOR()->RegisterBuffer(SampledIBLBuffer, "SampledIBLBuffer");
 
-    FBuffer MaterialIndicesAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialIndicesAOVBuffer");
-    RESOURCE_ALLOCATOR()->RegisterBuffer(MaterialIndicesAOVBuffer, "MaterialIndicesAOVBuffer");
-
-    DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
+	VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_RAYGEN_BIT_KHR, 0, sizeof(FViewportResolutionPushConstants)};
+    DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
     PipelineStageFlags = VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
@@ -45,8 +45,7 @@ FSampleIBLTask::FSampleIBLTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t Sub
 
 FSampleIBLTask::~FSampleIBLTask()
 {
-    RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("HitsBuffer");
-    RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("MaterialIndicesAOVBuffer");
+    RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("SampledIBLBuffer");
     GetResourceAllocator()->DestroyBuffer(SBTBuffer);
 };
 
@@ -54,9 +53,9 @@ void FSampleIBLTask::Init()
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
-    auto RayGenerationShader = FShader("../../../src/shaders/raytrace.rgen");
-    auto RayClosestHitShader = FShader("../../../src/shaders/raytrace.rchit");
-    auto RayMissShader = FShader("../../../src/shaders/raytrace.rmiss");
+    auto RayGenerationShader = FShader("../../../src/shaders/raytrace_sample_ibl.rgen");
+    auto RayClosestHitShader = FShader("../../../src/shaders/raytrace_sample_ibl.rchit");
+    auto RayMissShader = FShader("../../../src/shaders/raytrace_sample_ibl.rmiss");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
 
@@ -132,12 +131,13 @@ void FSampleIBLTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < TotalSize; ++i)
     {
-        VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_LAYOUT_INDEX, i, &ACCELERATION_STRUCTURE_SYSTEM()->TLAS.AccelerationStructure);
-        UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_RAYS_DATA_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("InitialRaysBuffer"));
-		UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_PIXEL_INDEX_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("PixelIndexBuffer"));
-        UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_RENDERABLE_BUFFER_INDEX, i, RENDERABLE_SYSTEM()->DeviceBuffer);
-        UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_HIT_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("HitsBuffer"));
-        UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_MATERIAL_INDEX_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("MaterialIndicesAOVBuffer"));
+        VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, RAYTRACE_LAYOUT_INDEX, i, &ACCELERATION_STRUCTURE_SYSTEM()->TLAS.AccelerationStructure);
+		UpdateDescriptorSet(RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, RAYTRACE_SAMPLE_IBL_IMPORTANCE_SAMPLER_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("IBL Importance Image"));
+        UpdateDescriptorSet(RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, RAYTRACE_SAMPLE_IBL_IMAGE_SAMPLER_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("IBL Image"));
+        UpdateDescriptorSet(RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, RAYTRACE_SAMPLE_IBL_NORMAL_AOV_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("RayTracingNormalAOVImage"));
+        UpdateDescriptorSet(RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, RAYTRACE_SAMPLE_IBL_SAMPLED_IBL_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer("SampledIBLBuffer"));
+		UpdateDescriptorSet(RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, RAYTRACE_SAMPLE_IBL_PIXEL_INDEX_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("PixelIndexBuffer"));
+		UpdateDescriptorSet(RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, RAYTRACE_SAMPLE_IBL_RENDER_ITERATION_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer("RenderIterationBuffer"));
     }
 };
 
@@ -157,6 +157,12 @@ void FSampleIBLTask::RecordCommands()
             auto RayTracingDescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, RAYTRACE_LAYOUT_INDEX, i);
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &RayTracingDescriptorSet, 0, nullptr);
+
+			FViewportResolutionPushConstants PushConstants = { Width, Height};
+			vkCmdPushConstants(CommandBuffer, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
+				VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FViewportResolutionPushConstants), &PushConstants);
+
+
             V::vkCmdTraceRaysIndirectKHR(CommandBuffer, &RGenRegion, &RMissRegion, &RHitRegion, &RCallRegion, ActiveRayCountBufferDeviceAddress);
         }, QueueFlagsBits);
 

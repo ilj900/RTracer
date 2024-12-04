@@ -189,6 +189,7 @@ int FRender::Init()
     SortMaterialsTask 					= std::make_shared<FSortMaterialsTask>				(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ShadeTask 							= std::make_shared<FShadeTask>						(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     MissTask 							= std::make_shared<FMissTask>						(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	SampleIBLTask						= std::make_shared<FSampleIBLTask>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	AdvanceRenderCountTask 				= std::make_shared<FAdvanceRenderCount>				(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     AccumulateTask 						= std::make_shared<FAccumulateTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ClearImageTask 						= std::make_shared<FClearImageTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -228,6 +229,7 @@ int FRender::Cleanup()
     ComputePrefixSumsDownSweepTask 	= nullptr;
     ShadeTask 						= nullptr;
     MissTask 						= nullptr;
+	SampleIBLTask					= nullptr;
 	AdvanceRenderCountTask			= nullptr;
     AccumulateTask 					= nullptr;
     ClearImageTask 					= nullptr;
@@ -380,6 +382,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	SortMaterialsTask->Reload();
 	ShadeTask->Reload();
 	MissTask->Reload();
+	SampleIBLTask->Reload();
 	AdvanceRenderCountTask->Reload();
 	AccumulateTask->Reload();
 	ClearImageTask->Reload();
@@ -450,6 +453,8 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 		SynchronizationPoint = ComputeOffsetsPerMaterialTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = SortMaterialsTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
+
+		SynchronizationPoint = SampleIBLTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = ShadeTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
