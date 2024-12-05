@@ -11,9 +11,9 @@
 
 #include "utils.h"
 
-FClearBufferTask::FClearBufferTask(const std::string& BufferNameIn, VkDevice LogicalDevice) :
+FClearBufferTask::FClearBufferTask(const std::string& BufferNameIn, uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
 	BufferName(BufferNameIn),
-	FExecutableTask(1, 1, 1, 1, LogicalDevice)
+	FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice)
 {
     Name = "Clear" + BufferName + " buffer pipeline";
 

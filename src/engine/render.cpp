@@ -209,10 +209,10 @@ int FRender::Init()
     AccumulateTask 						= std::make_shared<FAccumulateTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ClearImageTask 						= std::make_shared<FClearImageTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     PassthroughTask 					= std::make_shared<FPassthroughTask>				(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	ClearNormalAOVBuffer				= std::make_shared<FClearBufferTask>				("NormalAOVBuffer", VK_CONTEXT()->LogicalDevice);
-	ClearUVAOVBuffer					= std::make_shared<FClearBufferTask>				("UVAOVBuffer", VK_CONTEXT()->LogicalDevice);
-	ClearWorldSpacePositionAOVBuffer	= std::make_shared<FClearBufferTask>				("WorldSpacePositionAOVBuffer", VK_CONTEXT()->LogicalDevice);
-	ClearSampledIBLBuffer				= std::make_shared<FClearBufferTask>				("SampledIBLBuffer", VK_CONTEXT()->LogicalDevice);
+	ClearNormalAOVBuffer				= std::make_shared<FClearBufferTask>				("NormalAOVBuffer", 				Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ClearUVAOVBuffer					= std::make_shared<FClearBufferTask>				("UVAOVBuffer", 					Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ClearWorldSpacePositionAOVBuffer	= std::make_shared<FClearBufferTask>				("WorldSpacePositionAOVBuffer", 	Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ClearSampledIBLBuffer				= std::make_shared<FClearBufferTask>				("SampledIBLBuffer", 			Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 
     for (int i = 0; i < MaxFramesInFlight; ++i)
     {
@@ -472,13 +472,13 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 	for (uint32_t i = 0; i < RecursionDepth; ++i)
 	{
-		SynchronizationPoint = ClearNormalAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, 0, 0);
+		SynchronizationPoint = ClearNormalAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
-		SynchronizationPoint = ClearUVAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, 0, 0);
+		SynchronizationPoint = ClearUVAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
-		SynchronizationPoint = ClearWorldSpacePositionAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, 0, 0);
+		SynchronizationPoint = ClearWorldSpacePositionAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
-		SynchronizationPoint = ClearSampledIBLBuffer->Submit(PipelineStageFlags, SynchronizationPoint, 0, 0);
+		SynchronizationPoint = ClearSampledIBLBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = RayTraceTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
