@@ -13,6 +13,8 @@ public:
     void UpdateDescriptorSets() override;
     void RecordCommands() override;
 
+	VkSampler Sampler = VK_NULL_HANDLE;
+
     FBuffer SBTBuffer;
 
     VkStridedDeviceAddressRegionKHR RGenRegion{};

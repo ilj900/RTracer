@@ -174,6 +174,20 @@ int FRender::Init()
         ImagesInFlight.push_back(VK_CONTEXT()->CreateSignalledFence());
     }
 
+	/// Create internal buffers
+	FBuffer NormalAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "NormalAOVBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(NormalAOVBuffer, "NormalAOVBuffer");
+
+	FBuffer UVAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector2) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "UVAOVBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(UVAOVBuffer, "UVAOVBuffer");
+
+	FBuffer WorldSpacePositionAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "WorldSpacePositionAOVBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(WorldSpacePositionAOVBuffer, "WorldSpacePositionAOVBuffer");
+
+	FBuffer SampledIBLBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(SampledIBLBuffer, "SampledIBLBuffer");
+
+	/// Create tasks
 	UpdateTLASTask 						= std::make_shared<FUpdateTLASTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetTask							= std::make_shared<FReset>							(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     GenerateRaysTask 					= std::make_shared<FGenerateInitialRays>			(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -187,6 +201,7 @@ int FRender::Init()
     ComputePrefixSumsDownSweepTask 		= std::make_shared<FComputePrefixSumsDownSweepTask>	(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ComputeOffsetsPerMaterialTask 		= std::make_shared<FComputeOffsetsPerMaterialTask>	(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     SortMaterialsTask 					= std::make_shared<FSortMaterialsTask>				(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ComputeShadingDataTask				= std::make_shared<FComputeShadingDataTask>			(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ShadeTask 							= std::make_shared<FShadeTask>						(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     MissTask 							= std::make_shared<FMissTask>						(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	SampleIBLTask						= std::make_shared<FSampleIBLTask>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -194,6 +209,10 @@ int FRender::Init()
     AccumulateTask 						= std::make_shared<FAccumulateTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ClearImageTask 						= std::make_shared<FClearImageTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     PassthroughTask 					= std::make_shared<FPassthroughTask>				(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ClearNormalAOVBuffer				= std::make_shared<FClearBufferTask>				("NormalAOVBuffer", VK_CONTEXT()->LogicalDevice);
+	ClearUVAOVBuffer					= std::make_shared<FClearBufferTask>				("UVAOVBuffer", VK_CONTEXT()->LogicalDevice);
+	ClearWorldSpacePositionAOVBuffer	= std::make_shared<FClearBufferTask>				("WorldSpacePositionAOVBuffer", VK_CONTEXT()->LogicalDevice);
+	ClearSampledIBLBuffer				= std::make_shared<FClearBufferTask>				("SampledIBLBuffer", VK_CONTEXT()->LogicalDevice);
 
     for (int i = 0; i < MaxFramesInFlight; ++i)
     {
@@ -214,26 +233,38 @@ int FRender::Cleanup()
 {
 	VK_CONTEXT()->WaitIdle();
 
-	UpdateTLASTask 					= nullptr;
-	ResetTask 						= nullptr;
-    GenerateRaysTask 				= nullptr;
-	ResetActiveRayCountTask 		= nullptr;
-    RayTraceTask 					= nullptr;
-    ClearMaterialsCountPerChunkTask = nullptr;
-    ClearTotalMaterialsCountTask 	= nullptr;
-    ComputeOffsetsPerMaterialTask 	= nullptr;
-    CountMaterialsPerChunkTask 		= nullptr;
-    SortMaterialsTask 				= nullptr;
-    ComputePrefixSumsUpSweepTask 	= nullptr;
-    ComputePrefixSumsZeroOutTask 	= nullptr;
-    ComputePrefixSumsDownSweepTask 	= nullptr;
-    ShadeTask 						= nullptr;
-    MissTask 						= nullptr;
-	SampleIBLTask					= nullptr;
-	AdvanceRenderCountTask			= nullptr;
-    AccumulateTask 					= nullptr;
-    ClearImageTask 					= nullptr;
-    PassthroughTask 				= nullptr;
+	/// Free buffers
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("NormalAOVBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("UVAOVBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("WorldSpacePositionAOVBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("SampledIBLBuffer");
+
+	/// Free tasks
+	UpdateTLASTask 						= nullptr;
+	ResetTask 							= nullptr;
+    GenerateRaysTask 					= nullptr;
+	ResetActiveRayCountTask 			= nullptr;
+    RayTraceTask 						= nullptr;
+    ClearMaterialsCountPerChunkTask 	= nullptr;
+    ClearTotalMaterialsCountTask 		= nullptr;
+    ComputeOffsetsPerMaterialTask 		= nullptr;
+    CountMaterialsPerChunkTask 			= nullptr;
+    SortMaterialsTask 					= nullptr;
+    ComputePrefixSumsUpSweepTask 		= nullptr;
+    ComputePrefixSumsZeroOutTask 		= nullptr;
+    ComputePrefixSumsDownSweepTask 		= nullptr;
+	ComputeShadingDataTask				= nullptr;
+	SampleIBLTask						= nullptr;
+    ShadeTask 							= nullptr;
+    MissTask 							= nullptr;
+	AdvanceRenderCountTask				= nullptr;
+    AccumulateTask 						= nullptr;
+    ClearImageTask 						= nullptr;
+    PassthroughTask 					= nullptr;
+	ClearNormalAOVBuffer				= nullptr;
+	ClearUVAOVBuffer					= nullptr;
+	ClearWorldSpacePositionAOVBuffer	= nullptr;
+	ClearSampledIBLBuffer 				= nullptr;
 
 	ExternalTasks.clear();
 
@@ -380,13 +411,18 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	ComputePrefixSumsDownSweepTask->Reload();
 	ComputeOffsetsPerMaterialTask->Reload();
 	SortMaterialsTask->Reload();
+	ComputeShadingDataTask->Reload();
+	SampleIBLTask->Reload();
 	ShadeTask->Reload();
 	MissTask->Reload();
-	SampleIBLTask->Reload();
 	AdvanceRenderCountTask->Reload();
 	AccumulateTask->Reload();
 	ClearImageTask->Reload();
 	PassthroughTask->Reload();
+	ClearNormalAOVBuffer->Reload();
+	ClearUVAOVBuffer->Reload();
+	ClearWorldSpacePositionAOVBuffer->Reload();
+	ClearSampledIBLBuffer->Reload();
 
 	FSynchronizationPoint SynchronizationPoint = {{}, {ImagesInFlight[CurrentFrame]}, {}, {}};
 
@@ -436,6 +472,14 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 	for (uint32_t i = 0; i < RecursionDepth; ++i)
 	{
+		SynchronizationPoint = ClearNormalAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, 0, 0);
+
+		SynchronizationPoint = ClearUVAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, 0, 0);
+
+		SynchronizationPoint = ClearWorldSpacePositionAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, 0, 0);
+
+		SynchronizationPoint = ClearSampledIBLBuffer->Submit(PipelineStageFlags, SynchronizationPoint, 0, 0);
+
 		SynchronizationPoint = RayTraceTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = ClearMaterialsCountPerChunkTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
@@ -453,6 +497,8 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 		SynchronizationPoint = ComputeOffsetsPerMaterialTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = SortMaterialsTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
+
+		SynchronizationPoint = ComputeShadingDataTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = SampleIBLTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
@@ -1008,7 +1054,7 @@ int FRender::SetIBL(const std::string& Path)
 	TEXTURE_MANAGER()->RegisterTexture(IBLImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, "IBL Image");
 
 	IBLImportanceImage->Transition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	TEXTURE_MANAGER()->RegisterTexture(IBLImportanceImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, "IBL Image Importance");
+	TEXTURE_MANAGER()->RegisterTexture(IBLImportanceImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, "IBL Importance Image");
 
 	MissTask->SetDirty(OUTDATED_DESCRIPTOR_SET | OUTDATED_COMMAND_BUFFER);
 	bAnyUpdate = true;
@@ -1031,6 +1077,18 @@ void FRender::GetAllTimings(std::vector<std::string>& Names, std::vector<std::ve
 
 	Names.push_back(ResetActiveRayCountTask->Name);
 	Timings.push_back(ResetActiveRayCountTask->RequestTiming(FrameIndex));
+
+	Names.push_back(ClearNormalAOVBuffer->Name);
+	Timings.push_back(ClearNormalAOVBuffer->RequestTiming(FrameIndex));
+
+	Names.push_back(ClearUVAOVBuffer->Name);
+	Timings.push_back(ClearUVAOVBuffer->RequestTiming(FrameIndex));
+
+	Names.push_back(ClearWorldSpacePositionAOVBuffer->Name);
+	Timings.push_back(ClearWorldSpacePositionAOVBuffer->RequestTiming(FrameIndex));
+
+	Names.push_back(ClearSampledIBLBuffer->Name);
+	Timings.push_back(ClearSampledIBLBuffer->RequestTiming(FrameIndex));
 
 	Names.push_back(RayTraceTask->Name);
 	Timings.push_back(RayTraceTask->RequestTiming(FrameIndex));
@@ -1058,6 +1116,12 @@ void FRender::GetAllTimings(std::vector<std::string>& Names, std::vector<std::ve
 
 	Names.push_back(ComputePrefixSumsZeroOutTask->Name);
 	Timings.push_back(ComputePrefixSumsZeroOutTask->RequestTiming(FrameIndex));
+
+	Names.push_back(ComputeShadingDataTask->Name);
+	Timings.push_back(ComputeShadingDataTask->RequestTiming(FrameIndex));
+
+	Names.push_back(SampleIBLTask->Name);
+	Timings.push_back(SampleIBLTask->RequestTiming(FrameIndex));
 
 	Names.push_back(ShadeTask->Name);
 	Timings.push_back(ShadeTask->RequestTiming(FrameIndex));

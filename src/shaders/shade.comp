@@ -52,19 +52,19 @@ layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_RENDER_ITERATI
     uint RenderIteration;
 };
 
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_NORMAL_AOV_BUFFER_INDEX) buffer NormalAOVBufferObject
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_NORMAL_AOV_DATA_BUFFER_INDEX) buffer NormalAOVBufferObject
 {
     vec4 NormalAOVData[]; /// 3 floats for normal and 1 for front/back facing info
 };
 
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_UV_AOV_BUFFER_INDEX) buffer NormalAOVBufferObject
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_UV_AOV_DATA_BUFFER_INDEX) buffer UVAOVBufferObject
 {
     vec2 UVAOVData[];
 };
 
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_WORLD_SPACE_POSITION_AOV_BUFFER_INDEX) buffer WorldSpacePositionAOVBufferObject
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_WORLD_SPACE_POSITION_AOV_DATA_BUFFER_INDEX) buffer WorldSpacePositionAOVBufferObject
 {
-    vec3 WorldSpacePositionAOVData[];
+    vec4 WorldSpacePositionAOVData[];
 };
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_NORMAL_AOV_IMAGE_INDEX, rgba32f) uniform image2D NormalAOVImage;
@@ -136,10 +136,13 @@ void main()
     }
 
     vec2 TextureCoords = UVAOVData[NewPixelIndex];
+    vec4 NormalInWorldSpace = NormalAOVData[NewPixelIndex];
+    vec3 PointOfIntersectionInWorldSpace = WorldSpacePositionAOVData[NewPixelIndex].xyz;
+
     FDeviceMaterial Material = GetMaterial(TextureCoords);
 
     FSamplingState SamplingState = FSamplingState(gl_GlobalInvocationID.x, 0, RenderIteration);
-    vec3 SamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace, SamplingState, bFrontFacing);
+    vec3 SamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace.xyz, SamplingState, NormalInWorldSpace.w == 1);
     RayData.Origin.xyz = PointOfIntersectionInWorldSpace + RayData.Direction.xyz * 0.00000012f;
 
     if (PushConstants.BounceIndex == LAST_BOUNCE)
@@ -153,7 +156,7 @@ void main()
 
     if (PushConstants.BounceIndex == 0)
     {
-        imageStore(NormalAOVImage, ivec2(NewPixelCoords), vec4(NormalInWorldSpace, 0.f));
+        imageStore(NormalAOVImage, ivec2(NewPixelCoords), vec4(NormalInWorldSpace.xyz, 0.f));
         imageStore(UVAOVImage, ivec2(NewPixelCoords), vec4(TextureCoords, 0.f, 0.f));
     }
 

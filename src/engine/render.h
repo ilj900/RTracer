@@ -6,7 +6,12 @@
 
 #include "entity.h"
 
+#include "tasks/task_update_tlas.h"
+#include "tasks/task_reset.h"
+#include "tasks/task_clear_image.h"
 #include "tasks/task_generate_initial_rays.h"
+#include "tasks/task_reset_active_ray_count.h"
+#include "tasks/task_clear_buffer.h"
 #include "tasks/task_raytrace.h"
 #include "tasks/task_material_sort_clear_materials_count_per_chunk.h"
 #include "tasks/task_material_sort_clear_total_materials_count.h"
@@ -16,16 +21,13 @@
 #include "tasks/task_material_sort_compute_prefix_sums_down_sweep.h"
 #include "tasks/task_material_sort_compute_prefix_sums_up_sweep.h"
 #include "tasks/task_material_sort_compute_prefix_sums_zero_out.h"
-#include "tasks/task_update_tlas.h"
-#include "tasks/task_miss.h"
-#include "tasks/task_shade.h"
-#include "tasks/task_accumulate.h"
-#include "tasks/task_passthrough.h"
-#include "tasks/task_clear_image.h"
-#include "tasks/task_reset_active_ray_count.h"
-#include "tasks/task_reset.h"
-#include "tasks/task_advance_render_count.h"
+#include "tasks/task_compute_shading_data.h"
 #include "tasks/task_sample_ibl.h"
+#include "tasks/task_shade.h"
+#include "tasks/task_miss.h"
+#include "tasks/task_passthrough.h"
+#include "tasks/task_accumulate.h"
+#include "tasks/task_advance_render_count.h"
 
 #include "renderer_options.h"
 
@@ -202,14 +204,19 @@ public:
     std::shared_ptr<FComputePrefixSumsDownSweepTask> ComputePrefixSumsDownSweepTask = nullptr;
     std::shared_ptr<FComputePrefixSumsUpSweepTask> ComputePrefixSumsUpSweepTask = nullptr;
     std::shared_ptr<FComputePrefixSumsZeroOutTask> ComputePrefixSumsZeroOutTask = nullptr;
+	std::shared_ptr<FComputeShadingDataTask> ComputeShadingDataTask = nullptr;
+	std::shared_ptr<FSampleIBLTask> SampleIBLTask = nullptr;
     std::shared_ptr<FShadeTask> ShadeTask = nullptr;
     std::shared_ptr<FMissTask> MissTask = nullptr;
-	std::shared_ptr<FSampleIBLTask> SampleIBLTask = nullptr;
     std::shared_ptr<FAccumulateTask> AccumulateTask = nullptr;
     std::shared_ptr<FPassthroughTask> PassthroughTask = nullptr;
     std::shared_ptr<FClearImageTask> ClearImageTask = nullptr;
 	std::shared_ptr<FReset> ResetTask = nullptr;
 	std::shared_ptr<FAdvanceRenderCount> AdvanceRenderCountTask = nullptr;
+	std::shared_ptr<FClearBufferTask> ClearNormalAOVBuffer = nullptr;
+	std::shared_ptr<FClearBufferTask> ClearUVAOVBuffer = nullptr;
+	std::shared_ptr<FClearBufferTask> ClearWorldSpacePositionAOVBuffer = nullptr;
+	std::shared_ptr<FClearBufferTask> ClearSampledIBLBuffer = nullptr;
 	std::vector<std::shared_ptr<FExecutableTask>> ExternalTasks;
 
     std::vector<FSynchronizationPoint> ImageAvailable;

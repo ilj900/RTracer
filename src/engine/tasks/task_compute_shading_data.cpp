@@ -37,15 +37,6 @@ FComputeShadingDataTask::FComputeShadingDataTask(uint32_t WidthIn, uint32_t Heig
 	DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADING_DATA_LAYOUT_INDEX, COMPUTE_SHADING_DATA_WORLD_SPACE_POSITION_AOV_BUFFER_INDEX,
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
-	FBuffer NormalAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "NormalAOVBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(NormalAOVBuffer, "NormalAOVBuffer");
-
-	FBuffer UVAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector2) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "UVAOVBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(UVAOVBuffer, "UVAOVBuffer");
-
-	FBuffer WorldSpacePositionAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector3) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "WorldSpacePositionAOVBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(WorldSpacePositionAOVBuffer, "WorldSpacePositionAOVBuffer");
-
     VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants)};
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 

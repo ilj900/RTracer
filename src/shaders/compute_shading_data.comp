@@ -46,14 +46,14 @@ layout (set = COMPUTE_SHADING_DATA_LAYOUT_INDEX, binding = COMPUTE_SHADING_DATA_
     vec4 NormalAOVData[]; /// 3 floats for normal and 1 for front/back facing info
 };
 
-layout (set = COMPUTE_SHADING_DATA_LAYOUT_INDEX, binding = COMPUTE_SHADING_DATA_UV_AOV_BUFFER_INDEX) buffer NormalAOVBufferObject
+layout (set = COMPUTE_SHADING_DATA_LAYOUT_INDEX, binding = COMPUTE_SHADING_DATA_UV_AOV_BUFFER_INDEX) buffer UVAOVBufferObject
 {
     vec2 UVAOVData[];
 };
 
 layout (set = COMPUTE_SHADING_DATA_LAYOUT_INDEX, binding = COMPUTE_SHADING_DATA_WORLD_SPACE_POSITION_AOV_BUFFER_INDEX) buffer WorldSpacePositionAOVBufferObject
 {
-    vec3 WorldSpacePositionAOVData[];
+    vec4 WorldSpacePositionAOVData[];
 };
 
 layout (buffer_reference, scalar) buffer Vertices
@@ -84,11 +84,6 @@ FDeviceTransform FetchTransform(uint TransformIndex)
 FRayData FetchRayData(uint RayIndex)
 {
     return RayData[RayIndex];
-}
-
-FLight FetchLightData(uint LightIndex)
-{
-    return Lights[LightIndex];
 }
 
 bool CheckFlag(uint Mask, uint Field)
@@ -206,6 +201,6 @@ void main()
     vec2 TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
 
     NormalAOVData[NewPixelIndex] = bFrontFacing ? vec4(NormalInWorldSpace, 1) : vec4(NormalInWorldSpace, 0);
-    WorldSpacePositionAOVData[NewPixelIndex] = PointOfIntersectionInWorldSpace;
+    WorldSpacePositionAOVData[NewPixelIndex] = vec4(PointOfIntersectionInWorldSpace, 1);
     UVAOVData[NewPixelIndex] = TextureCoords;
 }

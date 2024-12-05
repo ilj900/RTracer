@@ -12,7 +12,6 @@ layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_RAYS_BUFFER_INDE
     FRayData RayData[];
 };
 
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_IBL_IMAGE_IMPORTANCE_SAMPLER_INDEX) uniform sampler2D IBLImportanceSampler;
 layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_IBL_IMAGE_SAMPLER_LINEAR_INDEX) uniform sampler2D IBLTextureSamplerLinear;
 layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_IBL_IMAGE_SAMPLER_NEAREST_INDEX) uniform sampler2D IBLTextureSamplerNearest;
 
