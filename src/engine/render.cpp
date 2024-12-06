@@ -188,6 +188,7 @@ int FRender::Init()
 	/// Create all required tasks
 	UpdateTLASTask 						= std::make_shared<FUpdateTLASTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetRenderIterations				= std::make_shared<FClearBufferTask>				("RenderIterationBuffer", Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+    ClearImageTask 						= std::make_shared<FClearImageTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     GenerateRaysTask 					= std::make_shared<FGenerateInitialRays>			(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetActiveRayCountTask 			= std::make_shared<FResetActiveRayCountTask>		(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     RayTraceTask 						= std::make_shared<FRaytraceTask>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -201,10 +202,9 @@ int FRender::Init()
     SortMaterialsTask 					= std::make_shared<FSortMaterialsTask>				(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ShadeTask 							= std::make_shared<FShadeTask>						(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     MissTask 							= std::make_shared<FMissTask>						(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	AdvanceRenderCountTask 				= std::make_shared<FAdvanceRenderCount>				(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     AccumulateTask 						= std::make_shared<FAccumulateTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    ClearImageTask 						= std::make_shared<FClearImageTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     PassthroughTask 					= std::make_shared<FPassthroughTask>				(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	AdvanceRenderCountTask 				= std::make_shared<FAdvanceRenderCount>				(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 
     for (int i = 0; i < MaxFramesInFlight; ++i)
     {
@@ -227,23 +227,23 @@ int FRender::Cleanup()
 
 	UpdateTLASTask 					= nullptr;
 	ResetRenderIterations			= nullptr;
+    ClearImageTask 					= nullptr;
     GenerateRaysTask 				= nullptr;
 	ResetActiveRayCountTask 		= nullptr;
     RayTraceTask 					= nullptr;
 	ResetMaterialsCountPerChunkTask = nullptr;
     ClearTotalMaterialsCountTask 	= nullptr;
-    ComputeOffsetsPerMaterialTask 	= nullptr;
     CountMaterialsPerChunkTask 		= nullptr;
-    SortMaterialsTask 				= nullptr;
     ComputePrefixSumsUpSweepTask 	= nullptr;
     ComputePrefixSumsZeroOutTask 	= nullptr;
     ComputePrefixSumsDownSweepTask 	= nullptr;
+    ComputeOffsetsPerMaterialTask 	= nullptr;
+    SortMaterialsTask 				= nullptr;
     ShadeTask 						= nullptr;
     MissTask 						= nullptr;
-	AdvanceRenderCountTask			= nullptr;
     AccumulateTask 					= nullptr;
-    ClearImageTask 					= nullptr;
     PassthroughTask 				= nullptr;
+	AdvanceRenderCountTask			= nullptr;
 
 	ExternalTasks.clear();
 
@@ -379,6 +379,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 	UpdateTLASTask->Reload();
 	ResetRenderIterations->Reload();
+	ClearImageTask->Reload();
 	GenerateRaysTask->Reload();
 	ResetActiveRayCountTask->Reload();
 	RayTraceTask->Reload();
@@ -392,10 +393,9 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	SortMaterialsTask->Reload();
 	ShadeTask->Reload();
 	MissTask->Reload();
-	AdvanceRenderCountTask->Reload();
 	AccumulateTask->Reload();
-	ClearImageTask->Reload();
 	PassthroughTask->Reload();
+	AdvanceRenderCountTask->Reload();
 
 	FSynchronizationPoint SynchronizationPoint = {{}, {ImagesInFlight[CurrentFrame]}, {}, {}};
 
