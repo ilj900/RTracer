@@ -113,6 +113,9 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
 	FBuffer RenderIterationBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "RenderIterationBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(RenderIterationBuffer, "RenderIterationBuffer");
 
+	FBuffer CountedMaterialsPerChunkBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "CountedMaterialsPerChunkBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(CountedMaterialsPerChunkBuffer, "CountedMaterialsPerChunkBuffer");
+
 	Time = std::chrono::high_resolution_clock::now();
 	PreviousTime = Time;
 }
@@ -123,6 +126,7 @@ FRender::~FRender()
 
 	/// Free buffers
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("RenderIterationBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("CountedMaterialsPerChunkBuffer");
 
 	ACCELERATION_STRUCTURE_SYSTEM()->Terminate();
 	MESH_SYSTEM()->Terminate();
@@ -187,7 +191,7 @@ int FRender::Init()
     GenerateRaysTask 					= std::make_shared<FGenerateInitialRays>			(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetActiveRayCountTask 			= std::make_shared<FResetActiveRayCountTask>		(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     RayTraceTask 						= std::make_shared<FRaytraceTask>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    ClearMaterialsCountPerChunkTask 	= std::make_shared<FClearMaterialsCountPerChunkTask>(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ResetMaterialsCountPerChunkTask 	= std::make_shared<FClearBufferTask>				("CountedMaterialsPerChunkBuffer", Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ClearTotalMaterialsCountTask 		= std::make_shared<FClearTotalMaterialsCountTask>	(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     CountMaterialsPerChunkTask 			= std::make_shared<FCountMaterialsPerChunkTask>		(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ComputePrefixSumsUpSweepTask 		= std::make_shared<FComputePrefixSumsUpSweepTask>	(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -226,7 +230,7 @@ int FRender::Cleanup()
     GenerateRaysTask 				= nullptr;
 	ResetActiveRayCountTask 		= nullptr;
     RayTraceTask 					= nullptr;
-    ClearMaterialsCountPerChunkTask = nullptr;
+	ResetMaterialsCountPerChunkTask = nullptr;
     ClearTotalMaterialsCountTask 	= nullptr;
     ComputeOffsetsPerMaterialTask 	= nullptr;
     CountMaterialsPerChunkTask 		= nullptr;
@@ -378,7 +382,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	GenerateRaysTask->Reload();
 	ResetActiveRayCountTask->Reload();
 	RayTraceTask->Reload();
-	ClearMaterialsCountPerChunkTask->Reload();
+	ResetMaterialsCountPerChunkTask->Reload();
 	ClearTotalMaterialsCountTask->Reload();
 	CountMaterialsPerChunkTask->Reload();
 	ComputePrefixSumsUpSweepTask->Reload();
@@ -443,7 +447,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	{
 		SynchronizationPoint = RayTraceTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
-		SynchronizationPoint = ClearMaterialsCountPerChunkTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
+		SynchronizationPoint = ResetMaterialsCountPerChunkTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = ClearTotalMaterialsCountTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
@@ -1033,8 +1037,8 @@ void FRender::GetAllTimings(std::vector<std::string>& Names, std::vector<std::ve
 	Names.push_back(RayTraceTask->Name);
 	Timings.push_back(RayTraceTask->RequestTiming(FrameIndex));
 
-	Names.push_back(ClearMaterialsCountPerChunkTask->Name);
-	Timings.push_back(ClearMaterialsCountPerChunkTask->RequestTiming(FrameIndex));
+	Names.push_back(ResetMaterialsCountPerChunkTask->Name);
+	Timings.push_back(ResetMaterialsCountPerChunkTask->RequestTiming(FrameIndex));
 
 	Names.push_back(ClearTotalMaterialsCountTask->Name);
 	Timings.push_back(ClearTotalMaterialsCountTask->RequestTiming(FrameIndex));

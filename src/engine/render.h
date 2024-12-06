@@ -8,7 +8,6 @@
 
 #include "tasks/task_generate_initial_rays.h"
 #include "tasks/task_raytrace.h"
-#include "tasks/task_material_sort_clear_materials_count_per_chunk.h"
 #include "tasks/task_material_sort_clear_total_materials_count.h"
 #include "tasks/task_material_sort_compute_offsets_per_material.h"
 #include "tasks/task_material_sort_count_materials_per_chunk.h"
@@ -193,7 +192,7 @@ public:
     std::shared_ptr<FGenerateInitialRays> GenerateRaysTask = nullptr;
 	std::shared_ptr<FResetActiveRayCountTask> ResetActiveRayCountTask = nullptr;
     std::shared_ptr<FRaytraceTask> RayTraceTask = nullptr;
-    std::shared_ptr<FClearMaterialsCountPerChunkTask> ClearMaterialsCountPerChunkTask = nullptr;
+    std::shared_ptr<FClearBufferTask> ResetMaterialsCountPerChunkTask = nullptr;
     std::shared_ptr<FClearTotalMaterialsCountTask> ClearTotalMaterialsCountTask = nullptr;
     std::shared_ptr<FComputeOffsetsPerMaterialTask> ComputeOffsetsPerMaterialTask = nullptr;
     std::shared_ptr<FCountMaterialsPerChunkTask> CountMaterialsPerChunkTask = nullptr;
