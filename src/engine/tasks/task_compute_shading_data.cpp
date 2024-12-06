@@ -37,7 +37,7 @@ FComputeShadingDataTask::FComputeShadingDataTask(uint32_t WidthIn, uint32_t Heig
 	DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_SHADING_DATA_LAYOUT_INDEX, COMPUTE_SHADING_DATA_WORLD_SPACE_POSITION_AOV_DATA_INDEX,
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
-    VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants)};
+    VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FViewportResolutionPushConstants)};
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
