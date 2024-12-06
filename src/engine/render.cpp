@@ -1063,11 +1063,26 @@ void FRender::GetAllTimings(std::vector<std::string>& Names, std::vector<std::ve
 	Names.push_back(UpdateTLASTask->Name);
 	Timings.push_back(UpdateTLASTask->RequestTiming(FrameIndex));
 
+	Names.push_back(ResetRenderIterations->Name);
+	Timings.push_back(ResetRenderIterations->RequestTiming(FrameIndex));
+
+	Names.push_back(ClearImageTask->Name);
+	Timings.push_back(ClearImageTask->RequestTiming(FrameIndex));
+
 	Names.push_back(GenerateRaysTask->Name);
 	Timings.push_back(GenerateRaysTask->RequestTiming(FrameIndex));
 
 	Names.push_back(ResetActiveRayCountTask->Name);
 	Timings.push_back(ResetActiveRayCountTask->RequestTiming(FrameIndex));
+
+	Names.push_back(ClearNormalAOVBuffer->Name);
+	Timings.push_back(ClearNormalAOVBuffer->RequestTiming(FrameIndex));
+
+	Names.push_back(ClearUVAOVBuffer->Name);
+	Timings.push_back(ClearUVAOVBuffer->RequestTiming(FrameIndex));
+
+	Names.push_back(ClearWorldSpacePositionAOVBuffer->Name);
+	Timings.push_back(ClearWorldSpacePositionAOVBuffer->RequestTiming(FrameIndex));
 
 	Names.push_back(RayTraceTask->Name);
 	Timings.push_back(RayTraceTask->RequestTiming(FrameIndex));
@@ -1078,23 +1093,26 @@ void FRender::GetAllTimings(std::vector<std::string>& Names, std::vector<std::ve
 	Names.push_back(ClearTotalMaterialsCountTask->Name);
 	Timings.push_back(ClearTotalMaterialsCountTask->RequestTiming(FrameIndex));
 
-	Names.push_back(ComputeOffsetsPerMaterialTask->Name);
-	Timings.push_back(ComputeOffsetsPerMaterialTask->RequestTiming(FrameIndex));
-
 	Names.push_back(CountMaterialsPerChunkTask->Name);
 	Timings.push_back(CountMaterialsPerChunkTask->RequestTiming(FrameIndex));
-
-	Names.push_back(SortMaterialsTask->Name);
-	Timings.push_back(SortMaterialsTask->RequestTiming(FrameIndex));
-
-	Names.push_back(ComputePrefixSumsDownSweepTask->Name);
-	Timings.push_back(ComputePrefixSumsDownSweepTask->RequestTiming(FrameIndex));
 
 	Names.push_back(ComputePrefixSumsUpSweepTask->Name);
 	Timings.push_back(ComputePrefixSumsUpSweepTask->RequestTiming(FrameIndex));
 
 	Names.push_back(ComputePrefixSumsZeroOutTask->Name);
 	Timings.push_back(ComputePrefixSumsZeroOutTask->RequestTiming(FrameIndex));
+
+	Names.push_back(ComputePrefixSumsDownSweepTask->Name);
+	Timings.push_back(ComputePrefixSumsDownSweepTask->RequestTiming(FrameIndex));
+
+	Names.push_back(ComputeOffsetsPerMaterialTask->Name);
+	Timings.push_back(ComputeOffsetsPerMaterialTask->RequestTiming(FrameIndex));
+
+	Names.push_back(SortMaterialsTask->Name);
+	Timings.push_back(SortMaterialsTask->RequestTiming(FrameIndex));
+
+	Names.push_back(ComputeShadingData->Name);
+	Timings.push_back(ComputeShadingData->RequestTiming(FrameIndex));
 
 	Names.push_back(ShadeTask->Name);
 	Timings.push_back(ShadeTask->RequestTiming(FrameIndex));
@@ -1107,12 +1125,6 @@ void FRender::GetAllTimings(std::vector<std::string>& Names, std::vector<std::ve
 
 	Names.push_back(PassthroughTask->Name);
 	Timings.push_back(PassthroughTask->RequestTiming(FrameIndex));
-
-	Names.push_back(ClearImageTask->Name);
-	Timings.push_back(ClearImageTask->RequestTiming(FrameIndex));
-
-	Names.push_back(ResetRenderIterations->Name);
-	Timings.push_back(ResetRenderIterations->RequestTiming(FrameIndex));
 
 	Names.push_back(AdvanceRenderCountTask->Name);
 	Timings.push_back(AdvanceRenderCountTask->RequestTiming(FrameIndex));
