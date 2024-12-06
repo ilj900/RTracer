@@ -185,12 +185,25 @@ int FRender::Init()
         ImagesInFlight.push_back(VK_CONTEXT()->CreateSignalledFence());
     }
 
+	/// Create internal buffers that depend on resolution or some other parameters that might change during runtime
+	FBuffer NormalAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "NormalAOVBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(NormalAOVBuffer, "NormalAOVBuffer");
+
+	FBuffer UVAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector2) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "UVAOVBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(UVAOVBuffer, "UVAOVBuffer");
+
+	FBuffer WorldSpacePositionAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "WorldSpacePositionAOVBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(WorldSpacePositionAOVBuffer, "WorldSpacePositionAOVBuffer");
+
 	/// Create all required tasks
 	UpdateTLASTask 						= std::make_shared<FUpdateTLASTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetRenderIterations				= std::make_shared<FClearBufferTask>				("RenderIterationBuffer", Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ClearImageTask 						= std::make_shared<FClearImageTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     GenerateRaysTask 					= std::make_shared<FGenerateInitialRays>			(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetActiveRayCountTask 			= std::make_shared<FResetActiveRayCountTask>		(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ClearNormalAOVBuffer				= std::make_shared<FClearBufferTask>				("NormalAOVBuffer", 				Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ClearUVAOVBuffer					= std::make_shared<FClearBufferTask>				("UVAOVBuffer", 					Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ClearWorldSpacePositionAOVBuffer	= std::make_shared<FClearBufferTask>				("WorldSpacePositionAOVBuffer", 	Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     RayTraceTask 						= std::make_shared<FRaytraceTask>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetMaterialsCountPerChunkTask 	= std::make_shared<FClearBufferTask>				("CountedMaterialsPerChunkBuffer", Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ClearTotalMaterialsCountTask 		= std::make_shared<FClearTotalMaterialsCountTask>	(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -200,6 +213,7 @@ int FRender::Init()
     ComputePrefixSumsDownSweepTask 		= std::make_shared<FComputePrefixSumsDownSweepTask>	(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ComputeOffsetsPerMaterialTask 		= std::make_shared<FComputeOffsetsPerMaterialTask>	(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     SortMaterialsTask 					= std::make_shared<FSortMaterialsTask>				(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ComputeShadingData 					= std::make_shared<FComputeShadingDataTask>			(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ShadeTask 							= std::make_shared<FShadeTask>						(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     MissTask 							= std::make_shared<FMissTask>						(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     AccumulateTask 						= std::make_shared<FAccumulateTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -225,25 +239,34 @@ int FRender::Cleanup()
 {
 	VK_CONTEXT()->WaitIdle();
 
-	UpdateTLASTask 					= nullptr;
-	ResetRenderIterations			= nullptr;
-    ClearImageTask 					= nullptr;
-    GenerateRaysTask 				= nullptr;
-	ResetActiveRayCountTask 		= nullptr;
-    RayTraceTask 					= nullptr;
-	ResetMaterialsCountPerChunkTask = nullptr;
-    ClearTotalMaterialsCountTask 	= nullptr;
-    CountMaterialsPerChunkTask 		= nullptr;
-    ComputePrefixSumsUpSweepTask 	= nullptr;
-    ComputePrefixSumsZeroOutTask 	= nullptr;
-    ComputePrefixSumsDownSweepTask 	= nullptr;
-    ComputeOffsetsPerMaterialTask 	= nullptr;
-    SortMaterialsTask 				= nullptr;
-    ShadeTask 						= nullptr;
-    MissTask 						= nullptr;
-    AccumulateTask 					= nullptr;
-    PassthroughTask 				= nullptr;
-	AdvanceRenderCountTask			= nullptr;
+	/// Free buffers
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("NormalAOVBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("UVAOVBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("WorldSpacePositionAOVBuffer");
+
+	UpdateTLASTask 						= nullptr;
+	ResetRenderIterations				= nullptr;
+    ClearImageTask 						= nullptr;
+    GenerateRaysTask 					= nullptr;
+	ResetActiveRayCountTask 			= nullptr;
+	ClearNormalAOVBuffer				= nullptr;
+	ClearUVAOVBuffer					= nullptr;
+	ClearWorldSpacePositionAOVBuffer	= nullptr;
+    RayTraceTask 						= nullptr;
+	ResetMaterialsCountPerChunkTask 	= nullptr;
+    ClearTotalMaterialsCountTask 		= nullptr;
+    CountMaterialsPerChunkTask 			= nullptr;
+    ComputePrefixSumsUpSweepTask 		= nullptr;
+    ComputePrefixSumsZeroOutTask 		= nullptr;
+    ComputePrefixSumsDownSweepTask 		= nullptr;
+    ComputeOffsetsPerMaterialTask 		= nullptr;
+    SortMaterialsTask 					= nullptr;
+	ComputeShadingData					= nullptr;
+    ShadeTask 							= nullptr;
+    MissTask 							= nullptr;
+    AccumulateTask 						= nullptr;
+    PassthroughTask 					= nullptr;
+	AdvanceRenderCountTask				= nullptr;
 
 	ExternalTasks.clear();
 
@@ -382,6 +405,9 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	ClearImageTask->Reload();
 	GenerateRaysTask->Reload();
 	ResetActiveRayCountTask->Reload();
+	ClearNormalAOVBuffer->Reload();
+	ClearUVAOVBuffer->Reload();
+	ClearWorldSpacePositionAOVBuffer->Reload();
 	RayTraceTask->Reload();
 	ResetMaterialsCountPerChunkTask->Reload();
 	ClearTotalMaterialsCountTask->Reload();
@@ -391,6 +417,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	ComputePrefixSumsDownSweepTask->Reload();
 	ComputeOffsetsPerMaterialTask->Reload();
 	SortMaterialsTask->Reload();
+	ComputeShadingData->Reload();
 	ShadeTask->Reload();
 	MissTask->Reload();
 	AccumulateTask->Reload();
@@ -445,6 +472,12 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 	for (uint32_t i = 0; i < RecursionDepth; ++i)
 	{
+		SynchronizationPoint = ClearNormalAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
+
+		SynchronizationPoint = ClearUVAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
+
+		SynchronizationPoint = ClearWorldSpacePositionAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
+
 		SynchronizationPoint = RayTraceTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = ResetMaterialsCountPerChunkTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
@@ -462,6 +495,8 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 		SynchronizationPoint = ComputeOffsetsPerMaterialTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = SortMaterialsTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
+
+		SynchronizationPoint = ComputeShadingData->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = ShadeTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 

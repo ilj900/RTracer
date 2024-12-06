@@ -1,0 +1,203 @@
+#version 460
+
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+#extension GL_EXT_nonuniform_qualifier : enable
+#extension GL_EXT_scalar_block_layout : enable
+#extension GL_EXT_buffer_reference2 : require
+
+//#define DEBUG_PRINTF
+#ifdef DEBUG_PRINTF
+#extension GL_EXT_debug_printf : enable
+bool b = false;
+#endif
+
+#include "common_defines.h"
+#include "common_structures.h"
+
+layout (set = COMPUTE_SHADING_DATA_LAYOUT_INDEX, binding = COMPUTE_SHADING_DATA_RENDERABLES_BUFFER_INDEX) buffer RenderablesBufferObject
+{
+    FRenderable Renderables[];
+};
+
+layout (set = COMPUTE_SHADING_DATA_LAYOUT_INDEX, binding = COMPUTE_SHADING_DATA_TRANSFORMS_BUFFER_INDEX) buffer TransformsBufferObject
+{
+    FDeviceTransform DeviceTransforms[];
+};
+
+layout (set = COMPUTE_SHADING_DATA_LAYOUT_INDEX, binding = COMPUTE_SHADING_DATA_HITS_BUFFER_INDEX) buffer HitsBufferObject
+{
+    FHit Hits[];
+};
+
+layout (set = COMPUTE_SHADING_DATA_LAYOUT_INDEX, binding = COMPUTE_SHADING_DATA_RAYS_BUFFER_INDEX) buffer RaysBufferObject
+{
+    FRayData RayData[];
+};
+
+layout (set = COMPUTE_SHADING_DATA_LAYOUT_INDEX, binding = COMPUTE_SHADING_DATA_RAY_INDEX_MAP_INDEX) buffer RayIndexMapBufferObject
+{
+    uint RayIndexMap[];
+};
+
+layout (set = COMPUTE_SHADING_DATA_LAYOUT_INDEX, binding = COMPUTE_SHADING_DATA_NORMAL_AOV_DATA_INDEX) buffer NormalAOVDataBufferObject
+{
+    vec4 NormalAOVData[];
+};
+
+layout (set = COMPUTE_SHADING_DATA_LAYOUT_INDEX, binding = COMPUTE_SHADING_DATA_UV_AOV_DATA_INDEX) buffer UVAOVDataBufferObject
+{
+    vec2 UVAOVData[];
+};
+
+layout (set = COMPUTE_SHADING_DATA_LAYOUT_INDEX, binding = COMPUTE_SHADING_DATA_WORLD_SPACE_POSITION_AOV_DATA_INDEX) buffer WorldSpacePositionAOVDataBufferObject
+{
+    vec4 WorldSpacePositionAOVData[];
+};
+
+layout (buffer_reference, scalar) buffer Vertices
+{
+    FDeviceVertex V[];
+};
+
+layout (buffer_reference, scalar) buffer Indices
+{
+    int I[];
+};
+
+FRenderable FetchRenderable(uint RenderableIndex)
+{
+    return Renderables[RenderableIndex];
+}
+
+FHit FetchHit(uint HitIndex)
+{
+    return Hits[HitIndex];
+}
+
+FDeviceTransform FetchTransform(uint TransformIndex)
+{
+    return DeviceTransforms[nonuniformEXT(TransformIndex)];
+}
+
+FRayData FetchRayData(uint RayIndex)
+{
+    return RayData[RayIndex];
+}
+
+bool CheckFlag(uint Mask, uint Field)
+{
+    return (Mask & Field) == Field;
+}
+
+bool IsIndexed(FRenderable Renderable)
+{
+    return CheckFlag(Renderable.RenderablePropertyMask, RENDERABLE_IS_INDEXED);
+}
+
+FVertex UnpackDeviceVertex(FDeviceVertex DV)
+{
+    FVertex V;
+    V.Position.x = DV.A.x;
+    V.Position.y = DV.A.y;
+    V.Position.z = DV.A.z;
+    V.Normal.x = DV.A.w;
+    V.Normal.y = DV.B.x;
+    V.Normal.z = DV.B.y;
+    V.TexCoord.x = DV.B.z;
+    V.TexCoord.y = DV.B.w;
+    return V;
+}
+
+layout (push_constant) uniform PushConstantsBlock
+{
+    FViewportResolutionPushConstants PushConstants;
+};
+
+layout (local_size_x = BASIC_CHUNK_SIZE, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    uint OriginalPixelIndex = gl_GlobalInvocationID.x;
+    const uint TotalSize = PushConstants.Width * PushConstants.Height;
+
+    if (OriginalPixelIndex >= TotalSize)
+    {
+        return;
+    }
+
+    uint NewPixelIndex = RayIndexMap[OriginalPixelIndex];
+
+    #ifdef DEBUG_PRINTF
+    uvec2 NewPixelCoords = uvec2(NewPixelIndex % PushConstants.Width, NewPixelIndex / PushConstants.Width);
+
+    if (NewPixelCoords.x == PushConstants.Width / 2 && NewPixelCoords.y == PushConstants.Height / 2 && PushConstants.BounceIndex == 0)
+    {
+        b = true;
+    }
+    #endif
+
+    FRayData RayData = FetchRayData(NewPixelIndex);
+
+    if ((RayData.RayFlags & RAY_DATA_RAY_MISSED) == RAY_DATA_RAY_MISSED)
+    {
+        return;
+    }
+
+    FHit Hit = FetchHit(NewPixelIndex);
+    FRenderable Renderable = FetchRenderable(Hit.RenderableIndex);
+
+    Vertices Verts = Vertices(Renderable.VertexBufferAddress);
+    Indices Inds = Indices(Renderable.IndexBufferAddress);
+    FDeviceTransform Transform = FetchTransform(Renderable.TransformIndex);
+    const vec3 Barycentrics = vec3(1.0 - Hit.HitUV.x - Hit.HitUV.y, Hit.HitUV.x, Hit.HitUV.y);
+
+    FDeviceVertex DV0;
+    FDeviceVertex DV1;
+    FDeviceVertex DV2;
+
+    if (IsIndexed(Renderable))
+    {
+        uint I0 = 0;
+        uint I1 = 1;
+        uint I2 = 2;
+
+        I0 = Inds.I[Hit.PrimitiveIndex * 3];
+        I1 = Inds.I[Hit.PrimitiveIndex * 3 + 1];
+        I2 = Inds.I[Hit.PrimitiveIndex * 3 + 2];
+
+        DV0 = Verts.V[I0];
+        DV1 = Verts.V[I1];
+        DV2 = Verts.V[I2];
+    }
+    else
+    {
+        uint Index = Hit.PrimitiveIndex * 3;
+        DV0 = Verts.V[Index];
+        DV1 = Verts.V[Index + 1];
+        DV2 = Verts.V[Index + 2];
+    }
+
+    FVertex V0 = UnpackDeviceVertex(DV0);
+    FVertex V1 = UnpackDeviceVertex(DV1);
+    FVertex V2 = UnpackDeviceVertex(DV2);
+
+    vec3 Normal = vec3(1.f, 1.f, 1.f);
+    Normal = V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z;
+
+    vec3 NormalInWorldSpace = Normal * mat3(Transform.InverseModelMatrix);
+    bool bFrontFacing = true;
+
+    if (dot(NormalInWorldSpace, RayData.Direction.xyz) > 0)
+    {
+        bFrontFacing = false;
+    }
+
+    NormalAOVData[NewPixelIndex] = vec4(NormalInWorldSpace, bFrontFacing ? 1 : 0);
+
+    vec3 PointOfIntersectionInLocalSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
+    vec3 PointOfIntersectionInWorldSpace = vec3(Transform.ModelMatrix * vec4(PointOfIntersectionInLocalSpace, 1.f));
+    WorldSpacePositionAOVData[NewPixelIndex] = vec4(PointOfIntersectionInWorldSpace, 1);
+
+    vec2 TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
+    UVAOVData[NewPixelIndex] = TextureCoords;
+}

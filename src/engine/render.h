@@ -19,6 +19,7 @@
 #include "tasks/task_material_sort_compute_prefix_sums_down_sweep.h"
 #include "tasks/task_material_sort_compute_offsets_per_material.h"
 #include "tasks/task_material_sort_sort_materials.h"
+#include "tasks/task_compute_shading_data.h"
 #include "tasks/task_shade.h"
 #include "tasks/task_miss.h"
 #include "tasks/task_accumulate.h"
@@ -193,6 +194,9 @@ public:
     std::shared_ptr<FClearImageTask> ClearImageTask = nullptr;
     std::shared_ptr<FGenerateInitialRays> GenerateRaysTask = nullptr;
 	std::shared_ptr<FResetActiveRayCountTask> ResetActiveRayCountTask = nullptr;
+	std::shared_ptr<FClearBufferTask> ClearNormalAOVBuffer = nullptr;
+	std::shared_ptr<FClearBufferTask> ClearUVAOVBuffer = nullptr;
+	std::shared_ptr<FClearBufferTask> ClearWorldSpacePositionAOVBuffer = nullptr;
     std::shared_ptr<FRaytraceTask> RayTraceTask = nullptr;
     std::shared_ptr<FClearBufferTask> ResetMaterialsCountPerChunkTask = nullptr;
     std::shared_ptr<FClearTotalMaterialsCountTask> ClearTotalMaterialsCountTask = nullptr;
@@ -202,6 +206,7 @@ public:
     std::shared_ptr<FComputePrefixSumsDownSweepTask> ComputePrefixSumsDownSweepTask = nullptr;
     std::shared_ptr<FComputeOffsetsPerMaterialTask> ComputeOffsetsPerMaterialTask = nullptr;
     std::shared_ptr<FSortMaterialsTask> SortMaterialsTask = nullptr;
+	std::shared_ptr<FComputeShadingDataTask> ComputeShadingData = nullptr;
     std::shared_ptr<FShadeTask> ShadeTask = nullptr;
     std::shared_ptr<FMissTask> MissTask = nullptr;
     std::shared_ptr<FAccumulateTask> AccumulateTask = nullptr;
