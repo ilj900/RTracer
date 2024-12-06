@@ -424,6 +424,12 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	PassthroughTask->Reload();
 	AdvanceRenderCountTask->Reload();
 
+	for (int i = 0; i < ExternalTasks.size(); ++i)
+	{
+		ExternalTasks[i]->Reload();
+	}
+
+
 	FSynchronizationPoint SynchronizationPoint = {{}, {ImagesInFlight[CurrentFrame]}, {}, {}};
 
 	/// If we have no external semaphores
