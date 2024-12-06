@@ -18,21 +18,6 @@ bool b = false;
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_OUTPUT_IMAGE_INDEX, rgba32f) uniform image2D OutcomingImage;
 
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_RENDERABLE_BUFFER_INDEX) buffer FRenderablesBuffer
-{
-    FRenderable Renderables[];
-};
-
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_TRANSFORM_INDEX) buffer TransformsBufferObject
-{
-    FDeviceTransform DeviceTransforms[];
-};
-
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_HITS_BUFFER_INDEX) buffer HitsBufferObject
-{
-    FHit Hits[];
-};
-
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_RAYS_BUFFER_INDEX) buffer RaysBufferObject
 {
     FRayData RayData[];
@@ -41,11 +26,6 @@ layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_RAYS_BUFFER_IN
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_TEXTURE_SAMPLER) uniform sampler Sampler;
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_TEXTURE_ARRAY) uniform texture2D Textures[MAX_TEXTURES];
-
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_LIGHTS_BUFFER_INDEX) buffer LightsBufferObject
-{
-    FLight Lights[];
-};
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_MATERIAL_INDEX_MAP) buffer MaterialIndexBufferObject
 {
@@ -72,34 +52,24 @@ layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_RENDER_ITERATI
     uint RenderIteration;
 };
 
-layout (buffer_reference, scalar) buffer Vertices
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_NORMAL_AOV_DATA_BUFFER) buffer NormalAOVDataBufferObject
 {
-    FDeviceVertex V[];
+    vec4 NormalAOVData[];
 };
 
-layout (buffer_reference, scalar) buffer Indices
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_UV_AOV_DATA_BUFFER) buffer UVAOVDataObject
 {
-    int I[];
+    vec2 UVAOVData[];
+};
+
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_WORLD_SPACE_POSITION_AOV_DATA_BUFFER) buffer WorldSpacePositionAOVDataBufferObject
+{
+    vec4 WorldSpacePositionAOVData[];
 };
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_NORMAL_AOV_IMAGE_INDEX, rgba32f) uniform image2D NormalAOVImage;
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_UV_AOV_IMAGE_INDEX, rgba32f) uniform image2D UVAOVImage;
-
-FRenderable FetchRenderable(uint RenderableIndex)
-{
-    return Renderables[RenderableIndex];
-}
-
-FHit FetchHit(uint HitIndex)
-{
-    return Hits[HitIndex];
-}
-
-FDeviceTransform FetchTransform(uint TransformIndex)
-{
-    return DeviceTransforms[nonuniformEXT(TransformIndex)];
-}
 
 FRayData FetchRayData(uint RayIndex)
 {
@@ -111,21 +81,6 @@ void SetRayData(uint RayIndex, FRayData RayDataIn)
     RayData[RayIndex] = RayDataIn;
 }
 
-FLight FetchLightData(uint LightIndex)
-{
-    return Lights[LightIndex];
-}
-
-bool CheckFlag(uint Mask, uint Field)
-{
-    return (Mask & Field) == Field;
-}
-
-bool IsIndexed(FRenderable Renderable)
-{
-    return CheckFlag(Renderable.RenderablePropertyMask, RENDERABLE_IS_INDEXED);
-}
-
 vec3 SampleVec3(uint TextureIndex, vec2 TextureCoords)
 {
     return texture(sampler2D(Textures[TextureIndex], Sampler), TextureCoords).rgb;
@@ -134,20 +89,6 @@ vec3 SampleVec3(uint TextureIndex, vec2 TextureCoords)
 float SampleFloat(uint TextureIndex, vec2 TextureCoords)
 {
     return texture(sampler2D(Textures[TextureIndex], Sampler), TextureCoords).r;
-}
-
-FVertex UnpackDeviceVertex(FDeviceVertex DV)
-{
-    FVertex V;
-    V.Position.x = DV.A.x;
-    V.Position.y = DV.A.y;
-    V.Position.z = DV.A.z;
-    V.Normal.x = DV.A.w;
-    V.Normal.y = DV.B.x;
-    V.Normal.z = DV.B.y;
-    V.TexCoord.x = DV.B.z;
-    V.TexCoord.y = DV.B.w;
-    return V;
 }
 
 FDeviceMaterial GetMaterial(vec2 TextureCoords);
@@ -186,71 +127,22 @@ void main()
 #endif
 
     FRayData RayData = FetchRayData(NewPixelIndex);
+    vec4 NormalInWorldSpace = NormalAOVData[NewPixelIndex];
+    vec2 TextureCoords = UVAOVData[NewPixelIndex];
+    vec3 PointOfIntersectionInWorldSpace = WorldSpacePositionAOVData[NewPixelIndex].xyz;
 
-    if ((RayData.RayFlags & RAY_DATA_RAY_MISSED) == RAY_DATA_RAY_MISSED)
-    {
-        return;
-    }
-
-    FHit Hit = FetchHit(NewPixelIndex);
-    FRenderable Renderable = FetchRenderable(Hit.RenderableIndex);
-
-    Vertices Verts = Vertices(Renderable.VertexBufferAddress);
-    Indices Inds = Indices(Renderable.IndexBufferAddress);
-    FDeviceTransform Transform = FetchTransform(Renderable.TransformIndex);
-    const vec3 Barycentrics = vec3(1.0 - Hit.HitUV.x - Hit.HitUV.y, Hit.HitUV.x, Hit.HitUV.y);
-
-    FDeviceVertex DV0;
-    FDeviceVertex DV1;
-    FDeviceVertex DV2;
-
-    if (IsIndexed(Renderable))
-    {
-        uint I0 = 0;
-        uint I1 = 1;
-        uint I2 = 2;
-
-        I0 = Inds.I[Hit.PrimitiveIndex * 3];
-        I1 = Inds.I[Hit.PrimitiveIndex * 3 + 1];
-        I2 = Inds.I[Hit.PrimitiveIndex * 3 + 2];
-
-        DV0 = Verts.V[I0];
-        DV1 = Verts.V[I1];
-        DV2 = Verts.V[I2];
-    }
-    else
-    {
-        uint Index = Hit.PrimitiveIndex * 3;
-        DV0 = Verts.V[Index];
-        DV1 = Verts.V[Index + 1];
-        DV2 = Verts.V[Index + 2];
-    }
-
-    FVertex V0 = UnpackDeviceVertex(DV0);
-    FVertex V1 = UnpackDeviceVertex(DV1);
-    FVertex V2 = UnpackDeviceVertex(DV2);
-
-    vec3 Normal = vec3(1.f, 1.f, 1.f);
-    Normal = V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z;
-
-    vec3 NormalInWorldSpace = Normal * mat3(Transform.InverseModelMatrix);
-    bool bFrontFacing = true;
+    const bool bFrontFacing = NormalInWorldSpace.w == 1;
 
     // Invert normal if it's back facing
-    if (dot(NormalInWorldSpace, RayData.Direction.xyz) > 0)
+    if (!bFrontFacing)
     {
-        bFrontFacing = false;
         NormalInWorldSpace = -NormalInWorldSpace;
     }
 
-    vec3 PointOfIntersectionInLocalSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
-    vec3 PointOfIntersectionInWorldSpace = vec3(Transform.ModelMatrix * vec4(PointOfIntersectionInLocalSpace, 1.f));
-
-    vec2 TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
     FDeviceMaterial Material = GetMaterial(TextureCoords);
 
     FSamplingState SamplingState = FSamplingState(gl_GlobalInvocationID.x, 0, RenderIteration);
-    vec3 SamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace, SamplingState, bFrontFacing);
+    vec3 SamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace.xyz, SamplingState, bFrontFacing);
     RayData.Origin.xyz = PointOfIntersectionInWorldSpace + RayData.Direction.xyz * 0.00000012f;
 
     if (PushConstants.BounceIndex == LAST_BOUNCE)
@@ -264,19 +156,9 @@ void main()
 
     if (PushConstants.BounceIndex == 0)
     {
-        imageStore(NormalAOVImage, ivec2(NewPixelCoords), vec4(NormalInWorldSpace, 0.f));
+        imageStore(NormalAOVImage, ivec2(NewPixelCoords), vec4(NormalInWorldSpace.xyz, 0.f));
         imageStore(UVAOVImage, ivec2(NewPixelCoords), vec4(TextureCoords, 0.f, 0.f));
     }
-
-    ///FLight Light = FetchLightData(0);
-    ///vec3 PointOfIntersectioToLightDirection = Light.Position - PointOfIntersectionInWorldSpace;
-    ///float CosNormalToLightAngle = dot(normalize(PointOfIntersectioToLightDirection), Normal);
-    ///float Distance2 = dot(PointOfIntersectioToLightDirection, PointOfIntersectioToLightDirection);
-    ///float Luminance = Light.Intensity * CosNormalToLightAngle / Distance2;
-
-    ///vec3 ColorOut = Material.BaseColor * Luminance;
-
-    ///imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(ColorOut, 1.f));
 
     SetRayData(NewPixelIndex, RayData);
 }
