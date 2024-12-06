@@ -86,6 +86,11 @@ FBuffer FResourceAllocator::GetBuffer(const std::string& Name)
     return Buffers[Name];
 }
 
+bool FResourceAllocator::BufferExists(const std::string& Name)
+{
+	return Buffers.find(Name) != Buffers.end();
+}
+
 void FResourceAllocator::UnregisterAndDestroyBuffer(const std::string& Name)
 {
     assert(Buffers.find(Name) != Buffers.end() && ("Buffer \"" + Name + "\" can not be found!").c_str());

@@ -164,7 +164,7 @@ struct FPushConstants
 	uint32_t BounceIndex;
 };
 
-struct FPassthroughPushConstants
+struct FViewportResolutionPushConstants
 {
 	uint32_t Width;
 	uint32_t Height;

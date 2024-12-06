@@ -20,6 +20,7 @@ public:
 
     FBuffer RegisterBuffer(FBuffer Buffer, const std::string& Name);
     FBuffer GetBuffer(const std::string& Name);
+	bool BufferExists(const std::string& Name);
     void UnregisterAndDestroyBuffer(const std::string& Name);
 
     FBuffer LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDeviceSize> SizesIn, std::vector<VkDeviceSize> OffsetsIn, std::vector<void*> DatasIn);

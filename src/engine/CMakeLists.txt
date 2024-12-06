@@ -46,6 +46,7 @@ set(INCLUDE
         tasks/executable_task.h
         tasks/task_accumulate.h
         tasks/task_clear_image.h
+        tasks/task_clear_buffer.h
         tasks/task_material_sort_clear_materials_count_per_chunk.h
         tasks/task_material_sort_clear_total_materials_count.h
         tasks/task_material_sort_compute_offsets_per_material.h
@@ -70,6 +71,7 @@ set(SOURCE
         renderer_options.cpp
         tasks/executable_task.cpp
         tasks/task_passthrough.cpp
+        tasks/task_clear_buffer.cpp
         tasks/task_material_sort_clear_materials_count_per_chunk.cpp
         tasks/task_material_sort_clear_total_materials_count.cpp
         tasks/task_material_sort_compute_offsets_per_material.cpp

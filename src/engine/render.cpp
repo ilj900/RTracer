@@ -109,6 +109,10 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     TRANSFORM_SYSTEM()->Init(MaxFramesInFlight);
     ACCELERATION_STRUCTURE_SYSTEM()->Init(MaxFramesInFlight);
 
+	/// Allocate buffers that doesn't require recreation
+	FBuffer RenderIterationBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "RenderIterationBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(RenderIterationBuffer, "RenderIterationBuffer");
+
 	Time = std::chrono::high_resolution_clock::now();
 	PreviousTime = Time;
 }
@@ -116,6 +120,9 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
 FRender::~FRender()
 {
 	Cleanup();
+
+	/// Free buffers
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("RenderIterationBuffer");
 
 	ACCELERATION_STRUCTURE_SYSTEM()->Terminate();
 	MESH_SYSTEM()->Terminate();
@@ -174,8 +181,9 @@ int FRender::Init()
         ImagesInFlight.push_back(VK_CONTEXT()->CreateSignalledFence());
     }
 
+	/// Create all required tasks
 	UpdateTLASTask 						= std::make_shared<FUpdateTLASTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	ResetTask							= std::make_shared<FReset>							(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ResetRenderIterations				= std::make_shared<FClearBufferTask>				("RenderIterationBuffer", Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     GenerateRaysTask 					= std::make_shared<FGenerateInitialRays>			(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetActiveRayCountTask 			= std::make_shared<FResetActiveRayCountTask>		(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     RayTraceTask 						= std::make_shared<FRaytraceTask>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -214,7 +222,7 @@ int FRender::Cleanup()
 	VK_CONTEXT()->WaitIdle();
 
 	UpdateTLASTask 					= nullptr;
-	ResetTask 						= nullptr;
+	ResetRenderIterations			= nullptr;
     GenerateRaysTask 				= nullptr;
 	ResetActiveRayCountTask 		= nullptr;
     RayTraceTask 					= nullptr;
@@ -366,7 +374,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	Time = std::chrono::high_resolution_clock::now();
 
 	UpdateTLASTask->Reload();
-	ResetTask->Reload();
+	ResetRenderIterations->Reload();
 	GenerateRaysTask->Reload();
 	ResetActiveRayCountTask->Reload();
 	RayTraceTask->Reload();
@@ -407,7 +415,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 	if (bAnyUpdate || RenderFrameIndex == 0)
 	{
-		SynchronizationPoint = ResetTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
+		SynchronizationPoint = ResetRenderIterations->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
 		SynchronizationPoint = ClearImageTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 	}
@@ -1064,8 +1072,8 @@ void FRender::GetAllTimings(std::vector<std::string>& Names, std::vector<std::ve
 	Names.push_back(ClearImageTask->Name);
 	Timings.push_back(ClearImageTask->RequestTiming(FrameIndex));
 
-	Names.push_back(ResetTask->Name);
-	Timings.push_back(ResetTask->RequestTiming(FrameIndex));
+	Names.push_back(ResetRenderIterations->Name);
+	Timings.push_back(ResetRenderIterations->RequestTiming(FrameIndex));
 
 	Names.push_back(AdvanceRenderCountTask->Name);
 	Timings.push_back(AdvanceRenderCountTask->RequestTiming(FrameIndex));

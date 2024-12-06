@@ -13,7 +13,7 @@ layout (set = PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, binding = PASSTHROUGH_TEXTURE_
 
 layout (push_constant) uniform PushConstantsBlock
 {
-    FPassthroughPushConstants PushConstants;
+    FViewportResolutionPushConstants PushConstants;
 };
 
 void main()

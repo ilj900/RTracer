@@ -17,7 +17,7 @@ FPassthroughTask::FPassthroughTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t
     DescriptorSetManager->AddDescriptorLayout(Name, PASSTHROUGH_PER_FRAME_LAYOUT_INDEX, PASSTHROUGH_TEXTURE_SAMPLER_LAYOUT_INDEX,
                                               {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT});
 
-	VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(FPassthroughPushConstants)};
+	VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(FViewportResolutionPushConstants)};
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -103,9 +103,9 @@ void FPassthroughTask::RecordCommands()
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &PassthroughDescriptorSet, 0, nullptr);
 
-			FPassthroughPushConstants PushConstants = {Width, Height};
+			FViewportResolutionPushConstants PushConstants = {Width, Height};
 			vkCmdPushConstants(CommandBuffer, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
-				VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(FPassthroughPushConstants), &PushConstants);
+				VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(FViewportResolutionPushConstants), &PushConstants);
 
             vkCmdDraw(CommandBuffer, 3, 1, 0, 0);
             vkCmdEndRenderPass(CommandBuffer);
