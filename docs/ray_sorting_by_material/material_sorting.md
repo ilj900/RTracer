@@ -80,7 +80,7 @@ It will point here:
 This way the compute shader will be executed 27 times in x, 1 in y and 1 in z "dimentions", which is actually the amount of pixels in the triangle
 
 In shader we have access to material index, gl_GlobalInvocationID.x and <mark>NewToOldPixelMap</mark>. \
-With this we can obtain the original pixel index. To do so:\
+With this we can obtain the original pixel index. To do so: \
 1. Generate the "new" pixel index. Fetch data from MaterialsOffsets buffer and add gl_GlobalInvocationID.x to it \
 (gl_GlobalInvocationID.x runs from [0 to 26]) \
 `uint PixelIndex = MaterialsOffsets[PushConstants.MaterialIndex] + gl_GlobalInvocationID.x;`
