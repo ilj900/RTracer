@@ -11,16 +11,16 @@ The first step of sorting materials is generating material ID map. It will look 
 *MaterialIdMap*
 ![MaterialIdMap](./b.jpg "MaterialIdMap")
 
-Then we need to calculate entry of each material. But this will be done in chunks. Each chunk will cover 32 pixels,
-So, for a 20x20 image we need 13 chunks, but, to simplify prefix sum computation, we allocate a power of 2 chunks - 16
-Each of the chunk will have 8 `uint` counters (for each material).
+Then, we need to calculate the entry of each material. But this will be done in chunks. Each chunk will cover 32 pixels.
+For a 20x20 image we need 13 chunks. However, to simplify prefix sum computation, we allocate a power of 2 chunks, which is 16.
+Each chunk will have 8 `uint` counters (one for each material).
 
-Chunks partition will look something like this:
+Chunks partition will look like this:
 
 *ChunkPartitionedOriginalImage*
 ![ChunkPartitionedOriginalImage](./c.jpg "ChunkPartitionedOriginalImage")
 
-After all the materials counted in each chunk, we'll have a <mark>ChunkToMaterialCounted</mark> buffer like this:
+After all the materials are counted in each chunk, we'll have a <mark>ChunkToMaterialCounted</mark> buffer like this:
 
 *ChunkToMaterialCounted*
 ![ChunkToMaterialCounted](./d.jpg "ChunkToMaterialCounted")
@@ -88,3 +88,9 @@ With this we can obtain the original pixel index. To do so:\
 `uint NewPixelIndex = NewToOldPixelMap[OriginalPixelIndex];`
 
 And it's done. Now you have the pixel from original image with that material!
+
+>P.S. To account for multiple bounces, we need to add additional material, that will indicate that ray missed any geometry on the previous bounce,
+and we don't want to compute any shading information from such ray.
+The sorting goes as usual, but when the time comes to shade rays associated with this "void" material,
+we just skip it. Thus, I suggest making this material the last.
+In out example, the sky material gets id = 6 and the "void" material gets id = 7.
