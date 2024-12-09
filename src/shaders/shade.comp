@@ -130,7 +130,7 @@ void main()
         b = true;
     }
 #endif
-    vec2 ScreenUV = vec2(float(NewPixelCoords.x) / PushConstants.Width, float(NewPixelCoords.y) / PushConstants.Height);
+
     FRayData RayData = FetchRayData(NewPixelIndex);
     vec4 NormalInWorldSpace = NormalAOVData[NewPixelIndex];
     vec2 TextureCoords = UVAOVData[NewPixelIndex];
