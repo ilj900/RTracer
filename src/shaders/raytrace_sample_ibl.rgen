@@ -62,14 +62,15 @@ void main()
     FSamplingState SamplingState = FSamplingState(OriginalPixelIndex, 0, RenderIteration);
     /// Select a random UV
     const vec2 SampleUV = Sample2D(SamplingState);
-    const uint SampleIndex = uint(4096. * 2048. * SampleUV.y) + uint(4096. * SampleUV.x);
+    const uvec2 IBLSize = textureSize(IBLTextureSampler, 0);
+    const uint SampleIndex = uint(IBLSize.x * IBLSize.y * SampleUV.y) + uint(IBLSize.x * SampleUV.x);
     /// Get the interval of pixels that we want to sample
     uvec2 ImportanceSampleInterval = IBLImportanceBuffer[SampleIndex];
     /// Get texel index
     uint TexelIndex = ImportanceSampleInterval.x + uint(float((ImportanceSampleInterval.y - ImportanceSampleInterval.x)) * RandomFloat(SamplingState));
     const ivec2 IBLImageSize = textureSize(IBLTextureSampler, 0);
     /// Transform texel index into actual UV coordinates
-    vec2 UVCoordinates = vec2((float(TexelIndex % IBLImageSize.x) + 0.5) / float(IBLImageSize.x), (float(TexelIndex % IBLImageSize.x) + 0.5) / float(IBLImageSize.y));
+    vec2 UVCoordinates = vec2((float(TexelIndex % IBLImageSize.x) + 0.5) / float(IBLImageSize.x), (float(TexelIndex / IBLImageSize.x) + 0.5) / float(IBLImageSize.y));
     /// Map them to spherical coordinates
     vec2 SphericalCoordinates = UVCoordinates * vec2(M_PI, M_2_PI);
     vec3 CartesianCoordinates;
