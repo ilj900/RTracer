@@ -195,8 +195,11 @@ int FRender::Init()
 	FBuffer WorldSpacePositionAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "WorldSpacePositionAOVBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(WorldSpacePositionAOVBuffer, "WorldSpacePositionAOVBuffer");
 
-	FBuffer SampledIBLBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "");
+	FBuffer SampledIBLBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "SampledIBLBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(SampledIBLBuffer, "SampledIBLBuffer");
+
+	FBuffer DebugIBLBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * 4096 * 2048, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "DebugIBLBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(DebugIBLBuffer, "DebugIBLBuffer");
 
 	/// Create all required tasks
 	UpdateTLASTask 						= std::make_shared<FUpdateTLASTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -525,6 +528,23 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 		SynchronizationPoint = ShadeTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = MissTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
+	}
+
+	if (RenderFrameIndex == 100)
+	{
+		WaitIdle();
+		auto BufferData = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<uint32_t>("DebugIBLBuffer");
+		std::vector<float> Data(4096 * 2048 * 4, 1);
+
+		for (int i = 0; i < 4096 * 2048; ++i)
+		{
+			Data[i * 4] = float(BufferData[i]) / 256.;
+			Data[i * 4 + 1] = float(BufferData[i]) / 256.;
+			Data[i * 4 + 2] = float(BufferData[i]) / 256.;
+			Data[i * 4 + 3] = 1;
+		}
+
+		VK_CONTEXT()->SaveEXRWrapper(Data.data(), 4096, 2048, 4, false, "DebugIBLBuffer.exr");
 	}
 
 	SynchronizationPoint = AccumulateTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
