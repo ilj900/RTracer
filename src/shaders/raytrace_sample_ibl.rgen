@@ -1,0 +1,112 @@
+#version 460
+
+#extension GL_EXT_ray_tracing : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+#define DEBUG_PRINTF
+#ifdef DEBUG_PRINTF
+#extension GL_EXT_debug_printf : enable
+bool b = false;
+#endif
+
+#include "common_defines.h"
+#include "common_structures.h"
+#include "cmj.h"
+
+layout (location = 0) rayPayloadEXT FIBLHitPayload IBLHitPayload;
+
+layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_TLAS_INDEX) uniform accelerationStructureEXT TLAS;
+
+layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_IMPORTANCE_BUFFER_INDEX) buffer IBLImportanceBufferObject
+{
+    uvec2 IBLImportanceBuffer[];
+};
+
+layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_IMAGE_SAMPLER_INDEX) uniform sampler2D IBLTextureSampler;
+
+layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_NORMAL_AOV_BUFFER_INDEX) buffer NormalAOVDataBufferObject
+{
+    vec4 NormalAOVData[];
+};
+
+layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_WORLD_SPACE_POSITION_AOV_BUFFER_INDEX) buffer WorldSpacePositionAOVDataBufferObject
+{
+    vec4 WorldSpacePositionAOVData[];
+};
+
+layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_SAMPLED_IBL_BUFFER_INDEX) buffer SampledIBLBufferObject
+{
+    vec4 SampledIBLBuffer[];
+};
+
+layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_PIXEL_INDEX_BUFFER) buffer PixelIndexIndexMapBufferObject
+{
+    uint PixelIndexIndexMap[];
+};
+
+layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_RENDER_ITERATION_BUFFER_INDEX) buffer RenderIterationBufferObject
+{
+    uint RenderIteration;
+};
+
+layout (push_constant) uniform PushConstantsBlock
+{
+    FViewportResolutionPushConstants PushConstants;
+};
+
+void main()
+{
+    uint OriginalPixelIndex = gl_LaunchIDEXT.x;
+    uint NewPixelIndex = PixelIndexIndexMap[OriginalPixelIndex];
+
+    FSamplingState SamplingState = FSamplingState(OriginalPixelIndex, 0, RenderIteration);
+    /// Select a random UV
+    const vec2 SampleUV = Sample2D(SamplingState);
+    const uint SampleIndex = uint(4096. * 2048. * SampleUV.y) + uint(4096. * SampleUV.x);
+    /// Get the interval of pixels that we want to sample
+    uvec2 ImportanceSampleInterval = IBLImportanceBuffer[SampleIndex];
+    /// Get texel index
+    uint TexelIndex = ImportanceSampleInterval.x + uint(float((ImportanceSampleInterval.y - ImportanceSampleInterval.x)) * RandomFloat(SamplingState));
+    const ivec2 IBLImageSize = textureSize(IBLTextureSampler, 0);
+    /// Transform texel index into actual UV coordinates
+    vec2 UVCoordinates = vec2((float(TexelIndex % IBLImageSize.x) + 0.5) / float(IBLImageSize.x), (float(TexelIndex % IBLImageSize.x) + 0.5) / float(IBLImageSize.y));
+    /// Map them to spherical coordinates
+    vec2 SphericalCoordinates = UVCoordinates * vec2(M_PI, M_2_PI);
+    vec3 CartesianCoordinates;
+    CartesianCoordinates.z = sin(SphericalCoordinates.y) * cos(SphericalCoordinates.x);
+    CartesianCoordinates.y = cos(SphericalCoordinates.y);
+    CartesianCoordinates.x = sin(SphericalCoordinates.y) * sin(SphericalCoordinates.x);
+
+#ifdef DEBUG_PRINTF
+    uvec2 NewPixelCoords = uvec2(NewPixelIndex % PushConstants.Width, NewPixelIndex / PushConstants.Width);
+
+    if (NewPixelCoords.x == PushConstants.Width / 2 && NewPixelCoords.y == PushConstants.Height / 2)
+    {
+        b = true;
+    }
+#endif
+
+    vec4 FragmentNormal = NormalAOVData[NewPixelIndex];
+
+    /// If sampling direction not in the hemisphere defined by fragment's normal
+    /// Then we ignore it?
+    if (dot(CartesianCoordinates, FragmentNormal.xyz) <= 0)
+    {
+        return;
+    }
+
+    /// Otherwise we prepare the ray for calculations
+    FRayData RayData;
+    RayData.RayFlags = 0;
+    RayData.Direction.xyz = CartesianCoordinates;
+    RayData.Origin.xyz = WorldSpacePositionAOVData[NewPixelIndex].xyz + RayData.Direction.xyz * 0.00000012f;
+
+    /// Trace the ray
+    traceRayEXT(TLAS, RayData.RayFlags, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0, RayData.Direction.xyz, 1, 0);
+
+    /// And if we didn't hit any geometry, then we sample the IBL
+    if (IBLHitPayload.PayloadFlags == 0)
+    {
+        SampledIBLBuffer[NewPixelIndex] = texture(IBLTextureSampler, UVCoordinates);
+    }
+}

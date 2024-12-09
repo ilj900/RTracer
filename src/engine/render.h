@@ -20,6 +20,7 @@
 #include "tasks/task_material_sort_compute_offsets_per_material.h"
 #include "tasks/task_material_sort_sort_materials.h"
 #include "tasks/task_compute_shading_data.h"
+#include "tasks/task_sample_ibl.h"
 #include "tasks/task_shade.h"
 #include "tasks/task_miss.h"
 #include "tasks/task_accumulate.h"
@@ -207,6 +208,7 @@ public:
     std::shared_ptr<FComputeOffsetsPerMaterialTask> ComputeOffsetsPerMaterialTask = nullptr;
     std::shared_ptr<FSortMaterialsTask> SortMaterialsTask = nullptr;
 	std::shared_ptr<FComputeShadingDataTask> ComputeShadingData = nullptr;
+	std::shared_ptr<FSampleIBLTask> SampleIBLTask = nullptr;
     std::shared_ptr<FShadeTask> ShadeTask = nullptr;
     std::shared_ptr<FMissTask> MissTask = nullptr;
     std::shared_ptr<FAccumulateTask> AccumulateTask = nullptr;

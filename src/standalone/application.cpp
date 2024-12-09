@@ -6,6 +6,7 @@
 #include "vk_context.h"
 #include "window_manager.h"
 #include "controller.h"
+#include "utility_functions.h"
 
 FApplication::FApplication()
 {
@@ -45,6 +46,7 @@ int FApplication::Run()
 {
 	uint32_t ImageIndex = UINT32_MAX;
 	SceneLoader->LoadScene(SCENE_CORNELL_BOX);
+	//LoadCamera(Controller->Camera, "Test");
 
 	FSynchronizationPoint RenderingFinished;
 

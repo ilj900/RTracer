@@ -13,5 +13,6 @@ public:
     void RecordCommands() override;
 
     VkSampler MaterialTextureSampler = VK_NULL_HANDLE;
+	VkSampler IBLTextureSampler = VK_NULL_HANDLE;
     std::unordered_map<uint32_t , VkPipeline> MaterialIndexToPipelineMap;
 };
