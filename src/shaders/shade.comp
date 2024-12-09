@@ -27,6 +27,11 @@ layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_TEXTURE_SAMPLE
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_TEXTURE_ARRAY) uniform texture2D Textures[MAX_TEXTURES];
 
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_IBL_SAMPLING_RESULT_INDEX) buffer SampledIBLBufferObject
+{
+    vec4 SampledIBLBuffer[];
+};
+
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_MATERIAL_INDEX_MAP) buffer MaterialIndexBufferObject
 {
     uint MaterialsIndexMap[];
@@ -130,6 +135,7 @@ void main()
     vec4 NormalInWorldSpace = NormalAOVData[NewPixelIndex];
     vec2 TextureCoords = UVAOVData[NewPixelIndex];
     vec3 PointOfIntersectionInWorldSpace = WorldSpacePositionAOVData[NewPixelIndex].xyz;
+    vec4 IBLSamplingResult = SampledIBLBuffer[NewPixelIndex];
 
     const bool bFrontFacing = NormalInWorldSpace.w == 1;
 
@@ -144,6 +150,11 @@ void main()
     FSamplingState SamplingState = FSamplingState(gl_GlobalInvocationID.x, 0, RenderIteration);
     vec3 SamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace.xyz, SamplingState, bFrontFacing);
     RayData.Origin.xyz = PointOfIntersectionInWorldSpace + RayData.Direction.xyz * 0.00000012f;
+
+    if (PushConstants.BounceIndex == 0)
+    {
+        SamplingResult *= IBLSamplingResult.xyz;
+    }
 
     if (PushConstants.BounceIndex == LAST_BOUNCE)
     {

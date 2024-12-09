@@ -4,15 +4,25 @@
 
 #include "texture_manager.h"
 
-#include <stdexcept>
+#include <algorithm>
 #include <iostream>
+#include <random>
 #include <set>
+#include <stdexcept>
 #include <unordered_map>
 
 #include "stb_image.h"
 #include "stb_image_write.h"
 
 #include "tinyexr.h"
+
+struct FMargin
+{
+	FMargin() {};
+	FMargin(uint32_t L, uint32_t R) : Left(L), Right(R) {};
+	uint32_t Left;
+	uint32_t Right;
+};
 
 FVulkanContext* VulkanContext = nullptr;
 std::function<VkSurfaceKHR(VkInstance)> FVulkanContext::SurfaceCreationFunction = nullptr;
@@ -950,6 +960,21 @@ void FVulkanContext::SaveImage(const FImage& Image, const std::string& FileName)
 		SaveEXR(Data.data(), Image.Width, Image.Height, 4, false, (FileNameToUse + ".exr").c_str(), &Err);
 		return;
 	}
+	if (Image.Format == VK_FORMAT_R32G32_UINT)
+	{
+		std::vector<uint32_t> Data;
+		FetchImageData(Image, Data);
+
+		std::vector<float> Data2(Data.size() * 2, 0);
+		for (int i = 0; i < Data.size(); ++i)
+		{
+			Data2[i * 2] = float(Data[i]);
+		};
+
+		const char* Err = NULL;
+		SaveEXR(Data2.data(), Image.Width, Image.Height, 4, false, (FileNameToUse + ".exr").c_str(), &Err);
+		return;
+	}
 }
 
 template <typename T>
@@ -977,6 +1002,12 @@ void FVulkanContext::FetchImageData(const FImage& Image, std::vector<T>& Data)
 			ComponentSize = 4;
             break;
         }
+		case VK_FORMAT_R32G32_UINT:
+		{
+			NumberOfComponents = 2;
+			ComponentSize = 4;
+			break;
+		}
     }
 
     RESOURCE_ALLOCATOR()->CopyImageToBuffer(Image, RESOURCE_ALLOCATOR()->StagingBuffer);
@@ -1019,7 +1050,91 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
     Image->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     RESOURCE_ALLOCATOR()->LoadDataToImage(*Image, Width * Height * 4 * sizeof(float), Out);
 
-    free(Out);
+	/// Initialize some variables
+	int PixelsCount = Width * Height;
+	/// We have to use double, cause the precision of float might not be enough for IBLs with the sun
+	std::vector<double> EachPixelLuminosity(PixelsCount);
+	double TotalLuminosity = 0.f;
+
+	/// Calculate luminosity of each pixel
+	/// Do we need a luminosity or can we just use a raw value?
+	for (int i = 0; i < Width * Height; ++i)
+	{
+		double Luminosity = 0.2126 * Out[i * 4] + 0.7152 * Out[i * 4 + 1] + 0.0722 * Out[i * 4 + 2];
+		EachPixelLuminosity[i] = sqrt(Luminosity);
+	}
+
+	/// Calculate total luminosity
+	auto Copy = EachPixelLuminosity;
+	std::sort(Copy.begin(), Copy.end());
+
+	for (auto Pixel : Copy)
+	{
+		TotalLuminosity += Pixel;
+	}
+
+	/// Compute probability for each bucket
+	std::vector<double> LuminosityPDF(PixelsCount);
+
+	for (int i = 0; i < PixelsCount; ++i)
+	{
+		LuminosityPDF[i] = EachPixelLuminosity[i] / TotalLuminosity;
+	}
+
+	/// Calculate CDF
+	std::vector<double> LuminosityCDF(PixelsCount + 1);
+	LuminosityCDF[0] = 0;
+
+	for (int i = 1; i < LuminosityCDF.size(); ++i)
+	{
+		LuminosityCDF[i] = LuminosityCDF[i - 1] + LuminosityPDF[i - 1];
+	}
+	LuminosityCDF.back() = 1.;
+
+	std::vector<FMargin> IBLSamplingMap(Width * Height);
+	double Stride = 1. / double(Width * Height);
+	uint32_t Slow = 0;
+	uint32_t Fast = 0;
+
+	for (int i = 0; i < IBLSamplingMap.size(); ++i)
+	{
+		double Left = i * Stride;
+		double Right = (i + 1) * Stride;
+
+		while (Slow < PixelsCount && LuminosityCDF[Slow] <= Left)
+		{
+			Slow++;
+		}
+
+		while (Fast < PixelsCount && LuminosityCDF[Fast] <= Right)
+		{
+			Fast++;
+		}
+
+		IBLSamplingMap[i] = {Slow - 1, Fast - 1};
+	}
+
+	IBLSamplingMap[0].Left = 0;
+
+	FBuffer IBLImportanceBuffer;
+
+	if (RESOURCE_ALLOCATOR()->BufferExists("IBLImportanceBuffer"))
+	{
+		IBLImportanceBuffer = RESOURCE_ALLOCATOR()->GetBuffer("IBLImportanceBuffer");
+	}
+	else
+	{
+		IBLImportanceBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FMargin) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "IBLImportanceBuffer");
+		RESOURCE_ALLOCATOR()->RegisterBuffer(IBLImportanceBuffer, "IBLImportanceBuffer");
+	}
+
+	if (IBLImportanceBuffer.BufferSize != Width * Height * sizeof(FMargin))
+	{
+		RESOURCE_ALLOCATOR()->DestroyBuffer(IBLImportanceBuffer);
+		IBLImportanceBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FMargin) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "IBLImportanceBuffer");
+	}
+
+	RESOURCE_ALLOCATOR()->LoadDataToBuffer(IBLImportanceBuffer, {sizeof(FMargin) * Width * Height}, {0}, {IBLSamplingMap.data()});
 
     return Image;
 }

@@ -58,6 +58,7 @@ set(INCLUDE
         tasks/task_material_sort_compute_offsets_per_material.h
         tasks/task_material_sort_sort_materials.h
         tasks/task_compute_shading_data.h
+        tasks/task_sample_ibl.h
         tasks/task_shade.h
         tasks/task_miss.h
         tasks/task_accumulate.h
@@ -83,6 +84,7 @@ set(SOURCE
         tasks/task_material_sort_compute_offsets_per_material.cpp
         tasks/task_material_sort_sort_materials.cpp
         tasks/task_compute_shading_data.cpp
+        tasks/task_sample_ibl.cpp
         tasks/task_shade.cpp
         tasks/task_miss.cpp
         tasks/task_accumulate.cpp

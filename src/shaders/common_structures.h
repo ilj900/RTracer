@@ -24,6 +24,11 @@ struct FHitPayload
     uint32_t MaterialIndex;
 };
 
+struct FIBLHitPayload
+{
+	uint32_t PayloadFlags;
+};
+
 struct FRayData
 {
     FVector4 Origin;
