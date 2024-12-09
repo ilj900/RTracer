@@ -83,7 +83,6 @@ FShadeTask::~FShadeTask()
     MaterialIndexToPipelineMap.clear();
 
     vkDestroySampler(LogicalDevice, MaterialTextureSampler, nullptr);
-	vkDestroySampler(LogicalDevice, IBLTextureSampler, nullptr);
 }
 
 void FShadeTask::Init()
@@ -103,7 +102,6 @@ void FShadeTask::Init()
     }
 
     MaterialTextureSampler = VK_CONTEXT()->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT, VK_FILTER_LINEAR);
-	IBLTextureSampler = VK_CONTEXT()->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT, VK_FILTER_LINEAR);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
     DescriptorSetManager->ReserveDescriptorSet(Name, COMPUTE_SHADE_LAYOUT_INDEX, TotalSize);
