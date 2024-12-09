@@ -198,6 +198,7 @@ public:
 	std::shared_ptr<FClearBufferTask> ClearNormalAOVBuffer = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearUVAOVBuffer = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearWorldSpacePositionAOVBuffer = nullptr;
+	std::shared_ptr<FClearBufferTask> ClearSampledIBLBuffer = nullptr;
     std::shared_ptr<FRaytraceTask> RayTraceTask = nullptr;
     std::shared_ptr<FClearBufferTask> ResetMaterialsCountPerChunkTask = nullptr;
     std::shared_ptr<FClearTotalMaterialsCountTask> ClearTotalMaterialsCountTask = nullptr;

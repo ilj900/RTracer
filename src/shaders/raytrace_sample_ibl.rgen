@@ -72,7 +72,7 @@ void main()
     /// Transform texel index into actual UV coordinates
     vec2 UVCoordinates = vec2((float(TexelIndex % IBLImageSize.x) + 0.5) / float(IBLImageSize.x), (float(TexelIndex / IBLImageSize.x) + 0.5) / float(IBLImageSize.y));
     /// Map them to spherical coordinates
-    vec2 SphericalCoordinates = UVCoordinates * vec2(M_PI, M_2_PI);
+    vec2 SphericalCoordinates = UVCoordinates * vec2(M_2_PI, M_PI);
     SphericalCoordinates.x += M_PI_2;
     vec3 CartesianCoordinates;
     CartesianCoordinates.z = sin(SphericalCoordinates.y) * cos(SphericalCoordinates.x);
