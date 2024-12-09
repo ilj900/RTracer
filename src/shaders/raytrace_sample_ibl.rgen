@@ -73,6 +73,7 @@ void main()
     vec2 UVCoordinates = vec2((float(TexelIndex % IBLImageSize.x) + 0.5) / float(IBLImageSize.x), (float(TexelIndex / IBLImageSize.x) + 0.5) / float(IBLImageSize.y));
     /// Map them to spherical coordinates
     vec2 SphericalCoordinates = UVCoordinates * vec2(M_PI, M_2_PI);
+    SphericalCoordinates.x += M_PI_2;
     vec3 CartesianCoordinates;
     CartesianCoordinates.z = sin(SphericalCoordinates.y) * cos(SphericalCoordinates.x);
     CartesianCoordinates.y = cos(SphericalCoordinates.y);
@@ -109,5 +110,9 @@ void main()
     if (IBLHitPayload.PayloadFlags == 0)
     {
         SampledIBLBuffer[NewPixelIndex] = texture(IBLTextureSampler, UVCoordinates);
+    }
+    else
+    {
+        SampledIBLBuffer[NewPixelIndex] = vec4(0);
     }
 }
