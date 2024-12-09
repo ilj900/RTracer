@@ -519,17 +519,17 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 		SynchronizationPoint = SampleIBLTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		//WaitIdle();
-		//auto BufferData = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<uint32_t>("SampledIBLBuffer");
+		//auto BufferData = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<float>("SampledIBLBuffer");
 		//std::vector<float> Directions(Width * Height * 4);
 		//for (int i = 0; i < Width * Height; ++i)
 		//{
-		//	Directions[i * 4] = BufferData[i * 2];
-		//	Directions[i * 4 + 1] = BufferData[i * 2 + 1];
+		//	Directions[i * 4] = BufferData[i * 4];
+		//	Directions[i * 4 + 1] = BufferData[i * 4 + 1];
 		//	Directions[i * 4 + 2] = 0;
 		//	Directions[i * 4 + 3] = 1;
 		//}
-//
-		//VK_CONTEXT()->SaveEXRWrapper(Directions.data(), Width, Height, 4, false, "SampledIBLBuffer.exr");
+
+		//VK_CONTEXT()->SaveEXRWrapper(BufferData.data(), Width, Height, 4, false, "SampledIBLBuffer.exr");
 
 		SynchronizationPoint = ShadeTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
