@@ -530,22 +530,19 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 		SynchronizationPoint = MissTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 	}
 
-	if (RenderFrameIndex == 100)
+	WaitIdle();
+	auto BufferData = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<uint32_t>("DebugIBLBuffer");
+	std::vector<float> Data(4096 * 2048 * 4, 1);
+
+	for (int i = 0; i < 4096 * 2048; ++i)
 	{
-		WaitIdle();
-		auto BufferData = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<uint32_t>("DebugIBLBuffer");
-		std::vector<float> Data(4096 * 2048 * 4, 1);
-
-		for (int i = 0; i < 4096 * 2048; ++i)
-		{
-			Data[i * 4] = float(BufferData[i]) / 256.;
-			Data[i * 4 + 1] = float(BufferData[i]) / 256.;
-			Data[i * 4 + 2] = float(BufferData[i]) / 256.;
-			Data[i * 4 + 3] = 1;
-		}
-
-		VK_CONTEXT()->SaveEXRWrapper(Data.data(), 4096, 2048, 4, false, "DebugIBLBuffer.exr");
+		Data[i * 4] = float(BufferData[i]) / 256.;
+		Data[i * 4 + 1] = float(BufferData[i]) / 256.;
+		Data[i * 4 + 2] = float(BufferData[i]) / 256.;
+		Data[i * 4 + 3] = 1;
 	}
+
+	VK_CONTEXT()->SaveEXRWrapper(Data.data(), 4096, 2048, 4, false, "DebugIBLBuffer" + std::to_string(RenderFrameIndex) + ".exr");
 
 	SynchronizationPoint = AccumulateTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
