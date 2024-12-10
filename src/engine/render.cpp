@@ -198,9 +198,6 @@ int FRender::Init()
 	FBuffer SampledIBLBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "SampledIBLBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(SampledIBLBuffer, "SampledIBLBuffer");
 
-	FBuffer DebugIBLBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * 4096 * 2048, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "DebugIBLBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(DebugIBLBuffer, "DebugIBLBuffer");
-
 	/// Create all required tasks
 	UpdateTLASTask 						= std::make_shared<FUpdateTLASTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetRenderIterations				= std::make_shared<FClearBufferTask>				("RenderIterationBuffer", Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -521,28 +518,10 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 		SynchronizationPoint = SampleIBLTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
-		//WaitIdle();
-		//auto BufferData = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<float>("SampledIBLBuffer");
-		//VK_CONTEXT()->SaveEXRWrapper(BufferData.data(), Width, Height, 4, false, "SampledIBLBuffer.exr");
-
 		SynchronizationPoint = ShadeTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = MissTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 	}
-
-	WaitIdle();
-	auto BufferData = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<uint32_t>("DebugIBLBuffer");
-	std::vector<float> Data(4096 * 2048 * 4, 1);
-
-	for (int i = 0; i < 4096 * 2048; ++i)
-	{
-		Data[i * 4] = float(BufferData[i]) / 256.;
-		Data[i * 4 + 1] = float(BufferData[i]) / 256.;
-		Data[i * 4 + 2] = float(BufferData[i]) / 256.;
-		Data[i * 4 + 3] = 1;
-	}
-
-	VK_CONTEXT()->SaveEXRWrapper(Data.data(), 4096, 2048, 4, false, "DebugIBLBuffer" + std::to_string(RenderFrameIndex) + ".exr");
 
 	SynchronizationPoint = AccumulateTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 

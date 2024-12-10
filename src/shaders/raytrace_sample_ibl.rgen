@@ -49,11 +49,6 @@ layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_RE
     uint RenderIteration;
 };
 
-layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_DEBUG_BUFFER_INDEX) buffer DebugBufferObject
-{
-    uint DebugBuffer[];
-};
-
 layout (push_constant) uniform PushConstantsBlock
 {
     FViewportResolutionPushConstants PushConstants;
@@ -83,7 +78,6 @@ void main()
     CartesianCoordinates.z = sin(SphericalCoordinates.y) * cos(SphericalCoordinates.x);
     CartesianCoordinates.y = cos(SphericalCoordinates.y);
     CartesianCoordinates.x = sin(SphericalCoordinates.y) * sin(SphericalCoordinates.x);
-    atomicAdd(DebugBuffer[TexelIndex], 1);
 
 #ifdef DEBUG_PRINTF
     uvec2 NewPixelCoords = uvec2(NewPixelIndex % PushConstants.Width, NewPixelIndex / PushConstants.Width);
@@ -91,7 +85,7 @@ void main()
     if (NewPixelCoords.x == PushConstants.Width / 2 && NewPixelCoords.y == PushConstants.Height / 2)
     {
         b = true;
-        //debugPrintfEXT("IBLSize is %i, %i\n", IBLSize.x, IBLSize.y);
+        debugPrintfEXT("IBLSize is %i, %i\n", IBLSize.x, IBLSize.y);
     }
 #endif
 
