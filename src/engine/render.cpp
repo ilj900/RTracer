@@ -232,6 +232,7 @@ int FRender::Init()
     }
 
     RenderFrameIndex = 0;
+	Counter = 0;
 
 	OutputToFramebufferNameMap[EOutputType::Color] = "RayTracingColorImage";
 	OutputToFramebufferNameMap[EOutputType::Normal] = "RayTracingNormalAOVImage";
@@ -552,6 +553,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	ImageAvailable[CurrentFrame] = SynchronizationPoint;
 
     RenderFrameIndex++;
+	Counter++;
 
     return SynchronizationPoint;
 }
@@ -563,6 +565,8 @@ int FRender::Update()
 	bAnyUpdate |= RENDERABLE_SYSTEM()->Update();
 	bAnyUpdate |= LIGHT_SYSTEM()->Update();
 	bAnyUpdate |= ACCELERATION_STRUCTURE_SYSTEM()->Update();
+
+	Counter = bAnyUpdate ? 0 : Counter;
 
     if (bWasResized)
     {

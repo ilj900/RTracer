@@ -187,6 +187,7 @@ public:
 
     uint32_t MaxFramesInFlight = 2;
     uint32_t RenderFrameIndex = 0;
+	uint32_t Counter = 0;
 
     ECS::FEntity ActiveCamera;
 
