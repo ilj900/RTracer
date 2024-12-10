@@ -152,7 +152,7 @@ void main()
     vec3 SamplingResult = SampleMaterial(Material, RayData, RayType, NormalInWorldSpace.xyz, SamplingState, bFrontFacing);
     RayData.Origin.xyz = PointOfIntersectionInWorldSpace + RayData.Direction.xyz * 0.00000012f;
 
-    if (RayType != TRANSMISSION_LAYER && PushConstants.BounceIndex == 0)
+    if (RayType != TRANSMISSION_LAYER)
     {
         SamplingResult *= IBLSamplingResult.xyz;
     }
