@@ -62,12 +62,13 @@ float RandomFloat(uint I, uint P)
 
 vec2 CMJ(uint S, uint M, uint N, uint P)
 {
-	uint SX = Permute(S % M, M, P * 0xa511e9b3);
-	uint SY = Permute(S / M, N, P * 0x63d83595);
-	float JX = RandomFloat(S, P * 0xa399d265);
-	float JY = RandomFloat(S, P * 0x711ad6a5);
+	uint SS = Permute(S, N * N, P * 0x91ca3645);
+	uint SX = Permute(SS % M, M, P * 0xa511e9b3);
+	uint SY = Permute(SS / M, N, P * 0x63d83595);
+	float JX = RandomFloat(SS, P * 0xa399d265);
+	float JY = RandomFloat(SS, P * 0x711ad6a5);
 
-	vec2 Result = {(S % M + (SY + JX) / N) / M, (S / M + (SX + JY) /M) / N};
+	vec2 Result = {(SS % M + (SY + JX) / N) / M, (SS / M + (SX + JY) /M) / N};
 
 	return Result;
 }

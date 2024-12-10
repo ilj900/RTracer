@@ -198,6 +198,9 @@ int FRender::Init()
 	FBuffer SampledIBLBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "SampledIBLBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(SampledIBLBuffer, "SampledIBLBuffer");
 
+	FBuffer DebugCMJBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "DebugCMJBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(DebugCMJBuffer, "DebugCMJBuffer");
+
 	/// Create all required tasks
 	UpdateTLASTask 						= std::make_shared<FUpdateTLASTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetRenderIterations				= std::make_shared<FClearBufferTask>				("RenderIterationBuffer", Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -470,20 +473,20 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 	SynchronizationPoint = GenerateRaysTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
-//	WaitIdle();
-//
-//    auto Buffer = RESOURCE_ALLOCATOR()->GetBuffer("InitialRaysBuffer");
-//	auto BufferData = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<FRayData>("InitialRaysBuffer");
-//    std::vector<float> Directions(Width * Height * 4);
-//	for (int i = 0; i < Width * Height; ++i)
-//	{
-//		Directions[i * 4] = BufferData[i].Direction.X;
-//		Directions[i * 4 + 1] = BufferData[i].Direction.Y;
-//		Directions[i * 4 + 2] = BufferData[i].Direction.Z;
-//		Directions[i * 4 + 3] = 1;
-//	}
-//
-//	VK_CONTEXT()->SaveEXRWrapper(Directions.data(), Width, Height, 4, false, "Directions.exr");
+	//WaitIdle();
+
+    //auto Buffer = RESOURCE_ALLOCATOR()->GetBuffer("InitialRaysBuffer");
+	//auto BufferData = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<float>("DebugCMJBuffer");
+    //std::vector<float> Directions(Width * Height * 4);
+	//for (int i = 0; i < Width * Height; ++i)
+	//{
+	//	Directions[i * 4] = BufferData[i].Direction.X;
+	//	Directions[i * 4 + 1] = BufferData[i].Direction.Y;
+	//	Directions[i * 4 + 2] = BufferData[i].Direction.Z;
+	//	Directions[i * 4 + 3] = 1;
+	//}
+
+	//VK_CONTEXT()->SaveEXRWrapper(BufferData.data(), Width, Height, 4, false, "DebugCMJBuffer.exr");
 
 	SynchronizationPoint = ResetActiveRayCountTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 

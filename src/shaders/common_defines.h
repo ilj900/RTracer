@@ -121,11 +121,6 @@
 #define COMPUTE_MISS_NORMAL_AOV_IMAGE_INDEX 8u
 #define COMPUTE_MISS_UV_AOV_IMAGE_INDEX 9u
 
-/// Task reset descriptor set layout defines
-#define RESET_LAYOUT_INDEX 0u
-
-#define RESET_RENDER_ITERATION_BUFFER 0u
-
 /// Task advance render count descriptor set layout defines
 #define ADVANCE_RENDER_COUNT_LAYOUT_INDEX 0u
 
@@ -139,17 +134,13 @@
 #define GENERATE_RAYS_PIXEL_INDEX_BUFFER 2u
 #define GENERATE_RAYS_RENDER_ITERATION_BUFFER 3u
 #define GENERATE_RAYS_THROUGHPUT_BUFFER 4u
+#define GENERATE_RAYS_DEBUG_CMJ_BUFFER 5u
 
 /// Task material sort count materials set layout defines
 #define MATERIAL_SORT_COUNT_MATERIALS_PER_CHUNK_INDEX 0u
 
 #define MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_INDICES_AOV_BUFFER 0u
 #define MATERIAL_SORT_COUNT_MATERIALS_MATERIAL_COUNT_BUFFER 1u
-
-/// Task material sort clear materials count per chunk set layout defines
-#define MATERIAL_SORT_CLEAR_MATERIALS_COUNT_PER_CHUNK_LAYOUT_INDEX 0u
-
-#define MATERIAL_SORT_CLEAR_MATERIALS_COUNT_PER_CHUNK_BUFFER 0u
 
 /// Task material sort clear total materials count set layout defines
 #define MATERIAL_SORT_CLEAR_TOTAL_MATERIALS_COUNT_LAYOUT_INDEX 0u
