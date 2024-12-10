@@ -63,13 +63,13 @@ vec3 ScatterDiffuse(vec3 NormalInWorldSpace, FSamplingState SamplingState)
 	return normalize(Result + NormalInWorldSpace);
 }
 
-vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 NormalInWorldSpace, FSamplingState SamplingState, bool bFrontFacing)
+vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, out uint RayType, vec3 NormalInWorldSpace, FSamplingState SamplingState, bool bFrontFacing)
 {
 	float LayerSample = RandomFloat(SamplingState);
-	uint Layer = SelectLayer(Material, LayerSample);
+	RayType = SelectLayer(Material, LayerSample);
 	vec3 Color = vec3(0);
 
-	switch (Layer)
+	switch (RayType)
 	{
 	case DIFFUSE_LAYER:
 		Color = Material.BaseColor;
