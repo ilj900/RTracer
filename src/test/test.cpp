@@ -9,6 +9,7 @@
 
 #include "scene_loader.h"
 
+#include <fstream>
 #include <random>
 
 TEST_CASE( "Basic scene loading", "[Basic]" )
@@ -56,7 +57,7 @@ TEST_CASE( "Test Random", "[Utility]" )
 
 	for (int i = 0; i < Dimentions2; ++i)
 	{
-		SamplingState.Seed = i;
+		SamplingState.Seed++;
 		FVector2 UV = CMJ(i % Dimentions2, Dimentions, Dimentions, i);
 
 		int X = UV.X * ImageSize;
@@ -91,11 +92,10 @@ TEST_CASE( "Test Random", "[Utility]" )
 
 	/// Test unit square distribution
 	std::vector<char> TextureQuad(ImageSize * ImageSize * 3, char(0));
-	SamplingState = {0, 0, 0};
 
 	for (int i = 0; i < Dimentions2; ++i)
 	{
-		SamplingState.Seed = i;
+		SamplingState.Seed++;
 		FVector2 UV = Sample2DUnitQuad(SamplingState);
 
 		int X = UV.X * ImageSize;
@@ -110,11 +110,10 @@ TEST_CASE( "Test Random", "[Utility]" )
 
 	/// Test unit disk distribution
 	std::vector<char> TextureDisk(ImageSize * ImageSize * 3, char(0));
-	SamplingState = {0, 0, 0};
 
 	for (int i = 0; i < Dimentions2; ++i)
 	{
-		SamplingState.Seed = i;
+		SamplingState.Seed++;
 		FVector2 UV = Sample2DUnitDisk(SamplingState);
 
 		int X = UV.X * ImageSize;
@@ -126,4 +125,20 @@ TEST_CASE( "Test Random", "[Utility]" )
 	}
 
 	stbi_write_bmp("TextureDisk.bmp" , ImageSize, ImageSize, 3, TextureDisk.data());
+
+	/// Create a set of vertices uniformly placed on a 3D unit sphere
+	std::vector<FVector3> Sampled3DSphere(Dimentions2);
+
+	for (int i = 0; i < Dimentions2; ++i)
+	{
+		SamplingState.Seed++;
+		Sampled3DSphere[i] = Sample3DUnitHemisphere(SamplingState);
+	}
+
+	std::ofstream File("Sampled3DSphere.bin", std::ios::binary);
+	if (File)
+	{
+		File.write(reinterpret_cast<const char*>(Sampled3DSphere.data()), sizeof(FVector3) * Sampled3DSphere.size());
+		File.close();
+	}
 }

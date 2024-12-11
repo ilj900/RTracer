@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 
+
 # Function to read the 3D points from the file
 def read_points_from_file(file_path):
     points = []
