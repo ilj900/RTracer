@@ -34,6 +34,11 @@ layout (set = COMPUTE_SHADING_DATA_LAYOUT_INDEX, binding = COMPUTE_SHADING_DATA_
     FRayData RayData[];
 };
 
+layout (set = COMPUTE_SHADING_DATA_LAYOUT_INDEX, binding = COMPUTE_SHADING_DATA_TRANSFORM_INDEX_BUFFER_INDEX) buffer TransformIndexBufferObject
+{
+    uint TransformIndexBuffer[];
+};
+
 layout (set = COMPUTE_SHADING_DATA_LAYOUT_INDEX, binding = COMPUTE_SHADING_DATA_RAY_INDEX_MAP_INDEX) buffer RayIndexMapBufferObject
 {
     uint RayIndexMap[];
@@ -149,6 +154,7 @@ void main()
     Vertices Verts = Vertices(Renderable.VertexBufferAddress);
     Indices Inds = Indices(Renderable.IndexBufferAddress);
     FDeviceTransform Transform = FetchTransform(Renderable.TransformIndex);
+    TransformIndexBuffer[NewPixelIndex] = Renderable.TransformIndex;
     const vec3 Barycentrics = vec3(1.0 - Hit.HitUV.x - Hit.HitUV.y, Hit.HitUV.x, Hit.HitUV.y);
 
     FDeviceVertex DV0;

@@ -137,7 +137,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 	{
 		ImVec2 Position(50.0f, 20.0f);
 		ImDrawList* drawList = ImGui::GetForegroundDrawList();
-		drawList->AddText(Position, IM_COL32(255, 255, 255, 255), ("Frames accumulated: " + std::to_string(Render->Counter) + ".").c_str());
+		drawList->AddText(Position, IM_COL32(0, 255, 0, 255), ("Frames accumulated: " + std::to_string(Render->Counter) + ".").c_str());
 	}
 
 	static ImGuiUtils::ProfilersWindow ProfilerData;

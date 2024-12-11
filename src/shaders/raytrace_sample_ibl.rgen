@@ -34,6 +34,16 @@ layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_WO
     vec4 WorldSpacePositionAOVData[];
 };
 
+layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_TRANSFORM_INDEX_BUFFER_INDEX) buffer TransformIndexBufferObject
+{
+    uint TransformIndexBuffer[];
+};
+
+layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_DEVICE_TRANSFORM_BUFFER_INDEX) buffer DeviceTransformBufferObject
+{
+    FDeviceTransform DeviceTransformBuffer[];
+};
+
 layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_SAMPLED_IBL_BUFFER_INDEX) buffer SampledIBLBufferObject
 {
     vec4 SampledIBLBuffer[];
@@ -92,10 +102,14 @@ void main()
     vec4 FragmentNormal = NormalAOVData[NewPixelIndex];
 
     /// If sampling direction not in the hemisphere defined by fragment's normal
-    /// Then we ignore it?
+    /// Then sample a random ridection?
     if (dot(CartesianCoordinates, FragmentNormal.xyz) <= 0)
     {
-        return;
+        vec3 RandomSphereDirection = Sample3DUnitSphere(SamplingState);
+        uint TransformIndex = TransformIndexBuffer[NewPixelIndex];
+        FDeviceTransform Transform = DeviceTransformBuffer[TransformIndex];
+        RandomSphereDirection = RandomSphereDirection * mat3(Transform.InverseModelMatrix);
+        CartesianCoordinates = normalize(FragmentNormal.xyz + RandomSphereDirection);
     }
 
     /// Otherwise we prepare the ray for calculations
