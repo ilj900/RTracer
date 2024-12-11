@@ -59,11 +59,24 @@ struct FVector4
     float Length();
     float Length2();
 
-    /// Data
-    float X = 0.f;
-    float Y = 0.f;
-    float Z = 0.f;
-    float W = 0.f;
+    union
+	{
+		struct
+		{
+			float X;
+			float Y;
+			float Z;
+			float W;
+		};
+		/// Aliases for glsl
+		struct
+		{
+			float x;
+			float y;
+			float z;
+			float w;
+		};
+	};
 };
 
 bool operator==(const FVector4& A, const FVector4& B);
@@ -83,8 +96,8 @@ FVector4 operator*(const FMatrix4& B, const FVector4& A);
 struct FVector3
 {
     /// Constructors
-    FVector3(float X, float Y, float Z): X(X), Y(Y), Z(Z) {}
     FVector3() = default;
+    FVector3(float X, float Y, float Z): X(X), Y(Y), Z(Z) {}
 
     /// Functions
     FVector3 GetNormalized() const;
@@ -96,9 +109,22 @@ struct FVector3
     std::string ToString();
 
     /// Data
-    float X;
-    float Y;
-    float Z;
+	union
+	{
+		struct
+		{
+			float X;
+			float Y;
+			float Z;
+		};
+		/// Aliases for glsl
+		struct
+		{
+			float x;
+			float y;
+			float z;
+		};
+	};
 };
 
 bool operator==(const FVector3& A, const FVector3& B);
@@ -123,8 +149,21 @@ public:
     FVector2(float X, float Y) : X(X), Y(Y) {};
 
     /// Data
-    float X;
-    float Y;
+	/// Data
+	union
+	{
+		struct
+		{
+			float X;
+			float Y;
+		};
+		/// Aliases for glsl
+		struct
+		{
+			float x;
+			float y;
+		};
+	};
 };
 
 bool operator==(const FVector2& A, const FVector2& B);

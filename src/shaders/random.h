@@ -72,8 +72,8 @@ float RandomFloat(uint32_t i, uint32_t p)
 
 FVector2 CMJ(uint32_t s, uint32_t m, uint32_t n, uint32_t p)
 {
-	int sx = Permute(s % m, m, p * 0xa511e9b3);
-	int sy = Permute(s / m, n, p * 0x63d83595);
+	uint32_t sx = Permute(s % m, m, p * 0xa511e9b3);
+	uint32_t sy = Permute(s / m, n, p * 0x63d83595);
 	float jx = RandomFloat(s, p * 0xa399d265);
 	float jy = RandomFloat(s, p * 0x711ad6a5);
 
@@ -94,10 +94,10 @@ FVector2 Sample2DUnitDisk(inout FSamplingState SamplingState)
 {
 	uint32_t Hash = 227 + SamplingState.Seed * 1489 + SamplingState.Bounce * 1399 + SamplingState.SampleIndex * 401;
 	FVector2 Sample = CMJ(Hash % CMJ_TOTAL_GRID_SIZE, CMJ_GRID_LINEAR_SIZE, CMJ_GRID_LINEAR_SIZE, Hash);
-	float Theta = Sample.X * M_2_PI;
-	float R = sqrt(Sample.Y);
-	Sample.X = (R * cos(Theta) + 1) * 0.5;
-	Sample.Y = (R * sin(Theta) + 1) * 0.5;
+	float Theta = Sample.x * M_2_PI;
+	float R = sqrt(Sample.y);
+	Sample.x = (R * cos(Theta) + 1) * 0.5;
+	Sample.y = (R * sin(Theta) + 1) * 0.5;
 	SamplingState.SampleIndex += 1;
 	return Sample;
 }
@@ -106,13 +106,13 @@ FVector3 Sample3DUnitSphere(inout FSamplingState SamplingState)
 {
 	uint32_t Hash = 227 + SamplingState.Seed * 1489 + SamplingState.Bounce * 1399 + SamplingState.SampleIndex * 401;
 	FVector2 Sample = CMJ(Hash % CMJ_TOTAL_GRID_SIZE, CMJ_GRID_LINEAR_SIZE, CMJ_GRID_LINEAR_SIZE, Hash);
-	float Theta = Sample.X * M_2_PI;
-	float Z = Sample.Y * 2 - 1;
+	float Theta = Sample.x * M_2_PI;
+	float Z = Sample.y * 2 - 1;
 	float Z2 = sqrt(1 - (Z * Z));
 	FVector3 Result = {1, 0, 0};
-	Result.X = Z2 * cos(Theta);
-	Result.Y = Z2 * sin(Theta);
-	Result.Z = Z;
+	Result.x = Z2 * cos(Theta);
+	Result.y = Z2 * sin(Theta);
+	Result.z = Z;
 	SamplingState.SampleIndex += 1;
 	return Result;
 }
@@ -122,13 +122,13 @@ FVector3 Sample3DUnitHemisphere(inout FSamplingState SamplingState)
 {
 	uint32_t Hash = 227 + SamplingState.Seed * 1489 + SamplingState.Bounce * 1399 + SamplingState.SampleIndex * 401;
 	FVector2 Sample = CMJ(Hash % CMJ_TOTAL_GRID_SIZE, CMJ_GRID_LINEAR_SIZE, CMJ_GRID_LINEAR_SIZE, Hash);
-	float Theta = Sample.X * M_2_PI;
-	float Z = Sample.Y * 2 - 1;
+	float Theta = Sample.x * M_2_PI;
+	float Z = Sample.y * 2 - 1;
 	float Z2 = sqrt(1 - (Z * Z));
 	FVector3 Result = {1, 0, 0};
-	Result.X = Z2 * cos(Theta);
-	Result.Y = abs(Z2 * sin(Theta));
-	Result.Z = Z;
+	Result.x = Z2 * cos(Theta);
+	Result.y = abs(Z2 * sin(Theta));
+	Result.z = Z;
 	SamplingState.SampleIndex += 1;
 	return Result;
 }
