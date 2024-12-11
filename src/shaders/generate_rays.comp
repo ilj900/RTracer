@@ -4,7 +4,7 @@
 
 #include "common_defines.h"
 #include "common_structures.h"
-#include "cmj.h"
+#include "random.h"
 
 layout (set = GENERATE_RAYS_LAYOUT_INDEX, binding = CAMERA_RAYS_BUFFER) buffer RaysBufferObject
 {
@@ -53,7 +53,7 @@ void main()
     PixelCoordsF -= vec2(0.5);
 
     FSamplingState SamplingState = FSamplingState(PixelIndex, 0, RenderIteration);
-    vec2 RandomUnitSquare = Sample2D(SamplingState);
+    vec2 RandomUnitSquare = Sample2DUnitQuad(SamplingState);
     const vec2 PixelJitter = (RandomUnitSquare - vec2(0.5)) / vec2(PushConstants.Width, PushConstants.Height);
     PixelCoordsF += PixelJitter;
 

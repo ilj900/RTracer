@@ -73,7 +73,7 @@ vec2 CMJ(uint S, uint M, uint N, uint P)
 	return Result;
 }
 
-vec2 Sample2D(FSamplingState SamplingState)
+vec2 Sample2DUnitQuad(FSamplingState SamplingState)
 {
 	uint Hash = 227 + SamplingState.Seed * 1489 + SamplingState.Bounce * 1399 + SamplingState.SampleIndex * 401;
 	return CMJ(Hash % CMJ_TOTAL_GRID_SIZE, CMJ_GRID_LINEAR_SIZE, CMJ_GRID_LINEAR_SIZE, Hash);

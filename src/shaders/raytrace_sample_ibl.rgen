@@ -11,7 +11,7 @@ bool b = false;
 
 #include "common_defines.h"
 #include "common_structures.h"
-#include "cmj.h"
+#include "random.h"
 
 layout (location = 0) rayPayloadEXT FIBLHitPayload IBLHitPayload;
 
@@ -61,7 +61,7 @@ void main()
 
     FSamplingState SamplingState = FSamplingState(OriginalPixelIndex, 0, RenderIteration);
     /// Select a random UV
-    const vec2 SampleUV = Sample2D(SamplingState);
+    const vec2 SampleUV = Sample2DUnitQuad(SamplingState);
     const uvec2 IBLSize = textureSize(IBLTextureSampler, 0);
     const uint SampleIndex = uint(IBLSize.x * IBLSize.y * SampleUV.y) + uint(IBLSize.x * SampleUV.x);
     /// Get the interval of pixels that we want to sample
@@ -85,7 +85,7 @@ void main()
     if (NewPixelCoords.x == PushConstants.Width / 2 && NewPixelCoords.y == PushConstants.Height / 2)
     {
         b = true;
-        debugPrintfEXT("IBLSize is %i, %i\n", IBLSize.x, IBLSize.y);
+        //debugPrintfEXT("RandomFloat is %f\n", f);
     }
 #endif
 

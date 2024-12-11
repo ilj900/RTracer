@@ -13,7 +13,7 @@ bool b = false;
 
 #include "common_defines.h"
 #include "common_structures.h"
-#include "cmj.h"
+#include "random.h"
 #include "process_material_interaction.h"
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_OUTPUT_IMAGE_INDEX, rgba32f) uniform image2D OutcomingImage;
