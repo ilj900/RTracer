@@ -4,16 +4,26 @@
 #define CMJ_GRID_LINEAR_SIZE 4
 #define CMJ_TOTAL_GRID_SIZE (CMJ_GRID_LINEAR_SIZE * CMJ_GRID_LINEAR_SIZE)
 
+#ifndef __cplusplus
+#define FVector4 vec4
+#define FVector3 vec3
+#define FVector2 vec2
+#define FMatrix4 mat4
+#define uint32_t uint
+#else
+#define inout
+#endif
+
 struct FSamplingState
 {
-	uint Seed;
-	uint Bounce;
-	uint SampleIndex;
+	uint32_t Seed;
+	uint32_t Bounce;
+	uint32_t SampleIndex;
 };
 
-uint Permute(uint I, uint L, uint P)
+uint32_t Permute(uint32_t I, uint32_t L, uint32_t P)
 {
-	uint W = L - 1;
+	uint32_t W = L - 1;
 	W |= W >> 1;
 	W |= W >> 2;
 	W |= W >> 4;
@@ -45,7 +55,7 @@ uint Permute(uint I, uint L, uint P)
 	return (I + P) % L;
 }
 
-float RandomFloat(uint I, uint P)
+float RandomFloat(uint32_t I, uint32_t P)
 {
 	I ^= P;
 	I ^= I >> 17;
@@ -60,28 +70,39 @@ float RandomFloat(uint I, uint P)
 	return I * (1.f / 4294967808.f);
 }
 
-vec2 CMJ(uint S, uint M, uint N, uint P)
+FVector2 CMJ(uint32_t S, uint32_t M, uint32_t N, uint32_t P)
 {
-	uint SS = Permute(S, N * N, P * 0x91ca3645);
-	uint SX = Permute(SS % M, M, P * 0xa511e9b3);
-	uint SY = Permute(SS / M, N, P * 0x63d83595);
+	uint32_t SS = Permute(S, N * N, P * 0x91ca3645);
+	uint32_t SX = Permute(SS % M, M, P * 0xa511e9b3);
+	uint32_t SY = Permute(SS / M, N, P * 0x63d83595);
 	float JX = RandomFloat(SS, P * 0xa399d265);
 	float JY = RandomFloat(SS, P * 0x711ad6a5);
 
-	vec2 Result = {(SS % M + (SY + JX) / N) / M, (SS / M + (SX + JY) /M) / N};
+	FVector2 Result = {(SS % M + (SY + JX) / N) / M, (SS / M + (SX + JY) /M) / N};
 
 	return Result;
 }
 
-vec2 Sample2DUnitQuad(FSamplingState SamplingState)
+FVector2 Sample2DUnitQuad(FSamplingState SamplingState)
 {
-	uint Hash = 227 + SamplingState.Seed * 1489 + SamplingState.Bounce * 1399 + SamplingState.SampleIndex * 401;
+	uint32_t Hash = 227 + SamplingState.Seed * 1489 + SamplingState.Bounce * 1399 + SamplingState.SampleIndex * 401;
 	return CMJ(Hash % CMJ_TOTAL_GRID_SIZE, CMJ_GRID_LINEAR_SIZE, CMJ_GRID_LINEAR_SIZE, Hash);
+}
+
+FVector2 Sample2DUnitDisk(FSamplingState SamplingState)
+{
+	uint32_t Hash = 227 + SamplingState.Seed * 1489 + SamplingState.Bounce * 1399 + SamplingState.SampleIndex * 401;
+	FVector2 Sample = CMJ(Hash % CMJ_TOTAL_GRID_SIZE, CMJ_GRID_LINEAR_SIZE, CMJ_GRID_LINEAR_SIZE, Hash);
+	float Theta = Sample.X * M_PI * 2;
+	float R = sqrt(Sample.Y);
+	Sample.X = R * cos(Theta);
+	Sample.Y = R * sin(Theta);
+	return Sample;
 }
 
 float RandomFloat(inout FSamplingState SamplingState)
 {
-	uint Hash = 227 + SamplingState.Seed * 1489 + SamplingState.Bounce * 1399 + SamplingState.SampleIndex * 401;
+	uint32_t Hash = 227 + SamplingState.Seed * 1489 + SamplingState.Bounce * 1399 + SamplingState.SampleIndex * 401;
 	SamplingState.SampleIndex += 1;
 	return RandomFloat(0, Hash);
 }

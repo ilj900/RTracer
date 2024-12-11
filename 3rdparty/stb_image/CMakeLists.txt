@@ -9,5 +9,6 @@ set(SOURCE
 add_library(stb_image STATIC ${SOURCE} ${INCLUDE})
 
 target_include_directories(Renderer PUBLIC .)
+target_include_directories(Test PUBLIC .)
 target_include_directories(Vulkan_helpers PUBLIC .)
 target_include_directories(stb_image PRIVATE .)
