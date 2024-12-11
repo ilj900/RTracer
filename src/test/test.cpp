@@ -47,11 +47,53 @@ TEST_CASE( "Basic scene loading", "[Basic]" )
 
 TEST_CASE( "Test Random", "[Utility]" )
 {
+	/// Generate some random values to check how CMJ works
 	const int ImageSize = 512;
-	std::vector<char> Texture(ImageSize * ImageSize * 3);
+	const int Dimentions = CMJ_GRID_LINEAR_SIZE;
+	const int Dimentions2 = Dimentions * Dimentions;
+	std::vector<char> Texture(ImageSize * ImageSize * 3, char(0));
 	FSamplingState SamplingState = {0, 0, 0};
 
-	for (int i = 0; i < 3000; ++i)
+	for (int i = 0; i < Dimentions2; ++i)
+	{
+		SamplingState.Seed = i;
+		FVector2 UV = CMJ(i % Dimentions2, Dimentions, Dimentions, i);
+
+		int X = UV.X * ImageSize;
+		int Y = UV.Y * ImageSize;
+		int PixelIndex = Y * ImageSize + X;
+		Texture[PixelIndex * 3] = char(255);
+		Texture[PixelIndex * 3 + 1] = char(255);
+		Texture[PixelIndex * 3 + 2] = char(255);
+	}
+
+	stbi_write_bmp("CMJ.bmp" , ImageSize, ImageSize, 3, Texture.data());
+
+	/// Generate some random values for comparison
+	std::vector<char> Texture2(ImageSize * ImageSize * 3, char(0));
+	std::random_device Device;
+	std::mt19937 RNG(Device());
+	std::uniform_real_distribution<float> Distribution(0., 1.);
+
+	for (int i = 0; i < Dimentions2; ++i)
+	{
+		FVector2 UV = {Distribution(RNG), Distribution(RNG)};
+
+		int X = UV.X * ImageSize;
+		int Y = UV.Y * ImageSize;
+		int PixelIndex = Y * ImageSize + X;
+		Texture2[PixelIndex * 3] = char(255);
+		Texture2[PixelIndex * 3 + 1] = char(255);
+		Texture2[PixelIndex * 3 + 2] = char(255);
+	}
+
+	stbi_write_bmp("Random.bmp" , ImageSize, ImageSize, 3, Texture2.data());
+
+	/// Test unit square distribution
+	std::vector<char> TextureQuad(ImageSize * ImageSize * 3, char(0));
+	SamplingState = {0, 0, 0};
+
+	for (int i = 0; i < Dimentions2; ++i)
 	{
 		SamplingState.Seed = i;
 		FVector2 UV = Sample2DUnitQuad(SamplingState);
@@ -59,41 +101,29 @@ TEST_CASE( "Test Random", "[Utility]" )
 		int X = UV.X * ImageSize;
 		int Y = UV.Y * ImageSize;
 		int PixelIndex = Y * ImageSize + X;
-		if (Texture[PixelIndex * 3] == 255)
-		{
-			if (Texture[PixelIndex * 3 + 1] == 255)
-			{
-				Texture[PixelIndex * 3 + 2] = 255;
-			}
-			Texture[PixelIndex * 3 + 1] = 255;
-		}
-		Texture[PixelIndex * 3] = 255;
+		TextureQuad[PixelIndex * 3] = char(255);
+		TextureQuad[PixelIndex * 3 + 1] = char(255);
+		TextureQuad[PixelIndex * 3 + 2] = char(255);
 	}
 
-	stbi_write_bmp("CMJ.bmp" , ImageSize, ImageSize, 3, Texture.data());
+	stbi_write_bmp("TextureQuad.bmp" , ImageSize, ImageSize, 3, TextureQuad.data());
 
-	std::vector<char> Texture2(ImageSize * ImageSize * 3);
-	std::random_device Device;
-	std::mt19937 RNG(Device());
-	std::uniform_real_distribution<float> Distribution(0., 1.);
+	/// Test unit disk distribution
+	std::vector<char> TextureDisk(ImageSize * ImageSize * 3, char(0));
+	SamplingState = {0, 0, 0};
 
-	for (int i = 0; i < 3000; ++i)
+	for (int i = 0; i < Dimentions2; ++i)
 	{
-		FVector2 UV = {Distribution(RNG), Distribution(RNG)};
+		SamplingState.Seed = i;
+		FVector2 UV = Sample2DUnitDisk(SamplingState);
 
 		int X = UV.X * ImageSize;
 		int Y = UV.Y * ImageSize;
 		int PixelIndex = Y * ImageSize + X;
-		if (Texture2[PixelIndex * 3] == 255)
-		{
-			if (Texture2[PixelIndex * 3 + 1] == 255)
-			{
-				Texture2[PixelIndex * 3 + 2] = 255;
-			}
-			Texture2[PixelIndex * 3 + 1] = 255;
-		}
-		Texture2[PixelIndex * 3] = 255;
+		TextureDisk[PixelIndex * 3] = char(255);
+		TextureDisk[PixelIndex * 3 + 1] = char(255);
+		TextureDisk[PixelIndex * 3 + 2] = char(255);
 	}
 
-	stbi_write_bmp("Random.bmp" , ImageSize, ImageSize, 3, Texture2.data());
+	stbi_write_bmp("TextureDisk.bmp" , ImageSize, ImageSize, 3, TextureDisk.data());
 }
