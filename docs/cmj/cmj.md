@@ -18,8 +18,8 @@ What for example would happen if we call cmj with constant s = 3, m = 5 and n = 
 As you can see we sampled 100 values from 4th subregion.
 
 To see the advantage of stratified sampling lets compare it to a random one. \
-<mark>RandomSamples</mark> shows 512 randomly sampled with standard mt19937 generator \
-<mark>CMJSamples</mark> shows 512 randomly sampled a grid size of 64, which actually places each sample in its unique cell.
+<mark>RandomSamples</mark> shows 4096 random samples with standard mt19937 generator \
+<mark>CMJSamples</mark> shows 4096 random samples with a grid size of 64, which actually places each sample in its unique cell.
 
 *RandomSamples* \
 ![RandomSamples](./c.bmp "RandomSamples")
@@ -27,3 +27,5 @@ To see the advantage of stratified sampling lets compare it to a random one. \
 *CMJSamples* \
 ![CMJSamples](./d.bmp "CMJSamples")
 
+Now we have to come up with a way to uniformly pick a subregion, so that if we have 4096 subregions, \
+all of them would be picked after 4096 calls.
