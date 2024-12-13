@@ -12,3 +12,15 @@ uint32_t CalculateMaxGroupCount(uint32_t NumberOfElements, uint32_t ElementsInGr
     uint32_t GroupCount = (NumberOfElements + ElementsInGroup - 1) / ElementsInGroup;
     return 2 << Log2(GroupCount);
 }
+
+void AddPrecedingZeroes(std::string& String, int ZeroesCount)
+{
+	if (String.size() >= ZeroesCount)
+	{
+		return;
+	}
+
+	auto ZeroesToAdd = ZeroesCount - String.size();
+	std::string Zeroes(ZeroesToAdd, '0');
+	String = Zeroes + String;
+}

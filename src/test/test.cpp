@@ -53,11 +53,9 @@ TEST_CASE( "Test Random", "[Utility]" )
 	const int Dimentions = CMJ_GRID_LINEAR_SIZE;
 	const int Dimentions2 = Dimentions * Dimentions;
 	std::vector<char> Texture(ImageSize * ImageSize * 3, char(0));
-	FSamplingState SamplingState = {0, 0, 0};
 
 	for (int i = 0; i < Dimentions2; ++i)
 	{
-		SamplingState.Seed++;
 		FVector2 UV = CMJ(i % Dimentions2, Dimentions, Dimentions, i);
 
 		int X = UV.X * ImageSize;
@@ -92,10 +90,11 @@ TEST_CASE( "Test Random", "[Utility]" )
 
 	/// Test unit square distribution
 	std::vector<char> TextureQuad(ImageSize * ImageSize * 3, char(0));
+	FSamplingState SamplingState = {100000, 0, 0, 0};
 
 	for (int i = 0; i < Dimentions2; ++i)
 	{
-		SamplingState.Seed++;
+		SamplingState.RenderIteration++;
 		FVector2 UV = Sample2DUnitQuad(SamplingState);
 
 		int X = UV.X * ImageSize;
@@ -113,7 +112,7 @@ TEST_CASE( "Test Random", "[Utility]" )
 
 	for (int i = 0; i < Dimentions2; ++i)
 	{
-		SamplingState.Seed++;
+		SamplingState.RenderIteration++;
 		FVector2 UV = Sample2DUnitDisk(SamplingState);
 
 		int X = UV.X * ImageSize;
@@ -131,7 +130,7 @@ TEST_CASE( "Test Random", "[Utility]" )
 
 	for (int i = 0; i < Dimentions2; ++i)
 	{
-		SamplingState.Seed++;
+		SamplingState.RenderIteration++;
 		Sampled3DSphere[i] = Sample3DUnitHemisphere(SamplingState);
 	}
 

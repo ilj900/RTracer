@@ -16,9 +16,9 @@
 
 struct FSamplingState
 {
-	uint32_t Seed;
+	uint32_t RenderIteration;
 	uint32_t Bounce;
-	uint32_t SampleIndex;
+	uint32_t Seed;
 };
 
 uint32_t Permute(uint32_t i, uint32_t l, uint32_t p)
@@ -83,29 +83,28 @@ FVector2 CMJ(uint32_t s, uint32_t m, uint32_t n, uint32_t p)
 }
 
 FVector2 Sample2DUnitQuad(inout FSamplingState SamplingState)
-{
-	uint32_t Hash = 227 + SamplingState.Seed * 1489 + SamplingState.Bounce * 1399 + SamplingState.SampleIndex * 401;
-	SamplingState.SampleIndex += 1;
-	return CMJ(Hash % CMJ_TOTAL_GRID_SIZE, CMJ_GRID_LINEAR_SIZE, CMJ_GRID_LINEAR_SIZE, Hash);
+{;
+	uint32_t StrataIndex = (SamplingState.RenderIteration * 131071) % CMJ_TOTAL_GRID_SIZE;
+	uint32_t PermutationIndex = (SamplingState.RenderIteration * 524287 + SamplingState.Bounce * 127 + SamplingState.Seed * 31)/ CMJ_TOTAL_GRID_SIZE;
+	SamplingState.Seed += 1;
+	return CMJ(StrataIndex, CMJ_GRID_LINEAR_SIZE, CMJ_GRID_LINEAR_SIZE, PermutationIndex);
 }
 
 /// Disk centered at x = 0.5 and y = 0.5 with a radius of 0.5
 FVector2 Sample2DUnitDisk(inout FSamplingState SamplingState)
 {
-	uint32_t Hash = 227 + SamplingState.Seed * 1489 + SamplingState.Bounce * 1399 + SamplingState.SampleIndex * 401;
-	FVector2 Sample = CMJ(Hash % CMJ_TOTAL_GRID_SIZE, CMJ_GRID_LINEAR_SIZE, CMJ_GRID_LINEAR_SIZE, Hash);
+	FVector2 Sample = Sample2DUnitQuad(SamplingState);
 	float Theta = Sample.x * M_2_PI;
 	float R = sqrt(Sample.y);
 	Sample.x = (R * cos(Theta) + 1) * 0.5;
 	Sample.y = (R * sin(Theta) + 1) * 0.5;
-	SamplingState.SampleIndex += 1;
+	SamplingState.Seed += 1;
 	return Sample;
 }
 
 FVector3 Sample3DUnitSphere(inout FSamplingState SamplingState)
 {
-	uint32_t Hash = 227 + SamplingState.Seed * 1489 + SamplingState.Bounce * 1399 + SamplingState.SampleIndex * 401;
-	FVector2 Sample = CMJ(Hash % CMJ_TOTAL_GRID_SIZE, CMJ_GRID_LINEAR_SIZE, CMJ_GRID_LINEAR_SIZE, Hash);
+	FVector2 Sample = Sample2DUnitQuad(SamplingState);
 	float Theta = Sample.x * M_2_PI;
 	float Z = Sample.y * 2 - 1;
 	float Z2 = sqrt(1 - (Z * Z));
@@ -113,15 +112,14 @@ FVector3 Sample3DUnitSphere(inout FSamplingState SamplingState)
 	Result.x = Z2 * cos(Theta);
 	Result.y = Z2 * sin(Theta);
 	Result.z = Z;
-	SamplingState.SampleIndex += 1;
+	SamplingState.Seed += 1;
 	return Result;
 }
 
 /// Random vector on a unit hemisphere pointing up (y)
 FVector3 Sample3DUnitHemisphere(inout FSamplingState SamplingState)
 {
-	uint32_t Hash = 227 + SamplingState.Seed * 1489 + SamplingState.Bounce * 1399 + SamplingState.SampleIndex * 401;
-	FVector2 Sample = CMJ(Hash % CMJ_TOTAL_GRID_SIZE, CMJ_GRID_LINEAR_SIZE, CMJ_GRID_LINEAR_SIZE, Hash);
+	FVector2 Sample = Sample2DUnitQuad(SamplingState);
 	float Theta = Sample.x * M_2_PI;
 	float Z = Sample.y * 2 - 1;
 	float Z2 = sqrt(1 - (Z * Z));
@@ -129,15 +127,16 @@ FVector3 Sample3DUnitHemisphere(inout FSamplingState SamplingState)
 	Result.x = Z2 * cos(Theta);
 	Result.y = abs(Z2 * sin(Theta));
 	Result.z = Z;
-	SamplingState.SampleIndex += 1;
+	SamplingState.Seed += 1;
 	return Result;
 }
 
 float RandomFloat(inout FSamplingState SamplingState)
 {
-	uint32_t Hash = 227 + SamplingState.Seed * 1489 + SamplingState.Bounce * 1399 + SamplingState.SampleIndex * 401;
-	SamplingState.SampleIndex += 1;
-	return RandomFloat(0, Hash);
+	uint32_t StrataIndex = (SamplingState.RenderIteration * 131071) % CMJ_TOTAL_GRID_SIZE;
+	uint32_t PermutationIndex = (SamplingState.RenderIteration * 524287 + SamplingState.Bounce * 127 + SamplingState.Seed * 31)/ CMJ_TOTAL_GRID_SIZE;
+	SamplingState.Seed += 1;
+	return RandomFloat(0, PermutationIndex);
 }
 
 #endif // CMJ_H

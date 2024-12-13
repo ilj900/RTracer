@@ -147,7 +147,7 @@ void main()
 
     FDeviceMaterial Material = GetMaterial(TextureCoords);
 
-    FSamplingState SamplingState = FSamplingState(gl_GlobalInvocationID.x, 0, RenderIteration);
+    FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, NewPixelIndex);
     uint RayType = 0;
     vec3 SamplingResult = SampleMaterial(Material, RayData, RayType, NormalInWorldSpace.xyz, SamplingState, bFrontFacing);
     RayData.Origin.xyz = PointOfIntersectionInWorldSpace + RayData.Direction.xyz * 0.00000012f;
