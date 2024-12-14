@@ -14,11 +14,15 @@
 #define inout
 #endif
 
+#define SAMPLE_TYPE_GENERATE_RAYS 	0x10000001
+#define SAMPLE_TYPE_LIGHT		 	0x20000001
+
 struct FSamplingState
 {
 	uint32_t RenderIteration;
 	uint32_t Bounce;
-	uint32_t Seed;
+	uint32_t Generation;
+	uint32_t Type;
 };
 
 uint32_t Permute(uint32_t i, uint32_t l, uint32_t p)
@@ -84,9 +88,9 @@ FVector2 CMJ(uint32_t s, uint32_t m, uint32_t n, uint32_t p)
 
 FVector2 Sample2DUnitQuad(inout FSamplingState SamplingState)
 {;
-	uint32_t StrataIndex = (SamplingState.RenderIteration * 131071) % CMJ_TOTAL_GRID_SIZE;
-	uint32_t PermutationIndex = (SamplingState.RenderIteration * 524287 + SamplingState.Bounce * 127 + SamplingState.Seed * 31)/ CMJ_TOTAL_GRID_SIZE;
-	SamplingState.Seed += 1;
+	uint32_t StrataIndex = Permute((SamplingState.RenderIteration * 32 + SamplingState.Bounce) % CMJ_TOTAL_GRID_SIZE, CMJ_TOTAL_GRID_SIZE, 0) % CMJ_TOTAL_GRID_SIZE;
+	uint32_t PermutationIndex = SamplingState.Type + (SamplingState.RenderIteration / CMJ_TOTAL_GRID_SIZE);
+	SamplingState.Generation += 1;
 	return CMJ(StrataIndex, CMJ_GRID_LINEAR_SIZE, CMJ_GRID_LINEAR_SIZE, PermutationIndex);
 }
 
@@ -98,7 +102,7 @@ FVector2 Sample2DUnitDisk(inout FSamplingState SamplingState)
 	float R = sqrt(Sample.y);
 	Sample.x = (R * cos(Theta) + 1) * 0.5;
 	Sample.y = (R * sin(Theta) + 1) * 0.5;
-	SamplingState.Seed += 1;
+	SamplingState.Generation += 1;
 	return Sample;
 }
 
@@ -112,7 +116,7 @@ FVector3 Sample3DUnitSphere(inout FSamplingState SamplingState)
 	Result.x = Z2 * cos(Theta);
 	Result.y = Z2 * sin(Theta);
 	Result.z = Z;
-	SamplingState.Seed += 1;
+	SamplingState.Generation += 1;
 	return Result;
 }
 
@@ -127,15 +131,15 @@ FVector3 Sample3DUnitHemisphere(inout FSamplingState SamplingState)
 	Result.x = Z2 * cos(Theta);
 	Result.y = abs(Z2 * sin(Theta));
 	Result.z = Z;
-	SamplingState.Seed += 1;
+	SamplingState.Generation += 1;
 	return Result;
 }
 
 float RandomFloat(inout FSamplingState SamplingState)
 {
 	uint32_t StrataIndex = (SamplingState.RenderIteration * 131071) % CMJ_TOTAL_GRID_SIZE;
-	uint32_t PermutationIndex = (SamplingState.RenderIteration * 524287 + SamplingState.Bounce * 127 + SamplingState.Seed * 31)/ CMJ_TOTAL_GRID_SIZE;
-	SamplingState.Seed += 1;
+	uint32_t PermutationIndex = (SamplingState.RenderIteration * 524287 + SamplingState.Bounce * 127 + SamplingState.Generation * 31)/ CMJ_TOTAL_GRID_SIZE;
+	SamplingState.Generation += 1;
 	return RandomFloat(0, PermutationIndex);
 }
 
