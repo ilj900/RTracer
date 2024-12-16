@@ -138,10 +138,10 @@ FVector3 Sample3DUnitHemisphere(inout FSamplingState SamplingState)
 
 float RandomFloat(inout FSamplingState SamplingState)
 {
-	uint32_t StrataIndex = (SamplingState.RenderIteration * 131071) % CMJ_TOTAL_GRID_SIZE;
-	uint32_t PermutationIndex = (SamplingState.RenderIteration * 524287 + SamplingState.Bounce * 127 + SamplingState.Generation * 31)/ CMJ_TOTAL_GRID_SIZE;
+	uint32_t StratumIndex = Permute((SamplingState.PixelIndex * 524287 + SamplingState.RenderIteration) % CMJ_TOTAL_GRID_SIZE, CMJ_TOTAL_GRID_SIZE, (SamplingState.PixelIndex * 524287 + SamplingState.RenderIteration) / CMJ_TOTAL_GRID_SIZE);
+	uint32_t PermutationIndex = SamplingState.Type + SamplingState.RenderIteration * 256 + SamplingState.Bounce * 16 + SamplingState.Generation;
 	SamplingState.Generation += 1;
-	return RandomFloat(0, PermutationIndex);
+	return RandomFloat(StratumIndex, PermutationIndex);
 }
 
 #endif // CMJ_H

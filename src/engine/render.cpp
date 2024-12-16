@@ -494,9 +494,9 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	//Texture[Index * 3 + 1] = char(255);
 	//Texture[Index * 3 + 2] = char(255);
 
-	WaitIdle();
-	auto BufferData = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<float>("DebugCMJBuffer");
-	VK_CONTEXT()->SaveEXRWrapper(BufferData.data(), Width, Height, 4, false, "DebugCMJBuffer.exr");
+	//WaitIdle();
+	//auto BufferData = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<float>("DebugCMJBuffer");
+	//VK_CONTEXT()->SaveEXRWrapper(BufferData.data(), Width, Height, 4, false, "DebugCMJBuffer.exr");
 
 	SynchronizationPoint = ResetActiveRayCountTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
