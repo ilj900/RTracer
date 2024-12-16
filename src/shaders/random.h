@@ -22,6 +22,7 @@ struct FSamplingState
 	uint32_t RenderIteration;
 	uint32_t Bounce;
 	uint32_t Generation;
+	uint32_t PixelIndex;
 	uint32_t Type;
 };
 
@@ -88,10 +89,10 @@ FVector2 CMJ(uint32_t s, uint32_t m, uint32_t n, uint32_t p)
 
 FVector2 Sample2DUnitQuad(inout FSamplingState SamplingState)
 {;
-	uint32_t StrataIndex = Permute((SamplingState.RenderIteration * 32 + SamplingState.Bounce) % CMJ_TOTAL_GRID_SIZE, CMJ_TOTAL_GRID_SIZE, 0) % CMJ_TOTAL_GRID_SIZE;
-	uint32_t PermutationIndex = SamplingState.Type + (SamplingState.RenderIteration / CMJ_TOTAL_GRID_SIZE);
+	uint32_t StratumIndex = Permute((SamplingState.PixelIndex * 524287 + SamplingState.RenderIteration) % CMJ_TOTAL_GRID_SIZE, CMJ_TOTAL_GRID_SIZE, (SamplingState.PixelIndex * 524287 + SamplingState.RenderIteration) / CMJ_TOTAL_GRID_SIZE);
+	uint32_t PermutationIndex = SamplingState.Type + SamplingState.RenderIteration * 256 + SamplingState.Bounce * 16 + SamplingState.Generation;
 	SamplingState.Generation += 1;
-	return CMJ(StrataIndex, CMJ_GRID_LINEAR_SIZE, CMJ_GRID_LINEAR_SIZE, PermutationIndex);
+	return CMJ(StratumIndex, CMJ_GRID_LINEAR_SIZE, CMJ_GRID_LINEAR_SIZE, PermutationIndex);
 }
 
 /// Disk centered at x = 0.5 and y = 0.5 with a radius of 0.5

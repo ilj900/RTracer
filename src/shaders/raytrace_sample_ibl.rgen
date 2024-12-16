@@ -69,7 +69,7 @@ void main()
     uint OriginalPixelIndex = gl_LaunchIDEXT.x;
     uint NewPixelIndex = PixelIndexIndexMap[OriginalPixelIndex];
 
-    FSamplingState SamplingState = FSamplingState(RenderIteration, 0, RenderIteration);
+    FSamplingState SamplingState = FSamplingState(RenderIteration, 0, 0, NewPixelIndex, SAMPLE_TYPE_LIGHT);
     /// Select a random UV
     const vec2 SampleUV = Sample2DUnitQuad(SamplingState);
     const uvec2 IBLSize = textureSize(IBLTextureSampler, 0);

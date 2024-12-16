@@ -6,6 +6,7 @@
 #include "random.h"
 
 #include "stb_image_write.h"
+#include "tinyexr.h"
 
 #include "scene_loader.h"
 
@@ -46,7 +47,7 @@ TEST_CASE( "Basic scene loading", "[Basic]" )
 	Render = nullptr;
 }
 
-TEST_CASE( "Test random Mersenne twister", "[Utility]" )
+TEST_CASE( "Test random Mersenne twister", "[Utility]")
 {
 	/// Generate some random values with default mersenne twister
 	const int ImageSize = 512;
@@ -70,7 +71,7 @@ TEST_CASE( "Test random Mersenne twister", "[Utility]" )
 	stbi_write_bmp("Mersenne_twister.bmp" , ImageSize, ImageSize, 3, Texture.data());
 }
 
-TEST_CASE( "Test random CMJ", "[Utility]" )
+TEST_CASE( "Test random CMJ", "[Utility]")
 {
 	const int ImageSize = 512;
 	/// Generate some random values to check how CMJ works
@@ -91,15 +92,15 @@ TEST_CASE( "Test random CMJ", "[Utility]" )
 	stbi_write_bmp("CMJ.bmp" , ImageSize, ImageSize, 3, TextureCMJ.data());
 }
 
-TEST_CASE( "Test random unit square", "[Utility]" )
+TEST_CASE( "Test random unit square", "[Utility]")
 {
 	const int ImageSize = 512;
-	FSamplingState SamplingState = {0, 0, 0, SAMPLE_TYPE_GENERATE_RAYS};
+	FSamplingState SamplingState = {0, 0, 0, SAMPLE_TYPE_GENERATE_RAYS, 0};
 	std::vector<char> Texture(ImageSize * ImageSize * 3, char(0));
 
+	/// Simulate CMJ_TOTAL_GRID_SIZE calls to generate random point in unit square in one pixel
 	for (int i = 0; i < CMJ_TOTAL_GRID_SIZE; ++i)
 	{
-		SamplingState.RenderIteration++;
 		FVector2 UV = Sample2DUnitQuad(SamplingState);
 
 		int X = UV.X * ImageSize;
@@ -108,15 +109,33 @@ TEST_CASE( "Test random unit square", "[Utility]" )
 		Texture[PixelIndex * 3] = char(255);
 		Texture[PixelIndex * 3 + 1] = char(255);
 		Texture[PixelIndex * 3 + 2] = char(255);
+
+		SamplingState.RenderIteration++;
 	}
 
 	stbi_write_bmp("Unit_square.bmp" , ImageSize, ImageSize, 3, Texture.data());
+
+	std::vector<float> ScreenTexture(ImageSize * ImageSize * 3, 0);
+	SamplingState = {0, 0, 0, SAMPLE_TYPE_GENERATE_RAYS, 0};
+
+	/// Simulate ImageSize * ImageSize calls to generate random points in unit square on a fullscreen image
+	for (int i = 0; i < ImageSize * ImageSize; ++i)
+	{
+		FVector2 UV = Sample2DUnitQuad(SamplingState);
+		ScreenTexture[i * 3] = UV.X;
+		ScreenTexture[i * 3 + 1] = UV.Y;
+
+		SamplingState.PixelIndex++;
+	}
+
+	const char* Err = NULL;
+	SaveEXR(ScreenTexture.data(), ImageSize, ImageSize, 3, false, "Scree_UV.exr", &Err);
 }
 
-TEST_CASE( "Test random unit disk", "[Utility]" )
+TEST_CASE( "Test random unit disk", "[Utility]")
 {
 	const int ImageSize = 512;
-	FSamplingState SamplingState = {0, 0, 0, SAMPLE_TYPE_GENERATE_RAYS};
+	FSamplingState SamplingState = {0, 0, 0, SAMPLE_TYPE_GENERATE_RAYS, 0};
 	std::vector<char> Texture(ImageSize * ImageSize * 3, char(0));
 
 	for (int i = 0; i < CMJ_TOTAL_GRID_SIZE; ++i)
@@ -135,11 +154,11 @@ TEST_CASE( "Test random unit disk", "[Utility]" )
 	stbi_write_bmp("Unit_disk.bmp" , ImageSize, ImageSize, 3, Texture.data());
 }
 
-TEST_CASE( "Test random unit sphere", "[Utility]" )
+TEST_CASE( "Test random unit sphere", "[Utility]")
 {
 	/// Create a set of vertices uniformly placed on a 3D unit sphere
 	/// To visualize result use "points_plotter_from_bin.py"
-	FSamplingState SamplingState = {0, 0, 0, SAMPLE_TYPE_GENERATE_RAYS};
+	FSamplingState SamplingState = {0, 0, 0, SAMPLE_TYPE_GENERATE_RAYS, 0};
 	std::vector<FVector3> Sampled3DSphere(CMJ_TOTAL_GRID_SIZE);
 
 	for (int i = 0; i < CMJ_TOTAL_GRID_SIZE; ++i)
