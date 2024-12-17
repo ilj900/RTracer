@@ -31,11 +31,6 @@ layout (set = GENERATE_RAYS_LAYOUT_INDEX, binding = GENERATE_RAYS_THROUGHPUT_BUF
     vec4 ThroughputBuffer[];
 };
 
-layout (set = GENERATE_RAYS_LAYOUT_INDEX, binding = GENERATE_RAYS_DEBUG_CMJ_BUFFER) buffer DebugCMJBufferObject
-{
-    vec4 DebugCMJBuffer[];
-};
-
 layout (push_constant) uniform PushConstantsBlock
 {
     FPushConstants PushConstants;
@@ -60,7 +55,6 @@ void main()
     FSamplingState SamplingState = FSamplingState(RenderIteration, 0, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
     vec2 RandomUnitSquare = Sample2DUnitQuad(SamplingState);
     const vec2 PixelJitter = (RandomUnitSquare - vec2(0.5)) / vec2(PushConstants.Width, PushConstants.Height);
-    DebugCMJBuffer[PixelIndex] = vec4(RandomUnitSquare, 0, 1);
     PixelCoordsF += PixelJitter;
 
     vec4 RayOrigin = vec4(DeviceCamera.Origin, 1.f);

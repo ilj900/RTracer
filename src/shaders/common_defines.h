@@ -137,7 +137,6 @@
 #define GENERATE_RAYS_PIXEL_INDEX_BUFFER 										2u
 #define GENERATE_RAYS_RENDER_ITERATION_BUFFER 									3u
 #define GENERATE_RAYS_THROUGHPUT_BUFFER 										4u
-#define GENERATE_RAYS_DEBUG_CMJ_BUFFER											5u
 
 /// Task material sort count materials set layout defines
 #define MATERIAL_SORT_COUNT_MATERIALS_PER_CHUNK_INDEX 							0u
