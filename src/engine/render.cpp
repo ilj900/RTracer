@@ -29,8 +29,6 @@
 
 #include "renderer_options.h"
 
-#include "stb_image_write.h"
-
 #include "logging.h"
 
 FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(HeightIn)
