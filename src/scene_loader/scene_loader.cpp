@@ -48,7 +48,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto Wall = Render->CreatePlane({4, 4});
 		auto Sphere = Render->CreateUVSphere(512, 256, 0.5f);
 
-		auto BackWall = Render->CreateInstance(Wall, {0, 0, -2}, {0, 0, -1}, {0, 1, 0});
+		auto BackWall = Render->CreateInstance(Wall, {0, 0, -2}, {0, 0, -1}, {0, -1, 0});
 		auto TopWall = Render->CreateInstance(Wall, {0, 2, 0}, {0, -1, 0}, {0, 0, 1});
 		auto BottomWall = Render->CreateInstance(Wall, {0, -2, 0}, {0, 1, 0}, {0, 0, -1});
 		auto LeftWall = Render->CreateInstance(Wall, {-2, 0, 0}, {1, 0, 0}, {0, 1, 0});
