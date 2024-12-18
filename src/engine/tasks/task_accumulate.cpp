@@ -75,6 +75,9 @@ void FAccumulateTask::UpdateDescriptorSets()
 			case EOutputType::UV:
 				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("UVAOVImage"));
 				break;
+			case EOutputType::WorldSpacePosition:
+				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("WorldSpacePositionAOVImage"));
+				break;
 			default:
 				throw std::runtime_error("Unsupported AOV input.");
 		}

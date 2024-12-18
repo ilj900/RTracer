@@ -259,6 +259,7 @@ int FRender::Init()
 	OutputToFramebufferNameMap[EOutputType::Color] = "ColorImage";
 	OutputToFramebufferNameMap[EOutputType::Normal] = "NormalAOVImage";
 	OutputToFramebufferNameMap[EOutputType::UV] = "UVAOVImage";
+	OutputToFramebufferNameMap[EOutputType::WorldSpacePosition] = "WorldSpacePositionAOVImage";
 
     return 0;
 }
