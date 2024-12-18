@@ -1136,6 +1136,36 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
 
 	RESOURCE_ALLOCATOR()->LoadDataToBuffer(IBLImportanceBuffer, {sizeof(FMargin) * Width * Height}, {0}, {IBLSamplingMap.data()});
 
+	std::vector<float> InversePDFWeights(PixelsCount);
+	const double UniformPDF = 1.f / static_cast<float>(PixelsCount);
+
+	for (int i = 0; i < PixelsCount; ++i)
+	{
+		InversePDFWeights[i] = static_cast<float>(UniformPDF / LuminosityPDF[i]);
+	}
+
+	FBuffer InversePDFWeightBuffer;
+
+	if (RESOURCE_ALLOCATOR()->BufferExists("InversePDFWeightBuffer"))
+	{
+		InversePDFWeightBuffer = RESOURCE_ALLOCATOR()->GetBuffer("InversePDFWeightBuffer");
+	}
+	else
+	{
+		InversePDFWeightBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(float) * Width * Height,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "InversePDFWeightBuffer");
+		RESOURCE_ALLOCATOR()->RegisterBuffer(InversePDFWeightBuffer, "InversePDFWeightBuffer");
+	}
+
+	if (InversePDFWeightBuffer.BufferSize != Width * Height * sizeof(float))
+	{
+		RESOURCE_ALLOCATOR()->DestroyBuffer(InversePDFWeightBuffer);
+		InversePDFWeightBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(float) * Width * Height,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "InversePDFWeightBuffer");
+	}
+
+	RESOURCE_ALLOCATOR()->LoadDataToBuffer(InversePDFWeightBuffer, {sizeof(float) * Width * Height}, {0}, {InversePDFWeights.data()});
+
     return Image;
 }
 

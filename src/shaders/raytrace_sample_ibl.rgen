@@ -24,6 +24,11 @@ layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_IM
 
 layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_IMAGE_SAMPLER_INDEX) uniform sampler2D IBLTextureSampler;
 
+layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_WEIGHTS_BUFFER_INDEX) buffer IBLWeightsBufferObject
+{
+    float IBLWeightsBuffer[];
+};
+
 layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_NORMAL_AOV_BUFFER_INDEX) buffer NormalAOVDataBufferObject
 {
     vec4 NormalAOVData[];
@@ -124,7 +129,8 @@ void main()
     /// And if we didn't hit any geometry, then we sample the IBL
     if (IBLHitPayload.PayloadFlags == 0)
     {
-        SampledIBLBuffer[NewPixelIndex] = texture(IBLTextureSampler, UVCoordinates);
+        float Weight = IBLWeightsBuffer[NewPixelIndex];
+        SampledIBLBuffer[NewPixelIndex] = vec4(texture(IBLTextureSampler, UVCoordinates).xyz * Weight, 1);
     }
     else
     {
