@@ -23,6 +23,7 @@
 #include "tasks/task_sample_ibl.h"
 #include "tasks/task_shade.h"
 #include "tasks/task_miss.h"
+#include "tasks/task_aov_pass.h"
 #include "tasks/task_accumulate.h"
 #include "tasks/task_passthrough.h"
 #include "tasks/task_advance_render_count.h"
@@ -214,6 +215,7 @@ public:
 	std::shared_ptr<FSampleIBLTask> SampleIBLTask = nullptr;
     std::shared_ptr<FShadeTask> ShadeTask = nullptr;
     std::shared_ptr<FMissTask> MissTask = nullptr;
+	std::shared_ptr<FAOVPassTask> AOVPassTask = nullptr;
     std::shared_ptr<FAccumulateTask> AccumulateTask = nullptr;
     std::shared_ptr<FPassthroughTask> PassthroughTask = nullptr;
 	std::shared_ptr<FAdvanceRenderCount> AdvanceRenderCountTask = nullptr;

@@ -108,8 +108,6 @@
 #define COMPUTE_SHADE_NORMAL_AOV_DATA_BUFFER 									10u
 #define COMPUTE_SHADE_UV_AOV_DATA_BUFFER 										11u
 #define COMPUTE_SHADE_WORLD_SPACE_POSITION_AOV_DATA_BUFFER 						12u
-#define COMPUTE_SHADE_NORMAL_AOV_IMAGE_INDEX 									13u
-#define COMPUTE_SHADE_UV_AOV_IMAGE_INDEX 										14u
 
 /// Task miss descriptor set layout defines
 #define COMPUTE_MISS_LAYOUT_INDEX 												0u
@@ -124,6 +122,16 @@
 #define COMPUTE_MISS_THROUGHPUT_BUFFER 											7u
 #define COMPUTE_MISS_NORMAL_AOV_IMAGE_INDEX 									8u
 #define COMPUTE_MISS_UV_AOV_IMAGE_INDEX 										9u
+
+/// Task aov pass descriptor set layout defines
+#define AOV_PASS_LAYOUT_INDEX 													0u
+
+#define AOV_PASS_NORMAL_BUFFER 													0u
+#define AOV_PASS_NORMAL_AOV_IMAGE_INDEX 										1u
+#define AOV_PASS_UV_BUFFER 														2u
+#define AOV_PASS_UV_AOV_IMAGE_INDEX 											3u
+#define AOV_PASS_WORLD_SPACE_POSITION_BUFFER 									4u
+#define AOV_PASS_WORLD_SPACE_POSITION_AOV_IMAGE_INDEX							5u
 
 /// Task advance render count descriptor set layout defines
 #define ADVANCE_RENDER_COUNT_LAYOUT_INDEX 										0u

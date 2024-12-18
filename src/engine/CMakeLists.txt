@@ -61,6 +61,7 @@ set(INCLUDE
         tasks/task_sample_ibl.h
         tasks/task_shade.h
         tasks/task_miss.h
+        tasks/task_aov_pass.h
         tasks/task_accumulate.h
         tasks/task_passthrough.h
         tasks/task_advance_render_count.h
@@ -87,6 +88,7 @@ set(SOURCE
         tasks/task_sample_ibl.cpp
         tasks/task_shade.cpp
         tasks/task_miss.cpp
+        tasks/task_aov_pass.cpp
         tasks/task_accumulate.cpp
         tasks/task_passthrough.cpp
         tasks/task_advance_render_count.cpp

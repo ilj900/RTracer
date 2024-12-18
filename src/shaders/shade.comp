@@ -72,10 +72,6 @@ layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_WORLD_SPACE_PO
     vec4 WorldSpacePositionAOVData[];
 };
 
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_NORMAL_AOV_IMAGE_INDEX, rgba32f) uniform image2D NormalAOVImage;
-
-layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_UV_AOV_IMAGE_INDEX, rgba32f) uniform image2D UVAOVImage;
-
 FRayData FetchRayData(uint RayIndex)
 {
     return RayData[RayIndex];
@@ -164,12 +160,6 @@ void main()
     else
     {
         ThroughputBuffer[NewPixelIndex].xyz = ThroughputBuffer[NewPixelIndex].xyz * SamplingResult;
-    }
-
-    if (PushConstants.BounceIndex == 0)
-    {
-        imageStore(NormalAOVImage, ivec2(NewPixelCoords), vec4(NormalInWorldSpace.xyz, 0.f));
-        imageStore(UVAOVImage, ivec2(NewPixelCoords), vec4(TextureCoords, 0.f, 0.f));
     }
 
     SetRayData(NewPixelIndex, RayData);

@@ -185,7 +185,7 @@ int FRender::Init()
         ImagesInFlight.push_back(VK_CONTEXT()->CreateSignalledFence());
     }
 
-	/// Create internal buffers that depend on resolution or some other parameters that might change during runtime
+	/// Create internal buffers which depend on resolution or some other parameters that might change during runtime
 	FBuffer NormalAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "NormalAOVBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(NormalAOVBuffer, "NormalAOVBuffer");
 
@@ -200,6 +200,23 @@ int FRender::Init()
 
 	FBuffer TransformIndexBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "TransformIndexBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(TransformIndexBuffer, "TransformIndexBuffer");
+
+	/// Create internal images
+	auto ColorImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "ColorImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(ColorImage, "ColorImage");
+	ColorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	auto NormalAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "NormalAOVImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(NormalAOVImage, "NormalAOVImage");
+	NormalAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	auto UVAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "UVAOVImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(UVAOVImage, "UVAOVImage");
+	UVAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	auto WorldSpacePositionAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "WorldSpacePositionAOVImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(WorldSpacePositionAOVImage, "WorldSpacePositionAOVImage");
+	WorldSpacePositionAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
 	/// Create all required tasks
 	UpdateTLASTask 						= std::make_shared<FUpdateTLASTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -225,6 +242,7 @@ int FRender::Init()
 	SampleIBLTask 						= std::make_shared<FSampleIBLTask>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ShadeTask 							= std::make_shared<FShadeTask>						(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     MissTask 							= std::make_shared<FMissTask>						(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	AOVPassTask							= std::make_shared<FAOVPassTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     AccumulateTask 						= std::make_shared<FAccumulateTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     PassthroughTask 					= std::make_shared<FPassthroughTask>				(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	AdvanceRenderCountTask 				= std::make_shared<FAdvanceRenderCount>				(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -238,9 +256,9 @@ int FRender::Init()
     RenderFrameIndex = 0;
 	Counter = 0;
 
-	OutputToFramebufferNameMap[EOutputType::Color] = "RayTracingColorImage";
-	OutputToFramebufferNameMap[EOutputType::Normal] = "RayTracingNormalAOVImage";
-	OutputToFramebufferNameMap[EOutputType::UV] = "RayTracingUVAOVImage";
+	OutputToFramebufferNameMap[EOutputType::Color] = "ColorImage";
+	OutputToFramebufferNameMap[EOutputType::Normal] = "NormalAOVImage";
+	OutputToFramebufferNameMap[EOutputType::UV] = "UVAOVImage";
 
     return 0;
 }
@@ -279,6 +297,7 @@ int FRender::Cleanup()
 	SampleIBLTask						= nullptr;
     ShadeTask 							= nullptr;
     MissTask 							= nullptr;
+	AOVPassTask							= nullptr;
     AccumulateTask 						= nullptr;
     PassthroughTask 					= nullptr;
 	AdvanceRenderCountTask				= nullptr;
@@ -438,6 +457,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	ComputeShadingData->Reload();
 	ShadeTask->Reload();
 	MissTask->Reload();
+	AOVPassTask->Reload();
 	AccumulateTask->Reload();
 	PassthroughTask->Reload();
 	AdvanceRenderCountTask->Reload();
@@ -520,6 +540,11 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 		SynchronizationPoint = ShadeTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = MissTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
+
+		if (i == 0)
+		{
+			SynchronizationPoint = AOVPassTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
+		}
 	}
 
 	SynchronizationPoint = AccumulateTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
