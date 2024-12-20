@@ -173,7 +173,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 	}
 
 	{
-		std::vector<const char*> Names = {"Color", "Normal", "UV", "World-space position"};
+		std::vector<const char*> Names = {"Color", "Normal", "UV", "World-space position", "DebugLayer"};
 		static EOutputType CurrentAOV = EOutputType::Color;
 
 		if (ImGui::BeginCombo("Select AOV", Names[int(CurrentAOV)]))

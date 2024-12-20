@@ -30,6 +30,10 @@ FAOVPassTask::FAOVPassTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitX
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 	DescriptorSetManager->AddDescriptorLayout(Name, AOV_PASS_LAYOUT_INDEX, AOV_PASS_WORLD_SPACE_POSITION_AOV_IMAGE_INDEX,
 		{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_COMPUTE_BIT});
+	DescriptorSetManager->AddDescriptorLayout(Name, AOV_PASS_LAYOUT_INDEX, AOV_PASS_DEBUG_LAYER_BUFFER,
+		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
+	DescriptorSetManager->AddDescriptorLayout(Name, AOV_PASS_LAYOUT_INDEX, AOV_PASS_DEBUG_LAYER_IMAGE_INDEX,
+		{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_COMPUTE_BIT});
 
 	VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FViewportResolutionPushConstants)};
 	DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
@@ -70,6 +74,8 @@ void FAOVPassTask::UpdateDescriptorSets()
 		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_UV_AOV_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("UVAOVImage"));
 		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_WORLD_SPACE_POSITION_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("WorldSpacePositionAOVBuffer"));
 		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_WORLD_SPACE_POSITION_AOV_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("WorldSpacePositionAOVImage"));
+		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_DEBUG_LAYER_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("DebugLayerBuffer"));
+		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_DEBUG_LAYER_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("DebugLayerImage"));
 	}
 };
 

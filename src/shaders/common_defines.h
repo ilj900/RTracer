@@ -132,6 +132,8 @@
 #define AOV_PASS_UV_AOV_IMAGE_INDEX 											3u
 #define AOV_PASS_WORLD_SPACE_POSITION_BUFFER 									4u
 #define AOV_PASS_WORLD_SPACE_POSITION_AOV_IMAGE_INDEX							5u
+#define AOV_PASS_DEBUG_LAYER_BUFFER 											6u
+#define AOV_PASS_DEBUG_LAYER_IMAGE_INDEX										7u
 
 /// Task advance render count descriptor set layout defines
 #define ADVANCE_RENDER_COUNT_LAYOUT_INDEX 										0u

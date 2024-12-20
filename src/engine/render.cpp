@@ -201,6 +201,9 @@ int FRender::Init()
 	FBuffer TransformIndexBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "TransformIndexBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(TransformIndexBuffer, "TransformIndexBuffer");
 
+	FBuffer DebugLayerBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "DebugLayerBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(DebugLayerBuffer, "DebugLayerBuffer");
+
 	/// Create internal images
 	auto ColorImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "ColorImage");
 	TEXTURE_MANAGER()->RegisterFramebuffer(ColorImage, "ColorImage");
@@ -218,6 +221,10 @@ int FRender::Init()
 	TEXTURE_MANAGER()->RegisterFramebuffer(WorldSpacePositionAOVImage, "WorldSpacePositionAOVImage");
 	WorldSpacePositionAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
+	auto DebugLayerImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "DebugImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(DebugLayerImage, "DebugLayerImage");
+	DebugLayerImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
 	/// Create all required tasks
 	UpdateTLASTask 						= std::make_shared<FUpdateTLASTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetRenderIterations				= std::make_shared<FClearBufferTask>				("RenderIterationBuffer", Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -229,6 +236,7 @@ int FRender::Init()
 	ClearWorldSpacePositionAOVBuffer	= std::make_shared<FClearBufferTask>				("WorldSpacePositionAOVBuffer", 	Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ClearTransformIndexBuffer			= std::make_shared<FClearBufferTask>				("TransformIndexBuffer", 	Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ClearSampledIBLBuffer				= std::make_shared<FClearBufferTask>				("SampledIBLBuffer", 	Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ClearDebugLayerBuffer				= std::make_shared<FClearBufferTask>				("DebugLayerBuffer", 	Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     RayTraceTask 						= std::make_shared<FRaytraceTask>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetMaterialsCountPerChunkTask 	= std::make_shared<FClearBufferTask>				("CountedMaterialsPerChunkBuffer", Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ClearTotalMaterialsCountTask 		= std::make_shared<FClearTotalMaterialsCountTask>	(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -260,6 +268,7 @@ int FRender::Init()
 	OutputToFramebufferNameMap[EOutputType::Normal] = "NormalAOVImage";
 	OutputToFramebufferNameMap[EOutputType::UV] = "UVAOVImage";
 	OutputToFramebufferNameMap[EOutputType::WorldSpacePosition] = "WorldSpacePositionAOVImage";
+	OutputToFramebufferNameMap[EOutputType::DebugLayer] = "DebugLayerImage";
 
     return 0;
 }
@@ -274,6 +283,7 @@ int FRender::Cleanup()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("WorldSpacePositionAOVBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("SampledIBLBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("TransformIndexBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("DebugBuffer");
 
 	UpdateTLASTask 						= nullptr;
 	ResetRenderIterations				= nullptr;
@@ -285,6 +295,7 @@ int FRender::Cleanup()
 	ClearWorldSpacePositionAOVBuffer	= nullptr;
 	ClearTransformIndexBuffer			= nullptr;
 	ClearSampledIBLBuffer				= nullptr;
+	ClearDebugLayerBuffer				= nullptr;
     RayTraceTask 						= nullptr;
 	ResetMaterialsCountPerChunkTask 	= nullptr;
     ClearTotalMaterialsCountTask 		= nullptr;
@@ -446,6 +457,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	ClearWorldSpacePositionAOVBuffer->Reload();
 	ClearTransformIndexBuffer->Reload();
 	ClearSampledIBLBuffer->Reload();
+	ClearDebugLayerBuffer->Reload();
 	ResetMaterialsCountPerChunkTask->Reload();
 	ClearTotalMaterialsCountTask->Reload();
 	CountMaterialsPerChunkTask->Reload();
@@ -515,6 +527,8 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 		SynchronizationPoint = ClearTransformIndexBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = ClearSampledIBLBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
+
+		SynchronizationPoint = ClearDebugLayerBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = RayTraceTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 

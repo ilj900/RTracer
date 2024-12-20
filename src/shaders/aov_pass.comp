@@ -26,11 +26,18 @@ layout (set = AOV_PASS_LAYOUT_INDEX, binding = AOV_PASS_WORLD_SPACE_POSITION_BUF
     vec4 WorldSpacePositionAOVData[];
 };
 
+layout (set = AOV_PASS_LAYOUT_INDEX, binding = AOV_PASS_DEBUG_LAYER_BUFFER) buffer DebugLayerBufferObject
+{
+    vec4 DebugLayerData[];
+};
+
 layout (set = AOV_PASS_LAYOUT_INDEX, binding = AOV_PASS_NORMAL_AOV_IMAGE_INDEX, rgba32f) uniform image2D NormalAOVImage;
 
 layout (set = AOV_PASS_LAYOUT_INDEX, binding = AOV_PASS_UV_AOV_IMAGE_INDEX, rg32f) uniform image2D UVAOVImage;
 
 layout (set = AOV_PASS_LAYOUT_INDEX, binding = AOV_PASS_WORLD_SPACE_POSITION_AOV_IMAGE_INDEX, rgba32f) uniform image2D WorldSpacePositionAOVImage;
+
+layout (set = AOV_PASS_LAYOUT_INDEX, binding = AOV_PASS_DEBUG_LAYER_IMAGE_INDEX, rgba32f) uniform image2D DebugLayerImage;
 
 
 layout (push_constant) uniform PushConstantsBlock
@@ -55,8 +62,10 @@ void main()
     vec4 NormalInWorldSpace = NormalAOVData[PixelIndex];
     vec2 TextureCoords = UVAOVData[PixelIndex];
     vec4 WorldSpacePosition = WorldSpacePositionAOVData[PixelIndex];
+    vec4 DebugData = DebugLayerData[PixelIndex];
 
     imageStore(NormalAOVImage, ivec2(PixelCoords), NormalInWorldSpace);
     imageStore(UVAOVImage, ivec2(PixelCoords), vec4(TextureCoords, 0.f, 0.f));
     imageStore(WorldSpacePositionAOVImage, ivec2(PixelCoords), WorldSpacePosition);
+    imageStore(DebugLayerImage, ivec2(PixelCoords), DebugData);
 }
