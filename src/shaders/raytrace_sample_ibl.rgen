@@ -105,6 +105,7 @@ void main()
 #endif
 
     vec4 FragmentNormal = NormalAOVData[NewPixelIndex];
+    FragmentNormal.xyz = FragmentNormal.w == 1 ? FragmentNormal.xyz : -FragmentNormal.xyz;
 
     /// If sampling direction not in the hemisphere defined by fragment's normal
     /// Then sample a random ridection?
