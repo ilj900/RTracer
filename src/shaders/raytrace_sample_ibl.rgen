@@ -129,7 +129,7 @@ void main()
     /// And if we didn't hit any geometry, then we sample the IBL
     if (IBLHitPayload.PayloadFlags == 0)
     {
-        float Weight = IBLWeightsBuffer[NewPixelIndex];
+        float Weight = IBLWeightsBuffer[TexelIndex];
         SampledIBLBuffer[NewPixelIndex] = vec4(texture(IBLTextureSampler, UVCoordinates).xyz * Weight, 1);
     }
     else
