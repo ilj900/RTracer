@@ -49,11 +49,6 @@
 #define RAYTRACE_HIT_BUFFER 													4u
 #define RAYTRACE_MATERIAL_INDEX_BUFFER 											5u
 
-/// Task clear buffer descriptor set layout defines
-#define CLEAR_BUFFER_LAYOUT_INDEX 												0u
-
-#define CLEAR_BUFFER_BUFFER_INDEX 												0u
-
 /// Task reset active ray count descriptor set layout defines
 #define RESET_ACTIVE_RAY_COUNT_LAYOUT_INDEX 									0u
 

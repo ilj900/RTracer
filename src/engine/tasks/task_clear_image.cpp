@@ -11,7 +11,7 @@
 FClearImageTask::FClearImageTask(const std::string& ImageNameIn, uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice), ImageName(ImageNameIn)
 {
-    Name = "Clear image pipeline";
+	Name = "Clear" + ImageName + " image pipeline";
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
