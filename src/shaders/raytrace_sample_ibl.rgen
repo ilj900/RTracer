@@ -108,7 +108,7 @@ void main()
     FragmentNormal.xyz = FragmentNormal.w == 1 ? FragmentNormal.xyz : -FragmentNormal.xyz;
 
     /// If sampling direction not in the hemisphere defined by fragment's normal
-    /// Then sample a random ridection?
+    /// Then sample a random direction?
     if (dot(CartesianCoordinates, FragmentNormal.xyz) <= 0)
     {
         vec3 RandomSphereDirection = Sample3DUnitSphere(SamplingState);
@@ -122,10 +122,10 @@ void main()
     FRayData RayData;
     RayData.RayFlags = 0;
     RayData.Direction.xyz = CartesianCoordinates;
-    RayData.Origin.xyz = WorldSpacePositionAOVData[NewPixelIndex].xyz + RayData.Direction.xyz * 0.00000012f;
+    RayData.Origin.xyz = WorldSpacePositionAOVData[NewPixelIndex].xyz;
 
     /// Trace the ray
-    traceRayEXT(TLAS, RayData.RayFlags, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0, RayData.Direction.xyz, 10000, 0);
+    traceRayEXT(TLAS, RayData.RayFlags, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.0001, RayData.Direction.xyz, 10000, 0);
 
     /// And if we didn't hit any geometry, then we sample the IBL
     if (IBLHitPayload.PayloadFlags == 0)
