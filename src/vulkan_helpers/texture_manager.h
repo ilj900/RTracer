@@ -13,6 +13,7 @@ public:
     ~FTextureManager();
 
     ImagePtr CreateStorageImage(uint32_t WidthIn, uint32_t HeightIn, const std::string& DebugName = "");
+	ImagePtr CreateClearableStorageImage(uint32_t WidthIn, uint32_t HeightIn, const std::string& DebugName = "");
     ImagePtr CreateSampledStorageImage(uint32_t WidthIn, uint32_t HeightIn, const std::string& DebugName = "");
 	ImagePtr CreateColorAttachment(uint32_t WidthIn, uint32_t HeightIn, const std::string& DebugName = "");
     uint32_t RegisterTexture(const ImagePtr& ImagePointer, VkImageLayout ImageLayout, const std::string& Name);

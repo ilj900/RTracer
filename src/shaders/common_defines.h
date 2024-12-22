@@ -49,11 +49,6 @@
 #define RAYTRACE_HIT_BUFFER 													4u
 #define RAYTRACE_MATERIAL_INDEX_BUFFER 											5u
 
-/// Task clear image descriptor set layout defines
-#define CLEAR_IMAGE_LAYOUT_INDEX 												0u
-
-#define CLEAR_IMAGE_COLOR_ACCUMULATOR_IMAGE 									0u
-
 /// Task clear buffer descriptor set layout defines
 #define CLEAR_BUFFER_LAYOUT_INDEX 												0u
 

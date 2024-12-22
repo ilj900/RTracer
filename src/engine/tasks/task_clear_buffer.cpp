@@ -67,7 +67,7 @@ void FClearBufferTask::RecordCommands()
 			GPU_TIMER();
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
-            auto DescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, CLEAR_IMAGE_LAYOUT_INDEX, i);
+            auto DescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, CLEAR_BUFFER_LAYOUT_INDEX, i);
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &DescriptorSet, 0, nullptr);
 

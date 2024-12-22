@@ -2,27 +2,16 @@
 #include "vk_debug.h"
 #include "vk_functions.h"
 
-#include "vk_shader_compiler.h"
 #include "texture_manager.h"
 
 #include "task_clear_image.h"
 
-#include "common_structures.h"
-
 #include "utils.h"
 
-FClearImageTask::FClearImageTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
-        FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice)
+FClearImageTask::FClearImageTask(const std::string& ImageNameIn, uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
+        FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice), ImageName(ImageNameIn)
 {
     Name = "Clear image pipeline";
-
-    auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
-
-    DescriptorSetManager->AddDescriptorLayout(Name, CLEAR_IMAGE_LAYOUT_INDEX, CLEAR_IMAGE_COLOR_ACCUMULATOR_IMAGE,
-                                              {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_COMPUTE_BIT});
-
-	VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants)};
-	DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
@@ -30,28 +19,10 @@ FClearImageTask::FClearImageTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t S
 
 void FClearImageTask::Init()
 {
-    auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
-
-    auto ClearImageShader = FShader("../../../src/shaders/clear_image.comp");
-
-    PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
-
-    Pipeline = VK_CONTEXT()->CreateComputePipeline(ClearImageShader(), PipelineLayout);
-
-    /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-    DescriptorSetManager->ReserveDescriptorSet(Name, CLEAR_IMAGE_LAYOUT_INDEX, TotalSize);
-
-    DescriptorSetManager->ReserveDescriptorPool(Name);
-
-    DescriptorSetManager->AllocateAllDescriptorSets(Name);
 };
 
 void FClearImageTask::UpdateDescriptorSets()
 {
-    for (uint32_t i = 0; i < TotalSize; ++i)
-    {
-        UpdateDescriptorSet(CLEAR_IMAGE_LAYOUT_INDEX, CLEAR_IMAGE_COLOR_ACCUMULATOR_IMAGE, i, TEXTURE_MANAGER()->GetFramebufferImage("AccumulatorImage"));
-    }
 };
 
 void FClearImageTask::RecordCommands()
@@ -65,16 +36,45 @@ void FClearImageTask::RecordCommands()
 			ResetQueryPool(CommandBuffer, i);
 			GPU_TIMER();
 
-            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
-            auto RayTracingDescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, CLEAR_IMAGE_LAYOUT_INDEX, i);
-            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
-                                    0, 1, &RayTracingDescriptorSet, 0, nullptr);
+			auto ImagePtr = TEXTURE_MANAGER()->GetFramebufferImage(ImageName);
 
-			uint32_t GroupCount = CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE);
-			FPushConstants PushConstants = {Width, Height, 1.f / float(Width), 1.f / float(Height), Width * Height, 0, 0};
-			vkCmdPushConstants(CommandBuffer, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
+            VkClearColorValue ClearColorValue = {0, 0, 0, 0};
 
-            vkCmdDispatch(CommandBuffer, GroupCount, 1, 1);
+			VkImageMemoryBarrier ImageMemoryBarrier{};
+			ImageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			ImageMemoryBarrier.oldLayout = ImagePtr->CurrentLayout;
+			ImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			ImageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			ImageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			ImageMemoryBarrier.image = ImagePtr->Image;
+			ImageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			ImageMemoryBarrier.subresourceRange.baseMipLevel = 0;
+			ImageMemoryBarrier.subresourceRange.levelCount = 1;
+			ImageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
+			ImageMemoryBarrier.subresourceRange.layerCount = 1;
+			ImageMemoryBarrier.srcAccessMask = 0;
+			ImageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+
+			vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+				0, nullptr, 0, nullptr, 1, &ImageMemoryBarrier);
+
+			VkImageSubresourceRange Range{};
+			Range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			Range.baseMipLevel = 0;
+			Range.levelCount = 1;
+			Range.baseArrayLayer = 0;
+			Range.layerCount = 1;
+
+			vkCmdClearColorImage(CommandBuffer, ImagePtr->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &ClearColorValue, 1, &Range);
+
+			ImageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			ImageMemoryBarrier.newLayout = ImagePtr->CurrentLayout;
+			ImageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			ImageMemoryBarrier.dstAccessMask = 0;
+
+			vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0,
+				0, nullptr, 0, nullptr, 1, &ImageMemoryBarrier);
         }, QueueFlagsBits);
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name, i);
