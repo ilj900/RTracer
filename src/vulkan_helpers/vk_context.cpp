@@ -1061,7 +1061,7 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
 	for (int i = 0; i < Width * Height; ++i)
 	{
 		double Luminosity = 0.2126 * Out[i * 4] + 0.7152 * Out[i * 4 + 1] + 0.0722 * Out[i * 4 + 2];
-		EachPixelLuminosity[i] = sqrt(Luminosity);
+		EachPixelLuminosity[i] = Luminosity;
 	}
 
 	/// Calculate total luminosity
