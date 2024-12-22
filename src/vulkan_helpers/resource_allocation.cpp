@@ -55,9 +55,10 @@ FMemoryRegion FResourceAllocator::AllocateMemory(VkDeviceSize Size, VkMemoryRequ
     AllocInfo.allocationSize = MemRequirements.size;
     AllocInfo.memoryTypeIndex = FindMemoryType(MemRequirements.memoryTypeBits, Properties);
 
+	VkMemoryAllocateFlagsInfo MemoryAllocateFlagsInfo{};
+
     if (bDeviceAddressRequired)
     {
-        VkMemoryAllocateFlagsInfo MemoryAllocateFlagsInfo{};
         MemoryAllocateFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
         MemoryAllocateFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
         AllocInfo.pNext = &MemoryAllocateFlagsInfo;
