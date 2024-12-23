@@ -22,9 +22,6 @@ FResetActiveRayCountTask::FResetActiveRayCountTask(uint32_t WidthIn, uint32_t He
 	VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t)};
 	DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
-	auto ActiveRayCountBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * 3, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "ActiveRayCountBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(ActiveRayCountBuffer, "ActiveRayCountBuffer");
-
 	PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 	QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
 }

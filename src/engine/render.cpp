@@ -126,6 +126,12 @@ FRender::~FRender()
 {
 	Cleanup();
 
+	for (int i = 0; i < ImagesInFlight.size(); ++i)
+	{
+		vkDestroyFence(VK_CONTEXT()->LogicalDevice, ImagesInFlight[i], nullptr);
+		ImagesInFlight[i] = VK_NULL_HANDLE;
+	}
+
 	/// Free buffers
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("RenderIterationBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("CountedMaterialsPerChunkBuffer");
@@ -212,6 +218,9 @@ int FRender::Init()
 	FBuffer TransformIndexBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "TransformIndexBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(TransformIndexBuffer, "TransformIndexBuffer");
 
+	auto ActiveRayCountBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * 3, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "ActiveRayCountBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(ActiveRayCountBuffer, "ActiveRayCountBuffer");
+
 	FBuffer DebugLayerBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "DebugLayerBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(DebugLayerBuffer, "DebugLayerBuffer");
 
@@ -297,7 +306,8 @@ int FRender::Cleanup()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("WorldSpacePositionAOVBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("SampledIBLBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("TransformIndexBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("DebugBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("ActiveRayCountBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("DebugLayerBuffer");
 
 	UpdateTLASTask 						= nullptr;
 	ResetRenderIterations				= nullptr;
@@ -329,12 +339,6 @@ int FRender::Cleanup()
 	AdvanceRenderCountTask				= nullptr;
 
 	ExternalTasks.clear();
-
-	for (int i = 0; i < ImagesInFlight.size(); ++i)
-	{
-		vkDestroyFence(VK_CONTEXT()->LogicalDevice, ImagesInFlight[i], nullptr);
-		ImagesInFlight[i] = VK_NULL_HANDLE;
-	}
 
     ImageAvailable.clear();
     ImagesInFlight.clear();
