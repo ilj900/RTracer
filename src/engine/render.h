@@ -232,6 +232,10 @@ public:
 
 private:
     ECS::FEntity CreateEmptyModel();
+	void AllocateDependentResources();
+	void AllocateIndependentResources();
+	void FreeDependentResources();
+	void FreeIndependentResources();
     int Width;
     int Height;
 	uint32_t RecursionDepth = 5;

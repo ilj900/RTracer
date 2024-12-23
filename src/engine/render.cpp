@@ -109,22 +109,7 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     TRANSFORM_SYSTEM()->Init(MaxFramesInFlight);
     ACCELERATION_STRUCTURE_SYSTEM()->Init(MaxFramesInFlight);
 
-	/// Allocate buffers that doesn't require recreation
-	FBuffer RenderIterationBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t),
-		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT  | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "RenderIterationBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(RenderIterationBuffer, "RenderIterationBuffer");
-
-	FBuffer CountedMaterialsPerChunkBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE),
-		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "CountedMaterialsPerChunkBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(CountedMaterialsPerChunkBuffer, "CountedMaterialsPerChunkBuffer");
-
-	FBuffer TotalCountedMaterialsBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * 3,
-		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "TotalCountedMaterialsBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(TotalCountedMaterialsBuffer, "TotalCountedMaterialsBuffer");
-
-	FBuffer MaterialsOffsetsPerMaterialBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS,
-		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialsOffsetsPerMaterialBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(MaterialsOffsetsPerMaterialBuffer, "MaterialsOffsetsPerMaterialBuffer");
+	AllocateIndependentResources();
 
 	Time = std::chrono::high_resolution_clock::now();
 	PreviousTime = Time;
@@ -140,11 +125,7 @@ FRender::~FRender()
 		ImagesInFlight[i] = VK_NULL_HANDLE;
 	}
 
-	/// Free buffers
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("RenderIterationBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("CountedMaterialsPerChunkBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("TotalCountedMaterialsBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("MaterialsOffsetsPerMaterialBuffer");
+	FreeIndependentResources();
 
 	ACCELERATION_STRUCTURE_SYSTEM()->Terminate();
 	MESH_SYSTEM()->Terminate();
@@ -203,65 +184,7 @@ int FRender::Init()
         ImagesInFlight.push_back(VK_CONTEXT()->CreateSignalledFence());
     }
 
-	/// Create internal buffers which depend on resolution or some other parameters that might change during runtime
-	FBuffer ThroughputBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(4 * sizeof(float ) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "ThroughputBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(ThroughputBuffer, "ThroughputBuffer");
-
-	FBuffer InitialRaysBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FRayData) * Width * Width, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "InitialRaysBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(InitialRaysBuffer, "InitialRaysBuffer");
-
-	FBuffer PixelIndexBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * Width * Width, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "PixelIndexBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(PixelIndexBuffer, "PixelIndexBuffer");
-
-	FBuffer NormalAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "NormalAOVBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(NormalAOVBuffer, "NormalAOVBuffer");
-
-	FBuffer UVAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector2) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "UVAOVBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(UVAOVBuffer, "UVAOVBuffer");
-
-	FBuffer WorldSpacePositionAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "WorldSpacePositionAOVBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(WorldSpacePositionAOVBuffer, "WorldSpacePositionAOVBuffer");
-
-	FBuffer SampledIBLBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "SampledIBLBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(SampledIBLBuffer, "SampledIBLBuffer");
-
-	FBuffer TransformIndexBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "TransformIndexBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(TransformIndexBuffer, "TransformIndexBuffer");
-
-	auto ActiveRayCountBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * 3, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "ActiveRayCountBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(ActiveRayCountBuffer, "ActiveRayCountBuffer");
-
-	FBuffer DebugLayerBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "DebugLayerBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(DebugLayerBuffer, "DebugLayerBuffer");
-
-	/// Create internal images
-	auto ColorImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "ColorImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(ColorImage, "ColorImage");
-	ColorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-	auto NormalAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "NormalAOVImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(NormalAOVImage, "NormalAOVImage");
-	NormalAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-	auto UVAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "UVAOVImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(UVAOVImage, "UVAOVImage");
-	UVAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-	auto WorldSpacePositionAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "WorldSpacePositionAOVImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(WorldSpacePositionAOVImage, "WorldSpacePositionAOVImage");
-	WorldSpacePositionAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-	auto AccumulatorImage = TEXTURE_MANAGER()->CreateClearableStorageImage(Width, Height,"AccumulatorImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(AccumulatorImage, "AccumulatorImage");
-	AccumulatorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-	auto EstimatedImage = TEXTURE_MANAGER()->CreateSampledStorageImage(Width, Height, "EstimatedImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(EstimatedImage, "EstimatedImage");
-	EstimatedImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-	auto DebugLayerImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "DebugLayerImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(DebugLayerImage, "DebugLayerImage");
-	DebugLayerImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	AllocateDependentResources();
 
 	/// Create all required tasks
 	UpdateTLASTask 						= std::make_shared<FUpdateTLASTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -315,26 +238,7 @@ int FRender::Cleanup()
 {
 	VK_CONTEXT()->WaitIdle();
 
-	/// Free buffers
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("ThroughputBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("InitialRaysBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("PixelIndexBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("NormalAOVBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("UVAOVBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("WorldSpacePositionAOVBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("SampledIBLBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("TransformIndexBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("ActiveRayCountBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("DebugLayerBuffer");
-
-	/// Free images
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("ColorImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("NormalAOVImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("UVAOVImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("WorldSpacePositionAOVImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("AccumulatorImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("EstimatedImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("DebugLayerImage");
+	FreeDependentResources();
 
 	UpdateTLASTask 						= nullptr;
 	ResetRenderIterations				= nullptr;
@@ -1372,3 +1276,121 @@ ECS::FEntity FRender::CreateEmptyModel()
 
     return EmptyModel;
 }
+
+void FRender::AllocateDependentResources()
+{
+	/// Create internal buffers which depend on resolution or some other parameters that might change during runtime
+	FBuffer ThroughputBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(4 * sizeof(float ) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "ThroughputBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(ThroughputBuffer, "ThroughputBuffer");
+
+	FBuffer InitialRaysBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FRayData) * Width * Width, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "InitialRaysBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(InitialRaysBuffer, "InitialRaysBuffer");
+
+	FBuffer PixelIndexBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * Width * Width, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "PixelIndexBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(PixelIndexBuffer, "PixelIndexBuffer");
+
+	FBuffer NormalAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "NormalAOVBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(NormalAOVBuffer, "NormalAOVBuffer");
+
+	FBuffer UVAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector2) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "UVAOVBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(UVAOVBuffer, "UVAOVBuffer");
+
+	FBuffer WorldSpacePositionAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "WorldSpacePositionAOVBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(WorldSpacePositionAOVBuffer, "WorldSpacePositionAOVBuffer");
+
+	FBuffer SampledIBLBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "SampledIBLBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(SampledIBLBuffer, "SampledIBLBuffer");
+
+	FBuffer TransformIndexBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "TransformIndexBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(TransformIndexBuffer, "TransformIndexBuffer");
+
+	auto ActiveRayCountBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * 3, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "ActiveRayCountBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(ActiveRayCountBuffer, "ActiveRayCountBuffer");
+
+	FBuffer DebugLayerBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "DebugLayerBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(DebugLayerBuffer, "DebugLayerBuffer");
+
+	/// Create internal images
+	auto ColorImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "ColorImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(ColorImage, "ColorImage");
+	ColorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	auto NormalAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "NormalAOVImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(NormalAOVImage, "NormalAOVImage");
+	NormalAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	auto UVAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "UVAOVImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(UVAOVImage, "UVAOVImage");
+	UVAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	auto WorldSpacePositionAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "WorldSpacePositionAOVImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(WorldSpacePositionAOVImage, "WorldSpacePositionAOVImage");
+	WorldSpacePositionAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	auto AccumulatorImage = TEXTURE_MANAGER()->CreateClearableStorageImage(Width, Height,"AccumulatorImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(AccumulatorImage, "AccumulatorImage");
+	AccumulatorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	auto EstimatedImage = TEXTURE_MANAGER()->CreateSampledStorageImage(Width, Height, "EstimatedImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(EstimatedImage, "EstimatedImage");
+	EstimatedImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	auto DebugLayerImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "DebugLayerImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(DebugLayerImage, "DebugLayerImage");
+	DebugLayerImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+}
+
+void FRender::AllocateIndependentResources()
+{
+	/// Allocate buffers that doesn't require recreation
+	FBuffer RenderIterationBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t),
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT  | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "RenderIterationBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(RenderIterationBuffer, "RenderIterationBuffer");
+
+	FBuffer CountedMaterialsPerChunkBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE),
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "CountedMaterialsPerChunkBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(CountedMaterialsPerChunkBuffer, "CountedMaterialsPerChunkBuffer");
+
+	FBuffer TotalCountedMaterialsBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * 3,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "TotalCountedMaterialsBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(TotalCountedMaterialsBuffer, "TotalCountedMaterialsBuffer");
+
+	FBuffer MaterialsOffsetsPerMaterialBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialsOffsetsPerMaterialBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(MaterialsOffsetsPerMaterialBuffer, "MaterialsOffsetsPerMaterialBuffer");
+}
+
+void FRender::FreeDependentResources()
+{
+	/// Free buffers
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("ThroughputBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("InitialRaysBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("PixelIndexBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("NormalAOVBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("UVAOVBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("WorldSpacePositionAOVBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("SampledIBLBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("TransformIndexBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("ActiveRayCountBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("DebugLayerBuffer");
+
+	/// Free images
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("ColorImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("NormalAOVImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("UVAOVImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("WorldSpacePositionAOVImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("AccumulatorImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("EstimatedImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("DebugLayerImage");
+}
+
+void FRender::FreeIndependentResources()
+{
+	/// Free buffers
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("RenderIterationBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("CountedMaterialsPerChunkBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("TotalCountedMaterialsBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("MaterialsOffsetsPerMaterialBuffer");
+}
+
+
