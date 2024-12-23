@@ -20,16 +20,12 @@ FClearTotalMaterialsCountTask::FClearTotalMaterialsCountTask(uint32_t WidthIn, u
 
     DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
 
-    FBuffer TotalCountedMaterialsBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * 3, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "TotalCountedMaterialsBuffer");
-    RESOURCE_ALLOCATOR()->RegisterBuffer(TotalCountedMaterialsBuffer, "TotalCountedMaterialsBuffer");
-
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
 }
 
 FClearTotalMaterialsCountTask::~FClearTotalMaterialsCountTask()
 {
-    RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("TotalCountedMaterialsBuffer");
 };
 
 void FClearTotalMaterialsCountTask::Init()
