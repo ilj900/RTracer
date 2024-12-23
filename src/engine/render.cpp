@@ -110,8 +110,8 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     ACCELERATION_STRUCTURE_SYSTEM()->Init(MaxFramesInFlight);
 
 	/// Allocate buffers that doesn't require recreation
-	FBuffer RenderIterationBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT  | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "RenderIterationBuffer");
+	FBuffer RenderIterationBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t),
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT  | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "RenderIterationBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(RenderIterationBuffer, "RenderIterationBuffer");
 
 	FBuffer CountedMaterialsPerChunkBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE),
@@ -122,7 +122,8 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "TotalCountedMaterialsBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(TotalCountedMaterialsBuffer, "TotalCountedMaterialsBuffer");
 
-	FBuffer MaterialsOffsetsPerMaterialBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialsOffsetsPerMaterialBuffer");
+	FBuffer MaterialsOffsetsPerMaterialBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialsOffsetsPerMaterialBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(MaterialsOffsetsPerMaterialBuffer, "MaterialsOffsetsPerMaterialBuffer");
 
 	Time = std::chrono::high_resolution_clock::now();
