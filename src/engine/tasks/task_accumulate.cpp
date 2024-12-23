@@ -30,14 +30,6 @@ FAccumulateTask::FAccumulateTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t S
 	VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants)};
 	DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
-    auto AccumulatorImage = TEXTURE_MANAGER()->CreateClearableStorageImage(Width, Height,"AccumulatorImage");
-    TEXTURE_MANAGER()->RegisterFramebuffer(AccumulatorImage, "AccumulatorImage");
-    AccumulatorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-    auto EstimatedImage = TEXTURE_MANAGER()->CreateSampledStorageImage(Width, Height, "EstimatedImage");
-    TEXTURE_MANAGER()->RegisterFramebuffer(EstimatedImage, "EstimatedImage");
-    EstimatedImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
 }

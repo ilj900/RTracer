@@ -46,7 +46,7 @@ FTextureManager::~FTextureManager()
 {
     DummyImage = nullptr;
     Textures.clear();
-    FramebufferImages.clear();
+	FramebufferNameToImageMap.clear();
 }
 
 ImagePtr FTextureManager::CreateStorageImage(uint32_t WidthIn, uint32_t HeightIn, const std::string& DebugName)
@@ -91,30 +91,24 @@ uint32_t FTextureManager::RegisterTexture(const ImagePtr& ImagePointer, VkImageL
     return Index;
 }
 
-uint32_t FTextureManager::RegisterFramebuffer(const ImagePtr& ImagePointer, const std::string& Name)
+void FTextureManager::RegisterFramebuffer(const ImagePtr& ImagePointer, const std::string& Name)
 {
-    uint32_t Index = FramebufferImages.size();
-    FramebufferImages.push_back(ImagePointer);
+	if (FramebufferNameToImageMap.find(Name) != FramebufferNameToImageMap.end())
+	{
+		throw std::runtime_error("Trying to register already registered framebuffer!");
+	}
 
-    FramebufferNameToIndexMap[Name] = Index;
-
-    return Index;
+	FramebufferNameToImageMap[Name] = ImagePointer;
 }
 
-void FTextureManager::UnregisterAndFreeFramebuffer(uint32_t FramebufferIndex)
+void FTextureManager::UnregisterAndFreeFramebuffer(const std::string& Name)
 {
-	auto Image = GetFramebufferImage(FramebufferIndex);
-
-	FramebufferImages[FramebufferIndex] = nullptr;
-
-	for (auto It = FramebufferNameToIndexMap.begin(); It != FramebufferNameToIndexMap.end(); ++It)
+	if (FramebufferNameToImageMap.find(Name) == FramebufferNameToImageMap.end())
 	{
-		if (It->second == FramebufferIndex)
-		{
-			FramebufferNameToIndexMap.erase(It);
-			break;
-		}
+		throw std::runtime_error("Trying to unregister framebuffer that is not registered!");
 	}
+
+	FramebufferNameToImageMap.erase(Name);
 }
 
 ImagePtr FTextureManager::GetTexture(uint32_t TextureIndex)
@@ -127,14 +121,9 @@ ImagePtr FTextureManager::GetTexture(const std::string& Name)
     return Textures[TextureNameToIndexMap[Name]];
 }
 
-ImagePtr FTextureManager::GetFramebufferImage(uint32_t FramebufferImageIndex)
-{
-    return FramebufferImages[FramebufferImageIndex];
-}
-
 ImagePtr FTextureManager::GetFramebufferImage(const std::string& Name)
 {
-    return FramebufferImages[FramebufferNameToIndexMap[Name]];
+    return FramebufferNameToImageMap[Name];
 }
 
 VkDescriptorImageInfo* FTextureManager::GetDescriptorImageInfos()

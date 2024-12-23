@@ -7,8 +7,8 @@ namespace ECS
         struct FFramebufferComponent
         {
             FFramebufferComponent() = default;
-            FFramebufferComponent(uint32_t FramebufferImageIndexIn) : FramebufferImageIndex(FramebufferImageIndexIn) {};
-            uint32_t FramebufferImageIndex;
+            FFramebufferComponent(const std::string& FramebufferNameIn) : FramebufferName(FramebufferNameIn) {};
+            std::string FramebufferName;
         };
     }
 }

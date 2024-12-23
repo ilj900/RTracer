@@ -154,7 +154,7 @@ void FRender::RegisterExternalOutputs(std::vector<ImagePtr> OutputImagesIn, cons
 	for (int i = 0; i < OutputFramebuffers.size(); ++i)
 	{
 		auto FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(OutputFramebuffers[i]);
-		TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer(FramebufferComponent.FramebufferImageIndex);
+		TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer(FramebufferComponent.FramebufferName);
 		OutputFramebuffers[i] = ECS::INVALID_ENTITY;
 	}
 
@@ -241,7 +241,15 @@ int FRender::Init()
 	TEXTURE_MANAGER()->RegisterFramebuffer(WorldSpacePositionAOVImage, "WorldSpacePositionAOVImage");
 	WorldSpacePositionAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-	auto DebugLayerImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "DebugImage");
+	auto AccumulatorImage = TEXTURE_MANAGER()->CreateClearableStorageImage(Width, Height,"AccumulatorImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(AccumulatorImage, "AccumulatorImage");
+	AccumulatorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	auto EstimatedImage = TEXTURE_MANAGER()->CreateSampledStorageImage(Width, Height, "EstimatedImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(EstimatedImage, "EstimatedImage");
+	EstimatedImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	auto DebugLayerImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "DebugLayerImage");
 	TEXTURE_MANAGER()->RegisterFramebuffer(DebugLayerImage, "DebugLayerImage");
 	DebugLayerImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
@@ -278,7 +286,7 @@ int FRender::Init()
     for (int i = 0; i < MaxFramesInFlight; ++i)
     {
         auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(OutputFramebuffers[i]);
-        PassthroughTask->RegisterOutput("PassthroughOutput" + std::to_string(i), TEXTURE_MANAGER()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex));
+        PassthroughTask->RegisterOutput("PassthroughOutput" + std::to_string(i), TEXTURE_MANAGER()->GetFramebufferImage(FramebufferComponent.FramebufferName));
     }
 
     RenderFrameIndex = 0;
@@ -308,6 +316,15 @@ int FRender::Cleanup()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("TransformIndexBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("ActiveRayCountBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("DebugLayerBuffer");
+
+	/// Free images
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("ColorImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("NormalAOVImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("UVAOVImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("WorldSpacePositionAOVImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("AccumulatorImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("EstimatedImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("DebugLayerImage");
 
 	UpdateTLASTask 						= nullptr;
 	ResetRenderIterations				= nullptr;
@@ -377,10 +394,11 @@ ECS::FEntity FRender::CreateFramebuffer(int WidthIn, int HeightIn, const std::st
 {
     auto FramebufferImage = TEXTURE_MANAGER()->CreateStorageImage(WidthIn, HeightIn, DebugName);
     static int Counter = 0;
-    auto FramebufferImageIndex = TEXTURE_MANAGER()->RegisterFramebuffer(FramebufferImage, (DebugName.empty()) ? ("Unnamed Framebuffer " + std::to_string(Counter++)) : DebugName);
+	std::string FramebufferName = (DebugName.empty()) ? ("Unnamed Framebuffer " + std::to_string(Counter++)) : DebugName;
+    TEXTURE_MANAGER()->RegisterFramebuffer(FramebufferImage, FramebufferName);
 
     ECS::FEntity Framebuffer = COORDINATOR().CreateEntity();
-    COORDINATOR().AddComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer, {FramebufferImageIndex});
+    COORDINATOR().AddComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer, {FramebufferName});
 
     return Framebuffer;
 }
@@ -388,7 +406,7 @@ ECS::FEntity FRender::CreateFramebuffer(int WidthIn, int HeightIn, const std::st
 void FRender::DestroyFramebuffer(ECS::FEntity Framebuffer)
 {
 	auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer(FramebufferComponent.FramebufferImageIndex);
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer(FramebufferComponent.FramebufferName);
 	COORDINATOR().DestroyEntity(Framebuffer);
 	return;
 }
@@ -396,10 +414,11 @@ void FRender::DestroyFramebuffer(ECS::FEntity Framebuffer)
 ECS::FEntity FRender::CreateFramebufferFromExternalImage(ImagePtr ImageIn, const std::string& DebugName)
 {
     static int Counter = 0;
-    auto FramebufferImageIndex = TEXTURE_MANAGER()->RegisterFramebuffer(ImageIn, (DebugName.empty()) ? ("Unnamed Framebuffer From External Image " + std::to_string(Counter++)) : DebugName);
+	std::string FramebufferName = (DebugName.empty()) ? ("Unnamed Framebuffer " + std::to_string(Counter++)) : DebugName;
+    TEXTURE_MANAGER()->RegisterFramebuffer(ImageIn, FramebufferName);
 
     ECS::FEntity Framebuffer = COORDINATOR().CreateEntity();
-    COORDINATOR().AddComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer, {FramebufferImageIndex});
+    COORDINATOR().AddComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer, {FramebufferName});
 
     return Framebuffer;
 }
@@ -408,10 +427,11 @@ ECS::FEntity FRender::CreateColorAttachment(int WidthIn, int HeightIn, const std
 {
 	auto FramebufferImage = TEXTURE_MANAGER()->CreateColorAttachment(WidthIn, HeightIn, DebugName);
 	static int Counter = 0;
-	auto FramebufferImageIndex = TEXTURE_MANAGER()->RegisterFramebuffer(FramebufferImage, (DebugName.empty()) ? ("Unnamed Framebuffer " + std::to_string(Counter++)) : DebugName);
+	std::string FramebufferName = (DebugName.empty()) ? ("Unnamed Framebuffer " + std::to_string(Counter++)) : DebugName;
+	TEXTURE_MANAGER()->RegisterFramebuffer(FramebufferImage, FramebufferName);
 
 	ECS::FEntity Framebuffer = COORDINATOR().CreateEntity();
-	COORDINATOR().AddComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer, {FramebufferImageIndex});
+	COORDINATOR().AddComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer, {FramebufferName});
 
 	return Framebuffer;
 }
@@ -424,7 +444,7 @@ void FRender::SetActiveCamera(ECS::FEntity Camera)
 void FRender::SaveFramebuffer(ECS::FEntity Framebuffer, const std::string& Filename)
 {
     auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);
-    VK_CONTEXT()->SaveImage(*TEXTURE_MANAGER()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex), Filename);
+    VK_CONTEXT()->SaveImage(*TEXTURE_MANAGER()->GetFramebufferImage(FramebufferComponent.FramebufferName), Filename);
 }
 
 void FRender::SaveOutput(EOutputType OutputType, const std::string& Filename)
@@ -442,7 +462,7 @@ void FRender::PrintScreen(const std::string& Filename)
 void FRender::GetFramebufferData(ECS::FEntity Framebuffer)
 {
     auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);
-    auto Image = TEXTURE_MANAGER()->GetFramebufferImage(FramebufferComponent.FramebufferImageIndex);
+    auto Image = TEXTURE_MANAGER()->GetFramebufferImage(FramebufferComponent.FramebufferName);
     std::vector<char> Data;
 
     VK_CONTEXT()->FetchImageData(*Image, Data);

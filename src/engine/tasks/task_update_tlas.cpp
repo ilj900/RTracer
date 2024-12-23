@@ -4,8 +4,6 @@
 
 #include "acceleration_structure_system.h"
 
-#include "utils.h"
-
 #include "task_update_tlas.h"
 
 FUpdateTLASTask::FUpdateTLASTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
