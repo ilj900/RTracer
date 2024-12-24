@@ -1091,6 +1091,7 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
 	}
 	LuminosityCDF.back() = 1.;
 
+	/// Map of margins that later will be use as a texture
 	std::vector<FMargin> IBLSamplingMap(Width * Height);
 	double Stride = 1. / double(Width * Height);
 	uint32_t Slow = 0;
@@ -1098,23 +1099,25 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
 
 	for (int i = 0; i < IBLSamplingMap.size(); ++i)
 	{
+		/// We get the left and right values of a uniform distribution margins
 		double Left = i * Stride;
 		double Right = (i + 1) * Stride;
 
+		/// Iterate Slow until it enters the margin
 		while (Slow < PixelsCount && LuminosityCDF[Slow] <= Left)
 		{
 			Slow++;
 		}
 
+		/// Iterate Fast until it leaves the margin
 		while (Fast < PixelsCount && LuminosityCDF[Fast] <= Right)
 		{
 			Fast++;
 		}
 
+		/// Record the margin. Slow - 1 is the index of texel that "enters" the margin and Fast - 1 is the index of pixel that leaves the margin
 		IBLSamplingMap[i] = {Slow - 1, Fast - 1};
 	}
-
-	IBLSamplingMap[0].Left = 0;
 
 	FBuffer IBLImportanceBuffer;
 
