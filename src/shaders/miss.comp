@@ -2,6 +2,12 @@
 
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 
+#define DEBUG_PRINTF
+#ifdef DEBUG_PRINTF
+#extension GL_EXT_debug_printf : enable
+bool b = false;
+#endif
+
 #include "common_defines.h"
 #include "common_structures.h"
 
@@ -76,12 +82,21 @@ void main()
     uvec2 NewPixelCoords = uvec2(NewPixelIndex % PushConstants.Width, NewPixelIndex / PushConstants.Width);
 
     vec3 NormalizedDirection = FetchRayData(NewPixelIndex).Direction.xyz;
-    float Tmp = atan(NormalizedDirection.z, NormalizedDirection.x);
-    float Phi = Tmp < 0.f ? (Tmp + (M_2_PI)) : Tmp;
+    float Phi = atan(NormalizedDirection.z, NormalizedDirection.x);
     Phi += M_PI_2;
     float Theta = acos(NormalizedDirection.y);
     Phi /= M_2_PI;
     Theta /= M_PI;
+
+    #ifdef DEBUG_PRINTF
+
+    if (NewPixelCoords.x == PushConstants.Width / 2 && NewPixelCoords.y == PushConstants.Height / 2)
+    {
+        b = true;
+        //debugPrintfEXT("NormalizedDirection is %f, %f, %f\n", NormalizedDirection.x, NormalizedDirection.y, NormalizedDirection.z);
+        //debugPrintfEXT("Phi and Theta is %f, %f\n\n", Phi, Theta);
+    }
+    #endif
 
     vec3 SampledColor = vec3(1, 0, 1);
 

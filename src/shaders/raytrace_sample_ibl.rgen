@@ -87,11 +87,11 @@ void main()
     vec2 UVCoordinates = vec2((float(TexelIndex % IBLSize.x) + 0.5) / float(IBLSize.x), (float(TexelIndex / IBLSize.x) + 0.5) / float(IBLSize.y));
     /// Map them to spherical coordinates
     vec2 SphericalCoordinates = UVCoordinates * vec2(M_2_PI, M_PI);
-    SphericalCoordinates.x += M_PI_2;
+    SphericalCoordinates.x -= M_PI_2;
     vec3 CartesianCoordinates;
-    CartesianCoordinates.z = sin(SphericalCoordinates.y) * cos(SphericalCoordinates.x);
+    CartesianCoordinates.x = sin(SphericalCoordinates.y) * cos(SphericalCoordinates.x);
     CartesianCoordinates.y = cos(SphericalCoordinates.y);
-    CartesianCoordinates.x = sin(SphericalCoordinates.y) * sin(SphericalCoordinates.x);
+    CartesianCoordinates.z = sin(SphericalCoordinates.y) * sin(SphericalCoordinates.x);
 
 #ifdef DEBUG_PRINTF
     uvec2 NewPixelCoords = uvec2(NewPixelIndex % PushConstants.Width, NewPixelIndex / PushConstants.Width);
@@ -99,6 +99,7 @@ void main()
     if (NewPixelCoords.x == PushConstants.Width / 2 && NewPixelCoords.y == PushConstants.Height / 2)
     {
         b = true;
+        //debugPrintfEXT("CartesianCoordinates1 is %f, %f, %f\n", CartesianCoordinates1.x, CartesianCoordinates1.y, CartesianCoordinates1.z);
         //debugPrintfEXT("RandomFloat is %f\n", f);
     }
 #endif
