@@ -941,40 +941,94 @@ std::vector<VkDeviceQueueCreateInfo> FVulkanContext::GetDeviceQueueCreateInfo(Vk
     return QueueCreateInfos;
 }
 
-void FVulkanContext::SaveImage(const FImage& Image, const std::string& FileName)
+void FVulkanContext::SaveImagePng(const std::string& ImageName, const std::string& FileName)
 {
-	std::string FileNameToUse = (FileName == "") ? (Image.DebugName) : (FileName);
+	auto Image = TEXTURE_MANAGER()->GetFramebufferImage(ImageName);
+	std::string FileNameToUse = (FileName == "") ? (Image->DebugName) : (FileName);
+	std::vector<uint8_t> ImageData;
+	int NumberOfComponents = 0;
+	const uint32_t ImageSize = Image->Width * Image->Height;
 
-	if (Image.Format == VK_FORMAT_B8G8R8A8_SRGB)
+	if (Image->Format == VK_FORMAT_B8G8R8A8_SRGB)
 	{
-		std::vector<char> Data;
-		FetchImageData(Image, Data);
-		stbi_write_bmp((FileNameToUse + ".png").c_str(), Image.Width, Image.Height, 4, Data.data());
-		return;
+		NumberOfComponents = 4;
+		std::vector<uint8_t> Data;
+		FetchImageData(*Image, Data);
+		ImageData = std::move(Data);
 	}
-	if (Image.Format == VK_FORMAT_R32G32B32A32_SFLOAT)
+	if (Image->Format == VK_FORMAT_R32G32B32A32_SFLOAT)
 	{
+		NumberOfComponents = 4;
+		ImageData.resize(ImageSize * NumberOfComponents);
 		std::vector<float> Data;
-		FetchImageData(Image, Data);
-		const char* Err = NULL;
-		SaveEXR(Data.data(), Image.Width, Image.Height, 4, false, (FileNameToUse + ".exr").c_str(), &Err);
-		return;
-	}
-	if (Image.Format == VK_FORMAT_R32G32_UINT)
-	{
-		std::vector<uint32_t> Data;
-		FetchImageData(Image, Data);
+		FetchImageData(*Image, Data);
 
-		std::vector<float> Data2(Data.size() * 2, 0);
-		for (int i = 0; i < Data.size(); ++i)
+		for (int i = 0; i < ImageSize; ++i)
 		{
-			Data2[i * 2] = float(Data[i]);
+			ImageData[i * NumberOfComponents] = static_cast<uint8_t>(std::clamp(Data[i * NumberOfComponents] * 255., 0., 255.));
+			ImageData[i * NumberOfComponents + 1] = static_cast<uint8_t>(std::clamp(Data[i * NumberOfComponents + 1] * 255., 0., 255.));
+			ImageData[i * NumberOfComponents + 2] = static_cast<uint8_t>(std::clamp(Data[i * NumberOfComponents + 2] * 255., 0., 255.));
+			ImageData[i * NumberOfComponents + 3] = static_cast<uint8_t>(std::clamp(Data[i * NumberOfComponents + 3] * 255., 0., 255.));
+		}
+	}
+
+	stbi_write_png((FileNameToUse + ".png").c_str(), Image->Width, Image->Height, NumberOfComponents, ImageData.data(), Image->Width * NumberOfComponents);
+}
+
+void FVulkanContext::SaveImageExr(const std::string& ImageName, const std::string& FileName)
+{
+	auto Image = TEXTURE_MANAGER()->GetFramebufferImage(ImageName);
+	std::string FileNameToUse = (FileName.empty()) ? (Image->DebugName) : (FileName);
+	std::vector<float> ImageData;
+	int NumberOfComponents = 0;
+	const uint32_t ImageSize = Image->Width * Image->Height;
+
+	if (Image->Format == VK_FORMAT_B8G8R8A8_SRGB)
+	{
+		NumberOfComponents = 4;
+		std::vector<char> Data;
+		FetchImageData(*Image, Data);
+		ImageData.resize(Data.size());
+
+		for (int i = 0; i < Data.size() / 4; ++i)
+		{
+			/// We do components switchy switchy
+			ImageData[i * NumberOfComponents] = 	float(Data[i * NumberOfComponents + 2]) / 255;
+			ImageData[i * NumberOfComponents + 1] = float(Data[i * NumberOfComponents + 1]) / 255;
+			ImageData[i * NumberOfComponents + 2] = float(Data[i * NumberOfComponents]) / 255;
+			ImageData[i * NumberOfComponents + 3] = float(Data[i * NumberOfComponents + 3]) / 255;
+		}
+	}
+	if (Image->Format == VK_FORMAT_R32G32B32A32_SFLOAT)
+	{
+		NumberOfComponents = 4;
+		std::vector<float> Data;
+		FetchImageData(*Image, Data);
+		ImageData = std::move(Data);
+	}
+	if (Image->Format == VK_FORMAT_R32G32_UINT)
+	{
+		NumberOfComponents = 3;
+		std::vector<float> Data;
+		FetchImageData(*Image, Data);
+
+		ImageData.resize(ImageSize * 3);
+		for (int i = 0; i < ImageSize; ++i)
+		{
+			ImageData[i * NumberOfComponents] = Data[i * 2];
+			ImageData[i * NumberOfComponents + 1] = Data[i * 2 + 1];
+			ImageData[i * NumberOfComponents + 2] = 0;
 		};
 
-		const char* Err = NULL;
-		SaveEXR(Data2.data(), Image.Width, Image.Height, 4, false, (FileNameToUse + ".exr").c_str(), &Err);
 		return;
 	}
+
+	if (NumberOfComponents == 0)
+	{
+		throw std::runtime_error("Number of components can not be 0");
+	}
+
+	SaveEXRWrapper(ImageData.data(), Image->Width, Image->Height, NumberOfComponents, false, FileName + ".exr");
 }
 
 template <typename T>

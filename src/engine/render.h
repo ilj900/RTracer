@@ -51,10 +51,12 @@ public:
     ECS::FEntity CreateFramebufferFromExternalImage(ImagePtr ImageIn, const std::string& DebugName = "");
 	ECS::FEntity CreateColorAttachment(int WidthIn, int HeightIn, const std::string& DebugName = "");
     void SetActiveCamera(ECS::FEntity Camera);
-    void SaveFramebuffer(ECS::FEntity Framebuffer, const std::string& Filename = "");
-	void SaveOutput(EOutputType OutputType, const std::string& Filename = "");
-	void PrintScreen(const std::string& Filename = "");
-    void GetFramebufferData(ECS::FEntity Framebuffer);
+    void SaveFramebufferPng(ECS::FEntity Framebuffer, const std::string& Filename = "");
+	void SaveFramebufferExr(ECS::FEntity Framebuffer, const std::string& Filename = "");
+	void SaveOutputPng(EOutputType OutputType, const std::string& Filename = "");
+	void SaveOutputExr(EOutputType OutputType, const std::string& Filename = "");
+	void PrintScreenPng(const std::string& Filename = "");
+	void PrintScreenExr(const std::string& Filename = "");
 
 	void AddExternalTaskAfterRender(std::shared_ptr<FExecutableTask> Task);
 	FSynchronizationPoint Render();

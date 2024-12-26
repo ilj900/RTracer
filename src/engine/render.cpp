@@ -355,31 +355,36 @@ void FRender::SetActiveCamera(ECS::FEntity Camera)
     ActiveCamera = Camera;
 }
 
-void FRender::SaveFramebuffer(ECS::FEntity Framebuffer, const std::string& Filename)
+void FRender::SaveFramebufferPng(ECS::FEntity Framebuffer, const std::string& Filename)
 {
     auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);
-    VK_CONTEXT()->SaveImage(*TEXTURE_MANAGER()->GetFramebufferImage(FramebufferComponent.FramebufferName), Filename);
+    VK_CONTEXT()->SaveImagePng(FramebufferComponent.FramebufferName, Filename);
 }
 
-void FRender::SaveOutput(EOutputType OutputType, const std::string& Filename)
+void FRender::SaveFramebufferExr(ECS::FEntity Framebuffer, const std::string& Filename)
 {
-	auto FramebufferImage = TEXTURE_MANAGER()->GetFramebufferImage(OutputToFramebufferNameMap[OutputType]);
-	VK_CONTEXT()->SaveImage(*FramebufferImage, Filename);
+	auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);
+	VK_CONTEXT()->SaveImageExr(FramebufferComponent.FramebufferName, Filename);
 }
 
-void FRender::PrintScreen(const std::string& Filename)
+void FRender::SaveOutputPng(EOutputType OutputType, const std::string& Filename)
 {
-	auto FramebufferImage = TEXTURE_MANAGER()->GetFramebufferImage("EstimatedImage");
-	VK_CONTEXT()->SaveImage(*FramebufferImage, Filename);
+	VK_CONTEXT()->SaveImagePng(OutputToFramebufferNameMap[OutputType], Filename);
 }
 
-void FRender::GetFramebufferData(ECS::FEntity Framebuffer)
+void FRender::SaveOutputExr(EOutputType OutputType, const std::string& Filename)
 {
-    auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);
-    auto Image = TEXTURE_MANAGER()->GetFramebufferImage(FramebufferComponent.FramebufferName);
-    std::vector<char> Data;
+	VK_CONTEXT()->SaveImageExr(OutputToFramebufferNameMap[OutputType], Filename);
+}
 
-    VK_CONTEXT()->FetchImageData(*Image, Data);
+void FRender::PrintScreenPng(const std::string& Filename)
+{
+	VK_CONTEXT()->SaveImagePng("EstimatedImage", Filename);
+}
+
+void FRender::PrintScreenExr(const std::string& Filename)
+{
+	VK_CONTEXT()->SaveImageExr("EstimatedImage", Filename);
 }
 
 void FRender::AddExternalTaskAfterRender(std::shared_ptr<FExecutableTask> Task)
