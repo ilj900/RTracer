@@ -63,11 +63,11 @@ namespace ECS
 			return bAnyUpdate;
         }
 
-        FEntity FAccelerationStructureSystem::CreateInstance(FEntity Entity, const FVector3& Position, const FVector3& Direction, const FVector3& Up)
+        FEntity FAccelerationStructureSystem::CreateInstance(FEntity Entity, const FVector3& Position, const FVector3& Direction, const FVector3& Up, const FVector3& Scale)
         {
             FEntity NewMeshInstance = COORDINATOR().CreateEntity();
 
-            COORDINATOR().AddComponent<ECS::COMPONENTS::FTransformComponent>(NewMeshInstance, {Position, Direction, Up});
+            COORDINATOR().AddComponent<ECS::COMPONENTS::FTransformComponent>(NewMeshInstance, {Position, Direction, Up, Scale});
             COORDINATOR().AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(NewMeshInstance, {});
             TRANSFORM_SYSTEM()->SyncTransform(NewMeshInstance);
 

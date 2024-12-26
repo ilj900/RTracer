@@ -176,7 +176,7 @@ public:
 	ECS::FEntity CreateUVSphere(uint32_t LongitudeCount, uint32_t LatitudeCount, float Radius);
     ECS::FEntity CreateModel(const std::string& Path);
 
-    ECS::FEntity CreateInstance(ECS::FEntity BaseModel, const FVector3& Position, const FVector3& Direction = {0, 0, 1}, const FVector3& Up = {0, 1 ,0});
+    ECS::FEntity CreateInstance(ECS::FEntity BaseModel, const FVector3& Position, const FVector3& Direction = {0, 0, 1}, const FVector3& Up = {0, 1 ,0}, const FVector3& Scale = {1, 1 ,1});
 	void SetInstancePosition(ECS::FEntity Instance, const FVector3& Position);
 	FVector3 GetInstancePosition(ECS::FEntity Instance);
 	ECS::FEntity CreateLight(const FVector3& Position);

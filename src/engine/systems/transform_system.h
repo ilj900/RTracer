@@ -18,7 +18,7 @@ namespace ECS
 
             void MoveForward(FEntity Entity, float Value);
             void MoveRight(FEntity Entity, float Value);
-            void SetTransform(FEntity Entity, const FVector3& Position, const FVector3& Direction, const FVector3& Up);
+            void SetTransform(FEntity Entity, const FVector3& Position, const FVector3& Direction, const FVector3& Up, const FVector3& Scale = {1, 1, 1});
             void SetLookAt(FEntity Entity, const FVector3& PointOfInterest);
             void MoveUpward(FEntity Entity, float Value);
             void Roll(FEntity Entity, float Value);

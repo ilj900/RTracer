@@ -1226,11 +1226,11 @@ ECS::FEntity FRender::CreatePyramid()
     return NewModel;
 }
 
-ECS::FEntity FRender::CreateInstance(ECS::FEntity BaseModel, const FVector3& Position, const FVector3& Direction, const FVector3& Up)
+ECS::FEntity FRender::CreateInstance(ECS::FEntity BaseModel, const FVector3& Position, const FVector3& Direction, const FVector3& Up, const FVector3& Scale)
 {
-    auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(BaseModel, Position, Direction, Up);
+    auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(BaseModel, Position, Direction, Up, Scale);
     RENDERABLE_SYSTEM()->SetRenderableDeviceAddress(MeshInstance, MESH_SYSTEM()->GetVertexBufferAddress(MeshInstance), MESH_SYSTEM()->GetIndexBufferAddress(MeshInstance));
-	TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, Direction, Up);
+	TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, Direction, Up, Scale);
     RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
     auto& MeshComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FMeshComponent>(BaseModel);
 

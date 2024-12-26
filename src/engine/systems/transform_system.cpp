@@ -69,12 +69,13 @@ namespace ECS
             MarkDirty(Entity);
         }
 
-        void FTransformSystem::SetTransform(FEntity Entity, const FVector3& Position, const FVector3& Direction, const FVector3& Up)
+        void FTransformSystem::SetTransform(FEntity Entity, const FVector3& Position, const FVector3& Direction, const FVector3& Up, const FVector3& Scale)
         {
             auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
             TransformComponent.Position = Position;
             TransformComponent.Direction = Direction;
             TransformComponent.Up = Up;
+			TransformComponent.Scale = Scale;
             MarkDirty(Entity);
         }
 

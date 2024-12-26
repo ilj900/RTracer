@@ -22,7 +22,7 @@ namespace ECS
             bool Update(int Index) override;
             void Terminate();
 
-            FEntity CreateInstance(FEntity Entity, const FVector3& Position, const FVector3& Direction, const FVector3& Up);
+            FEntity CreateInstance(FEntity Entity, const FVector3& Position, const FVector3& Direction, const FVector3& Up, const FVector3& Scale);
 			void UpdateInstancePosition(FEntity Entity);
             void UpdateTLAS();
 
