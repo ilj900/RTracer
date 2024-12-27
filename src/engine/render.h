@@ -240,7 +240,7 @@ private:
 	void FreeIndependentResources();
     int Width;
     int Height;
-	uint32_t RecursionDepth = 5;
+	uint32_t RecursionDepth = 8;
 	bool bAnyUpdate = false;
 	std::chrono::time_point<std::chrono::steady_clock> Time;
 	std::chrono::time_point<std::chrono::steady_clock> PreviousTime;

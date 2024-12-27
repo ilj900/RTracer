@@ -77,28 +77,20 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->SetIBL("../../../resources/sun.exr");
 	}
-	else if (Name == SCENE_CORNELL_BOX_DRAGON)
+	else if (Name == SCENE_STANFORD_DRAGON)
 	{
-		auto Wall = Render->CreatePlane({4, 4});
+
+		auto Wall = Render->CreatePlane({32, 32});
 		auto Dragon = Render->CreateModel("../../../models/Dragon/dragon.obj");
 
-		auto BackWall = Render->CreateInstance(Wall, {0, 0, -2}, {0, 0, -1}, {0, -1, 0});
-		auto TopWall = Render->CreateInstance(Wall, {0, 2, 0}, {0, -1, 0}, {0, 0, 1});
 		auto BottomWall = Render->CreateInstance(Wall, {0, -2, 0}, {0, 1, 0}, {0, 0, -1});
-		auto LeftWall = Render->CreateInstance(Wall, {-2, 0, 0}, {1, 0, 0}, {0, 1, 0});
-		auto RightWall = Render->CreateInstance(Wall, {2, 0, 0}, {-1, 0, 0}, {0, 1, 0});
-		auto DragonInstance = Render->CreateInstance(Dragon, {0, -1.292, 1}, {-1, 0, 0}, {1, 1, 1}, {2.5, 2.5, 2.5});
+		auto DragonInstance = Render->CreateInstance(Dragon, {0, -1.292, 1}, {1, 0, 0}, {1, 1, 1}, {2.5, 2.5, 2.5});
 
 		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
-		auto RedMaterial = Render->CreateDiffuseMaterial({1, 0, 0});
-		auto GreenMaterial = Render->CreateDiffuseMaterial({0, 1, 0});
 		auto GlassMaterial = Render->CreateRefractiveMaterial({1, 1, 1});
 
-		Render->ShapeSetMaterial(BackWall, WhiteMaterial);
-		Render->ShapeSetMaterial(TopWall, WhiteMaterial);
+
 		Render->ShapeSetMaterial(BottomWall, WhiteMaterial);
-		Render->ShapeSetMaterial(LeftWall, RedMaterial);
-		Render->ShapeSetMaterial(RightWall, GreenMaterial);
 		Render->ShapeSetMaterial(DragonInstance, GlassMaterial);
 
 		//auto Light = Render->CreateLight({0, 1.95, 0});

@@ -82,14 +82,27 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, out uint R
 		break;
 	case TRANSMISSION_LAYER:
 		Color = Material.TransmissionColor;
-		float EtaRatio = RayData.Eta / Material.SpecularIOR;
-
-		if (!bFrontFacing)
+		float EtaRatio = 0;
+		if (bFrontFacing)
 		{
-			EtaRatio = RayData.Eta;
+			EtaRatio = RayData.Eta / Material.SpecularIOR;
+		}
+		else
+		{
+			EtaRatio = Material.SpecularIOR / RayData.Eta;
 		}
 
-		RayData.Direction.xyz = refract(RayData.Direction.xyz, NormalInWorldSpace, EtaRatio);
+		float NDotI = dot(NormalInWorldSpace, -RayData.Direction.xyz);
+		float k = 1. - EtaRatio * EtaRatio * (1. - NDotI * NDotI);
+		if (k < 0.)
+		{
+			RayData.Direction.xyz = -reflect(-RayData.Direction.xyz, -NormalInWorldSpace);
+		}
+		else
+		{
+			RayData.Direction.xyz = EtaRatio * -RayData.Direction.xyz - (EtaRatio * NDotI + sqrt(k)) * -NormalInWorldSpace;
+		}
+
 		RayData.Eta = Material.SpecularIOR;
 		break;
 	case SUBSURFACE_LAYER:

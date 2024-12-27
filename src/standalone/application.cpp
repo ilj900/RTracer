@@ -45,8 +45,8 @@ FApplication::~FApplication()
 int FApplication::Run()
 {
 	uint32_t ImageIndex = UINT32_MAX;
-	SceneLoader->LoadScene(SCENE_CORNELL_BOX_DRAGON);
-	//LoadCamera(Controller->Camera, "Blender");
+	SceneLoader->LoadScene(SCENE_STANFORD_DRAGON);
+	LoadCamera(Controller->Camera, "Blender");
 
 	FSynchronizationPoint RenderingFinished;
 
