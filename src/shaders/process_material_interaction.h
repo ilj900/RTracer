@@ -69,6 +69,12 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, out uint R
 	RayType = SelectLayer(Material, LayerSample);
 	vec3 Color = vec3(0);
 
+	/// We need normal in world space that oriented towards incoming vector.
+	if (!bFrontFacing)
+	{
+		NormalInWorldSpace = -NormalInWorldSpace;
+	}
+
 	switch (RayType)
 	{
 	case DIFFUSE_LAYER:
@@ -78,7 +84,7 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, out uint R
 		break;
 	case SPECULAR_LAYER:
 		Color = Material.SpecularColor;
-		RayData.Direction.xyz = -reflect(-RayData.Direction.xyz, NormalInWorldSpace);
+		RayData.Direction.xyz = reflect(-RayData.Direction.xyz, NormalInWorldSpace);
 		break;
 	case TRANSMISSION_LAYER:
 		Color = Material.TransmissionColor;
@@ -96,7 +102,7 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, out uint R
 		float k = 1. - EtaRatio * EtaRatio * (1. - NDotI * NDotI);
 		if (k < 0.)
 		{
-			RayData.Direction.xyz = -reflect(-RayData.Direction.xyz, -NormalInWorldSpace);
+			RayData.Direction.xyz = reflect(-RayData.Direction.xyz, NormalInWorldSpace);
 		}
 		else
 		{
