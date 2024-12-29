@@ -1,20 +1,18 @@
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-def plot_vectors_3d(start_points, end_points):
+def plot_vectors_3d(vector_data):
     """
-    Plot 3D vectors based on their starting and ending positions.
+    Plot 3D vectors based on their starting and ending positions and colors.
 
-    :param start_points: List of tuples representing starting points [(x1, y1, z1), (x2, y2, z2), ...]
-    :param end_points: List of tuples representing ending points [(x1, y1, z1), (x2, y2, z2), ...]
+    :param vector_data: List of tuples, where each tuple contains
+                        ((x_start, y_start, z_start), (x_end, y_end, z_end), 'color')
     """
-    if len(start_points) != len(end_points):
-        raise ValueError("Start points and end points must have the same length")
-
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(111, projection='3d')
 
-    for start, end in zip(start_points, end_points):
+    for data in vector_data:
+        start, end, color = data
         x_start, y_start, z_start = start
         x_end, y_end, z_end = end
 
@@ -24,12 +22,12 @@ def plot_vectors_3d(start_points, end_points):
         dz = z_end - z_start
 
         # Plot the vector
-        ax.quiver(x_start, y_start, z_start, dx, dy, dz, color='b')
+        ax.quiver(x_start, y_start, z_start, dx, dy, dz, color=color)
 
     # Set plot limits for better visualization
-    all_x = [x for x, y, z in start_points + end_points]
-    all_y = [y for x, y, z in start_points + end_points]
-    all_z = [z for x, y, z in start_points + end_points]
+    all_x = [x for (start, end, _) in vector_data for x, _, _ in (start, end)]
+    all_y = [y for (start, end, _) in vector_data for _, y, _ in (start, end)]
+    all_z = [z for (start, end, _) in vector_data for _, _, z in (start, end)]
 
     ax.set_xlim(min(all_x) - 1, max(all_x) + 1)
     ax.set_ylim(min(all_y) - 1, max(all_y) + 1)
@@ -41,9 +39,11 @@ def plot_vectors_3d(start_points, end_points):
     ax.set_title('3D Vector Plot')
     plt.show()
 
-
 # Example usage:
-start_points =  [(0.533339, -0.411958, 0.409748),   (0.784067, -0.545836, 0.830608),                                    (0.783947, -0.545739, 0.830974),    (0.906054, -0.507553, 0.982147),                                    (0.906054, -0.507553, 0.982147)]
-end_points =    [(0.784067, -0.545836, 0.830608),   (0.784067 - 0.218911, -0.545836 - 0.298953, 0.830608 - 0.150459),   (0.906054, -0.507553, 0.982147),    (0.906054 - 0.032676, -0.507553 + 0.149498, 0.982147 - 0.369274),   (0.906054 + 0.404474, -0.507553 + 0.126490, 0.982147 + 0.500750)]
+vector_data = [
+    ((-1, -2, 0), (0, 0, 0), 'r'),
+    ((0, 0, 0), (0, -1, 0), 'b'),
+    ((0, 0, 0), (0.670820, 0.741620, 0), 'g')
+]
 
-plot_vectors_3d(start_points, end_points)
+plot_vectors_3d(vector_data)
