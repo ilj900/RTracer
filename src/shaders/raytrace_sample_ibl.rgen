@@ -125,7 +125,7 @@ void main()
     RayData.Origin.xyz = WorldSpacePositionAOVData[NewPixelIndex].xyz;
 
     /// Trace the ray
-    traceRayEXT(TLAS, RayData.RayFlags, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.0001, RayData.Direction.xyz, 10000, 0);
+    traceRayEXT(TLAS, RayData.RayFlags, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001, RayData.Direction.xyz, 10000, 0);
 
     /// And if we didn't hit any geometry, then we sample the IBL
     if (IBLHitPayload.PayloadFlags == 0)

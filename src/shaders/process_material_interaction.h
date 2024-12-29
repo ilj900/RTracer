@@ -84,7 +84,7 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, out uint R
 		Color = Material.TransmissionColor;
 		float EtaRatio = 0;
 
-		if (!bFrontFacing)
+		if (bFrontFacing)
 		{
 			EtaRatio = RayData.Eta / Material.SpecularIOR;
 		}
