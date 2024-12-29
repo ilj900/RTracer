@@ -84,6 +84,12 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, out uint R
 		Color = Material.TransmissionColor;
 		float EtaRatio = 0;
 
+		float R0 = (RayData.Eta - Material.SpecularIOR) / (RayData.Eta + Material.SpecularIOR);
+		R0 = R0 * R0;
+		/// NDotI also equals to cos(angle)
+		float NDotI = dot(NormalInWorldSpace, RayData.Direction.xyz);
+		float RTheta = R0 + (1. - R0) * (1. - abs(NDotI)) * (1. - abs(NDotI)) * (1. - abs(NDotI)) * (1. - abs(NDotI)) * (1. - abs(NDotI));
+
 		if (bFrontFacing)
 		{
 			EtaRatio = RayData.Eta / Material.SpecularIOR;
@@ -93,16 +99,22 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, out uint R
 			EtaRatio = Material.SpecularIOR / RayData.Eta;
 		}
 
-		float NDotI = dot(NormalInWorldSpace, RayData.Direction.xyz);
-		float k = 1. - EtaRatio * EtaRatio * (1. - NDotI * NDotI);
-
-		if (k < 0.)
+		if (RandomFloat(SamplingState) < RTheta)
 		{
 			RayData.Direction.xyz = reflect(RayData.Direction.xyz, NormalInWorldSpace);
 		}
 		else
 		{
-			RayData.Direction.xyz = EtaRatio * RayData.Direction.xyz - (EtaRatio * NDotI + sqrt(k)) * NormalInWorldSpace;
+			float k = 1. - EtaRatio * EtaRatio * (1. - NDotI * NDotI);
+
+			if (k < 0.)
+			{
+				RayData.Direction.xyz = reflect(RayData.Direction.xyz, NormalInWorldSpace);
+			}
+			else
+			{
+				RayData.Direction.xyz = EtaRatio * RayData.Direction.xyz - (EtaRatio * NDotI + sqrt(k)) * NormalInWorldSpace;
+			}
 		}
 
 		RayData.Eta = Material.SpecularIOR;
