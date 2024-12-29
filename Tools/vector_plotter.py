@@ -1,61 +1,49 @@
-import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-# Function to plot a plane
-def plot_plane(ax, point, normal, size=1.0, color='blue', alpha=0.5):
-    d = -np.dot(normal, point)  # Plane equation: Ax + By + Cz + D = 0
+def plot_vectors_3d(start_points, end_points):
+    """
+    Plot 3D vectors based on their starting and ending positions.
 
-    # Generate grid of points in the plane
-    xx, yy = np.meshgrid(np.linspace(-size, size, 10), np.linspace(-size, size, 10))
-    zz = (-normal[0] * xx - normal[1] * yy - d) / normal[2]
+    :param start_points: List of tuples representing starting points [(x1, y1, z1), (x2, y2, z2), ...]
+    :param end_points: List of tuples representing ending points [(x1, y1, z1), (x2, y2, z2), ...]
+    """
+    if len(start_points) != len(end_points):
+        raise ValueError("Start points and end points must have the same length")
 
-    # Plot the plane
-    ax.plot_surface(xx, yy, zz, color=color, alpha=alpha)
-
-# Function to plot vectors
-def plot_vector(ax, origin, vector, color='red', label=None):
-    ax.quiver(
-        origin[0], origin[1], origin[2],
-        vector[0], vector[1], vector[2],
-        color=color, length=np.linalg.norm(vector), normalize=True, label=label
-    )
-
-def main():
-    # Create a 3D plot
-    fig = plt.figure()
+    fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(111, projection='3d')
 
-    # Define a point and normal vector for the plane
-    plane_point = np.array([0, 0, 0])  # Point on the plane
-    plane_normal = np.array([0, 1, 0])  # Normal to the plane
+    for start, end in zip(start_points, end_points):
+        x_start, y_start, z_start = start
+        x_end, y_end, z_end = end
 
-    # Plot the plane
-    plot_plane(ax, plane_point, plane_normal, size=2, color='blue', alpha=0.5)
+        # Calculate the vector components
+        dx = x_end - x_start
+        dy = y_end - y_start
+        dz = z_end - z_start
 
-    # Define some vectors to plot
-    incoming = np.array([0.577350, 0.577350, 0.577350])
-    outgoing = np.array([0.577350, -0.577350, 0.577350])
-    normal = np.array([0.000000, 1.000000, 0.000000])
+        # Plot the vector
+        ax.quiver(x_start, y_start, z_start, dx, dy, dz, color='b')
 
-    # Plot the vectors
-    plot_vector(ax, np.array([0, 0, 0]), incoming, color='red', label='Incoming')
-    plot_vector(ax, np.array([0, 0, 0]), outgoing, color='green', label='Outgoing')
-    plot_vector(ax, np.array([0, 0, 0]), normal, color='blue', label='Normal')
+    # Set plot limits for better visualization
+    all_x = [x for x, y, z in start_points + end_points]
+    all_y = [y for x, y, z in start_points + end_points]
+    all_z = [z for x, y, z in start_points + end_points]
 
-    # Set plot limits
-    ax.set_xlim([-2, 2])
-    ax.set_ylim([-2, 2])
-    ax.set_zlim([2, -2])
+    ax.set_xlim(min(all_x) - 1, max(all_x) + 1)
+    ax.set_ylim(min(all_y) - 1, max(all_y) + 1)
+    ax.set_zlim(min(all_z) - 1, max(all_z) + 1)
 
-    # Add labels and legend
     ax.set_xlabel('X-axis')
     ax.set_ylabel('Y-axis')
     ax.set_zlabel('Z-axis')
-    ax.legend()
-
-    # Show the plot
+    ax.set_title('3D Vector Plot')
     plt.show()
 
-if __name__ == "__main__":
-    main()
+
+# Example usage:
+start_points =  [(0.533339, -0.411958, 0.409748),   (0.784067, -0.545836, 0.830608),                                    (0.783947, -0.545739, 0.830974),    (0.906054, -0.507553, 0.982147),                                    (0.906054, -0.507553, 0.982147)]
+end_points =    [(0.784067, -0.545836, 0.830608),   (0.784067 - 0.218911, -0.545836 - 0.298953, 0.830608 - 0.150459),   (0.906054, -0.507553, 0.982147),    (0.906054 - 0.032676, -0.507553 + 0.149498, 0.982147 - 0.369274),   (0.906054 + 0.404474, -0.507553 + 0.126490, 0.982147 + 0.500750)]
+
+plot_vectors_3d(start_points, end_points)
