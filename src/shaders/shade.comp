@@ -134,13 +134,13 @@ void main()
     vec3 PointOfIntersectionInWorldSpace = WorldSpacePositionAOVData[NewPixelIndex].xyz;
     vec4 IBLSamplingResult = SampledIBLBuffer[NewPixelIndex];
 
-    const bool bFrontFacing = NormalInWorldSpace.w == 1;
+    const bool bFrontFacing = NormalInWorldSpace.w == 1.;
 
     // Invert normal if it's back facing
-    if (!bFrontFacing)
-    {
-        NormalInWorldSpace = -NormalInWorldSpace;
-    }
+    //if (!bFrontFacing)
+    //{
+    //    NormalInWorldSpace.xyz = -NormalInWorldSpace.xyz;
+    //}
 
     FDeviceMaterial Material = GetMaterial(TextureCoords);
 
