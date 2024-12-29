@@ -82,15 +82,9 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, out uint R
 		break;
 	case TRANSMISSION_LAYER:
 		Color = Material.TransmissionColor;
-		if (b)
-		{
-			debugPrintfEXT("TRANSMISSION_LAYER\n");
-			debugPrintfEXT("RayData.Direction: %f, %f, %f\n", RayData.Direction.x, RayData.Direction.y, RayData.Direction.z);
-			debugPrintfEXT("RayData.Origin: %f, %f, %f\n", RayData.Origin.x, RayData.Origin.y, RayData.Origin.z);
-			debugPrintfEXT("NormalInWorldSpace: %f, %f, %f\n", NormalInWorldSpace.x, NormalInWorldSpace.y, NormalInWorldSpace.z);
-		}
 		float EtaRatio = 0;
-		if (bFrontFacing)
+
+		if (!bFrontFacing)
 		{
 			EtaRatio = RayData.Eta / Material.SpecularIOR;
 		}
@@ -101,26 +95,14 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, out uint R
 
 		float NDotI = dot(NormalInWorldSpace, RayData.Direction.xyz);
 		float k = 1. - EtaRatio * EtaRatio * (1. - NDotI * NDotI);
+
 		if (k < 0.)
 		{
-			if (b)
-			{
-				debugPrintfEXT("reflect\n");
-			}
 			RayData.Direction.xyz = reflect(RayData.Direction.xyz, NormalInWorldSpace);
 		}
 		else
 		{
-			if (b)
-			{
-				debugPrintfEXT("refract\n");
-			}
 			RayData.Direction.xyz = EtaRatio * RayData.Direction.xyz - (EtaRatio * NDotI + sqrt(k)) * NormalInWorldSpace;
-		}
-
-		if (b)
-		{
-			debugPrintfEXT("New RayData.Direction: %f, %f, %f\n", RayData.Direction.x, RayData.Direction.y, RayData.Direction.z);
 		}
 
 		RayData.Eta = Material.SpecularIOR;
