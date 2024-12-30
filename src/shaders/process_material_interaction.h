@@ -96,7 +96,8 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, out uint R
 		}
 		else
 		{
-			EtaRatio = Material.SpecularIOR / RayData.Eta;
+			/// We assume that when ray leaves some medium, it always leaves into the air, thus IOR == 1.
+			EtaRatio = 1. / RayData.Eta;
 		}
 
 		if (RandomFloat(SamplingState) < RTheta)
