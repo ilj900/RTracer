@@ -156,7 +156,7 @@ void main()
 
     if (PushConstants.BounceIndex == LAST_BOUNCE)
     {
-        imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(0));
+        imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(SamplingResult * ThroughputBuffer[NewPixelIndex].xyz, 1));
     }
     else
     {
