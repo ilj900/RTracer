@@ -11,8 +11,9 @@
 
 #include "utils.h"
 
-FClearBufferTask::FClearBufferTask(const std::string& BufferNameIn, uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
+FClearBufferTask::FClearBufferTask(const std::string& BufferNameIn, uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice, uint32_t ClearValueIn) :
 	BufferName(BufferNameIn),
+	ClearValue(ClearValueIn),
 	FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice)
 {
     Name = "Clear" + BufferName + " buffer pipeline";
@@ -40,7 +41,7 @@ void FClearBufferTask::RecordCommands()
 			ResetQueryPool(CommandBuffer, i);
 			GPU_TIMER();
 			auto Buffer = RESOURCE_ALLOCATOR()->GetBuffer(BufferName);
-			vkCmdFillBuffer(CommandBuffer, Buffer.Buffer, 0, VK_WHOLE_SIZE , 0);
+			vkCmdFillBuffer(CommandBuffer, Buffer.Buffer, 0, VK_WHOLE_SIZE , ClearValue);
         }, QueueFlagsBits);
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name, i);

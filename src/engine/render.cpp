@@ -188,18 +188,19 @@ int FRender::Init()
 
 	/// Create all required tasks
 	UpdateTLASTask 						= std::make_shared<FUpdateTLASTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	ResetRenderIterations				= std::make_shared<FClearBufferTask>				("RenderIterationBuffer", Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    ClearImageTask 						= std::make_shared<FClearImageTask>					("AccumulatorImage", Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ResetRenderIterations				= std::make_shared<FClearBufferTask>				("RenderIterationBuffer", 			Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+    ClearImageTask 						= std::make_shared<FClearImageTask>					("AccumulatorImage", 				Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     GenerateRaysTask 					= std::make_shared<FGenerateInitialRays>			(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetActiveRayCountTask 			= std::make_shared<FResetActiveRayCountTask>		(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	ClearNormalAOVBuffer				= std::make_shared<FClearBufferTask>				("NormalAOVBuffer", 				Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	ClearUVAOVBuffer					= std::make_shared<FClearBufferTask>				("UVAOVBuffer", 					Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	ClearWorldSpacePositionAOVBuffer	= std::make_shared<FClearBufferTask>				("WorldSpacePositionAOVBuffer", 	Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	ClearTransformIndexBuffer			= std::make_shared<FClearBufferTask>				("TransformIndexBuffer", 	Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	ClearSampledIBLBuffer				= std::make_shared<FClearBufferTask>				("SampledIBLBuffer", 	Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	ClearDebugLayerBuffer				= std::make_shared<FClearBufferTask>				("DebugLayerBuffer", 	Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ClearNormalAOVBuffer				= std::make_shared<FClearBufferTask>				("NormalAOVBuffer", 					Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ClearUVAOVBuffer					= std::make_shared<FClearBufferTask>				("UVAOVBuffer", 						Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ClearWorldSpacePositionAOVBuffer	= std::make_shared<FClearBufferTask>				("WorldSpacePositionAOVBuffer", 		Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ClearTransformIndexBuffer			= std::make_shared<FClearBufferTask>				("TransformIndexBuffer", 			Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ClearSampledIBLBuffer				= std::make_shared<FClearBufferTask>				("SampledIBLBuffer", 				Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ClearCumulativeMaterialColorBuffer	= std::make_shared<FClearBufferTask>				("CumulativeMaterialBuffer", 		Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice, 0x3F800000);
+	ClearDebugLayerBuffer				= std::make_shared<FClearBufferTask>				("DebugLayerBuffer", 				Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     RayTraceTask 						= std::make_shared<FRaytraceTask>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	ResetMaterialsCountPerChunkTask 	= std::make_shared<FClearBufferTask>				("CountedMaterialsPerChunkBuffer", Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ResetMaterialsCountPerChunkTask 	= std::make_shared<FClearBufferTask>				("CountedMaterialsPerChunkBuffer", 	Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ClearTotalMaterialsCountTask 		= std::make_shared<FClearTotalMaterialsCountTask>	(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     CountMaterialsPerChunkTask 			= std::make_shared<FCountMaterialsPerChunkTask>		(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ComputePrefixSumsUpSweepTask 		= std::make_shared<FComputePrefixSumsUpSweepTask>	(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -530,6 +531,12 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	}
 
 	SynchronizationPoint = PassthroughTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
+
+	if (Counter == 256)
+	{
+		WaitIdle();
+		PrintScreenExr("Estimated");
+	}
 
 	bAnyUpdate = false;
 
@@ -1312,6 +1319,9 @@ void FRender::AllocateDependentResources()
 	auto ActiveRayCountBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * 3, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "ActiveRayCountBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(ActiveRayCountBuffer, "ActiveRayCountBuffer");
 
+	FBuffer CumulativeMaterialColorBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "CumulativeMaterialColorBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(CumulativeMaterialColorBuffer, "CumulativeMaterialColorBuffer");
+
 	FBuffer DebugLayerBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "DebugLayerBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(DebugLayerBuffer, "DebugLayerBuffer");
 
@@ -1377,6 +1387,7 @@ void FRender::FreeDependentResources()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("SampledIBLBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("TransformIndexBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("ActiveRayCountBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("CumulativeMaterialColorBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("DebugLayerBuffer");
 
 	/// Free images

@@ -47,6 +47,11 @@ layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_MATERIALS_OFFS
     uint MaterialsOffsets[];
 };
 
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_CUMULATIVE_MATERIAL_COLOR_BUFFER_INDEX) buffer CumulativeMaterialColorBufferObject
+{
+    vec4 CumulativeMaterialColorBuffer[];
+};
+
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_THROUGHPUT_BUFFER) buffer ThroughputBufferObject
 {
     vec4 ThroughputBuffer[];
@@ -142,25 +147,32 @@ void main()
         NormalInWorldSpace.xyz = -NormalInWorldSpace.xyz;
     }
 
+    float NDotI = dot(NormalInWorldSpace.xyz, RayData.Direction.xyz);
+
     FDeviceMaterial Material = GetMaterial(TextureCoords);
 
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, NewPixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
     uint RayType = 0;
     vec3 SamplingResult = SampleMaterial(Material, RayData, RayType, NormalInWorldSpace.xyz, SamplingState, bFrontFacing);
+    SamplingResult *= NDotI;
     RayData.Origin.xyz = PointOfIntersectionInWorldSpace;
+
+    vec3 CumulativeMaterialColor = CumulativeMaterialColorBuffer[NewPixelIndex].xyz;
+    CumulativeMaterialColor *= SamplingResult;
+    CumulativeMaterialColorBuffer[NewPixelIndex] = vec4(CumulativeMaterialColor, 1);
 
     if (RayType != TRANSMISSION_LAYER)
     {
-        SamplingResult *= IBLSamplingResult.xyz;
+        SamplingResult = CumulativeMaterialColor * IBLSamplingResult.xyz * IBLSamplingResult.w;
     }
 
     if (PushConstants.BounceIndex == LAST_BOUNCE)
     {
-        imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(SamplingResult * ThroughputBuffer[NewPixelIndex].xyz, 1));
+        imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(SamplingResult , 1));
     }
     else
     {
-        ThroughputBuffer[NewPixelIndex].xyz = ThroughputBuffer[NewPixelIndex].xyz * SamplingResult;
+        ThroughputBuffer[NewPixelIndex].xyz = ThroughputBuffer[NewPixelIndex].xyz + SamplingResult;
     }
 
     SetRayData(NewPixelIndex, RayData);

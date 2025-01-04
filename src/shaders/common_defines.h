@@ -20,7 +20,7 @@
 #define BASIC_CHUNK_SIZE 														256
 
 #define RAY_DATA_RAY_MISSED 													1u
-#define LAST_BOUNCE 															4
+#define LAST_BOUNCE 															11
 
 #define LIGHT_TYPE_NONE 														0u
 #define LIGHT_TYPE_POINT_LIGHT 													1u
@@ -93,11 +93,12 @@
 #define COMPUTE_SHADE_MATERIAL_INDEX_MAP 										5u
 #define COMPUTE_SHADE_MATERIAL_INDEX_AOV_MAP 									6u
 #define COMPUTE_SHADE_MATERIALS_OFFSETS 										7u
-#define COMPUTE_SHADE_THROUGHPUT_BUFFER 										8u
-#define COMPUTE_SHADE_RENDER_ITERATION_BUFFER 									9u
-#define COMPUTE_SHADE_NORMAL_AOV_DATA_BUFFER 									10u
-#define COMPUTE_SHADE_UV_AOV_DATA_BUFFER 										11u
-#define COMPUTE_SHADE_WORLD_SPACE_POSITION_AOV_DATA_BUFFER 						12u
+#define COMPUTE_SHADE_CUMULATIVE_MATERIAL_COLOR_BUFFER_INDEX					8u
+#define COMPUTE_SHADE_THROUGHPUT_BUFFER 										9u
+#define COMPUTE_SHADE_RENDER_ITERATION_BUFFER 									10u
+#define COMPUTE_SHADE_NORMAL_AOV_DATA_BUFFER 									11u
+#define COMPUTE_SHADE_UV_AOV_DATA_BUFFER 										12u
+#define COMPUTE_SHADE_WORLD_SPACE_POSITION_AOV_DATA_BUFFER 						13u
 
 /// Task miss descriptor set layout defines
 #define COMPUTE_MISS_LAYOUT_INDEX 												0u
@@ -109,9 +110,9 @@
 #define COMPUTE_MISS_MATERIAL_INDEX_MAP 										4u
 #define COMPUTE_MISS_MATERIAL_INDEX_AOV_MAP 									5u
 #define COMPUTE_MISS_MATERIALS_OFFSETS 											6u
-#define COMPUTE_MISS_THROUGHPUT_BUFFER 											7u
-#define COMPUTE_MISS_NORMAL_AOV_IMAGE_INDEX 									8u
-#define COMPUTE_MISS_UV_AOV_IMAGE_INDEX 										9u
+#define COMPUTE_MISS_NORMAL_AOV_DATA_BUFFER										7u
+#define COMPUTE_MISS_CUMULATIVE_MATERIAL_COLOR_BUFFER_INDEX						8u
+#define COMPUTE_MISS_THROUGHPUT_BUFFER 											9u
 
 /// Task aov pass descriptor set layout defines
 #define AOV_PASS_LAYOUT_INDEX 													0u

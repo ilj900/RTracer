@@ -204,6 +204,7 @@ public:
 	std::shared_ptr<FClearBufferTask> ClearWorldSpacePositionAOVBuffer = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearTransformIndexBuffer = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearSampledIBLBuffer = nullptr;
+	std::shared_ptr<FClearBufferTask> ClearCumulativeMaterialColorBuffer = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearDebugLayerBuffer = nullptr;
     std::shared_ptr<FRaytraceTask> RayTraceTask = nullptr;
     std::shared_ptr<FClearBufferTask> ResetMaterialsCountPerChunkTask = nullptr;

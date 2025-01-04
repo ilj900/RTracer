@@ -108,14 +108,13 @@ void main()
     FragmentNormal.xyz = FragmentNormal.w == 1 ? FragmentNormal.xyz : -FragmentNormal.xyz;
 
     /// If sampling direction not in the hemisphere defined by fragment's normal
-    /// Then sample a random direction?
+    /// Then sample a random direction in the "allowed" hemisphere
     if (dot(CartesianCoordinates, FragmentNormal.xyz) <= 0)
     {
-        vec3 RandomSphereDirection = Sample3DUnitSphere(SamplingState);
+        CartesianCoordinates = Sample3DUnitHemisphere(SamplingState);
         uint TransformIndex = TransformIndexBuffer[NewPixelIndex];
         FDeviceTransform Transform = DeviceTransformBuffer[TransformIndex];
-        RandomSphereDirection = RandomSphereDirection * mat3(Transform.InverseModelMatrix);
-        CartesianCoordinates = normalize(FragmentNormal.xyz + RandomSphereDirection);
+        CartesianCoordinates = CartesianCoordinates * mat3(Transform.InverseModelMatrix);
     }
 
     /// Otherwise we prepare the ray for calculations
@@ -131,7 +130,8 @@ void main()
     if (IBLHitPayload.PayloadFlags == 0)
     {
         float Weight = IBLWeightsBuffer[TexelIndex];
-        SampledIBLBuffer[NewPixelIndex] = vec4(texture(IBLTextureSampler, UVCoordinates).xyz * Weight, 1);
+        /// In "w" component we store cosine of the angle between the normal and sampled direction
+        SampledIBLBuffer[NewPixelIndex] = vec4(texture(IBLTextureSampler, UVCoordinates).xyz * Weight, dot(FragmentNormal.xyz, RayData.Direction.xyz));
     }
     else
     {
