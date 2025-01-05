@@ -25,7 +25,7 @@ void main()
 
     if (IncomingValue.w != 0)
     {
-        //IncomingValue.xyz = IncomingValue.xyz / (vec3(1) + IncomingValue.xyz);
+        IncomingValue.xyz = IncomingValue.xyz / (vec3(1) + IncomingValue.xyz);
         IncomingValue.xyz = pow(IncomingValue.xyz, vec3(1.f / 2.2f));
     }
 

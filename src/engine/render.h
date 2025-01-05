@@ -197,6 +197,7 @@ public:
 	std::shared_ptr<FUpdateTLASTask> UpdateTLASTask = nullptr;
 	std::shared_ptr<FClearBufferTask> ResetRenderIterations = nullptr;
     std::shared_ptr<FClearImageTask> ClearImageTask = nullptr;
+	std::shared_ptr<FClearBufferTask> ClearCumulativeMaterialColorBuffer = nullptr;
     std::shared_ptr<FGenerateInitialRays> GenerateRaysTask = nullptr;
 	std::shared_ptr<FResetActiveRayCountTask> ResetActiveRayCountTask = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearNormalAOVBuffer = nullptr;
@@ -204,7 +205,6 @@ public:
 	std::shared_ptr<FClearBufferTask> ClearWorldSpacePositionAOVBuffer = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearTransformIndexBuffer = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearSampledIBLBuffer = nullptr;
-	std::shared_ptr<FClearBufferTask> ClearCumulativeMaterialColorBuffer = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearDebugLayerBuffer = nullptr;
     std::shared_ptr<FRaytraceTask> RayTraceTask = nullptr;
     std::shared_ptr<FClearBufferTask> ResetMaterialsCountPerChunkTask = nullptr;

@@ -114,7 +114,7 @@ void main()
     else
     {
         SampledColor = vec3(texture(IBLTextureSamplerNearest, vec2(Phi, Theta)));
-        SampledColor *= abs(NDotI);
+        SampledColor *= NDotI;
     }
 
     vec3 CumulativeMaterialColor = CumulativeMaterialColorBuffer[NewPixelIndex].xyz;

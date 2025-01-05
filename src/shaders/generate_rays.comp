@@ -70,6 +70,6 @@ void main()
     float tMax = 10000.f;
 
     RayData[PixelIndex] = FRayData(RayOrigin, RayDirection, 0, tMin, tMax, 1.f);
-    ThroughputBuffer[PixelIndex] = vec4(1);
+    ThroughputBuffer[PixelIndex] = vec4(0);
     PixelIndexIndexMap[PixelIndex] = PixelIndex;
 }
