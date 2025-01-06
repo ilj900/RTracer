@@ -193,6 +193,7 @@ int FRender::Init()
 	ClearCumulativeMaterialColorBuffer	= std::make_shared<FClearBufferTask>				("CumulativeMaterialColorBuffer", 		Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice, 0x3F800000);
     GenerateRaysTask 					= std::make_shared<FGenerateInitialRays>			(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetActiveRayCountTask 			= std::make_shared<FResetActiveRayCountTask>		(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	CopyNormalAOVBuffer					= std::make_shared<FCopyBufferTask>					("NormalAOVBuffer", "PreviousBounceNormalAOVBuffer", Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ClearNormalAOVBuffer				= std::make_shared<FClearBufferTask>				("NormalAOVBuffer", 					Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ClearUVAOVBuffer					= std::make_shared<FClearBufferTask>				("UVAOVBuffer", 						Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ClearWorldSpacePositionAOVBuffer	= std::make_shared<FClearBufferTask>				("WorldSpacePositionAOVBuffer", 		Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -247,6 +248,7 @@ int FRender::Cleanup()
 	ClearCumulativeMaterialColorBuffer	= nullptr;
     GenerateRaysTask 					= nullptr;
 	ResetActiveRayCountTask 			= nullptr;
+	CopyNormalAOVBuffer					= nullptr;
 	ClearNormalAOVBuffer				= nullptr;
 	ClearUVAOVBuffer					= nullptr;
 	ClearWorldSpacePositionAOVBuffer	= nullptr;
@@ -412,6 +414,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	GenerateRaysTask->Reload();
 	ResetActiveRayCountTask->Reload();
 	RayTraceTask->Reload();
+	CopyNormalAOVBuffer->Reload();
 	ClearNormalAOVBuffer->Reload();
 	ClearUVAOVBuffer->Reload();
 	ClearWorldSpacePositionAOVBuffer->Reload();
@@ -482,6 +485,11 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 	for (uint32_t i = 0; i < RecursionDepth; ++i)
 	{
+		if (i != 0)
+		{
+			SynchronizationPoint = CopyNormalAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
+		}
+
 		SynchronizationPoint = ClearNormalAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = ClearUVAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
@@ -1308,6 +1316,9 @@ void FRender::AllocateDependentResources()
 	FBuffer NormalAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "NormalAOVBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(NormalAOVBuffer, "NormalAOVBuffer");
 
+	FBuffer PreviousBounceNormalAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "PreviousBounceNormalAOVBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(PreviousBounceNormalAOVBuffer, "PreviousBounceNormalAOVBuffer");
+
 	FBuffer UVAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector2) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "UVAOVBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(UVAOVBuffer, "UVAOVBuffer");
 
@@ -1386,6 +1397,7 @@ void FRender::FreeDependentResources()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("InitialRaysBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("PixelIndexBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("NormalAOVBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("PreviousBounceNormalAOVBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("UVAOVBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("WorldSpacePositionAOVBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("SampledIBLBuffer");

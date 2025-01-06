@@ -45,6 +45,7 @@ set(INCLUDE
         renderer_options.h
         tasks/executable_task.h
         tasks/task_update_tlas.h
+        tasks/task_copy_buffer.h
         tasks/task_clear_buffer.h
         tasks/task_clear_image.h
         tasks/task_generate_initial_rays.h
@@ -72,6 +73,7 @@ set(SOURCE
         renderer_options.cpp
         tasks/executable_task.cpp
         tasks/task_update_tlas.cpp
+        tasks/task_copy_buffer.cpp
         tasks/task_clear_buffer.cpp
         tasks/task_clear_image.cpp
         tasks/task_generate_initial_rays.cpp

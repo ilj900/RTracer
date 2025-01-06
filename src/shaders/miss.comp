@@ -2,7 +2,7 @@
 
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 
-//#define DEBUG_PRINTF
+#define DEBUG_PRINTF
 #ifdef DEBUG_PRINTF
 #extension GL_EXT_debug_printf : enable
 bool b = false;
@@ -36,9 +36,9 @@ layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_MATERIALS_OFFSET
     uint MaterialsOffsets[];
 };
 
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_NORMAL_AOV_DATA_BUFFER) buffer NormalAOVDataBufferObject
+layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_PREVIOUS_BOUNCE_NORMAL_AOV_DATA_BUFFER) buffer PreviousBounceNormalAOVDataBufferObject
 {
-    vec4 NormalAOVData[];
+    vec4 PreviousBounceNormalAOVData[];
 };
 
 layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_CUMULATIVE_MATERIAL_COLOR_BUFFER_INDEX) buffer CumulativeMaterialColorBufferObject
@@ -105,7 +105,7 @@ void main()
     #endif
 
     vec3 SampledColor = vec3(1, 0, 1);
-    float NDotI = dot(NormalAOVData[NewPixelIndex].xyz, RayData.Direction.xyz);
+    float NDotI = dot(PreviousBounceNormalAOVData[NewPixelIndex].xyz, RayData.Direction.xyz);
 
     if (PushConstants.BounceIndex == 0)
     {
@@ -121,6 +121,14 @@ void main()
 
     vec3 ThroughputColor = ThroughputBuffer[NewPixelIndex].xyz;
 
+    if (b)
+    {
+        debugPrintfEXT("PreviousBounceNormalAOVData: %f, %f, %f\n", PreviousBounceNormalAOVData[NewPixelIndex].x, PreviousBounceNormalAOVData[NewPixelIndex].y, PreviousBounceNormalAOVData[NewPixelIndex].z);
+        debugPrintfEXT("RayData.Direction: %f, %f, %f\n", RayData.Direction.x, RayData.Direction.y, RayData.Direction.z);
+        debugPrintfEXT("ThroughputColor after: %f, %f, %f\n", ThroughputColor.x, ThroughputColor.y, ThroughputColor.z);
+        debugPrintfEXT("SampledColor after: %f, %f, %f\n", SampledColor.x, SampledColor.y, SampledColor.z);
+        debugPrintfEXT("CumulativeMaterialColor after: %f, %f, %f\n\n", CumulativeMaterialColor.x, CumulativeMaterialColor.y, CumulativeMaterialColor.z);
+    }
     imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(ThroughputColor + CumulativeMaterialColor * SampledColor, PushConstants.BounceIndex == 0 ? 0.f : 1.f));
 
     MarkRayMissed(NewPixelIndex);

@@ -7,10 +7,11 @@
 #include "entity.h"
 
 #include "tasks/task_update_tlas.h"
-#include "tasks/task_clear_buffer.h"
+#include "tasks/task_copy_buffer.h"
 #include "tasks/task_clear_image.h"
 #include "tasks/task_generate_initial_rays.h"
 #include "tasks/task_reset_active_ray_count.h"
+#include "tasks/task_clear_buffer.h"
 #include "tasks/task_raytrace.h"
 #include "tasks/task_material_sort_clear_total_materials_count.h"
 #include "tasks/task_material_sort_count_materials_per_chunk.h"
@@ -200,6 +201,7 @@ public:
 	std::shared_ptr<FClearBufferTask> ClearCumulativeMaterialColorBuffer = nullptr;
     std::shared_ptr<FGenerateInitialRays> GenerateRaysTask = nullptr;
 	std::shared_ptr<FResetActiveRayCountTask> ResetActiveRayCountTask = nullptr;
+	std::shared_ptr<FCopyBufferTask> CopyNormalAOVBuffer = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearNormalAOVBuffer = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearUVAOVBuffer = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearWorldSpacePositionAOVBuffer = nullptr;

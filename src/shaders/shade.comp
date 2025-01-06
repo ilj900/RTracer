@@ -158,12 +158,6 @@ void main()
     RayData.Origin.xyz = PointOfIntersectionInWorldSpace;
 
     vec3 CumulativeMaterialColor = CumulativeMaterialColorBuffer[NewPixelIndex].xyz;
-    if (b)
-    {
-        debugPrintfEXT("SamplingResult: %f, %f, %f\n", SamplingResult.x, SamplingResult.y, SamplingResult.z);
-        debugPrintfEXT("CumulativeMaterialColor before: %f, %f, %f\n", CumulativeMaterialColor.x, CumulativeMaterialColor.y, CumulativeMaterialColor.z);
-        debugPrintfEXT("ThroughputBuffer before: %f, %f, %f\n", ThroughputBuffer[NewPixelIndex].x, ThroughputBuffer[NewPixelIndex].y, ThroughputBuffer[NewPixelIndex].z);
-    }
     CumulativeMaterialColor *= SamplingResult;
     CumulativeMaterialColorBuffer[NewPixelIndex] = vec4(CumulativeMaterialColor, 1);
 
@@ -178,12 +172,6 @@ void main()
     if (PushConstants.BounceIndex == LAST_BOUNCE)
     {
         imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(ThroughputBuffer[NewPixelIndex].xyz , 1));
-    }
-
-    if (b)
-    {
-        debugPrintfEXT("CumulativeMaterialColor after: %f, %f, %f\n", CumulativeMaterialColor.x, CumulativeMaterialColor.y, CumulativeMaterialColor.z);
-        debugPrintfEXT("ThroughputBuffer after: %f, %f, %f\n\n", ThroughputBuffer[NewPixelIndex].x, ThroughputBuffer[NewPixelIndex].y, ThroughputBuffer[NewPixelIndex].z);
     }
 
     SetRayData(NewPixelIndex, RayData);

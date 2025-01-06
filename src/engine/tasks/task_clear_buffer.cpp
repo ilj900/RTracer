@@ -2,12 +2,7 @@
 #include "vk_debug.h"
 #include "vk_functions.h"
 
-#include "vk_shader_compiler.h"
-#include "texture_manager.h"
-
 #include "task_clear_buffer.h"
-
-#include "common_structures.h"
 
 #include "utils.h"
 
