@@ -158,13 +158,34 @@ void main()
     RayData.Origin.xyz = PointOfIntersectionInWorldSpace;
 
     vec3 CumulativeMaterialColor = CumulativeMaterialColorBuffer[NewPixelIndex].xyz;
+    if (b)
+    {
+        debugPrintfEXT("CumulativeMaterialColor before: %f, %f, %f\n", CumulativeMaterialColor.x, CumulativeMaterialColor.y, CumulativeMaterialColor.z);
+    }
     CumulativeMaterialColor *= SamplingResult;
     CumulativeMaterialColorBuffer[NewPixelIndex] = vec4(CumulativeMaterialColor, 1);
+
+    if (b)
+    {
+        debugPrintfEXT("SamplingResult: %f, %f, %f\n", SamplingResult.x, SamplingResult.y, SamplingResult.z);
+        debugPrintfEXT("CumulativeMaterialColor after: %f, %f, %f\n", CumulativeMaterialColor.x, CumulativeMaterialColor.y, CumulativeMaterialColor.z);
+        debugPrintfEXT("ThroughputBuffer before: %f, %f, %f\n", ThroughputBuffer[NewPixelIndex].x, ThroughputBuffer[NewPixelIndex].y, ThroughputBuffer[NewPixelIndex].z);
+        debugPrintfEXT("IBLSamplingResult: %f, %f, %f, %f\n", IBLSamplingResult.x, IBLSamplingResult.y, IBLSamplingResult.z, IBLSamplingResult.w);
+    }
 
     /// To do: Correct for reflective part of transmission!
     if (RayType != TRANSMISSION_LAYER)
     {
         SamplingResult = CumulativeMaterialColor * IBLSamplingResult.xyz * abs(IBLSamplingResult.w);
+    }
+    else
+    {
+        SamplingResult = CumulativeMaterialColor;
+    }
+
+    if (b)
+    {
+        debugPrintfEXT("SamplingResult: %f, %f, %f\n", SamplingResult.x, SamplingResult.y, SamplingResult.z);
     }
 
     ThroughputBuffer[NewPixelIndex].xyz = ThroughputBuffer[NewPixelIndex].xyz + SamplingResult;
@@ -172,6 +193,12 @@ void main()
     if (PushConstants.BounceIndex == LAST_BOUNCE)
     {
         imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(ThroughputBuffer[NewPixelIndex].xyz , 1));
+    }
+
+    if (b)
+    {
+        debugPrintfEXT("CumulativeMaterialColor after: %f, %f, %f\n", CumulativeMaterialColor.x, CumulativeMaterialColor.y, CumulativeMaterialColor.z);
+        debugPrintfEXT("ThroughputBuffer after: %f, %f, %f\n\n", ThroughputBuffer[NewPixelIndex].x, ThroughputBuffer[NewPixelIndex].y, ThroughputBuffer[NewPixelIndex].z);
     }
 
     SetRayData(NewPixelIndex, RayData);
