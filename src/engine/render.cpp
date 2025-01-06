@@ -544,7 +544,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 	SynchronizationPoint = PassthroughTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
-	if (Counter == 256)
+	if (Counter == 4096)
 	{
 		WaitIdle();
 		PrintScreenExr("Estimated");
