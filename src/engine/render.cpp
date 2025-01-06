@@ -547,7 +547,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	if (Counter == 4096)
 	{
 		WaitIdle();
-		PrintScreenExr("Estimated");
+		PrintScreenPng("Estimated");
 	}
 
 	bAnyUpdate = false;
