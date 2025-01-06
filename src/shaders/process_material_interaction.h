@@ -111,6 +111,7 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, out uint R
 			if (k < 0.)
 			{
 				RayData.Direction.xyz = reflect(RayData.Direction.xyz, NormalInWorldSpace);
+				RayType = SPECULAR_LAYER;
 			}
 			else
 			{
