@@ -30,7 +30,7 @@ TEST_CASE( "Basic scene loading", "[Basic]" )
 	}
 
 	Render->WaitIdle();
-	Render->SaveOutput(EOutputType::Color, "Basic scene loading");
+	Render->SaveOutputPng(EOutputType::Color, "Basic scene loading");
 
 	SceneLoader->UpdateScene(0, 0);
 	Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
@@ -42,7 +42,7 @@ TEST_CASE( "Basic scene loading", "[Basic]" )
 	}
 
 	Render->WaitIdle();
-	Render->SaveOutput(EOutputType::Color, "Basic scene loading_1");
+	Render->SaveOutputPng(EOutputType::Color, "Basic scene loading_1");
 
 	Render = nullptr;
 }

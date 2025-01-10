@@ -63,6 +63,8 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto GlassMaterial = Render->CreateRefractiveMaterial({1, 1, 1});
 		auto DiffuseMaterial = Render->CreateDiffuseMaterial({1, 1, 0});
 		auto MetalMaterial = Render->CreateReflectiveMaterial({1, 0, 1});
+		auto CheckerboardTexture = Render->CreateTexture("../../../resources/Checkerboard_256.png");
+		Render->MaterialSetBaseColor(WhiteMaterial, CheckerboardTexture);
 
 		Render->ShapeSetMaterial(BackWall, WhiteMaterial);
 		Render->ShapeSetMaterial(TopWall, WhiteMaterial);

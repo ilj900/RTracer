@@ -48,19 +48,11 @@ vec3 Transform(vec3 NormalInWorldSpace, vec3 VectorInLocalSpace)
 
 vec3 ScatterDiffuse(vec3 NormalInWorldSpace, FSamplingState SamplingState)
 {
-	vec2 Sample = vec2(RandomFloat(SamplingState), RandomFloat(SamplingState));
+	vec3 Result = Sample3DUnitSphere(SamplingState);
 
-	float Phi = Sample.x * M_2_PI;
-	float Theta = Sample.y * M_PI;
+	Result = normalize(Result + NormalInWorldSpace);
 
-	vec3 Result;
-
-	Result.z = sin(Theta) * cos(Phi);
-	Result.y = cos(Theta);
-	Result.x = sin(Theta) * sin(Phi);
-
-
-	return normalize(Result + NormalInWorldSpace);
+	return Result;
 }
 
 vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, out uint RayType, vec3 NormalInWorldSpace, FSamplingState SamplingState, bool bFrontFacing)
