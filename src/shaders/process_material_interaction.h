@@ -1,13 +1,6 @@
 #ifndef PROCESS_MATERIAL_INTERACTION_H
 #define PROCESS_MATERIAL_INTERACTION_H
 
-#define DIFFUSE_LAYER 			1u
-#define SPECULAR_LAYER 			1u << 1
-#define TRANSMISSION_LAYER 		1u << 2
-#define SUBSURFACE_LAYER		1u << 3
-#define SHEEN_LAYER 			1u << 4
-#define COAT_LAYER 				1u << 5
-
 uint SelectLayer(FDeviceMaterial Material, float MaterialSample)
 {
 	float TotalWeight = Material.BaseWeight + Material.SpecularWeight + Material.TransmissionWeight + Material.SubsurfaceWeight + Material.SheenWeight + Material.CoatWeight;
@@ -49,16 +42,16 @@ vec3 Transform(vec3 NormalInWorldSpace, vec3 VectorInLocalSpace)
 vec3 ScatterDiffuse(vec3 NormalInWorldSpace, FSamplingState SamplingState)
 {
 	vec3 Result = Sample3DUnitSphere(SamplingState);
-
 	Result = normalize(Result + NormalInWorldSpace);
 
 	return Result;
 }
 
-vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, out uint RayType, vec3 NormalInWorldSpace, FSamplingState SamplingState, bool bFrontFacing)
+vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 NormalInWorldSpace, inout FSamplingState SamplingState, bool bFrontFacing)
 {
 	float LayerSample = RandomFloat(SamplingState);
-	RayType = SelectLayer(Material, LayerSample);
+	uint RayType = SelectLayer(Material, LayerSample);
+	RayData.RayFlags = 0u;
 	vec3 Color = vec3(0);
 
 	switch (RayType)
@@ -125,6 +118,7 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, out uint R
 		break;
 	}
 
+	RayData.RayFlags |= RayType;
 	return Color;
 }
 #endif // PROCESS_MATERIAL_INTERACTION_H

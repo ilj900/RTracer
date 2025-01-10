@@ -18,9 +18,16 @@
 #define MAX_TEXTURES 															512
 #define TOTAL_MATERIALS 														128 /// 126 Materials + IBL + material for inactive ray
 #define BASIC_CHUNK_SIZE 														256
-
-#define RAY_DATA_RAY_MISSED 													1u
 #define LAST_BOUNCE 															11
+
+/// Ray flags
+#define RAY_DATA_RAY_MISSED 													1u
+#define DIFFUSE_LAYER 															1u << 1
+#define SPECULAR_LAYER 															1u << 2
+#define TRANSMISSION_LAYER 														1u << 3
+#define SUBSURFACE_LAYER														1u << 4
+#define SHEEN_LAYER 															1u << 5
+#define COAT_LAYER 																1u << 6
 
 #define LIGHT_TYPE_NONE 														0u
 #define LIGHT_TYPE_POINT_LIGHT 													1u

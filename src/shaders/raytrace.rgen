@@ -47,7 +47,7 @@ void main()
         return;
     }
 
-    traceRayEXT(TopLevelAS, RayData.RayFlags, 0xFF, 0, 0, 0, RayData.Origin.xyz, RayData.TMin, RayData.Direction.xyz, RayData.TMax, 0);
+    traceRayEXT(TopLevelAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, RayData.TMin, RayData.Direction.xyz, RayData.TMax, 0);
 
     HitData[NewPixelIndex].RenderableIndex = HitPayload.RenderableIndex;
     HitData[NewPixelIndex].PrimitiveIndex = HitPayload.PrimitiveIndex;

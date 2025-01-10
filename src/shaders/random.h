@@ -15,7 +15,8 @@
 #endif
 
 #define SAMPLE_TYPE_GENERATE_RAYS 	0x10000001
-#define SAMPLE_TYPE_LIGHT		 	0x20000001
+#define SAMPLE_TYPE_INTERACT_RAYS 	0x20000001
+#define SAMPLE_TYPE_LIGHT		 	0x30000001
 
 struct FSamplingState
 {
@@ -103,7 +104,6 @@ FVector2 Sample2DUnitDisk(inout FSamplingState SamplingState)
 	float R = sqrt(Sample.y);
 	Sample.x = (R * cos(Theta) + 1) * 0.5;
 	Sample.y = (R * sin(Theta) + 1) * 0.5;
-	SamplingState.Generation += 1;
 	return Sample;
 }
 
@@ -117,7 +117,6 @@ FVector3 Sample3DUnitSphere(inout FSamplingState SamplingState)
 	Result.x = Z2 * cos(Theta);
 	Result.y = Z2 * sin(Theta);
 	Result.z = Z;
-	SamplingState.Generation += 1;
 	return Result;
 }
 
@@ -132,7 +131,6 @@ FVector3 Sample3DUnitHemisphere(inout FSamplingState SamplingState)
 	Result.x = Z2 * cos(Theta);
 	Result.y = abs(Z2 * sin(Theta));
 	Result.z = Z;
-	SamplingState.Generation += 1;
 	return Result;
 }
 

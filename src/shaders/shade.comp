@@ -152,8 +152,7 @@ void main()
     FDeviceMaterial Material = GetMaterial(TextureCoords);
 
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, NewPixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
-    uint RayType = 0;
-    vec3 SamplingResult = SampleMaterial(Material, RayData, RayType, NormalInWorldSpace.xyz, SamplingState, bFrontFacing);
+    vec3 SamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace.xyz, SamplingState, bFrontFacing);
     SamplingResult *= abs(NDotI);
     RayData.Origin.xyz = PointOfIntersectionInWorldSpace;
 
@@ -161,7 +160,7 @@ void main()
     CumulativeMaterialColor *= SamplingResult;
     CumulativeMaterialColorBuffer[NewPixelIndex] = vec4(CumulativeMaterialColor, 1);
 
-    if (RayType != TRANSMISSION_LAYER)
+    if ((RayData.RayFlags & TRANSMISSION_LAYER) != TRANSMISSION_LAYER)
     {
         SamplingResult = CumulativeMaterialColor * IBLSamplingResult.xyz * abs(IBLSamplingResult.w);
     }
