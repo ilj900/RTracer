@@ -72,8 +72,10 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 		float R0 = (RayData.Eta - Material.SpecularIOR) / (RayData.Eta + Material.SpecularIOR);
 		R0 = R0 * R0;
 		/// NDotI also equals to cos(angle)
+		/// Ray's direction is inverted cause it's guaranteed to face normal.
 		float NDotI = dot(NormalInWorldSpace, RayData.Direction.xyz);
-		float RTheta = R0 + (1. - R0) * (1. - abs(NDotI)) * (1. - abs(NDotI)) * (1. - abs(NDotI)) * (1. - abs(NDotI)) * (1. - abs(NDotI));
+
+		float RTheta = R0 + (1. - R0) * pow(1. - abs(NDotI), 5.f);
 
 		if (bFrontFacing)
 		{
@@ -85,6 +87,7 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 			EtaRatio = RayData.Eta;
 		}
 
+		/// Decide on whether the ray is reflected or refracted
 		if (RandomFloat(SamplingState) < RTheta)
 		{
 			RayData.Direction.xyz = reflect(RayData.Direction.xyz, NormalInWorldSpace);
@@ -94,7 +97,7 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 		{
 			float k = 1. - EtaRatio * EtaRatio * (1. - NDotI * NDotI);
 
-			if (k < 0.)
+			if (k < 0. || RandomFloat(SamplingState) < RTheta)
 			{
 				RayData.Direction.xyz = reflect(RayData.Direction.xyz, NormalInWorldSpace);
 				RayType = SPECULAR_LAYER;
