@@ -129,7 +129,7 @@ void main()
     if (NewPixelCoords.x == PushConstants.Width / 2 && NewPixelCoords.y == PushConstants.Height / 2 /*&& PushConstants.BounceIndex == 0*/)
     {
         b = true;
-        debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
+        //debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
     }
 #endif
 
