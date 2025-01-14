@@ -173,6 +173,7 @@ struct FViewportResolutionPushConstants
 {
 	uint32_t Width;
 	uint32_t Height;
+	uint32_t BounceIndex;
 };
 
 struct FPushConstantsCountMaterialsPerChunk

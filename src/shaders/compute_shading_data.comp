@@ -132,14 +132,14 @@ void main()
 
     uint NewPixelIndex = RayIndexMap[OriginalPixelIndex];
 
-    #ifdef DEBUG_PRINTF
+#ifdef DEBUG_PRINTF
     uvec2 NewPixelCoords = uvec2(NewPixelIndex % PushConstants.Width, NewPixelIndex / PushConstants.Width);
 
     if (NewPixelCoords.x == PushConstants.Width / 2 && NewPixelCoords.y == PushConstants.Height / 2 && PushConstants.BounceIndex == 0)
     {
         b = true;
     }
-    #endif
+#endif
 
     FRayData RayData = FetchRayData(NewPixelIndex);
 
@@ -189,7 +189,6 @@ void main()
 
     vec3 Normal = vec3(1.f, 1.f, 1.f);
     Normal = V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z;
-
     vec3 NormalInWorldSpace = Normal * mat3(Transform.InverseModelMatrix);
     bool bFrontFacing = true;
 

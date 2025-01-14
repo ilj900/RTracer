@@ -101,7 +101,7 @@ void FComputeShadingDataTask::RecordCommands()
 			vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
 				0, 1, &DescriptorSet, 0, nullptr);
 
-			FViewportResolutionPushConstants PushConstants = { Width, Height};
+			FViewportResolutionPushConstants PushConstants = { Width, Height, i % SubmitX};
 			vkCmdPushConstants(CommandBuffer, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
 				VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FViewportResolutionPushConstants), &PushConstants);
 
