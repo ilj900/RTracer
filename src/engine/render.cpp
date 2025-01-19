@@ -217,6 +217,7 @@ int FRender::Init()
 	ClearWorldSpacePositionAOVBuffer	= std::make_shared<FClearBufferTask>				("WorldSpacePositionAOVBuffer", 		Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ClearTransformIndexBuffer			= std::make_shared<FClearBufferTask>				("TransformIndexBuffer", 			Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ClearSampledIBLBuffer				= std::make_shared<FClearBufferTask>				("SampledIBLBuffer", 				Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ClearSampledDirectionalLightsBuffer	= std::make_shared<FClearBufferTask>				("SampledDirectionalLightBuffer",	Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ClearDebugLayerBuffer				= std::make_shared<FClearBufferTask>				("DebugLayerBuffer", 				Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     RayTraceTask 						= std::make_shared<FRaytraceTask>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetMaterialsCountPerChunkTask 	= std::make_shared<FClearBufferTask>				("CountedMaterialsPerChunkBuffer", 	Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -229,6 +230,7 @@ int FRender::Init()
     SortMaterialsTask 					= std::make_shared<FSortMaterialsTask>				(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ComputeShadingData 					= std::make_shared<FComputeShadingDataTask>			(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	SampleIBLTask 						= std::make_shared<FSampleIBLTask>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	SampleDirectionalLightTask			= std::make_shared<FSampleDirectionalLightTask>		(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ShadeTask 							= std::make_shared<FShadeTask>						(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     MissTask 							= std::make_shared<FMissTask>						(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	AOVPassTask							= std::make_shared<FAOVPassTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -272,6 +274,7 @@ int FRender::Cleanup()
 	ClearWorldSpacePositionAOVBuffer	= nullptr;
 	ClearTransformIndexBuffer			= nullptr;
 	ClearSampledIBLBuffer				= nullptr;
+	ClearSampledDirectionalLightsBuffer = nullptr;
 	ClearDebugLayerBuffer				= nullptr;
     RayTraceTask 						= nullptr;
 	ResetMaterialsCountPerChunkTask 	= nullptr;
@@ -284,6 +287,7 @@ int FRender::Cleanup()
     SortMaterialsTask 					= nullptr;
 	ComputeShadingData					= nullptr;
 	SampleIBLTask						= nullptr;
+	SampleDirectionalLightTask			= nullptr;
     ShadeTask 							= nullptr;
     MissTask 							= nullptr;
 	AOVPassTask							= nullptr;
@@ -438,6 +442,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	ClearWorldSpacePositionAOVBuffer->Reload();
 	ClearTransformIndexBuffer->Reload();
 	ClearSampledIBLBuffer->Reload();
+	ClearSampledDirectionalLightsBuffer->Reload();
 	ClearDebugLayerBuffer->Reload();
 	ResetMaterialsCountPerChunkTask->Reload();
 	ClearTotalMaterialsCountTask->Reload();
@@ -448,6 +453,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	ComputeOffsetsPerMaterialTask->Reload();
 	SortMaterialsTask->Reload();
 	SampleIBLTask->Reload();
+	SampleDirectionalLightTask->Reload();
 	ComputeShadingData->Reload();
 	ShadeTask->Reload();
 	MissTask->Reload();
@@ -518,6 +524,8 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 		SynchronizationPoint = ClearSampledIBLBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
+		SynchronizationPoint = ClearSampledDirectionalLightsBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
+
 		SynchronizationPoint = RayTraceTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = ResetMaterialsCountPerChunkTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
@@ -539,6 +547,8 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 		SynchronizationPoint = ComputeShadingData->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = SampleIBLTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
+
+		SynchronizationPoint = SampleDirectionalLightTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = ShadeTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
@@ -1294,6 +1304,17 @@ FVector3 FRender::GetInstancePosition(ECS::FEntity Instance)
 	return TRANSFORM_SYSTEM()->GetComponent<ECS::COMPONENTS::FTransformComponent>(Instance).Position;
 }
 
+ECS::FEntity FRender::CreateDirectionalLight(const FVector3& Direction, const FVector3& Color, float Intensity)
+{
+	auto Light = COORDINATOR().CreateEntity();
+	COORDINATOR().AddComponent<ECS::COMPONENTS::FDirectionalLightComponent>(Light, {});
+	DIRECTIONAL_LIGHT_SYSTEM()->SetLightDirection(Light, Direction.X, Direction.Y, Direction.Z);
+	DIRECTIONAL_LIGHT_SYSTEM()->SetLightColor(Light, Color);
+	DIRECTIONAL_LIGHT_SYSTEM()->SetLightIntensity(Light, Intensity);
+
+	return Light;
+}
+
 ECS::FEntity FRender::CreatePointLight(const FVector3& Position)
 {
     auto Light = COORDINATOR().CreateEntity();
@@ -1348,6 +1369,9 @@ void FRender::AllocateDependentResources()
 
 	FBuffer SampledIBLBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "SampledIBLBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(SampledIBLBuffer, "SampledIBLBuffer");
+
+	FBuffer SampledDirectionalLightBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "SampledDirectionalLightBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(SampledDirectionalLightBuffer, "SampledDirectionalLightBuffer");
 
 	FBuffer TransformIndexBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "TransformIndexBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(TransformIndexBuffer, "TransformIndexBuffer");
@@ -1422,6 +1446,7 @@ void FRender::FreeDependentResources()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("UVAOVBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("WorldSpacePositionAOVBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("SampledIBLBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("SampledDirectionalLightBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("TransformIndexBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("ActiveRayCountBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("CumulativeMaterialColorBuffer");

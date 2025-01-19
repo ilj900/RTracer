@@ -1,0 +1,96 @@
+#version 460
+
+#extension GL_EXT_ray_tracing : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+//#define DEBUG_PRINTF
+#ifdef DEBUG_PRINTF
+#extension GL_EXT_debug_printf : enable
+bool b = false;
+#endif
+
+#include "common_defines.h"
+#include "common_structures.h"
+#include "random.h"
+
+layout (location = 0) rayPayloadEXT FLightHitPayload LightHitPayload;
+
+layout (set = RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_TLAS_INDEX) uniform accelerationStructureEXT TLAS;
+
+layout (set = RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_DIRECTIONAL_LIGHTS_BUFFER_INDEX) buffer DirectionalLightsBufferObject
+{
+    FDirectionalLight DirectionalLightsBuffer[];
+};
+
+layout (set = RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_NORMAL_AOV_BUFFER_INDEX) buffer NormalAOVDataBufferObject
+{
+    vec4 NormalAOVData[];
+};
+
+layout (set = RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_WORLD_SPACE_POSITION_AOV_BUFFER_INDEX) buffer WorldSpacePositionAOVDataBufferObject
+{
+    vec4 WorldSpacePositionAOVData[];
+};
+
+
+layout (set = RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_SAMPLED_LIGHT_BUFFER_INDEX) buffer SampledDirectionalLightBufferObject
+{
+    vec4 SampledDirectionalLight[];
+};
+
+layout (set = RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_PIXEL_INDEX_BUFFER) buffer PixelIndexIndexMapBufferObject
+{
+    uint PixelIndexIndexMap[];
+};
+
+layout (set = RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_RENDER_ITERATION_BUFFER_INDEX) buffer RenderIterationBufferObject
+{
+    uint RenderIteration;
+};
+
+layout (push_constant) uniform PushConstantsBlock
+{
+    FViewportResolutionPushConstants PushConstants;
+};
+
+void main()
+{
+    uint OriginalPixelIndex = gl_LaunchIDEXT.x;
+    uint NewPixelIndex = PixelIndexIndexMap[OriginalPixelIndex];
+
+#ifdef DEBUG_PRINTF
+    uvec2 NewPixelCoords = uvec2(NewPixelIndex % PushConstants.Width, NewPixelIndex / PushConstants.Width);
+
+    if (NewPixelCoords.x == PushConstants.Width / 2 && NewPixelCoords.y == PushConstants.Height / 2)
+    {
+        b = true;
+        //debugPrintfEXT("CartesianCoordinates1 is %f, %f, %f\n", CartesianCoordinates1.x, CartesianCoordinates1.y, CartesianCoordinates1.z);
+        //debugPrintfEXT("RandomFloat is %f\n", f);
+    }
+#endif
+
+    uint DirectionalLightsCount = 2;
+
+    FSamplingState SamplingState = FSamplingState(RenderIteration, 0, 0, NewPixelIndex, SAMPLE_TYPE_LIGHT);
+    /// Select a random directional light
+    const uint LightIndex = uint(RandomFloat(SamplingState) * DirectionalLightsCount);
+    FDirectionalLight DirectionalLight = DirectionalLightsBuffer[LightIndex];
+
+    FRayData RayData;
+    RayData.RayFlags = 0;
+    RayData.Direction.xyz = -DirectionalLight.Direction;
+    RayData.Origin.xyz = WorldSpacePositionAOVData[NewPixelIndex].xyz;
+
+    /// Trace the ray
+    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
+
+    /// And if we didn't hit any geometry, then we store light data
+    if (LightHitPayload.PayloadFlags == 0)
+    {
+        SampledDirectionalLight[NewPixelIndex] = vec4(DirectionalLight.Color, DirectionalLight.Intensity);
+    }
+    else
+    {
+        SampledDirectionalLight[NewPixelIndex] = vec4(0);
+    }
+}

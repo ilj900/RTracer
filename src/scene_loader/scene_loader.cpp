@@ -79,6 +79,43 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->SetIBL("../../../resources/sun.exr");
 	}
+	else if (Name == SCENE_CORNELL_BOX_2)
+	{
+		auto Wall = Render->CreatePlane({4, 4});
+		auto Sphere = Render->CreateUVSphere(512, 256, 0.5f);
+
+		auto BackWall = Render->CreateInstance(Wall, {0, 0, -2}, {0, 0, 1}, {0, 1, 0});
+		auto TopWall = Render->CreateInstance(Wall, {0, 2, 0}, {0, -1, 0}, {0, 0, 1});
+		auto BottomWall = Render->CreateInstance(Wall, {0, -2, 0}, {0, 1, 0}, {0, 0, -1});
+		auto LeftWall = Render->CreateInstance(Wall, {-2, 0, 0}, {1, 0, 0}, {0, 1, 0});
+		auto RightWall = Render->CreateInstance(Wall, {2, 0, 0}, {-1, 0, 0}, {0, 1, 0});
+		auto Sphere1 = Render->CreateInstance(Sphere, {0, -1.499, 1});
+		auto Sphere2 = Render->CreateInstance(Sphere, {1, -1.499, -1});
+		auto Sphere3 = Render->CreateInstance(Sphere, {-1, -1.499, -1});
+
+		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
+		auto RedMaterial = Render->CreateDiffuseMaterial({1, 0, 0});
+		auto GreenMaterial = Render->CreateDiffuseMaterial({0, 1, 0});
+		auto GlassMaterial = Render->CreateRefractiveMaterial({1, 1, 1});
+		auto DiffuseMaterial = Render->CreateDiffuseMaterial({1, 1, 0});
+		auto MetalMaterial = Render->CreateReflectiveMaterial({1, 0, 1});
+		auto CheckerboardTexture = Render->CreateTexture("../../../resources/Checkerboard_256.png");
+		Render->MaterialSetBaseColor(WhiteMaterial, CheckerboardTexture);
+
+		Render->ShapeSetMaterial(BackWall, WhiteMaterial);
+		Render->ShapeSetMaterial(TopWall, WhiteMaterial);
+		Render->ShapeSetMaterial(BottomWall, WhiteMaterial);
+		Render->ShapeSetMaterial(LeftWall, RedMaterial);
+		Render->ShapeSetMaterial(RightWall, GreenMaterial);
+		Render->ShapeSetMaterial(Sphere1, GlassMaterial);
+		Render->ShapeSetMaterial(Sphere2, DiffuseMaterial);
+		Render->ShapeSetMaterial(Sphere3, MetalMaterial);
+
+		auto Light = Render->CreateDirectionalLight({-1, -1, -1}, {1, 1, 0}, 1);
+		auto Light2 = Render->CreateDirectionalLight({1, -1, -1}, {0, 1, 1}, 1);
+
+		Render->SetIBL("../../../resources/hdr_black_image.exr");
+	}
 	else if (Name == SCENE_STANFORD_DRAGON)
 	{
 

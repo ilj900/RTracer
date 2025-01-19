@@ -24,7 +24,7 @@ struct FHitPayload
     uint32_t MaterialIndex;
 };
 
-struct FIBLHitPayload
+struct FLightHitPayload
 {
 	uint32_t PayloadFlags;
 };

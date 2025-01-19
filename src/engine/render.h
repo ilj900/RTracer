@@ -22,6 +22,7 @@
 #include "tasks/task_material_sort_sort_materials.h"
 #include "tasks/task_compute_shading_data.h"
 #include "tasks/task_sample_ibl.h"
+#include "tasks/task_sample_directional_light.h"
 #include "tasks/task_shade.h"
 #include "tasks/task_miss.h"
 #include "tasks/task_aov_pass.h"
@@ -180,6 +181,9 @@ public:
     ECS::FEntity CreateInstance(ECS::FEntity BaseModel, const FVector3& Position, const FVector3& Direction = {0, 0, 1}, const FVector3& Up = {0, 1 ,0}, const FVector3& Scale = {1, 1 ,1});
 	void SetInstancePosition(ECS::FEntity Instance, const FVector3& Position);
 	FVector3 GetInstancePosition(ECS::FEntity Instance);
+
+	/// Lights
+	ECS::FEntity CreateDirectionalLight(const FVector3& Direction, const FVector3& Color, float Intensity);
 	ECS::FEntity CreatePointLight(const FVector3& Position);
 	void SetLightPosition(ECS::FEntity Light, const FVector3& Position);
 	FVector3 GetLightPosition(ECS::FEntity Light);
@@ -207,6 +211,7 @@ public:
 	std::shared_ptr<FClearBufferTask> ClearWorldSpacePositionAOVBuffer = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearTransformIndexBuffer = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearSampledIBLBuffer = nullptr;
+	std::shared_ptr<FClearBufferTask> ClearSampledDirectionalLightsBuffer = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearDebugLayerBuffer = nullptr;
     std::shared_ptr<FRaytraceTask> RayTraceTask = nullptr;
     std::shared_ptr<FClearBufferTask> ResetMaterialsCountPerChunkTask = nullptr;
@@ -219,6 +224,7 @@ public:
     std::shared_ptr<FSortMaterialsTask> SortMaterialsTask = nullptr;
 	std::shared_ptr<FComputeShadingDataTask> ComputeShadingData = nullptr;
 	std::shared_ptr<FSampleIBLTask> SampleIBLTask = nullptr;
+	std::shared_ptr<FSampleDirectionalLightTask> SampleDirectionalLightTask = nullptr;
     std::shared_ptr<FShadeTask> ShadeTask = nullptr;
     std::shared_ptr<FMissTask> MissTask = nullptr;
 	std::shared_ptr<FAOVPassTask> AOVPassTask = nullptr;

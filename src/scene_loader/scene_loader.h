@@ -8,6 +8,7 @@
 #define SCENE_THREE_SPHERES "Three Spheres"
 #define SCENE_CORNELL_BOX_ANIMATED "Cornell Box Animated"
 #define SCENE_CORNELL_BOX "Cornell Box"
+#define SCENE_CORNELL_BOX_2 "Cornell Box 2"
 #define SCENE_STANFORD_DRAGON "Stanford Dragon"
 #define SCENE_FLOATING_SPHERES "Floating spheres"
 #define SCENE_COORDINATE_SYSTEM_REMINDER "Coordinate system reminder"

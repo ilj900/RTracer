@@ -32,6 +32,11 @@ layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_IBL_SAMPLING_R
     vec4 SampledIBLBuffer[];
 };
 
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_DIRECTIONAL_LIGHT_SAMPLING_RESULT_INDEX) buffer SampledDirectionalLightsBufferObject
+{
+    vec4 SampledDirectionalLightsBuffer[];
+};
+
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_MATERIAL_INDEX_MAP) buffer MaterialIndexBufferObject
 {
     uint MaterialsIndexMap[];
@@ -138,6 +143,7 @@ void main()
     vec2 TextureCoords = UVAOVData[NewPixelIndex];
     vec3 PointOfIntersectionInWorldSpace = WorldSpacePositionAOVData[NewPixelIndex].xyz;
     vec4 IBLSamplingResult = SampledIBLBuffer[NewPixelIndex];
+    vec4 DirectionaLightSamplingResult = SampledDirectionalLightsBuffer[NewPixelIndex];
 
     const bool bFrontFacing = NormalInWorldSpace.w == 1.;
 
@@ -165,7 +171,8 @@ void main()
 
     if ((RayData.RayFlags & TRANSMISSION_LAYER) != TRANSMISSION_LAYER)
     {
-        SamplingResult = CumulativeMaterialColor * IBLSamplingResult.xyz * abs(IBLSamplingResult.w);
+        vec3 TotalIncomingLight = IBLSamplingResult.xyz * abs(IBLSamplingResult.w) + DirectionaLightSamplingResult.xyz * DirectionaLightSamplingResult.w;
+        SamplingResult = CumulativeMaterialColor * TotalIncomingLight;
     }
     else
     {

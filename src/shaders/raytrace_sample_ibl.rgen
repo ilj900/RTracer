@@ -13,7 +13,7 @@ bool b = false;
 #include "common_structures.h"
 #include "random.h"
 
-layout (location = 0) rayPayloadEXT FIBLHitPayload IBLHitPayload;
+layout (location = 0) rayPayloadEXT FLightHitPayload LightHitPayload;
 
 layout (set = RAYTRACE_SAMPLE_IBL_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_IBL_TLAS_INDEX) uniform accelerationStructureEXT TLAS;
 
@@ -117,7 +117,7 @@ void main()
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
 
     /// And if we didn't hit any geometry, then we sample the IBL
-    if (IBLHitPayload.PayloadFlags == 0)
+    if (LightHitPayload.PayloadFlags == 0)
     {
         float Weight = IBLWeightsBuffer[TexelIndex];
         /// In "w" component we store cosine of the angle between the normal and sampled direction
