@@ -3,7 +3,7 @@
 
 uint SelectLayer(FDeviceMaterial Material, float MaterialSample)
 {
-	float TotalWeight = Material.BaseWeight + Material.SpecularWeight + Material.TransmissionWeight + Material.SubsurfaceWeight + Material.SheenWeight + Material.CoatWeight;
+	float TotalWeight = Material.BaseWeight + Material.SpecularWeight + Material.TransmissionWeight + Material.SubsurfaceWeight + Material.SheenWeight + Material.CoatWeight  + Material.EmissionWeight;
 	float Weight = 0;
 	MaterialSample *= TotalWeight;
 
@@ -27,7 +27,11 @@ uint SelectLayer(FDeviceMaterial Material, float MaterialSample)
 	if (MaterialSample <= Weight)
 		return SHEEN_LAYER;
 
-	return COAT_LAYER;
+	Weight += Material.CoatWeight;
+	if (MaterialSample <= Weight)
+		return COAT_LAYER;
+
+	return EMISSION_LAYER;
 }
 
 vec3 Transform(vec3 NormalInWorldSpace, vec3 VectorInLocalSpace)
@@ -112,6 +116,9 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 		break;
 	case COAT_LAYER:
 		Color = Material.CoatColor;
+		break;
+	case EMISSION_LAYER:
+		Color = Material.EmissionColor;
 		break;
 	}
 

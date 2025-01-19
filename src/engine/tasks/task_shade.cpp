@@ -6,7 +6,6 @@
 
 #include "components/material_component.h"
 #include "systems/material_system.h"
-#include "systems/light_system.h"
 
 #include "vk_shader_compiler.h"
 

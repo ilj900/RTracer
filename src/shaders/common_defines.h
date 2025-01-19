@@ -28,6 +28,7 @@
 #define SUBSURFACE_LAYER														1u << 4
 #define SHEEN_LAYER 															1u << 5
 #define COAT_LAYER 																1u << 6
+#define EMISSION_LAYER															1u << 7
 
 #define LIGHT_TYPE_NONE 														0u
 #define LIGHT_TYPE_POINT_LIGHT 													1u

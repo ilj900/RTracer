@@ -18,11 +18,13 @@ set(ECS_INCLUDE
 
         systems/acceleration_structure_system.h
         systems/camera_system.h
+        systems/directional_light_system.h
         systems/gpu_bufferable_system.h
-        systems/light_system.h
         systems/material_system.h
         systems/mesh_system.h
+        systems/point_light_system.h
         systems/renderable_system.h
+        systems/spot_light_system.h
         systems/texture_system.h
         systems/transform_system.h)
 
@@ -31,11 +33,13 @@ set(ECS_SOURCE
 
         systems/acceleration_structure_system.cpp
         systems/camera_system.cpp
+        systems/directional_light_system.cpp
         systems/gpu_bufferable_system.cpp
-        systems/light_system.cpp
         systems/material_system.cpp
         systems/mesh_system.cpp
+        systems/point_light_system.cpp
         systems/renderable_system.cpp
+        systems/spot_light_system.cpp
         systems/texture_system.cpp
         systems/transform_system.cpp
         )

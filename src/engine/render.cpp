@@ -5,7 +5,9 @@
 #include "transform_system.h"
 #include "renderable_system.h"
 #include "camera_system.h"
-#include "light_system.h"
+#include "point_light_system.h"
+#include "directional_light_system.h"
+#include "spot_light_system.h"
 #include "texture_system.h"
 
 #include "acceleration_structure_component.h"
@@ -41,10 +43,12 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FDeviceMeshComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FDeviceRenderableComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FDeviceTransformComponent>();
-    COORDINATOR().RegisterComponent<ECS::COMPONENTS::FLightComponent>();
+	COORDINATOR().RegisterComponent<ECS::COMPONENTS::FDirectionalLightComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FMaterialComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FMeshComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FMeshInstanceComponent>();
+    COORDINATOR().RegisterComponent<ECS::COMPONENTS::FPointLightComponent>();
+	COORDINATOR().RegisterComponent<ECS::COMPONENTS::FSpotLightComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FTransformComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FTextureComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FFramebufferComponent>();
@@ -55,7 +59,9 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     auto RenderableSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FRenderableSystem>();
     auto MaterialSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FMaterialSystem>();
     auto MeshSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FMeshSystem>();
-    auto LightSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FLightSystem>();
+    auto PointLightSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FPointLightSystem>();
+	auto DirectionalLightSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FDirectionalLightSystem>();
+	auto SpotLightSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FSpotLightSystem>();
     auto AccelerationSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FAccelerationStructureSystem>();
     auto TextureSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FTextureSystem>();
 
@@ -87,10 +93,20 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     MeshSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FAccelerationStructureComponent>());
     COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FMeshSystem>(MeshSignature);
 
-    /// Register Light system signature
-    ECS::FSignature LightSignature;
-    LightSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FLightComponent>());
-    COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FLightSystem>(LightSignature);
+    /// Register Point Light system signature
+    ECS::FSignature PointLightSignature;
+	PointLightSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FPointLightComponent>());
+    COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FPointLightSystem>(PointLightSignature);
+
+	/// Register Point Light system signature
+	ECS::FSignature DirectionalLightSignature;
+	DirectionalLightSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FDirectionalLightComponent>());
+	COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FDirectionalLightSystem>(DirectionalLightSignature);
+
+	/// Register Point Light system signature
+	ECS::FSignature SpotLightSignature;
+	SpotLightSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FSpotLightComponent>());
+	COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FSpotLightSystem>(SpotLightSignature);
 
     /// Register Acceleration structure system signature
     ECS::FSignature AccelerationStructureSignature;
@@ -105,7 +121,9 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     CAMERA_SYSTEM()->Init(MaxFramesInFlight);
     RENDERABLE_SYSTEM()->Init(MaxFramesInFlight);
     MESH_SYSTEM()->Init();
-    LIGHT_SYSTEM()->Init(MaxFramesInFlight);
+	POINT_LIGHT_SYSTEM()->Init(MaxFramesInFlight);
+	DIRECTIONAL_LIGHT_SYSTEM()->Init(MaxFramesInFlight);
+    SPOT_LIGHT_SYSTEM()->Init(MaxFramesInFlight);
     TRANSFORM_SYSTEM()->Init(MaxFramesInFlight);
     ACCELERATION_STRUCTURE_SYSTEM()->Init(MaxFramesInFlight);
 
@@ -544,7 +562,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 	SynchronizationPoint = PassthroughTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
-	if (Counter == 4096)
+	if (Counter == 512)
 	{
 		WaitIdle();
 		PrintScreenPng("Estimated");
@@ -578,7 +596,9 @@ int FRender::Update()
 	bAnyUpdate |= CAMERA_SYSTEM()->Update();
 	bAnyUpdate |= TRANSFORM_SYSTEM()->Update();
 	bAnyUpdate |= RENDERABLE_SYSTEM()->Update();
-	bAnyUpdate |= LIGHT_SYSTEM()->Update();
+	bAnyUpdate |= POINT_LIGHT_SYSTEM()->Update();
+	bAnyUpdate |= DIRECTIONAL_LIGHT_SYSTEM()->Update();
+	bAnyUpdate |= SPOT_LIGHT_SYSTEM()->Update();
 	bAnyUpdate |= ACCELERATION_STRUCTURE_SYSTEM()->Update();
 
 	Counter = bAnyUpdate ? 0 : Counter;
@@ -1274,23 +1294,23 @@ FVector3 FRender::GetInstancePosition(ECS::FEntity Instance)
 	return TRANSFORM_SYSTEM()->GetComponent<ECS::COMPONENTS::FTransformComponent>(Instance).Position;
 }
 
-ECS::FEntity FRender::CreateLight(const FVector3& Position)
+ECS::FEntity FRender::CreatePointLight(const FVector3& Position)
 {
     auto Light = COORDINATOR().CreateEntity();
-    COORDINATOR().AddComponent<ECS::COMPONENTS::FLightComponent>(Light, {});
-    LIGHT_SYSTEM()->SetLightPosition(Light, Position.X, Position.Y, Position.Z);
+    COORDINATOR().AddComponent<ECS::COMPONENTS::FPointLightComponent>(Light, {});
+	POINT_LIGHT_SYSTEM()->SetLightPosition(Light, Position.X, Position.Y, Position.Z);
 
     return Light;
 }
 
 void FRender::SetLightPosition(ECS::FEntity Light, const FVector3& Position)
 {
-	LIGHT_SYSTEM()->SetLightPosition(Light, Position);
+	POINT_LIGHT_SYSTEM()->SetLightPosition(Light, Position);
 }
 
 FVector3 FRender::GetLightPosition(ECS::FEntity Light)
 {
-	return COORDINATOR().GetComponent<ECS::COMPONENTS::FLightComponent>(Light).Position;
+	return COORDINATOR().GetComponent<ECS::COMPONENTS::FPointLightComponent>(Light).Position;
 }
 
 ECS::FEntity FRender::CreateEmptyModel()

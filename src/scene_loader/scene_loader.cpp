@@ -25,7 +25,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 			}
 		}
 
-		Lights.emplace_back(Render->CreateLight({5, 5, 5}));
+		Lights.emplace_back(Render->CreatePointLight({5, 5, 5}));
 
 		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
 
@@ -134,7 +134,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		Render->ShapeSetMaterial(Sphere3, PlasticMaterial);
 		Render->ShapeSetMaterial(Instances.back(), PlasticMaterial);
 
-		auto Light = Render->CreateLight({0, 1.95, 0});
+		auto Light = Render->CreatePointLight({0, 1.95, 0});
 
 		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
 

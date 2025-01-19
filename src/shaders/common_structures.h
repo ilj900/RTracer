@@ -43,10 +43,13 @@ struct FDeviceCamera
 {
     FVector3 Origin;
     float FocalDistance;
+
 	FVector3 Direction;
 	float SensorSizeX;
+
 	FVector3 Right;
 	float SensorSizeY;
+
 	FVector3 Up;
 	float Dummy;
 };
@@ -57,21 +60,37 @@ struct FDeviceTransform
 	FMatrix4 InverseModelMatrix;
 };
 
-struct FLight
+struct FPointLight
 {
-    FVector3 Position;
-    float Intensity;
+	FVector3 Position;
+	float Intensity;
 
-    FVector3 Color;
-    uint32_t Type;
+	FVector3 Color;
+	float Dummy;
+};
 
-    FVector3 Direction;
-    float OuterAngle;
+struct FDirectionalLight
+{
+	FVector3 Position;
+	float Intensity;
 
-    float InnerAngle;
-    float dummy_1;
-    float dummy_2;
-    float dummy_3;
+	FVector3 Color;
+	float Dummy1;
+
+	FVector3 Direction;
+	float Dummy2;
+};
+
+struct FSpotLight
+{
+	FVector3 Position;
+	float Intensity;
+
+	FVector3 Color;
+	float InnerAngle;
+
+	FVector3 Direction;
+	float OuterAngle;
 };
 
 struct FDeviceMaterial
