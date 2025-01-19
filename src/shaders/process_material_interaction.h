@@ -67,28 +67,21 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 		break;
 	case TRANSMISSION_LAYER:
 		Color = Material.TransmissionColor;
-		float EtaRatio = 0;
+		float IOR1 = bFrontFacing ? RayData.Eta : Material.SpecularIOR;
+		float IOR2 = bFrontFacing ? Material.SpecularIOR : 1;
+		float EtaRatio = IOR1 / IOR2;
 
-		float R0 = (RayData.Eta - Material.SpecularIOR) / (RayData.Eta + Material.SpecularIOR);
-		R0 = R0 * R0;
+		float R0 = (IOR1 - IOR2) / (IOR1 + IOR2);
+		R0 *= R0;
 		/// NDotI also equals to cos(angle)
 		/// Ray's direction is inverted cause it's guaranteed to face normal.
 		float NDotI = dot(NormalInWorldSpace, RayData.Direction.xyz);
 
 		float RTheta = R0 + (1. - R0) * pow(1. - abs(NDotI), 5.f);
 
-		if (bFrontFacing)
-		{
-			EtaRatio = RayData.Eta / Material.SpecularIOR;
-		}
-		else
-		{
-			/// We assume that when ray leaves some medium, it always leaves into the air, thus IOR == 1.
-			EtaRatio = RayData.Eta;
-		}
-
 		/// Decide on whether the ray is reflected or refracted
-		if (RandomFloat(SamplingState) < RTheta)
+		float RF = RandomFloat(SamplingState);
+		if (RF < RTheta)
 		{
 			RayData.Direction.xyz = reflect(RayData.Direction.xyz, NormalInWorldSpace);
 			RayType = SPECULAR_LAYER;

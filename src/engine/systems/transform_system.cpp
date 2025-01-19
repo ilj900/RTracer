@@ -24,7 +24,7 @@ namespace ECS
                 {
                     auto& DeviceTransformComponent = GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
                     DeviceTransformComponent.ModelMatrix = GetModelMatrix(Entity);
-					DeviceTransformComponent.InverseModelMatrix = DeviceTransformComponent.ModelMatrix.GetInverse().Transpose();
+					DeviceTransformComponent.InverseModelMatrix = GetModelMatrixNoScale(Entity).GetInverse().Transpose();
                 }
             }
 
@@ -44,7 +44,7 @@ namespace ECS
             {
                 auto& DeviceTransformComponent = GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(Entity);
                 DeviceTransformComponent.ModelMatrix = GetModelMatrix(Entity);
-				DeviceTransformComponent.InverseModelMatrix = DeviceTransformComponent.ModelMatrix.GetInverse().Transpose();
+				DeviceTransformComponent.InverseModelMatrix = GetModelMatrixNoScale(Entity).GetInverse().Transpose();
             }
 
 			if (bAnyUpdate)
@@ -134,5 +134,11 @@ namespace ECS
             auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
             return Transform(TransformComponent.Position, TransformComponent.Direction, TransformComponent.Up, TransformComponent.Scale);
         }
+
+		FMatrix4 FTransformSystem::GetModelMatrixNoScale(FEntity Entity)
+		{
+			auto& TransformComponent = GetComponent<ECS::COMPONENTS::FTransformComponent>(Entity);
+			return Transform(TransformComponent.Position, TransformComponent.Direction, TransformComponent.Up, {1, 1, 1});
+		}
     }
 }
