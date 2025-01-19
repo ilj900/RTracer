@@ -36,15 +36,12 @@ FSampleDirectionalLightTask::FSampleDirectionalLightTask(uint32_t WidthIn, uint3
 	VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_RAYGEN_BIT_KHR, 0, sizeof(FViewportResolutionPushConstants)};
     DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
-	Sampler = VK_CONTEXT()->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT, VK_FILTER_NEAREST);
-
     PipelineStageFlags = VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
 }
 
 FSampleDirectionalLightTask::~FSampleDirectionalLightTask()
 {
-	vkDestroySampler(LogicalDevice, Sampler, nullptr);
     GetResourceAllocator()->DestroyBuffer(SBTBuffer);
 };
 

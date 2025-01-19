@@ -5,7 +5,7 @@
 #extension GL_EXT_scalar_block_layout : enable
 #extension GL_EXT_buffer_reference2 : require
 
-//#define DEBUG_PRINTF
+#define DEBUG_PRINTF
 #ifdef DEBUG_PRINTF
 #extension GL_EXT_debug_printf : enable
 bool b = false;
@@ -171,7 +171,18 @@ void main()
 
     if ((RayData.RayFlags & TRANSMISSION_LAYER) != TRANSMISSION_LAYER)
     {
-        vec3 TotalIncomingLight = IBLSamplingResult.xyz * abs(IBLSamplingResult.w) + DirectionaLightSamplingResult.xyz * DirectionaLightSamplingResult.w;
+        vec3 TotalIncomingLight = vec3(0);
+
+        if (IBLSamplingResult.w > 0)
+        {
+            TotalIncomingLight += IBLSamplingResult.xyz * IBLSamplingResult.w;
+        }
+
+        if (DirectionaLightSamplingResult.w > 0)
+        {
+            TotalIncomingLight += DirectionaLightSamplingResult.xyz * DirectionaLightSamplingResult.w;
+        }
+
         SamplingResult = CumulativeMaterialColor * TotalIncomingLight;
     }
     else
