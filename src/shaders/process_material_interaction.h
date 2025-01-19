@@ -98,6 +98,7 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 			else
 			{
 				RayData.Direction.xyz = EtaRatio * RayData.Direction.xyz - (EtaRatio * NDotI + sqrt(k)) * NormalInWorldSpace;
+				Color *= EtaRatio * EtaRatio;
 			}
 		}
 

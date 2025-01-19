@@ -153,7 +153,10 @@ void main()
 
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, NewPixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
     vec3 SamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace.xyz, SamplingState, bFrontFacing);
-    SamplingResult *= abs(NDotI);
+    if ((RayData.RayFlags & TRANSMISSION_LAYER) != TRANSMISSION_LAYER)
+    {
+        SamplingResult *= abs(NDotI);
+    }
     RayData.Origin.xyz = PointOfIntersectionInWorldSpace;
 
     vec3 CumulativeMaterialColor = CumulativeMaterialColorBuffer[NewPixelIndex].xyz;
