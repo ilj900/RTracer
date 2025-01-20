@@ -257,61 +257,71 @@ std::pair<std::vector<FMargin>, std::vector<float>> GenerateImportanceMap(float*
 		TotalLuminosity += Pixel;
 	}
 
-	/// Compute probability for each bucket
-	std::vector<double> LuminosityPDF(PixelsCount);
-
-	for (int i = 0; i < PixelsCount; ++i)
+	if (TotalLuminosity > 0.)
 	{
-		LuminosityPDF[i] = EachPixelLuminosity[i] / TotalLuminosity;
-	}
 
-	/// Calculate CDF
-	std::vector<double> LuminosityCDF(PixelsCount + 1);
-	LuminosityCDF[0] = 0;
+		/// Compute probability for each bucket
+		std::vector<double> LuminosityPDF(PixelsCount);
 
-	for (int i = 1; i < LuminosityCDF.size(); ++i)
-	{
-		LuminosityCDF[i] = LuminosityCDF[i - 1] + LuminosityPDF[i - 1];
-	}
-	LuminosityCDF.back() = 1.;
-
-	/// Map of margins that later will be use as a texture
-	std::vector<FMargin> IBLSamplingMap(Width * Height);
-	double Stride = 1. / double(Width * Height);
-	uint32_t Slow = 0;
-	uint32_t Fast = 0;
-
-	for (int i = 0; i < IBLSamplingMap.size(); ++i)
-	{
-		/// We get the left and right values of a uniform distribution margins
-		double Left = i * Stride;
-		double Right = (i + 1) * Stride;
-
-		/// Iterate Slow until it enters the margin
-		while (Slow < PixelsCount && LuminosityCDF[Slow] <= Left)
+		for (int i = 0; i < PixelsCount; ++i)
 		{
-			Slow++;
+			LuminosityPDF[i] = EachPixelLuminosity[i] / TotalLuminosity;
 		}
 
-		/// Iterate Fast until it leaves the margin
-		while (Fast < PixelsCount && LuminosityCDF[Fast] <= Right)
+		/// Calculate CDF
+		std::vector<double> LuminosityCDF(PixelsCount + 1);
+		LuminosityCDF[0] = 0;
+
+		for (int i = 1; i < LuminosityCDF.size(); ++i)
 		{
-			Fast++;
+			LuminosityCDF[i] = LuminosityCDF[i - 1] + LuminosityPDF[i - 1];
+		}
+		LuminosityCDF.back() = 1.;
+
+		/// Map of margins that later will be use as a texture
+		std::vector<FMargin> IBLSamplingMap(Width * Height);
+		double				 Stride = 1. / double(Width * Height);
+		uint32_t			 Slow = 0;
+		uint32_t			 Fast = 0;
+
+		for (int i = 0; i < IBLSamplingMap.size(); ++i)
+		{
+			/// We get the left and right values of a uniform distribution margins
+			double Left = i * Stride;
+			double Right = (i + 1) * Stride;
+
+			/// Iterate Slow until it enters the margin
+			while (Slow < PixelsCount && LuminosityCDF[Slow] <= Left)
+			{
+				Slow++;
+			}
+
+			/// Iterate Fast until it leaves the margin
+			while (Fast < PixelsCount && LuminosityCDF[Fast] <= Right)
+			{
+				Fast++;
+			}
+
+			/// Record the margin. Slow - 1 is the index of texel that "enters" the margin and Fast - 1 is the index of pixel that leaves the margin
+			IBLSamplingMap[i] = { Slow - 1, Fast - 1 };
 		}
 
-		/// Record the margin. Slow - 1 is the index of texel that "enters" the margin and Fast - 1 is the index of pixel that leaves the margin
-		IBLSamplingMap[i] = {Slow - 1, Fast - 1};
+		std::vector<float> InversePDFWeights(PixelsCount);
+		const double	   UniformPDF = 1.f / static_cast<float>(PixelsCount);
+
+		for (int i = 0; i < PixelsCount; ++i)
+		{
+			InversePDFWeights[i] = static_cast<float>(UniformPDF / LuminosityPDF[i]);
+		}
+
+		return {IBLSamplingMap, InversePDFWeights};
 	}
-
-	std::vector<float> InversePDFWeights(PixelsCount);
-	const double UniformPDF = 1.f / static_cast<float>(PixelsCount);
-
-	for (int i = 0; i < PixelsCount; ++i)
+	else
 	{
-		InversePDFWeights[i] = static_cast<float>(UniformPDF / LuminosityPDF[i]);
+		std::vector<FMargin> IBLSamplingMap(1, {0, 0});
+		std::vector<float> InversePDFWeights(1, 1.);
+		return {IBLSamplingMap, InversePDFWeights};
 	}
-
-	return {IBLSamplingMap, InversePDFWeights};
 }
 
 std::string ReadFileToString(const std::string& FileName)

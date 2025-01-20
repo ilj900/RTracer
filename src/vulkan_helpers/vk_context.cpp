@@ -1106,17 +1106,17 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
 	}
 	else
 	{
-		IBLImportanceBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FMargin) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "IBLImportanceBuffer");
+		IBLImportanceBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FMargin) * ImportanceBuffer.size(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "IBLImportanceBuffer");
 		RESOURCE_ALLOCATOR()->RegisterBuffer(IBLImportanceBuffer, "IBLImportanceBuffer");
 	}
 
-	if (IBLImportanceBuffer.BufferSize != Width * Height * sizeof(FMargin))
+	if (IBLImportanceBuffer.BufferSize != ImportanceBuffer.size() * sizeof(FMargin))
 	{
 		RESOURCE_ALLOCATOR()->DestroyBuffer(IBLImportanceBuffer);
-		IBLImportanceBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FMargin) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "IBLImportanceBuffer");
+		IBLImportanceBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FMargin) * ImportanceBuffer.size(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "IBLImportanceBuffer");
 	}
 
-	RESOURCE_ALLOCATOR()->LoadDataToBuffer(IBLImportanceBuffer, {sizeof(FMargin) * Width * Height}, {0}, {ImportanceBuffer.data()});
+	RESOURCE_ALLOCATOR()->LoadDataToBuffer(IBLImportanceBuffer, {sizeof(FMargin) * ImportanceBuffer.size()}, {0}, {ImportanceBuffer.data()});
 
 	FBuffer InversePDFWeightBuffer;
 
@@ -1126,19 +1126,19 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
 	}
 	else
 	{
-		InversePDFWeightBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(float) * Width * Height,
+		InversePDFWeightBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(float) * InversePDFWeights.size(),
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "InversePDFWeightBuffer");
 		RESOURCE_ALLOCATOR()->RegisterBuffer(InversePDFWeightBuffer, "InversePDFWeightBuffer");
 	}
 
-	if (InversePDFWeightBuffer.BufferSize != Width * Height * sizeof(float))
+	if (InversePDFWeightBuffer.BufferSize != InversePDFWeights.size() * sizeof(float))
 	{
 		RESOURCE_ALLOCATOR()->DestroyBuffer(InversePDFWeightBuffer);
-		InversePDFWeightBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(float) * Width * Height,
+		InversePDFWeightBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(float) * InversePDFWeights.size(),
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "InversePDFWeightBuffer");
 	}
 
-	RESOURCE_ALLOCATOR()->LoadDataToBuffer(InversePDFWeightBuffer, {sizeof(float) * Width * Height}, {0}, {InversePDFWeights.data()});
+	RESOURCE_ALLOCATOR()->LoadDataToBuffer(InversePDFWeightBuffer, {sizeof(float) * InversePDFWeights.size()}, {0}, {InversePDFWeights.data()});
 
     return Image;
 }
