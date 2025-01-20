@@ -121,7 +121,7 @@ void main()
     {
         float Weight = IBLWeightsBuffer[TexelIndex];
         /// In "w" component we store cosine of the angle between the normal and sampled direction
-        SampledIBLBuffer[NewPixelIndex] = vec4(texture(IBLTextureSampler, UVCoordinates).xyz * Weight, dot(FragmentNormal.xyz, RayData.Direction.xyz));
+        SampledIBLBuffer[NewPixelIndex] = vec4(texture(IBLTextureSampler, UVCoordinates).xyz * Weight, clamp(dot(FragmentNormal.xyz, RayData.Direction.xyz), 0., 1.));
     }
     else
     {
