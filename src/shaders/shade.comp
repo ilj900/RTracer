@@ -173,15 +173,9 @@ void main()
     {
         vec3 TotalIncomingLight = vec3(0);
 
-        if (IBLSamplingResult.w > 0)
-        {
-            TotalIncomingLight += IBLSamplingResult.xyz * IBLSamplingResult.w;
-        }
+        TotalIncomingLight += IBLSamplingResult.xyz * IBLSamplingResult.w;
 
-        if (DirectionaLightSamplingResult.w > 0)
-        {
-            TotalIncomingLight += DirectionaLightSamplingResult.xyz * DirectionaLightSamplingResult.w;
-        }
+        TotalIncomingLight += DirectionaLightSamplingResult.xyz * DirectionaLightSamplingResult.w;
 
         SamplingResult = CumulativeMaterialColor * TotalIncomingLight;
     }

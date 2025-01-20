@@ -1,6 +1,8 @@
+#include <algorithm>
+#include <iostream>
+
 #include "vk_utils.h"
 
-#include <iostream>
 #ifndef NDEBUG
 #include <unordered_set>
 template <typename T>
@@ -228,6 +230,88 @@ std::vector<const char*> FVulkanContextOptions::GetDeviceExtensionsList()
 void FVulkanContextOptions::BuildDevicePNextChain(BaseVulkanStructure* CreateInfo)
 {
     DeviceOptions.ExtensionVector.BuildPNextChain(CreateInfo);
+}
+
+std::pair<std::vector<FMargin>, std::vector<float>> GenerateImportanceMap(float* Data, uint32_t Width, uint32_t Height)
+{
+	/// Initialize some variables
+	int PixelsCount = Width * Height;
+	/// We have to use double, cause the precision of float might not be enough for IBLs with the sun
+	std::vector<double> EachPixelLuminosity(PixelsCount);
+	double TotalLuminosity = 0.f;
+
+	/// Calculate luminosity of each pixel
+	/// Do we need a luminosity or can we just use a raw value?
+	for (int i = 0; i < Width * Height; ++i)
+	{
+		double Luminosity = 0.2126 * Data[i * 4] + 0.7152 * Data[i * 4 + 1] + 0.0722 * Data[i * 4 + 2];
+		EachPixelLuminosity[i] = Luminosity;
+	}
+
+	/// Calculate total luminosity
+	auto Copy = EachPixelLuminosity;
+	std::sort(Copy.begin(), Copy.end());
+
+	for (auto Pixel : Copy)
+	{
+		TotalLuminosity += Pixel;
+	}
+
+	/// Compute probability for each bucket
+	std::vector<double> LuminosityPDF(PixelsCount);
+
+	for (int i = 0; i < PixelsCount; ++i)
+	{
+		LuminosityPDF[i] = EachPixelLuminosity[i] / TotalLuminosity;
+	}
+
+	/// Calculate CDF
+	std::vector<double> LuminosityCDF(PixelsCount + 1);
+	LuminosityCDF[0] = 0;
+
+	for (int i = 1; i < LuminosityCDF.size(); ++i)
+	{
+		LuminosityCDF[i] = LuminosityCDF[i - 1] + LuminosityPDF[i - 1];
+	}
+	LuminosityCDF.back() = 1.;
+
+	/// Map of margins that later will be use as a texture
+	std::vector<FMargin> IBLSamplingMap(Width * Height);
+	double Stride = 1. / double(Width * Height);
+	uint32_t Slow = 0;
+	uint32_t Fast = 0;
+
+	for (int i = 0; i < IBLSamplingMap.size(); ++i)
+	{
+		/// We get the left and right values of a uniform distribution margins
+		double Left = i * Stride;
+		double Right = (i + 1) * Stride;
+
+		/// Iterate Slow until it enters the margin
+		while (Slow < PixelsCount && LuminosityCDF[Slow] <= Left)
+		{
+			Slow++;
+		}
+
+		/// Iterate Fast until it leaves the margin
+		while (Fast < PixelsCount && LuminosityCDF[Fast] <= Right)
+		{
+			Fast++;
+		}
+
+		/// Record the margin. Slow - 1 is the index of texel that "enters" the margin and Fast - 1 is the index of pixel that leaves the margin
+		IBLSamplingMap[i] = {Slow - 1, Fast - 1};
+	}
+
+	std::vector<float> InversePDFWeights(PixelsCount);
+	const double UniformPDF = 1.f / static_cast<float>(PixelsCount);
+
+	for (int i = 0; i < PixelsCount; ++i)
+	{
+		InversePDFWeights[i] = static_cast<float>(UniformPDF / LuminosityPDF[i]);
+	}
+
+	return {IBLSamplingMap, InversePDFWeights};
 }
 
 std::string ReadFileToString(const std::string& FileName)

@@ -2,6 +2,8 @@
 
 #include "vulkan/vulkan.h"
 
+#include "maths.h"
+
 #include <chrono>
 #include <fstream>
 #include <set>
@@ -139,6 +141,16 @@ struct FVulkanContextOptions
     FInstanceOptions InstanceOptions;
     FDeviceOptions DeviceOptions;
 };
+
+struct FMargin
+{
+	FMargin() {};
+	FMargin(uint32_t L, uint32_t R) : Left(L), Right(R) {};
+	uint32_t Left;
+	uint32_t Right;
+};
+
+std::pair<std::vector<FMargin>, std::vector<float>> GenerateImportanceMap(float* Data, uint32_t Width, uint32_t Height);
 
 std::string ReadFileToString(const std::string& FileName);
 
