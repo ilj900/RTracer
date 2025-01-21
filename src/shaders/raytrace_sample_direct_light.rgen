@@ -84,7 +84,8 @@ void main()
     vec4 Normal = NormalAOVData[NewPixelIndex];
     Normal.xyz = Normal.w == 1 ? Normal.xyz : -Normal.xyz;
 
-    if(dot(Normal.xyz, DirectionalLight.Direction) > 0)
+    float NDotI = dot(Normal.xyz, -DirectionalLight.Direction);
+    if(NDotI <= 0)
     {
         SampledDirectionalLight[NewPixelIndex] = vec4(0);
         return;
@@ -101,7 +102,7 @@ void main()
     /// And if we didn't hit any geometry, then we store light data
     if (LightHitPayload.PayloadFlags == 0)
     {
-        SampledDirectionalLight[NewPixelIndex] = vec4(DirectionalLight.Color, DirectionalLight.Intensity);
+        SampledDirectionalLight[NewPixelIndex] = vec4(DirectionalLight.Color * DirectionalLight.Intensity, NDotI);
     }
     else
     {

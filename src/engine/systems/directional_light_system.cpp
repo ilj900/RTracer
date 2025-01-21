@@ -119,7 +119,7 @@ namespace ECS
             COORDINATOR().AddComponent<ECS::COMPONENTS::FDirectionalLightComponent>(Light, {});
 
             auto& LightComponent = COORDINATOR().GetComponent<COMPONENTS::FDirectionalLightComponent>(Light);
-            LightComponent.Direction = Direction;
+            LightComponent.Direction = Direction.GetNormalized();
             LightComponent.Color = Color;
             LightComponent.Intensity = Intensity;
             MarkDirty(Light);
