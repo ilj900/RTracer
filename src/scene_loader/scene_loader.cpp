@@ -25,7 +25,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 			}
 		}
 
-		Lights.emplace_back(Render->CreatePointLight({5, 5, 5}));
+		Lights.emplace_back(Render->CreatePointLight({5, 5, 5}, {1, 1, 1}, 1));
 
 		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
 
@@ -161,6 +161,31 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->SetIBL("../../../resources/hdr_black_image.exr");
 	}
+	else if (Name == SCENE_POINT_LIGHT)
+	{
+		auto Plane = Render->CreatePlane({16, 16});
+		auto Sphere = Render->CreateUVSphere(512, 256, 0.5f);
+
+		auto PlaneInstance = Render->CreateInstance(Plane, {0, -2, 0}, {0, -1, 0}, {0, 0, 1});
+		auto Sphere1 = Render->CreateInstance(Sphere, {0, -1.499, 1});
+		auto Sphere2 = Render->CreateInstance(Sphere, {1, -1.499, -1});
+		auto Sphere3 = Render->CreateInstance(Sphere, {-1, -1.499, -1});
+
+		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
+		auto GlassMaterial = Render->CreateRefractiveMaterial({1, 1, 1});
+		auto MetalMaterial = Render->CreateReflectiveMaterial({1, 0, 1});
+
+		Render->ShapeSetMaterial(PlaneInstance, WhiteMaterial);
+		Render->ShapeSetMaterial(Sphere1, GlassMaterial);
+		Render->ShapeSetMaterial(Sphere2, WhiteMaterial);
+		Render->ShapeSetMaterial(Sphere3, MetalMaterial);
+
+		auto Light1 = Render->CreatePointLight({3, 3, 0}, {1, 1, 1}, 1);
+		auto Light2 = Render->CreatePointLight({0, 9, -3}, {1, 1, 1}, 1);
+		auto Light3 = Render->CreatePointLight({-3, 3, 0}, {1, 1, 1}, 3);
+
+		Render->SetIBL("../../../resources/hdr_black_image.exr");
+	}
 	else if (Name == SCENE_CORNELL_BOX_ANIMATED)
 	{
 		auto Wall = Render->CreatePlane({4, 4});
@@ -194,7 +219,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		Render->ShapeSetMaterial(Sphere3, PlasticMaterial);
 		Render->ShapeSetMaterial(Instances.back(), PlasticMaterial);
 
-		auto Light = Render->CreatePointLight({0, 1.95, 0});
+		auto Light = Render->CreatePointLight({0, 1.95, 0}, {1, 1, 1}, 1);
 
 		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
 

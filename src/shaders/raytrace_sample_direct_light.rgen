@@ -76,6 +76,7 @@ void main()
 
     uint DirectionalLightsCount = UtilityDirectionalLight.ActiveLightsCount;
 
+    /// TODO: Use Bounce index also
     FSamplingState SamplingState = FSamplingState(RenderIteration, 0, 0, NewPixelIndex, SAMPLE_TYPE_LIGHT);
     /// Select a random directional light
     const uint LightIndex = uint(RandomFloat(SamplingState) * DirectionalLightsCount);

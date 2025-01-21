@@ -11,6 +11,7 @@
 #define SCENE_CORNELL_BOX_2 "Cornell Box 2"
 #define SCENE_STANFORD_DRAGON "Stanford Dragon"
 #define SCENE_DIRECTIONAL_LIGHT "Directional Light"
+#define SCENE_POINT_LIGHT "Point Light"
 #define SCENE_FLOATING_SPHERES "Floating spheres"
 #define SCENE_COORDINATE_SYSTEM_REMINDER "Coordinate system reminder"
 #define SCENE_VIKINGS_ROOM "Vikings room"

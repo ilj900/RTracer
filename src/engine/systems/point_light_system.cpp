@@ -7,6 +7,7 @@ namespace ECS
     {
         void FPointLightSystem::Init(uint32_t NumberOfSimultaneousSubmits)
         {
+			UtilityPointLight.ActiveLightsCount = 0;
             FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(ECS::COMPONENTS::FPointLightComponent) * MAX_POINT_LIGHTS,
                                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Point_Lights");
         }
@@ -14,6 +15,12 @@ namespace ECS
         bool FPointLightSystem::Update()
         {
 			bool bAnyUpdate = false;
+
+			if (UtilityPointLight.ActiveLightsCount != CurrentPointLightsCount)
+			{
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer("UtilityInfoPointLight", {sizeof(FUtilityPointLight)}, {0}, {&UtilityPointLight});
+				CurrentPointLightsCount = UtilityPointLight.ActiveLightsCount;
+			}
 
 			for (auto& Entry : EntitiesToUpdate)
 			{
@@ -31,6 +38,12 @@ namespace ECS
         bool FPointLightSystem::Update(int Index)
         {
 			bool bAnyUpdate = false;
+
+			if (UtilityPointLight.ActiveLightsCount != CurrentPointLightsCount)
+			{
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer("UtilityInfoPointLight", {sizeof(FUtilityPointLight)}, {0}, {&UtilityPointLight});
+				CurrentPointLightsCount = UtilityPointLight.ActiveLightsCount;
+			}
 
 			for (auto& Entry : EntitiesToUpdate)
 			{
@@ -91,6 +104,8 @@ namespace ECS
             LightComponent.Color = Color;
             LightComponent.Intensity = Intensity;
             MarkDirty(Light);
+
+			UtilityPointLight.ActiveLightsCount++;
 
             return Light;
         }

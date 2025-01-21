@@ -45,7 +45,7 @@ FApplication::~FApplication()
 int FApplication::Run()
 {
 	uint32_t ImageIndex = UINT32_MAX;
-	SceneLoader->LoadScene(SCENE_DIRECTIONAL_LIGHT);
+	SceneLoader->LoadScene(SCENE_POINT_LIGHT);
 	LoadCamera(Controller->Camera, "Blender");
 
 	FSynchronizationPoint RenderingFinished;

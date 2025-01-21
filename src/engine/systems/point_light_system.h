@@ -7,6 +7,8 @@
 
 #include "maths.h"
 
+#include "common_structures.h"
+
 namespace ECS
 {
     namespace SYSTEMS
@@ -26,6 +28,8 @@ namespace ECS
             FEntity CreatePointLight(const FVector3& Position, const FVector3& Color, float Intensity);
 
             const uint32_t MAX_POINT_LIGHTS = 512;
+			FUtilityPointLight UtilityPointLight;
+			uint32_t CurrentPointLightsCount = 0;
         };
     }
 }

@@ -4,35 +4,35 @@
 
 #include "common_structures.h"
 #include "transform_system.h"
-#include "directional_light_system.h"
+#include "point_light_system.h"
 #include "acceleration_structure_system.h"
 #include "vk_shader_compiler.h"
 
-#include "task_sample_directional_light.h"
+#include "task_sample_point_light.h"
 #include "texture_manager.h"
 
-FSampleDirectionalLightTask::FSampleDirectionalLightTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
+FSamplePointLightTask::FSamplePointLightTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice)
 {
-    Name = "Directional light sampling pipeline";
+    Name = "Point light sampling pipeline";
 
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
-    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_TLAS_INDEX,
+    DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_POINT_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_POINT_LIGHT_TLAS_INDEX,
 		{VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,  VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR});
-	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_DIRECTIONAL_LIGHTS_BUFFER_INDEX,
+	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_POINT_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_POINT_LIGHT_POINT_LIGHTS_BUFFER_INDEX,
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
-	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_UNIFORM_BUFFER_INDEX,
+	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_POINT_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_POINT_LIGHT_UNIFORM_BUFFER_INDEX,
 		{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
-	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_NORMAL_AOV_BUFFER_INDEX,
+	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_POINT_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_POINT_LIGHT_NORMAL_AOV_BUFFER_INDEX,
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
-	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_WORLD_SPACE_POSITION_AOV_BUFFER_INDEX,
+	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_POINT_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_POINT_LIGHT_WORLD_SPACE_POSITION_AOV_BUFFER_INDEX,
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
-	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_SAMPLED_LIGHT_BUFFER_INDEX,
+	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_POINT_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_POINT_LIGHT_SAMPLED_LIGHT_BUFFER_INDEX,
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
-	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_PIXEL_INDEX_BUFFER,
+	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_POINT_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_POINT_LIGHT_PIXEL_INDEX_BUFFER,
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
-	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_RENDER_ITERATION_BUFFER_INDEX,
+	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_SAMPLE_POINT_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_POINT_LIGHT_RENDER_ITERATION_BUFFER_INDEX,
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 
 	VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_RAYGEN_BIT_KHR, 0, sizeof(FViewportResolutionPushConstants)};
@@ -42,25 +42,25 @@ FSampleDirectionalLightTask::FSampleDirectionalLightTask(uint32_t WidthIn, uint3
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
 }
 
-FSampleDirectionalLightTask::~FSampleDirectionalLightTask()
+FSamplePointLightTask::~FSamplePointLightTask()
 {
     GetResourceAllocator()->DestroyBuffer(SBTBuffer);
 };
 
-void FSampleDirectionalLightTask::Init()
+void FSamplePointLightTask::Init()
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
-    auto RayGenerationShader = FShader("../../../src/shaders/raytrace_sample_direct_light.rgen");
-    auto RayClosestHitShader = FShader("../../../src/shaders/raytrace_sample_direct_light.rchit");
-    auto RayMissShader = FShader("../../../src/shaders/raytrace_sample_direct_light.rmiss");
+    auto RayGenerationShader = FShader("../../../src/shaders/raytrace_sample_point_light.rgen");
+    auto RayClosestHitShader = FShader("../../../src/shaders/raytrace_sample_point_light.rchit");
+    auto RayMissShader = FShader("../../../src/shaders/raytrace_sample_point_light.rmiss");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
 
     Pipeline = VK_CONTEXT()->CreateRayTracingPipeline(RayGenerationShader(), RayMissShader(), RayClosestHitShader(), PipelineLayout);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
-    DescriptorSetManager->ReserveDescriptorSet(Name, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, TotalSize);
+    DescriptorSetManager->ReserveDescriptorSet(Name, RAYTRACE_SAMPLE_POINT_LIGHT_LAYOUT_INDEX, TotalSize);
 
     DescriptorSetManager->ReserveDescriptorPool(Name);
 
@@ -97,7 +97,7 @@ void FSampleDirectionalLightTask::Init()
 
     VkDeviceSize SBTSize = RGenRegion.size + RMissRegion.size + RHitRegion.size;
     SBTBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(SBTSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
-                                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "V::Sample_Directional_Light_SBT_Buffer");
+                                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "V::Sample_Point_Light_SBT_Buffer");
 
     auto SBTBufferAddress = VK_CONTEXT()->GetBufferDeviceAddressInfo(SBTBuffer);
     RGenRegion.deviceAddress = SBTBufferAddress;
@@ -125,22 +125,22 @@ void FSampleDirectionalLightTask::Init()
     RESOURCE_ALLOCATOR()->Unmap(SBTBuffer);
 };
 
-void FSampleDirectionalLightTask::UpdateDescriptorSets()
+void FSamplePointLightTask::UpdateDescriptorSets()
 {
     for (size_t i = 0; i < TotalSize; ++i)
     {
-        VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_TLAS_INDEX, i, &ACCELERATION_STRUCTURE_SYSTEM()->TLAS.AccelerationStructure);
-		UpdateDescriptorSet(RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_DIRECTIONAL_LIGHTS_BUFFER_INDEX, i, DIRECTIONAL_LIGHT_SYSTEM()->DeviceBuffer);
-		UpdateDescriptorSet(RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_UNIFORM_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer("UtilityInfoDirectionalLight"));
-        UpdateDescriptorSet(RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_NORMAL_AOV_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer("NormalAOVBuffer"));
-		UpdateDescriptorSet(RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_WORLD_SPACE_POSITION_AOV_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer("WorldSpacePositionAOVBuffer"));
-        UpdateDescriptorSet(RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_SAMPLED_LIGHT_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer("SampledDirectionalLightBuffer"));
-		UpdateDescriptorSet(RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_PIXEL_INDEX_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("PixelIndexBuffer"));
-		UpdateDescriptorSet(RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_RENDER_ITERATION_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer("RenderIterationBuffer"));
+        VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, RAYTRACE_SAMPLE_POINT_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_POINT_LIGHT_TLAS_INDEX, i, &ACCELERATION_STRUCTURE_SYSTEM()->TLAS.AccelerationStructure);
+		UpdateDescriptorSet(RAYTRACE_SAMPLE_POINT_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_POINT_LIGHT_POINT_LIGHTS_BUFFER_INDEX, i, POINT_LIGHT_SYSTEM()->DeviceBuffer);
+		UpdateDescriptorSet(RAYTRACE_SAMPLE_POINT_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_POINT_LIGHT_UNIFORM_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer("UtilityInfoPointLight"));
+        UpdateDescriptorSet(RAYTRACE_SAMPLE_POINT_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_POINT_LIGHT_NORMAL_AOV_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer("NormalAOVBuffer"));
+		UpdateDescriptorSet(RAYTRACE_SAMPLE_POINT_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_POINT_LIGHT_WORLD_SPACE_POSITION_AOV_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer("WorldSpacePositionAOVBuffer"));
+        UpdateDescriptorSet(RAYTRACE_SAMPLE_POINT_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_POINT_LIGHT_SAMPLED_LIGHT_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer("SampledPointLightBuffer"));
+		UpdateDescriptorSet(RAYTRACE_SAMPLE_POINT_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_POINT_LIGHT_PIXEL_INDEX_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("PixelIndexBuffer"));
+		UpdateDescriptorSet(RAYTRACE_SAMPLE_POINT_LIGHT_LAYOUT_INDEX, RAYTRACE_SAMPLE_POINT_LIGHT_RENDER_ITERATION_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer("RenderIterationBuffer"));
     }
 };
 
-void FSampleDirectionalLightTask::RecordCommands()
+void FSamplePointLightTask::RecordCommands()
 {
     CommandBuffers.resize(TotalSize);
 	auto ActiveRayCountBufferDeviceAddress = VK_CONTEXT()->GetBufferDeviceAddressInfo(RESOURCE_ALLOCATOR()->GetBuffer("ActiveRayCountBuffer"));
@@ -153,7 +153,7 @@ void FSampleDirectionalLightTask::RecordCommands()
 			GPU_TIMER();
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, Pipeline);
-            auto RayTracingDescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, i);
+            auto RayTracingDescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, RAYTRACE_SAMPLE_POINT_LIGHT_LAYOUT_INDEX, i);
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &RayTracingDescriptorSet, 0, nullptr);
 
@@ -168,10 +168,10 @@ void FSampleDirectionalLightTask::RecordCommands()
     }
 };
 
-FSynchronizationPoint FSampleDirectionalLightTask::Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t X, uint32_t Y)
+FSynchronizationPoint FSamplePointLightTask::Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t X, uint32_t Y)
 {
-	/// If there are no directional light then just skip the task
-	if (DIRECTIONAL_LIGHT_SYSTEM()->UtilityDirectionalLight.ActiveLightsCount > 0)
+	/// If there are no point lights then just skip the task
+	if (POINT_LIGHT_SYSTEM()->UtilityPointLight.ActiveLightsCount > 0)
 	{
 		return FExecutableTask::Submit(PipelineStageFlagsIn, SynchronizationPoint, X, Y);
 	}
