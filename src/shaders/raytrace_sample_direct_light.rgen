@@ -22,6 +22,11 @@ layout (set = RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, binding = RAYTRACE
     FDirectionalLight DirectionalLightsBuffer[];
 };
 
+layout (set = RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_UNIFORM_BUFFER_INDEX) uniform UtilityUniformBufferObject
+{
+    FUtilityDirectionalLight UtilityDirectionalLight;
+};
+
 layout (set = RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_LAYOUT_INDEX, binding = RAYTRACE_SAMPLE_DIRECTIONAL_LIGHT_NORMAL_AOV_BUFFER_INDEX) buffer NormalAOVDataBufferObject
 {
     vec4 NormalAOVData[];
@@ -69,7 +74,7 @@ void main()
     }
 #endif
 
-    uint DirectionalLightsCount = 2;
+    uint DirectionalLightsCount = UtilityDirectionalLight.ActiveLightsCount;
 
     FSamplingState SamplingState = FSamplingState(RenderIteration, 0, 0, NewPixelIndex, SAMPLE_TYPE_LIGHT);
     /// Select a random directional light

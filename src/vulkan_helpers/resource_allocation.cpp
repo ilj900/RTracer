@@ -4,6 +4,7 @@
 #include "vk_debug.h"
 
 #include <stdexcept>
+#include <utility>
 
 FResourceAllocator* ResourceAllocator = nullptr;
 
@@ -233,6 +234,13 @@ FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDevi
     }
 
     return Buffer;
+}
+
+FBuffer FResourceAllocator::LoadDataToBuffer(const std::string& BufferName, std::vector<VkDeviceSize> SizesIn, std::vector<VkDeviceSize> OffsetsIn, std::vector<void*> DatasIn)
+{
+	auto Buffer = GetBuffer(BufferName);
+
+	return LoadDataToBuffer(Buffer, std::move(SizesIn), std::move(OffsetsIn), std::move(DatasIn));
 }
 
 void FResourceAllocator::LoadDataFromBuffer(FBuffer& Buffer, VkDeviceSize Size, VkDeviceSize Offset, void* Data)

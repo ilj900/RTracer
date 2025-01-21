@@ -81,6 +81,11 @@ struct FDirectionalLight
 	float Dummy2;
 };
 
+struct FUtilityDirectionalLight
+{
+	uint32_t ActiveLightsCount;
+};
+
 struct FSpotLight
 {
 	FVector3 Position;

@@ -23,7 +23,9 @@ public:
 	bool BufferExists(const std::string& Name);
     void UnregisterAndDestroyBuffer(const std::string& Name);
 
+	/// TODO: Make arguments &
     FBuffer LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDeviceSize> SizesIn, std::vector<VkDeviceSize> OffsetsIn, std::vector<void*> DatasIn);
+	FBuffer LoadDataToBuffer(const std::string& BufferName, std::vector<VkDeviceSize> SizesIn, std::vector<VkDeviceSize> OffsetsIn, std::vector<void*> DatasIn);
     void LoadDataFromBuffer(FBuffer& Buffer, VkDeviceSize Size, VkDeviceSize Offset, void* Data);
     void LoadDataToStagingBuffer(std::vector<VkDeviceSize> Sizes, std::vector<void*> Datas);
     void LoadDataFromStagingBuffer(VkDeviceSize Size, void* Data, VkDeviceSize Offset);

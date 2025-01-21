@@ -12,6 +12,7 @@ public:
     void Init() override;
     void UpdateDescriptorSets() override;
     void RecordCommands() override;
+	FSynchronizationPoint Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t X, uint32_t Y) override;
 
     FBuffer SBTBuffer;
 

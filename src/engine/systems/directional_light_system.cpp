@@ -7,6 +7,8 @@ namespace ECS
     {
         void FDirectionalLightSystem::Init(uint32_t NumberOfSimultaneousSubmits)
         {
+			UtilityDirectionalLight.ActiveLightsCount = 0;
+
             FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(ECS::COMPONENTS::FDirectionalLightComponent) * MAX_DIRECTIONAL_LIGHTS,
                                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Directional_Lights");
         }
@@ -14,6 +16,12 @@ namespace ECS
         bool FDirectionalLightSystem::Update()
         {
 			bool bAnyUpdate = false;
+
+			if (UtilityDirectionalLight.ActiveLightsCount != CurrentDirectionalLightsCount)
+			{
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer("UtilityInfoDirectionalLight", {sizeof(FUtilityDirectionalLight)}, {0}, {&UtilityDirectionalLight});
+				CurrentDirectionalLightsCount = UtilityDirectionalLight.ActiveLightsCount;
+			}
 
 			for (auto& Entry : EntitiesToUpdate)
 			{
@@ -31,6 +39,12 @@ namespace ECS
         bool FDirectionalLightSystem::Update(int Index)
         {
 			bool bAnyUpdate = false;
+
+			if (UtilityDirectionalLight.ActiveLightsCount != CurrentDirectionalLightsCount)
+			{
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer("UtilityInfoDirectionalLight", {sizeof(FUtilityDirectionalLight)}, {0}, {&UtilityDirectionalLight});
+				CurrentDirectionalLightsCount = UtilityDirectionalLight.ActiveLightsCount;
+			}
 
 			for (auto& Entry : EntitiesToUpdate)
 			{
@@ -109,6 +123,8 @@ namespace ECS
             LightComponent.Color = Color;
             LightComponent.Intensity = Intensity;
             MarkDirty(Light);
+
+			UtilityDirectionalLight.ActiveLightsCount++;
 
             return Light;
         }

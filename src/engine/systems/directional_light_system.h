@@ -7,6 +7,8 @@
 
 #include "maths.h"
 
+#include "common_structures.h"
+
 namespace ECS
 {
     namespace SYSTEMS
@@ -27,6 +29,8 @@ namespace ECS
 
             FEntity CreateDirectionalLight(const FVector3& Direction, const FVector3& Color, float Intensity);
 
+			FUtilityDirectionalLight UtilityDirectionalLight;
+			uint32_t CurrentDirectionalLightsCount = 0;
             const uint32_t MAX_DIRECTIONAL_LIGHTS = 32;
         };
     }

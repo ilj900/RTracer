@@ -1306,13 +1306,7 @@ FVector3 FRender::GetInstancePosition(ECS::FEntity Instance)
 
 ECS::FEntity FRender::CreateDirectionalLight(const FVector3& Direction, const FVector3& Color, float Intensity)
 {
-	auto Light = COORDINATOR().CreateEntity();
-	COORDINATOR().AddComponent<ECS::COMPONENTS::FDirectionalLightComponent>(Light, {});
-	DIRECTIONAL_LIGHT_SYSTEM()->SetLightDirection(Light, Direction.X, Direction.Y, Direction.Z);
-	DIRECTIONAL_LIGHT_SYSTEM()->SetLightColor(Light, Color);
-	DIRECTIONAL_LIGHT_SYSTEM()->SetLightIntensity(Light, Intensity);
-
-	return Light;
+	return DIRECTIONAL_LIGHT_SYSTEM()->CreateDirectionalLight(Direction, Color, Intensity);
 }
 
 ECS::FEntity FRender::CreatePointLight(const FVector3& Position)
@@ -1433,6 +1427,10 @@ void FRender::AllocateIndependentResources()
 	FBuffer MaterialsOffsetsPerMaterialBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS,
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialsOffsetsPerMaterialBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(MaterialsOffsetsPerMaterialBuffer, "MaterialsOffsetsPerMaterialBuffer");
+
+	auto UtilityInfoDirectionalLight = GetResourceAllocator()->CreateBuffer(sizeof(FUtilityDirectionalLight),
+		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "UtilityInfoDirectionalLight");
+	GetResourceAllocator()->RegisterBuffer(UtilityInfoDirectionalLight, "UtilityInfoDirectionalLight");
 }
 
 void FRender::FreeDependentResources()
@@ -1469,6 +1467,7 @@ void FRender::FreeIndependentResources()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("CountedMaterialsPerChunkBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("TotalCountedMaterialsBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("MaterialsOffsetsPerMaterialBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("UtilityInfoDirectionalLight");
 }
 
 
