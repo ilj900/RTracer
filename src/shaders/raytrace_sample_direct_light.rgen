@@ -81,6 +81,15 @@ void main()
     const uint LightIndex = uint(RandomFloat(SamplingState) * DirectionalLightsCount);
     FDirectionalLight DirectionalLight = DirectionalLightsBuffer[LightIndex];
 
+    vec4 Normal = NormalAOVData[NewPixelIndex];
+    Normal.xyz = Normal.w == 1 ? Normal.xyz : -Normal.xyz;
+
+    if(dot(Normal.xyz, DirectionalLight.Direction) > 0)
+    {
+        SampledDirectionalLight[NewPixelIndex] = vec4(0);
+        return;
+    }
+
     FRayData RayData;
     RayData.RayFlags = 0;
     RayData.Direction.xyz = -DirectionalLight.Direction;
