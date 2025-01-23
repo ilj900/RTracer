@@ -145,7 +145,7 @@ void FSamplePointLightTask::RecordCommands()
     CommandBuffers.resize(TotalSize);
 	auto ActiveRayCountBufferDeviceAddress = VK_CONTEXT()->GetBufferDeviceAddressInfo(RESOURCE_ALLOCATOR()->GetBuffer("ActiveRayCountBuffer"));
 
-    for (std::size_t i = 0; i < TotalSize; ++i)
+    for (uint32_t i = 0; i < TotalSize; ++i)
     {
         CommandBuffers[i] = COMMAND_BUFFER_MANAGER()->RecordCommand([&, this](VkCommandBuffer CommandBuffer)
         {
@@ -157,7 +157,7 @@ void FSamplePointLightTask::RecordCommands()
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &RayTracingDescriptorSet, 0, nullptr);
 
-			FViewportResolutionPushConstants PushConstants = { Width, Height};
+			FViewportResolutionPushConstants PushConstants = { Width, Height, i % SubmitX};
 			vkCmdPushConstants(CommandBuffer, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
 				VK_SHADER_STAGE_RAYGEN_BIT_KHR, 0, sizeof(FViewportResolutionPushConstants), &PushConstants);
 

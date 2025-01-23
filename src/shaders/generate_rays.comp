@@ -66,10 +66,10 @@ void main()
 
     vec4 RayDirection = vec4(normalize(PixelOrigin - DeviceCamera.Origin), 1);
 
-    float tMin = 0.000001f;
+    float tMin = FLOAT_EPSILON;
     float tMax = 10000.f;
 
     RayData[PixelIndex] = FRayData(RayOrigin, RayDirection, 0u, tMin, tMax, 1.f);
-    ThroughputBuffer[PixelIndex] = vec4(0);
+    ThroughputBuffer[PixelIndex] = vec4(0, 0, 0, 1);
     PixelIndexIndexMap[PixelIndex] = PixelIndex;
 }

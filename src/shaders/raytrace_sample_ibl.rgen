@@ -111,10 +111,10 @@ void main()
     FRayData RayData;
     RayData.RayFlags = 0;
     RayData.Direction.xyz = CartesianCoordinates;
-    RayData.Origin.xyz = WorldSpacePositionAOVData[NewPixelIndex].xyz;
+    RayData.Origin.xyz = WorldSpacePositionAOVData[NewPixelIndex].xyz + FragmentNormal.xyz * FLOAT_EPSILON;
 
     /// Trace the ray
-    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
+    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, FLOAT_EPSILON, RayData.Direction.xyz, 10000, 0);
 
     /// And if we didn't hit any geometry, then we sample the IBL
     if (LightHitPayload.PayloadFlags == 0)

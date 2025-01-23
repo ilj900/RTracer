@@ -1346,7 +1346,7 @@ ECS::FEntity FRender::CreateEmptyModel()
 void FRender::AllocateDependentResources()
 {
 	/// Create internal buffers which depend on resolution or some other parameters that might change during runtime
-	FBuffer ThroughputBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(4 * sizeof(float ) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "ThroughputBuffer");
+	FBuffer ThroughputBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "ThroughputBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(ThroughputBuffer, "ThroughputBuffer");
 
 	FBuffer InitialRaysBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FRayData) * Width * Width, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "InitialRaysBuffer");

@@ -166,7 +166,7 @@ void main()
     {
         SamplingResult *= abs(NDotI);
     }
-    RayData.Origin.xyz = PointOfIntersectionInWorldSpace;
+    RayData.Origin.xyz = PointOfIntersectionInWorldSpace + (NormalInWorldSpace.xyz * FLOAT_EPSILON);
 
     vec3 CumulativeMaterialColor = CumulativeMaterialColorBuffer[NewPixelIndex].xyz;
     CumulativeMaterialColor *= SamplingResult;

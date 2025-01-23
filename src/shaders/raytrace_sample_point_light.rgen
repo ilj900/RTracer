@@ -66,7 +66,7 @@ void main()
 #ifdef DEBUG_PRINTF
     uvec2 NewPixelCoords = uvec2(NewPixelIndex % PushConstants.Width, NewPixelIndex / PushConstants.Width);
 
-    if (NewPixelCoords.x == PushConstants.Width / 2 && NewPixelCoords.y == PushConstants.Height / 2)
+    if (NewPixelCoords.x == PushConstants.Width / 2 && NewPixelCoords.y == PushConstants.Height / 2 && PushConstants.BounceIndex == 0)
     {
         b = true;
         //debugPrintfEXT("CartesianCoordinates1 is %f, %f, %f\n", CartesianCoordinates1.x, CartesianCoordinates1.y, CartesianCoordinates1.z);
@@ -85,7 +85,9 @@ void main()
     vec4 Normal = NormalAOVData[NewPixelIndex];
     Normal.xyz = Normal.w == 1 ? Normal.xyz : -Normal.xyz;
     vec3 WorldSpacePosition = WorldSpacePositionAOVData[NewPixelIndex].xyz;
-    vec3 LightDirection = normalize(PointLight.Position - WorldSpacePosition);
+    vec3 LightDirection = PointLight.Position - WorldSpacePosition;
+    float LightDistance = length(LightDirection);
+    LightDirection = normalize(LightDirection);
 
     float NDotI = dot(Normal.xyz, LightDirection);
     if(NDotI <= 0)
@@ -97,15 +99,15 @@ void main()
     FRayData RayData;
     RayData.RayFlags = 0;
     RayData.Direction.xyz = LightDirection;
-    RayData.Origin.xyz = WorldSpacePosition;
+    RayData.Origin.xyz = WorldSpacePosition + Normal.xyz * 0.00001f;
 
     /// Trace the ray
-    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.0001f, RayData.Direction.xyz, 10000, 0);
+    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, LightDistance, 0);
 
     /// And if we didn't hit any geometry, then we store light data
     if (LightHitPayload.PayloadFlags == 0)
     {
-        float Attenuation = 1.f / length(PointLight.Position - WorldSpacePosition);
+        float Attenuation = 1.f / LightDistance;
         Attenuation *= Attenuation;
         SampledPointLight[NewPixelIndex] = vec4(PointLight.Color * PointLight.Intensity * Attenuation, NDotI);
     }

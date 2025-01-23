@@ -163,10 +163,10 @@ void FSceneLoader::LoadScene(const std::string& Name)
 	}
 	else if (Name == SCENE_POINT_LIGHT)
 	{
-		auto Plane = Render->CreatePlane({16, 16});
+		auto Plane = Render->CreatePlane({1024, 1024});
 		auto Sphere = Render->CreateUVSphere(512, 256, 0.5f);
 
-		auto PlaneInstance = Render->CreateInstance(Plane, {0, -2, 0}, {0, -1, 0}, {0, 0, 1});
+		auto PlaneInstance = Render->CreateInstance(Plane, {0, -2, 0}, {0, 1, 0}, {0, 0, 1});
 		auto Sphere1 = Render->CreateInstance(Sphere, {0, -1.499, 1});
 		auto Sphere2 = Render->CreateInstance(Sphere, {1, -1.499, -1});
 		auto Sphere3 = Render->CreateInstance(Sphere, {-1, -1.499, -1});
