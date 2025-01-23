@@ -140,7 +140,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 	}
 	else if (Name == SCENE_DIRECTIONAL_LIGHT)
 	{
-		auto Plane = Render->CreatePlane({8, 8});
+		auto Plane = Render->CreatePlane({1024, 1024});
 		auto Sphere = Render->CreateUVSphere(512, 256, 0.5f);
 
 		auto PlaneInstance = Render->CreateInstance(Plane, {0, -2, 0}, {0, -1, 0}, {0, 0, 1});

@@ -20,7 +20,7 @@
 #define BASIC_CHUNK_SIZE 														256
 #define LAST_BOUNCE 															11
 
-#define FLOAT_EPSILON															0.000001f
+#define FLOAT_EPSILON															0.0001f
 
 /// Ray flags
 #define RAY_DATA_RAY_MISSED 													1u
