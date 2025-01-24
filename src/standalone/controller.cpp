@@ -41,34 +41,42 @@ void FController::Update(float Time)
     if (!CameraControlMode)
         return;
 
+	float SpeedModifier = 1.;
+
+	if (glfwGetKey(Window, GLFW_KEY_LEFT_CONTROL))
+	{
+		SpeedModifier = 0.1;
+	}
+
     if (glfwGetKey(Window, GLFW_KEY_W))
     {
-        CAMERA_SYSTEM()->MoveCameraForward(Camera, Time * CameraMovementSpeed);
+        CAMERA_SYSTEM()->MoveCameraForward(Camera, Time * CameraMovementSpeed * SpeedModifier);
     }
     if (glfwGetKey(Window, GLFW_KEY_S))
     {
-        CAMERA_SYSTEM()->MoveCameraForward(Camera, -Time * CameraMovementSpeed);
+        CAMERA_SYSTEM()->MoveCameraForward(Camera, -Time * CameraMovementSpeed * SpeedModifier);
     }
     if (glfwGetKey(Window, GLFW_KEY_A))
     {
-        CAMERA_SYSTEM()->MoveCameraRight(Camera, -Time * CameraMovementSpeed);
+        CAMERA_SYSTEM()->MoveCameraRight(Camera, -Time * CameraMovementSpeed * SpeedModifier);
     }
     if (glfwGetKey(Window, GLFW_KEY_D))
     {
-        CAMERA_SYSTEM()->MoveCameraRight(Camera, Time * CameraMovementSpeed);
+        CAMERA_SYSTEM()->MoveCameraRight(Camera, Time * CameraMovementSpeed * SpeedModifier);
     }
     if (glfwGetKey(Window, GLFW_KEY_Z))
     {
-        CAMERA_SYSTEM()->MoveCameraUpward(Camera, -Time * CameraMovementSpeed);
+        CAMERA_SYSTEM()->MoveCameraUpward(Camera, -Time * CameraMovementSpeed * SpeedModifier);
     }
     if (glfwGetKey(Window, GLFW_KEY_C))
     {
-        CAMERA_SYSTEM()->MoveCameraUpward(Camera, Time * CameraMovementSpeed);
+        CAMERA_SYSTEM()->MoveCameraUpward(Camera, Time * CameraMovementSpeed * SpeedModifier);
     }
     if (glfwGetKey(Window, GLFW_KEY_Q))
     {
         CAMERA_SYSTEM()->Roll(Camera, -Time * CameraRotationSpeed);
     }
+
     if (glfwGetKey(Window, GLFW_KEY_E))
     {
         CAMERA_SYSTEM()->Roll(Camera, Time * CameraRotationSpeed);
