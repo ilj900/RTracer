@@ -42,6 +42,11 @@ layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_DIRECTIONAL_LI
     vec4 SampledDirectionalLightsBuffer[];
 };
 
+layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_SPOT_LIGHT_SAMPLING_RESULT_INDEX) buffer SampledSpotlLightsBufferObject
+{
+    vec4 SampledSpotLightsBuffer[];
+};
+
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_MATERIAL_INDEX_MAP) buffer MaterialIndexBufferObject
 {
     uint MaterialsIndexMap[];
@@ -177,12 +182,14 @@ void main()
         vec4 IBLSamplingResult = SampledIBLBuffer[NewPixelIndex];
         vec4 PointLightSamplingResult = SampledPointLightsBuffer[NewPixelIndex];
         vec4 DirectionaLightSamplingResult = SampledDirectionalLightsBuffer[NewPixelIndex];
+        vec4 SpotLightSamplingResult = SampledSpotLightsBuffer[NewPixelIndex];
 
         vec3 TotalIncomingLight = vec3(0);
 
         TotalIncomingLight += IBLSamplingResult.xyz * IBLSamplingResult.w;
         TotalIncomingLight += PointLightSamplingResult.xyz * PointLightSamplingResult.w;
         TotalIncomingLight += DirectionaLightSamplingResult.xyz * DirectionaLightSamplingResult.w;
+        TotalIncomingLight += SpotLightSamplingResult.xyz * SpotLightSamplingResult.w;
 
         SamplingResult = CumulativeMaterialColor * TotalIncomingLight;
     }

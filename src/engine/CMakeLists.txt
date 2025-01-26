@@ -66,6 +66,7 @@ set(INCLUDE
         tasks/task_sample_ibl.h
         tasks/task_sample_point_light.h
         tasks/task_sample_directional_light.h
+        tasks/task_sample_spot_light.h
         tasks/task_shade.h
         tasks/task_miss.h
         tasks/task_aov_pass.h
@@ -96,6 +97,7 @@ set(SOURCE
         tasks/task_sample_ibl.cpp
         tasks/task_sample_point_light.cpp
         tasks/task_sample_directional_light.cpp
+        tasks/task_sample_spot_light.cpp
         tasks/task_shade.cpp
         tasks/task_miss.cpp
         tasks/task_aov_pass.cpp

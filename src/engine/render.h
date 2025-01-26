@@ -24,6 +24,7 @@
 #include "tasks/task_sample_ibl.h"
 #include "tasks/task_sample_point_light.h"
 #include "tasks/task_sample_directional_light.h"
+#include "tasks/task_sample_spot_light.h"
 #include "tasks/task_shade.h"
 #include "tasks/task_miss.h"
 #include "tasks/task_aov_pass.h"
@@ -186,6 +187,7 @@ public:
 	/// Lights
 	ECS::FEntity CreateDirectionalLight(const FVector3& Direction, const FVector3& Color, float Intensity);
 	ECS::FEntity CreatePointLight(const FVector3& Position, const FVector3& Color, float Intensity);
+	ECS::FEntity CreateSpotLight(const FVector3& Position, const FVector3& Direction, const FVector3& Color, float Intensity, float OuterAngle, float InnerAngle);
 	void SetLightPosition(ECS::FEntity Light, const FVector3& Position);
 	FVector3 GetLightPosition(ECS::FEntity Light);
     int SetIBL(const std::string& Path);
@@ -214,6 +216,7 @@ public:
 	std::shared_ptr<FClearBufferTask> ClearSampledIBLBuffer = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearSampledPointLightsBuffer = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearSampledDirectionalLightsBuffer = nullptr;
+	std::shared_ptr<FClearBufferTask> ClearSampledSpotLightsBuffer = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearDebugLayerBuffer = nullptr;
     std::shared_ptr<FRaytraceTask> RayTraceTask = nullptr;
     std::shared_ptr<FClearBufferTask> ResetMaterialsCountPerChunkTask = nullptr;
@@ -228,6 +231,7 @@ public:
 	std::shared_ptr<FSampleIBLTask> SampleIBLTask = nullptr;
 	std::shared_ptr<FSamplePointLightTask> SamplePointLightTask = nullptr;
 	std::shared_ptr<FSampleDirectionalLightTask> SampleDirectionalLightTask = nullptr;
+	std::shared_ptr<FSampleSpotLightTask> SampleSpotLightTask = nullptr;
     std::shared_ptr<FShadeTask> ShadeTask = nullptr;
     std::shared_ptr<FMissTask> MissTask = nullptr;
 	std::shared_ptr<FAOVPassTask> AOVPassTask = nullptr;

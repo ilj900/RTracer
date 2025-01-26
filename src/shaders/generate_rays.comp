@@ -62,9 +62,9 @@ void main()
     const float AdjustedSensorSizeY = DeviceCamera.SensorSizeY * ((DeviceCamera.SensorSizeX / DeviceCamera.SensorSizeY) / (float(PushConstants.Width) / float(PushConstants.Height)));
     vec3 SensorCenter = DeviceCamera.Origin + DeviceCamera.Direction * DeviceCamera.FocalDistance;
     /// "- DeviceCamera.Up * ..." cause we start from the top-left corner
-    vec3 PixelOrigin = SensorCenter + DeviceCamera.Right * DeviceCamera.SensorSizeX * PixelCoordsF.x - DeviceCamera.Up * AdjustedSensorSizeY * PixelCoordsF.y;
+    vec3 PixelCenterWorldSpace = SensorCenter + DeviceCamera.Right * DeviceCamera.SensorSizeX * PixelCoordsF.x - DeviceCamera.Up * AdjustedSensorSizeY * PixelCoordsF.y;
 
-    vec4 RayDirection = vec4(normalize(PixelOrigin - DeviceCamera.Origin), 1);
+    vec4 RayDirection = vec4(normalize(PixelCenterWorldSpace - DeviceCamera.Origin), 1);
 
     float tMin = FLOAT_EPSILON;
     float tMax = 10000.f;

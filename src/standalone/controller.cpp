@@ -45,7 +45,12 @@ void FController::Update(float Time)
 
 	if (glfwGetKey(Window, GLFW_KEY_LEFT_CONTROL))
 	{
-		SpeedModifier = 0.1;
+		SpeedModifier *= 0.1;
+	}
+
+	if (glfwGetKey(Window, GLFW_KEY_LEFT_SHIFT))
+	{
+		SpeedModifier *= 10.;
 	}
 
     if (glfwGetKey(Window, GLFW_KEY_W))

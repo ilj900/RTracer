@@ -219,6 +219,7 @@ int FRender::Init()
 	ClearSampledIBLBuffer				= std::make_shared<FClearBufferTask>				("SampledIBLBuffer", 				Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ClearSampledPointLightsBuffer		= std::make_shared<FClearBufferTask>				("SampledPointLightBuffer",	Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ClearSampledDirectionalLightsBuffer	= std::make_shared<FClearBufferTask>				("SampledDirectionalLightBuffer",	Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ClearSampledSpotLightsBuffer		= std::make_shared<FClearBufferTask>				("SampledSpotLightBuffer",	Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ClearDebugLayerBuffer				= std::make_shared<FClearBufferTask>				("DebugLayerBuffer", 				Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     RayTraceTask 						= std::make_shared<FRaytraceTask>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetMaterialsCountPerChunkTask 	= std::make_shared<FClearBufferTask>				("CountedMaterialsPerChunkBuffer", 	Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -233,6 +234,7 @@ int FRender::Init()
 	SampleIBLTask 						= std::make_shared<FSampleIBLTask>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	SamplePointLightTask				= std::make_shared<FSamplePointLightTask>			(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	SampleDirectionalLightTask			= std::make_shared<FSampleDirectionalLightTask>		(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	SampleSpotLightTask					= std::make_shared<FSampleSpotLightTask>			(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ShadeTask 							= std::make_shared<FShadeTask>						(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     MissTask 							= std::make_shared<FMissTask>						(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	AOVPassTask							= std::make_shared<FAOVPassTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -278,6 +280,7 @@ int FRender::Cleanup()
 	ClearSampledIBLBuffer				= nullptr;
 	ClearSampledPointLightsBuffer		= nullptr;
 	ClearSampledDirectionalLightsBuffer = nullptr;
+	ClearSampledSpotLightsBuffer		= nullptr;
 	ClearDebugLayerBuffer				= nullptr;
     RayTraceTask 						= nullptr;
 	ResetMaterialsCountPerChunkTask 	= nullptr;
@@ -292,6 +295,7 @@ int FRender::Cleanup()
 	SampleIBLTask						= nullptr;
 	SamplePointLightTask				= nullptr;
 	SampleDirectionalLightTask			= nullptr;
+	SampleSpotLightTask					= nullptr;
     ShadeTask 							= nullptr;
     MissTask 							= nullptr;
 	AOVPassTask							= nullptr;
@@ -448,6 +452,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	ClearSampledIBLBuffer->Reload();
 	ClearSampledPointLightsBuffer->Reload();
 	ClearSampledDirectionalLightsBuffer->Reload();
+	ClearSampledSpotLightsBuffer->Reload();
 	ClearDebugLayerBuffer->Reload();
 	ResetMaterialsCountPerChunkTask->Reload();
 	ClearTotalMaterialsCountTask->Reload();
@@ -460,6 +465,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	SampleIBLTask->Reload();
 	SamplePointLightTask->Reload();
 	SampleDirectionalLightTask->Reload();
+	SampleSpotLightTask->Reload();
 	ComputeShadingData->Reload();
 	ShadeTask->Reload();
 	MissTask->Reload();
@@ -534,6 +540,8 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 		SynchronizationPoint = ClearSampledDirectionalLightsBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
+		SynchronizationPoint = ClearSampledSpotLightsBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
+
 		SynchronizationPoint = RayTraceTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = ResetMaterialsCountPerChunkTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
@@ -559,6 +567,8 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 		SynchronizationPoint = SamplePointLightTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = SampleDirectionalLightTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
+
+		SynchronizationPoint = SampleSpotLightTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = ShadeTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
@@ -1324,6 +1334,11 @@ ECS::FEntity FRender::CreatePointLight(const FVector3& Position, const FVector3&
 	return POINT_LIGHT_SYSTEM()->CreatePointLight(Position, Color, Intensity);
 }
 
+ECS::FEntity FRender::CreateSpotLight(const FVector3& Position, const FVector3& Direction, const FVector3& Color, float Intensity, float OuterAngle, float InnerAngle)
+{
+	return SPOT_LIGHT_SYSTEM()->CreateSpotLight(Position, Direction, Color, Intensity, OuterAngle, InnerAngle);
+}
+
 void FRender::SetLightPosition(ECS::FEntity Light, const FVector3& Position)
 {
 	POINT_LIGHT_SYSTEM()->SetLightPosition(Light, Position);
@@ -1355,7 +1370,8 @@ void FRender::AllocateDependentResources()
 	FBuffer PixelIndexBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * Width * Width, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "PixelIndexBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(PixelIndexBuffer, "PixelIndexBuffer");
 
-	FBuffer NormalAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "NormalAOVBuffer");
+	FBuffer NormalAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "NormalAOVBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(NormalAOVBuffer, "NormalAOVBuffer");
 
 	FBuffer PreviousBounceNormalAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "PreviousBounceNormalAOVBuffer");
@@ -1375,6 +1391,9 @@ void FRender::AllocateDependentResources()
 
 	FBuffer SampledDirectionalLightBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "SampledDirectionalLightBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(SampledDirectionalLightBuffer, "SampledDirectionalLightBuffer");
+
+	FBuffer SampledSpotLightBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "SampledSpotLightBuffer");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(SampledSpotLightBuffer, "SampledSpotLightBuffer");
 
 	FBuffer TransformIndexBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "TransformIndexBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(TransformIndexBuffer, "TransformIndexBuffer");
@@ -1437,13 +1456,17 @@ void FRender::AllocateIndependentResources()
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialsOffsetsPerMaterialBuffer");
 	RESOURCE_ALLOCATOR()->RegisterBuffer(MaterialsOffsetsPerMaterialBuffer, "MaterialsOffsetsPerMaterialBuffer");
 
+	auto UtilityInfoPointLight = GetResourceAllocator()->CreateBuffer(sizeof(FUtilityPointLight),
+		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "UtilityInfoPointLight");
+	GetResourceAllocator()->RegisterBuffer(UtilityInfoPointLight, "UtilityInfoPointLight");
+
 	auto UtilityInfoDirectionalLight = GetResourceAllocator()->CreateBuffer(sizeof(FUtilityDirectionalLight),
 		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "UtilityInfoDirectionalLight");
 	GetResourceAllocator()->RegisterBuffer(UtilityInfoDirectionalLight, "UtilityInfoDirectionalLight");
 
-	auto UtilityInfoPointLight = GetResourceAllocator()->CreateBuffer(sizeof(FUtilityPointLight),
-		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "UtilityInfoPointLight");
-	GetResourceAllocator()->RegisterBuffer(UtilityInfoPointLight, "UtilityInfoPointLight");
+	auto UtilityInfoSpotLight = GetResourceAllocator()->CreateBuffer(sizeof(FUtilitySpotLight),
+		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "UtilityInfoSpotLight");
+	GetResourceAllocator()->RegisterBuffer(UtilityInfoSpotLight, "UtilityInfoSpotLight");
 }
 
 void FRender::FreeDependentResources()
@@ -1459,6 +1482,7 @@ void FRender::FreeDependentResources()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("SampledIBLBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("SampledPointLightBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("SampledDirectionalLightBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("SampledSpotLightBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("TransformIndexBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("ActiveRayCountBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("CumulativeMaterialColorBuffer");
@@ -1481,8 +1505,9 @@ void FRender::FreeIndependentResources()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("CountedMaterialsPerChunkBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("TotalCountedMaterialsBuffer");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("MaterialsOffsetsPerMaterialBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("UtilityInfoDirectionalLight");
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("UtilityInfoPointLight");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("UtilityInfoDirectionalLight");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("UtilityInfoSpotLight");
 }
 
 

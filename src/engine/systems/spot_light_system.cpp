@@ -7,6 +7,7 @@ namespace ECS
     {
         void FSpotLightSystem::Init(uint32_t NumberOfSimultaneousSubmits)
         {
+			UtilitySpotLight.ActiveLightsCount = 0;
             FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(ECS::COMPONENTS::FSpotLightComponent) * MAX_LIGHTS,
                                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Spot_Lights");
         }
@@ -14,6 +15,12 @@ namespace ECS
         bool FSpotLightSystem::Update()
         {
 			bool bAnyUpdate = false;
+
+			if (UtilitySpotLight.ActiveLightsCount != CurrentSpotLightsCount)
+			{
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer("UtilityInfoSpotLight", {sizeof(FUtilitySpotLight)}, {0}, {&UtilitySpotLight});
+				CurrentSpotLightsCount = UtilitySpotLight.ActiveLightsCount;
+			}
 
 			for (auto& Entry : EntitiesToUpdate)
 			{
@@ -31,6 +38,12 @@ namespace ECS
         bool FSpotLightSystem::Update(int Index)
         {
 			bool bAnyUpdate = false;
+
+			if (UtilitySpotLight.ActiveLightsCount != CurrentSpotLightsCount)
+			{
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer("UtilityInfoSpotLight", {sizeof(FUtilitySpotLight)}, {0}, {&UtilitySpotLight});
+				CurrentSpotLightsCount = UtilitySpotLight.ActiveLightsCount;
+			}
 
 			for (auto& Entry : EntitiesToUpdate)
 			{
@@ -123,7 +136,7 @@ namespace ECS
             COORDINATOR().AddComponent<ECS::COMPONENTS::FSpotLightComponent>(Light, {});
 
             auto& LightComponent = COORDINATOR().GetComponent<COMPONENTS::FSpotLightComponent>(Light);
-			LightComponent.Direction = Direction;
+			LightComponent.Direction = Direction.GetNormalized();
             LightComponent.Position = Position;
             LightComponent.Color = Color;
             LightComponent.Intensity = Intensity;

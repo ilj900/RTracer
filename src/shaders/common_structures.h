@@ -81,16 +81,6 @@ struct FDirectionalLight
 	float Dummy2;
 };
 
-struct FUtilityDirectionalLight
-{
-	uint32_t ActiveLightsCount;
-};
-
-struct FUtilityPointLight
-{
-	uint32_t ActiveLightsCount;
-};
-
 struct FSpotLight
 {
 	FVector3 Position;
@@ -101,6 +91,21 @@ struct FSpotLight
 
 	FVector3 Direction;
 	float OuterAngle;
+};
+
+struct FUtilityDirectionalLight
+{
+	uint32_t ActiveLightsCount;
+};
+
+struct FUtilityPointLight
+{
+	uint32_t ActiveLightsCount;
+};
+
+struct FUtilitySpotLight
+{
+	uint32_t ActiveLightsCount;
 };
 
 struct FDeviceMaterial

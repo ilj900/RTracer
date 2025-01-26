@@ -147,6 +147,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto Sphere1 = Render->CreateInstance(Sphere, {0, -1.499, 1});
 		auto Sphere2 = Render->CreateInstance(Sphere, {1, -1.499, -1});
 		auto Sphere3 = Render->CreateInstance(Sphere, {-1, -1.499, -1});
+		auto Sphere4 = Render->CreateInstance(Sphere, {511, -1.499, 0});
 
 		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
 		auto GlassMaterial = Render->CreateRefractiveMaterial({1, 1, 1});
@@ -156,6 +157,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		Render->ShapeSetMaterial(Sphere1, GlassMaterial);
 		Render->ShapeSetMaterial(Sphere2, WhiteMaterial);
 		Render->ShapeSetMaterial(Sphere3, MetalMaterial);
+		Render->ShapeSetMaterial(Sphere4, WhiteMaterial);
 
 		auto Light = Render->CreateDirectionalLight({-1, -1, -1}, {1, 1, 1}, 1);
 
@@ -183,6 +185,30 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto Light1 = Render->CreatePointLight({3, 3, 0}, {1, 1, 1}, 1);
 		auto Light2 = Render->CreatePointLight({0, 9, -3}, {1, 1, 1}, 1);
 		auto Light3 = Render->CreatePointLight({-3, 3, 0}, {1, 1, 1}, 3);
+
+		Render->SetIBL("../../../resources/hdr_black_image.exr");
+	}
+	else if (Name == SCENE_SPOT_LIGHT)
+	{
+		auto Plane = Render->CreatePlane({1024, 1024});
+		auto Sphere = Render->CreateUVSphere(512, 256, 0.5f);
+
+		auto PlaneInstance = Render->CreateInstance(Plane, {0, -2, 0}, {0, 1, 0}, {0, 0, 1});
+		auto Sphere1 = Render->CreateInstance(Sphere, {0, -1.499, 1});
+		auto Sphere2 = Render->CreateInstance(Sphere, {1, -1.499, -1});
+		auto Sphere3 = Render->CreateInstance(Sphere, {-1, -1.499, -1});
+
+		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
+		auto GlassMaterial = Render->CreateRefractiveMaterial({1, 1, 1});
+		auto MetalMaterial = Render->CreateReflectiveMaterial({1, 0, 1});
+
+		Render->ShapeSetMaterial(PlaneInstance, WhiteMaterial);
+		Render->ShapeSetMaterial(Sphere1, GlassMaterial);
+		Render->ShapeSetMaterial(Sphere2, WhiteMaterial);
+		Render->ShapeSetMaterial(Sphere3, MetalMaterial);
+
+		auto Light1 = Render->CreateSpotLight({0, 5, 0}, {0, -1, 0}, {1, 1, 1}, 1, 0.6981f, 0.5235f);
+		auto Light2 = Render->CreateSpotLight({0, 5, 0}, {0, 1, 0}, {1, 1, 1}, 1, 0.6981f, 0.5235f);
 
 		Render->SetIBL("../../../resources/hdr_black_image.exr");
 	}
