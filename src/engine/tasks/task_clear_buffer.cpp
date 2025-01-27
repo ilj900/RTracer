@@ -6,15 +6,27 @@
 
 #include "utils.h"
 
-FClearBufferTask::FClearBufferTask(const std::string& BufferNameIn, uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice, uint32_t ClearValueIn) :
-	BufferName(BufferNameIn),
+FClearBufferTask::FClearBufferTask(const std::vector<std::string>& BufferNamesIn, uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice, uint32_t ClearValueIn) :
+	BufferNames(BufferNamesIn),
 	ClearValue(ClearValueIn),
 	FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice)
 {
-    Name = "Clear" + BufferName + " buffer pipeline";
+	static int Counter = 0;
+    Name = "Clear buffer(s) pipeline " + std::to_string(Counter);
+	++Counter;
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
+}
+
+FClearBufferTask::FClearBufferTask(const std::string& BufferNameIn, uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice, uint32_t ClearValueIn) :
+	BufferNames(1, BufferNameIn),
+	ClearValue(ClearValueIn),
+	FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice)
+{
+	Name = "Clear buffer " + BufferNames[0] + " pipeline";
+	PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+	QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
 }
 
 void FClearBufferTask::Init()
@@ -35,8 +47,11 @@ void FClearBufferTask::RecordCommands()
         {
 			ResetQueryPool(CommandBuffer, i);
 			GPU_TIMER();
-			auto Buffer = RESOURCE_ALLOCATOR()->GetBuffer(BufferName);
-			vkCmdFillBuffer(CommandBuffer, Buffer.Buffer, 0, VK_WHOLE_SIZE , ClearValue);
+			for (auto& BufferName : BufferNames)
+			{
+				auto Buffer = RESOURCE_ALLOCATOR()->GetBuffer(BufferName);
+				vkCmdFillBuffer(CommandBuffer, Buffer.Buffer, 0, VK_WHOLE_SIZE , ClearValue);
+			}
         }, QueueFlagsBits);
 
         V::SetName(LogicalDevice, CommandBuffers[i], Name, i);
