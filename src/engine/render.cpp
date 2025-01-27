@@ -211,7 +211,7 @@ int FRender::Init()
 	ClearCumulativeMaterialColorBuffer	= std::make_shared<FClearBufferTask>				("CumulativeMaterialColorBuffer", 		Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice, 0x3F800000);
     GenerateRaysTask 					= std::make_shared<FGenerateInitialRays>			(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetActiveRayCountTask 			= std::make_shared<FResetActiveRayCountTask>		(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	CopyNormalAOVBuffer					= std::make_shared<FCopyBufferTask>					("NormalAOVBuffer", "PreviousBounceNormalAOVBuffer", Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	CopyNormalAOVBuffer					= std::make_shared<FCopyBufferTask>					("NormalAOVBuffer", "PreviousBounceNormalAOVBuffer", Width, Height, RecursionDepth - 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ClearNormalAOVBuffer				= std::make_shared<FClearBufferTask>				("NormalAOVBuffer", 					Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ClearUVAOVBuffer					= std::make_shared<FClearBufferTask>				("UVAOVBuffer", 						Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ClearWorldSpacePositionAOVBuffer	= std::make_shared<FClearBufferTask>				("WorldSpacePositionAOVBuffer", 		Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -523,7 +523,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	{
 		if (i != 0)
 		{
-			SynchronizationPoint = CopyNormalAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
+			SynchronizationPoint = CopyNormalAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i - 1, CurrentFrame);
 		}
 
 		SynchronizationPoint = ClearNormalAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
