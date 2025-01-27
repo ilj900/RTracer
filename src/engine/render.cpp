@@ -627,6 +627,7 @@ int FRender::Update()
 	bAnyUpdate |= TRANSFORM_SYSTEM()->Update();
 	bAnyUpdate |= RENDERABLE_SYSTEM()->Update();
 	bAnyUpdate |= POINT_LIGHT_SYSTEM()->Update();
+	bAnyUpdate |= SPOT_LIGHT_SYSTEM()->Update();
 	bAnyUpdate |= DIRECTIONAL_LIGHT_SYSTEM()->Update();
 	bAnyUpdate |= SPOT_LIGHT_SYSTEM()->Update();
 	bAnyUpdate |= ACCELERATION_STRUCTURE_SYSTEM()->Update();

@@ -140,9 +140,11 @@ namespace ECS
             LightComponent.Position = Position;
             LightComponent.Color = Color;
             LightComponent.Intensity = Intensity;
-            LightComponent.OuterAngle = OuterAngle;
-            LightComponent.InnerAngle = InnerAngle;
+            LightComponent.OuterAngle = OuterAngle * 0.5f;
+            LightComponent.InnerAngle = InnerAngle * 0.5f;
             MarkDirty(Light);
+
+			UtilitySpotLight.ActiveLightsCount++;
 
             return Light;
         }

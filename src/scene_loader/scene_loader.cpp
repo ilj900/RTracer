@@ -207,8 +207,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		Render->ShapeSetMaterial(Sphere2, WhiteMaterial);
 		Render->ShapeSetMaterial(Sphere3, MetalMaterial);
 
-		auto Light1 = Render->CreateSpotLight({0, 5, 0}, {0, -1, 0}, {1, 1, 1}, 1, 0.6981f, 0.5235f);
-		auto Light2 = Render->CreateSpotLight({0, 5, 0}, {0, 1, 0}, {1, 1, 1}, 1, 0.6981f, 0.5235f);
+		auto Light1 = Render->CreateSpotLight({10, 5, 10}, {-2, -1, -2}, {1, 1, 1}, 1, 0.6981f, 0.5235f);
 
 		Render->SetIBL("../../../resources/hdr_black_image.exr");
 	}

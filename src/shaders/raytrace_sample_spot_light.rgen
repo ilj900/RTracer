@@ -96,7 +96,7 @@ void main()
         return;
     }
 
-    float LightAngle = dot(SpotLight.Direction, -LightDirection);
+    float LightAngle = acos(dot(SpotLight.Direction, -LightDirection));
     /// If point is outside out outer angle, it is also not illuminated
     if (LightAngle > SpotLight.OuterAngle)
     {
@@ -124,7 +124,8 @@ void main()
             float Fraction = LightAngle - SpotLight.InnerAngle;
             float Delta = SpotLight.OuterAngle - SpotLight.InnerAngle;
             Fraction = Fraction / Delta;
-            Attenuation *= (1. - Fraction);
+            /// TODO: pow is wrong... but looks good
+            Attenuation *= pow((1. - Fraction), 3);
         }
 
         SampledSpotLight[NewPixelIndex] = vec4(SpotLight.Color * SpotLight.Intensity * Attenuation, NDotI);
