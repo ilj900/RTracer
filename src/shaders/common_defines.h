@@ -32,11 +32,6 @@
 #define COAT_LAYER 																1u << 6
 #define EMISSION_LAYER															1u << 7
 
-#define LIGHT_TYPE_NONE 														0u
-#define LIGHT_TYPE_POINT_LIGHT 													1u
-#define LIGHT_TYPE_DIRECTIONAL_LIGHT 											2u
-#define LIGHT_TYPE_SPOT_LIGHT 													3u
-
 /// Task accumulate descriptor set layout defines
 #define ACCUMULATE_PER_FRAME_LAYOUT_INDEX 										0u
 

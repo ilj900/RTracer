@@ -177,7 +177,7 @@ void main()
     CumulativeMaterialColor *= SamplingResult;
     CumulativeMaterialColorBuffer[NewPixelIndex] = vec4(CumulativeMaterialColor, 1);
 
-    if ((RayData.RayFlags & TRANSMISSION_LAYER) != TRANSMISSION_LAYER)
+    if ((RayData.RayFlags & TRANSMISSION_LAYER) != TRANSMISSION_LAYER && (RayData.RayFlags & SPECULAR_LAYER) != SPECULAR_LAYER)
     {
         vec4 IBLSamplingResult = SampledIBLBuffer[NewPixelIndex];
         vec4 PointLightSamplingResult = SampledPointLightsBuffer[NewPixelIndex];
