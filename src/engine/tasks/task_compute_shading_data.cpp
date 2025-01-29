@@ -9,8 +9,6 @@
 
 #include "vk_shader_compiler.h"
 
-#include "utils.h"
-
 #include "task_compute_shading_data.h"
 
 FComputeShadingDataTask::FComputeShadingDataTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :

@@ -70,6 +70,15 @@ void FAccumulateTask::UpdateDescriptorSets()
 			case EOutputType::WorldSpacePosition:
 				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("WorldSpacePositionAOVImage"));
 				break;
+			case EOutputType::MaterialID:
+				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("MaterialIDAOVImage"));
+				break;
+			case EOutputType::RenderableID:
+				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("RenderableIDAOVImage"));
+				break;
+			case EOutputType::PrimitiveID:
+				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("PrimitiveIDAOVImage"));
+				break;
 			case EOutputType::DebugLayer:
 				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("DebugLayerImage"));
 				break;

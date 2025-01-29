@@ -10,6 +10,7 @@ bool b = false;
 
 #include "common_defines.h"
 #include "common_structures.h"
+#include "random.h"
 
 layout (set = AOV_PASS_LAYOUT_INDEX, binding = AOV_PASS_NORMAL_BUFFER) buffer NormalAOVDataBufferObject
 {
@@ -26,6 +27,16 @@ layout (set = AOV_PASS_LAYOUT_INDEX, binding = AOV_PASS_WORLD_SPACE_POSITION_BUF
     vec4 WorldSpacePositionAOVData[];
 };
 
+layout (set = AOV_PASS_LAYOUT_INDEX, binding = AOV_PASS_HITS_BUFFER) buffer HitsBufferObject
+{
+    FHit HitsBuffer[];
+};
+
+layout (set = AOV_PASS_LAYOUT_INDEX, binding = AOV_PASS_MATERIAL_INDEX_BUFFER) buffer MaterialIndexBufferObject
+{
+    uint MaterialIndexBuffer[];
+};
+
 layout (set = AOV_PASS_LAYOUT_INDEX, binding = AOV_PASS_DEBUG_LAYER_BUFFER) buffer DebugLayerBufferObject
 {
     vec4 DebugLayerData[];
@@ -36,6 +47,12 @@ layout (set = AOV_PASS_LAYOUT_INDEX, binding = AOV_PASS_NORMAL_AOV_IMAGE_INDEX, 
 layout (set = AOV_PASS_LAYOUT_INDEX, binding = AOV_PASS_UV_AOV_IMAGE_INDEX, rg32f) uniform image2D UVAOVImage;
 
 layout (set = AOV_PASS_LAYOUT_INDEX, binding = AOV_PASS_WORLD_SPACE_POSITION_AOV_IMAGE_INDEX, rgba32f) uniform image2D WorldSpacePositionAOVImage;
+
+layout (set = AOV_PASS_LAYOUT_INDEX, binding = AOV_PASS_RENDERABLE_INDEX_IMAGE_INDEX, rgba32f) uniform image2D RenderableIndexAOVImage;
+
+layout (set = AOV_PASS_LAYOUT_INDEX, binding = AOV_PASS_PRIMITIVE_INDEX_IMAGE_INDEX, rgba32f) uniform image2D PrimitiveIndexAOVImage;
+
+layout (set = AOV_PASS_LAYOUT_INDEX, binding = AOV_PASS_MATERIAL_INDEX_IMAGE_INDEX, rgba32f) uniform image2D MaterialindexAOVImage;
 
 layout (set = AOV_PASS_LAYOUT_INDEX, binding = AOV_PASS_DEBUG_LAYER_IMAGE_INDEX, rgba32f) uniform image2D DebugLayerImage;
 
@@ -72,10 +89,28 @@ void main()
 
     vec2 TextureCoords = UVAOVData[PixelIndex];
     vec4 WorldSpacePosition = WorldSpacePositionAOVData[PixelIndex];
+    uint RenderableIdColorHash = MurMur3_32(HitsBuffer[PixelIndex].RenderableIndex, 0);
+    vec4 RenderableIdColor = vec4(1.);
+    RenderableIdColor.x = ((RenderableIdColorHash >> 24) & 0xFF) / 255.;
+    RenderableIdColor.y = ((RenderableIdColorHash >> 18) & 0xFF) / 255.;
+    RenderableIdColor.z = ((RenderableIdColorHash >> 12) & 0xFF) / 255.;
+    uint PrimitiveIdColorHash = MurMur3_32(HitsBuffer[PixelIndex].PrimitiveIndex, 0);
+    vec4 PrimitiveIdColor = vec4(1.);
+    PrimitiveIdColor.x = ((PrimitiveIdColorHash >> 24) & 0xFF) / 255.;
+    PrimitiveIdColor.y = ((PrimitiveIdColorHash >> 18) & 0xFF) / 255.;
+    PrimitiveIdColor.z = ((PrimitiveIdColorHash >> 12) & 0xFF) / 255.;
+    uint MaterialIdColorHash = MurMur3_32(MaterialIndexBuffer[PixelIndex], 0);
+    vec4 MaterialIdColor = vec4(1.);
+    MaterialIdColor.x = ((MaterialIdColorHash >> 24) & 0xFF) / 255.;
+    MaterialIdColor.y = ((MaterialIdColorHash >> 18) & 0xFF) / 255.;
+    MaterialIdColor.z = ((MaterialIdColorHash >> 12) & 0xFF) / 255.;
     vec4 DebugData = DebugLayerData[PixelIndex];
 
     imageStore(NormalAOVImage, ivec2(PixelCoords), NormalInWorldSpace);
     imageStore(UVAOVImage, ivec2(PixelCoords), vec4(TextureCoords, 0.f, 0.f));
     imageStore(WorldSpacePositionAOVImage, ivec2(PixelCoords), WorldSpacePosition);
+    imageStore(RenderableIndexAOVImage, ivec2(PixelCoords), RenderableIdColor);
+    imageStore(PrimitiveIndexAOVImage, ivec2(PixelCoords), PrimitiveIdColor);
+    imageStore(MaterialindexAOVImage, ivec2(PixelCoords), MaterialIdColor);
     imageStore(DebugLayerImage, ivec2(PixelCoords), DebugData);
 }

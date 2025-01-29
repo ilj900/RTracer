@@ -244,12 +244,14 @@ int FRender::Init()
     RenderFrameIndex = 0;
 	Counter = 0;
 
-	OutputToFramebufferNameMap[EOutputType::Color] = "ColorImage";
-	OutputToFramebufferNameMap[EOutputType::Normal] = "NormalAOVImage";
-	OutputToFramebufferNameMap[EOutputType::UV] = "UVAOVImage";
+	OutputToFramebufferNameMap[EOutputType::Color] 				= "ColorImage";
+	OutputToFramebufferNameMap[EOutputType::Normal] 			= "NormalAOVImage";
+	OutputToFramebufferNameMap[EOutputType::UV] 				= "UVAOVImage";
 	OutputToFramebufferNameMap[EOutputType::WorldSpacePosition] = "WorldSpacePositionAOVImage";
-	OutputToFramebufferNameMap[EOutputType::DebugLayer] = "DebugLayerImage";
-
+	OutputToFramebufferNameMap[EOutputType::MaterialID] 		= "MaterialIDAOVImage";
+	OutputToFramebufferNameMap[EOutputType::RenderableID]		= "RenderableIDAOVImage";
+	OutputToFramebufferNameMap[EOutputType::PrimitiveID] 		= "PrimitiveIDAOVImage";
+	OutputToFramebufferNameMap[EOutputType::DebugLayer] 		= "DebugLayerImage";
     return 0;
 }
 
@@ -1377,6 +1379,18 @@ void FRender::AllocateDependentResources()
 	TEXTURE_MANAGER()->RegisterFramebuffer(WorldSpacePositionAOVImage, "WorldSpacePositionAOVImage");
 	WorldSpacePositionAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
+	auto MaterialIDAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "MaterialIDAOVImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(MaterialIDAOVImage, "MaterialIDAOVImage");
+	MaterialIDAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	auto RenderableIDAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "RenderableIDAOVImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(RenderableIDAOVImage, "RenderableIDAOVImage");
+	RenderableIDAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	auto PrimitiveIDAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "PrimitiveIDAOVImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(PrimitiveIDAOVImage, "PrimitiveIDAOVImage");
+	PrimitiveIDAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
 	auto AccumulatorImage = TEXTURE_MANAGER()->CreateClearableStorageImage(Width, Height,"AccumulatorImage");
 	TEXTURE_MANAGER()->RegisterFramebuffer(AccumulatorImage, "AccumulatorImage");
 	AccumulatorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
@@ -1446,6 +1460,9 @@ void FRender::FreeDependentResources()
 	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("NormalAOVImage");
 	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("UVAOVImage");
 	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("WorldSpacePositionAOVImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("MaterialIDAOVImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("RenderableIDAOVImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("PrimitiveIDAOVImage");
 	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("AccumulatorImage");
 	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("EstimatedImage");
 	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("DebugLayerImage");

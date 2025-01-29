@@ -1,5 +1,5 @@
-#ifndef CMJ_H
-#define CMJ_H
+#ifndef RANDOM_H
+#define RANDOM_H
 
 #define CMJ_GRID_LINEAR_SIZE 64
 #define CMJ_TOTAL_GRID_SIZE (CMJ_GRID_LINEAR_SIZE * CMJ_GRID_LINEAR_SIZE)
@@ -142,4 +142,30 @@ float RandomFloat(inout FSamplingState SamplingState)
 	return RandomFloat(StratumIndex, PermutationIndex);
 }
 
-#endif // CMJ_H
+uint32_t Murmur32Scramble(uint32_t k)
+{
+	k *= 0xcc9e2d51;
+	k = (k << 15) | (k >> 17);
+	k *= 0x1b873593;
+	return k;
+}
+
+uint32_t MurMur3_32(uint32_t Key, uint32_t Seed)
+{
+	uint32_t h = Seed;
+
+	h ^= Murmur32Scramble(Key);
+	h = (h << 13) | (h >> 19);
+	h = h * 5 + 0xe6546b64;
+
+	h ^= Murmur32Scramble(Key);
+	h ^= 4;
+	h ^= h >> 16;
+	h *= 0x85ebca6b;
+	h ^= h >> 13;
+	h *= 0xc2b2ae35;
+	h ^= h >> 16;
+	return h;
+}
+
+#endif // RANDOM_H
