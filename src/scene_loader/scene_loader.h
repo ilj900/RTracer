@@ -13,6 +13,7 @@
 #define SCENE_DIRECTIONAL_LIGHT "Directional Light"
 #define SCENE_POINT_LIGHT "Point Light"
 #define SCENE_SPOT_LIGHT "Spot Light"
+#define SCENE_WORLD_COORDINATES_AOV "World coordinates aov"
 #define SCENE_FLOATING_SPHERES "Floating spheres"
 #define SCENE_COORDINATE_SYSTEM_REMINDER "Coordinate system reminder"
 #define SCENE_VIKINGS_ROOM "Vikings room"

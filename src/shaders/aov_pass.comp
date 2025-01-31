@@ -85,22 +85,22 @@ void main()
 
     vec4 NormalInWorldSpace = NormalAOVData[PixelIndex];
     NormalInWorldSpace.xyz = (NormalInWorldSpace.xyz + vec3(1)) * vec3(0.5);
-    NormalInWorldSpace.xyz = clamp(NormalInWorldSpace.xyz, vec3(0), vec3(1));
+    NormalInWorldSpace.xyz = clamp(NormalInWorldSpace.xyz, vec3(0), vec3(0));
 
     vec2 TextureCoords = UVAOVData[PixelIndex];
-    vec4 WorldSpacePosition = WorldSpacePositionAOVData[PixelIndex];
+    vec4 WorldSpacePosition = vec4(WorldSpacePositionAOVData[PixelIndex].xyz, 0);
     uint RenderableIdColorHash = MurMur3_32(HitsBuffer[PixelIndex].RenderableIndex, 0);
-    vec4 RenderableIdColor = vec4(1.);
+    vec4 RenderableIdColor = vec4(0);
     RenderableIdColor.x = ((RenderableIdColorHash >> 24) & 0xFF) / 255.;
     RenderableIdColor.y = ((RenderableIdColorHash >> 18) & 0xFF) / 255.;
     RenderableIdColor.z = ((RenderableIdColorHash >> 12) & 0xFF) / 255.;
     uint PrimitiveIdColorHash = MurMur3_32(HitsBuffer[PixelIndex].PrimitiveIndex, 0);
-    vec4 PrimitiveIdColor = vec4(1.);
+    vec4 PrimitiveIdColor = vec4(0);
     PrimitiveIdColor.x = ((PrimitiveIdColorHash >> 24) & 0xFF) / 255.;
     PrimitiveIdColor.y = ((PrimitiveIdColorHash >> 18) & 0xFF) / 255.;
     PrimitiveIdColor.z = ((PrimitiveIdColorHash >> 12) & 0xFF) / 255.;
     uint MaterialIdColorHash = MurMur3_32(MaterialIndexBuffer[PixelIndex], 0);
-    vec4 MaterialIdColor = vec4(1.);
+    vec4 MaterialIdColor = vec4(0);
     MaterialIdColor.x = ((MaterialIdColorHash >> 24) & 0xFF) / 255.;
     MaterialIdColor.y = ((MaterialIdColorHash >> 18) & 0xFF) / 255.;
     MaterialIdColor.z = ((MaterialIdColorHash >> 12) & 0xFF) / 255.;

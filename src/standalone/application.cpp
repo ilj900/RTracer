@@ -45,8 +45,8 @@ FApplication::~FApplication()
 int FApplication::Run()
 {
 	uint32_t ImageIndex = UINT32_MAX;
-	SceneLoader->LoadScene(SCENE_SPOT_LIGHT);
-	LoadCamera(Controller->Camera, "Blender");
+	//LoadCamera(Controller->Camera, "Blender");
+	SceneLoader->LoadScene(SCENE_WORLD_COORDINATES_AOV);
 
 	FSynchronizationPoint RenderingFinished;
 

@@ -211,6 +211,18 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->SetIBL("../../../resources/hdr_black_image.exr");
 	}
+	else if (Name == SCENE_WORLD_COORDINATES_AOV)
+	{
+		auto Plane = Render->CreatePlane({4, 4});
+
+		auto PlaneInstance = Render->CreateInstance(Plane, {0, 0, 0}, {0, 0, 1}, {0, 1, 0});
+
+		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
+
+		Render->ShapeSetMaterial(PlaneInstance, WhiteMaterial);
+
+		Render->SetIBL("../../../resources/sun.exr");
+	}
 	else if (Name == SCENE_CORNELL_BOX_ANIMATED)
 	{
 		auto Wall = Render->CreatePlane({4, 4});
