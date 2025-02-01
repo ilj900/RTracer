@@ -60,11 +60,11 @@ void main()
     vec4 RayOrigin = vec4(DeviceCamera.Origin, 1.f);
     /// We need to adjust height of the sensor cause the framebuffer's aspect ratio might be different from the sensor's one
     const float AdjustedSensorSizeY = DeviceCamera.SensorSizeY * ((DeviceCamera.SensorSizeX / DeviceCamera.SensorSizeY) / (float(PushConstants.Width) / float(PushConstants.Height)));
-    vec3 SensorCenter = DeviceCamera.Origin + DeviceCamera.Direction * DeviceCamera.FocalDistance;
+    vec3 SensorCenter = DeviceCamera.Direction * DeviceCamera.FocalDistance;
     /// "- DeviceCamera.Up * ..." cause we start from the top-left corner
-    vec3 PixelCenterWorldSpace = SensorCenter + DeviceCamera.Right * DeviceCamera.SensorSizeX * PixelCoordsF.x - DeviceCamera.Up * AdjustedSensorSizeY * PixelCoordsF.y;
+    vec3 PixelCenterCameraSpace = SensorCenter + DeviceCamera.Right * DeviceCamera.SensorSizeX * PixelCoordsF.x - DeviceCamera.Up * AdjustedSensorSizeY * PixelCoordsF.y;
 
-    vec4 RayDirection = vec4(normalize(PixelCenterWorldSpace - DeviceCamera.Origin), 1);
+    vec4 RayDirection = vec4(normalize(PixelCenterCameraSpace), 1);
 
     float tMin = FLOAT_EPSILON;
     float tMax = 10000.f;
