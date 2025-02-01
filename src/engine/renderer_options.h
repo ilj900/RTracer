@@ -2,14 +2,19 @@
 
 enum class EOutputType {
 	Color 				= 0,
-	Normal 				= 1,
-	UV 					= 2,
-	WorldSpacePosition 	= 3,
-	MaterialID 			= 4,
-	RenderableID		= 5,
-	PrimitiveID			= 6,
-	DebugLayer 			= 7,
-	Max 				= 8};
+	ShadingNormal		= 1,
+	GeometricNormal		= 2,
+	UV 					= 3,
+	WorldSpacePosition 	= 4,
+	Opacity				= 5,
+	Depth				= 6,
+	Albedo				= 7,
+	Luminance			= 8,
+	MaterialID 			= 9,
+	RenderableID		= 10,
+	PrimitiveID			= 11,
+	DebugLayer 			= 12,
+	Max 				= 13};
 
 struct FRenderState
 {

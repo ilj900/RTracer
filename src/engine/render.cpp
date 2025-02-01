@@ -245,7 +245,7 @@ int FRender::Init()
 	Counter = 0;
 
 	OutputToFramebufferNameMap[EOutputType::Color] 				= "ColorImage";
-	OutputToFramebufferNameMap[EOutputType::Normal] 			= "NormalAOVImage";
+	OutputToFramebufferNameMap[EOutputType::ShadingNormal] 		= "NormalAOVImage";
 	OutputToFramebufferNameMap[EOutputType::UV] 				= "UVAOVImage";
 	OutputToFramebufferNameMap[EOutputType::WorldSpacePosition] = "WorldSpacePositionAOVImage";
 	OutputToFramebufferNameMap[EOutputType::MaterialID] 		= "MaterialIDAOVImage";

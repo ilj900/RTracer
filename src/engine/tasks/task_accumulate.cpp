@@ -61,7 +61,7 @@ void FAccumulateTask::UpdateDescriptorSets()
 			case EOutputType::Color:
 				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("ColorImage"));
 				break;
-			case EOutputType::Normal:
+			case EOutputType::ShadingNormal:
 				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("NormalAOVImage"));
 				break;
 			case EOutputType::UV:
