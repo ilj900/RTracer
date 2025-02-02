@@ -124,5 +124,5 @@ void main()
     imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(Result, PushConstants.BounceIndex == 0 ? 0.f : 1.f));
 
     MarkRayMissed(NewPixelIndex);
-    MaterialsIndexAOV[NewPixelIndex] = TOTAL_MATERIALS - 1;
+    MaterialsIndexAOV[NewPixelIndex] = INACTIVE_MATERIAL_INDEX;
 }

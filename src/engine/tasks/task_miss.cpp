@@ -105,7 +105,7 @@ void FMissTask::RecordCommands()
             vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
                                     0, 1, &DescriptorSet, 0, nullptr);
 
-            uint32_t MaterialIndex = TOTAL_MATERIALS - 2;
+            uint32_t MaterialIndex = IBL_MATERIAL_INDEX;
             FPushConstants PushConstants = {Width, Height, 1.f / Width, 1.f / Height, Width * Height, MaterialIndex, i % SubmitX};
             vkCmdPushConstants(CommandBuffer, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
                                VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);

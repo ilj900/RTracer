@@ -119,7 +119,7 @@ namespace ECS
 
 			std::string GenerateMaterialCode(FEntity MaterialEntity);
 
-            const uint32_t MAX_MATERIALS = TOTAL_MATERIALS - 2;
+            const uint32_t MAX_MATERIALS = IBL_MATERIAL_INDEX;
         };
     }
 }

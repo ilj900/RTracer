@@ -112,7 +112,7 @@ void main()
     imageStore(WorldSpacePositionAOVImage, ivec2(PixelCoords), WorldSpacePosition);
 
     /// Opacity
-    vec4 Opacity = MaterialIndexBuffer[PixelIndex] == (TOTAL_MATERIALS - 1) ? vec4(0, 0, 0, 1) : vec4 (1, 1, 1, 1);
+    vec4 Opacity = MaterialIndexBuffer[PixelIndex] == (INACTIVE_MATERIAL_INDEX) ? vec4(0, 0, 0, 1) : vec4 (1, 1, 1, 1);
     imageStore(OpacityAOVImage, ivec2(PixelCoords), Opacity);
 
     /// Depth

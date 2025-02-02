@@ -13,5 +13,5 @@ void main()
     HitPayload.RenderableIndex = UINT_MAX;
     HitPayload.PrimitiveIndex = UINT_MAX;
     HitPayload.HitUV = vec2(0);
-    HitPayload.MaterialIndex = TOTAL_MATERIALS - 2;
+    HitPayload.MaterialIndex = IBL_MATERIAL_INDEX;
 }

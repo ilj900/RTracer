@@ -29,7 +29,7 @@ void main()
         MaterialOffsets[i] = MaterialOffsets[i - 1u] + TotalMaterialCount[(i - 1u) * 3];
     }
 
-    ActiveRayCount[0] = MaterialOffsets[TOTAL_MATERIALS - 2];
+    ActiveRayCount[0] = MaterialOffsets[IBL_MATERIAL_INDEX];
 
     for (uint i = 0; i < TOTAL_MATERIALS; ++i)
     {
