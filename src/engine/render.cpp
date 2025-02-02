@@ -245,9 +245,14 @@ int FRender::Init()
 	Counter = 0;
 
 	OutputToFramebufferNameMap[EOutputType::Color] 				= "ColorImage";
-	OutputToFramebufferNameMap[EOutputType::ShadingNormal] 		= "NormalAOVImage";
+	OutputToFramebufferNameMap[EOutputType::ShadingNormal] 		= "ShadingNormalAOVImage";
+	OutputToFramebufferNameMap[EOutputType::GeometricNormal]	= "GeometricNormalAOVImage";
 	OutputToFramebufferNameMap[EOutputType::UV] 				= "UVAOVImage";
 	OutputToFramebufferNameMap[EOutputType::WorldSpacePosition] = "WorldSpacePositionAOVImage";
+	OutputToFramebufferNameMap[EOutputType::Opacity]			= "OpacityAOVImage";
+	OutputToFramebufferNameMap[EOutputType::Depth]				= "DepthAOVImage";
+	OutputToFramebufferNameMap[EOutputType::Albedo]				= "AlbedoAOVImage";
+	OutputToFramebufferNameMap[EOutputType::Luminance]			= "LuminanceAOVImage";
 	OutputToFramebufferNameMap[EOutputType::MaterialID] 		= "MaterialIDAOVImage";
 	OutputToFramebufferNameMap[EOutputType::RenderableID]		= "RenderableIDAOVImage";
 	OutputToFramebufferNameMap[EOutputType::PrimitiveID] 		= "PrimitiveIDAOVImage";
@@ -1367,9 +1372,13 @@ void FRender::AllocateDependentResources()
 	TEXTURE_MANAGER()->RegisterFramebuffer(ColorImage, "ColorImage");
 	ColorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-	auto NormalAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "NormalAOVImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(NormalAOVImage, "NormalAOVImage");
-	NormalAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	auto ShadingNormalAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "ShadingNormalAOVImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(ShadingNormalAOVImage, "ShadingNormalAOVImage");
+	ShadingNormalAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	auto GeometricNormalAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "GeometricNormalAOVImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(GeometricNormalAOVImage, "GeometricNormalAOVImage");
+	GeometricNormalAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
 	auto UVAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "UVAOVImage");
 	TEXTURE_MANAGER()->RegisterFramebuffer(UVAOVImage, "UVAOVImage");
@@ -1378,6 +1387,22 @@ void FRender::AllocateDependentResources()
 	auto WorldSpacePositionAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "WorldSpacePositionAOVImage");
 	TEXTURE_MANAGER()->RegisterFramebuffer(WorldSpacePositionAOVImage, "WorldSpacePositionAOVImage");
 	WorldSpacePositionAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	auto OpacityAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "OpacityAOVImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(OpacityAOVImage, "OpacityAOVImage");
+	OpacityAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	auto DepthAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "DepthAOVImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(DepthAOVImage, "DepthAOVImage");
+	DepthAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	auto AlbedoAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "AlbedoAOVImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(AlbedoAOVImage, "AlbedoAOVImage");
+	AlbedoAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	auto LuminanceAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "LuminanceAOVImage");
+	TEXTURE_MANAGER()->RegisterFramebuffer(LuminanceAOVImage, "LuminanceAOVImage");
+	LuminanceAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
 	auto MaterialIDAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "MaterialIDAOVImage");
 	TEXTURE_MANAGER()->RegisterFramebuffer(MaterialIDAOVImage, "MaterialIDAOVImage");
@@ -1457,9 +1482,14 @@ void FRender::FreeDependentResources()
 
 	/// Free images
 	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("ColorImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("NormalAOVImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("ShadingNormalAOVImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("GeometricNormalAOVImage");
 	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("UVAOVImage");
 	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("WorldSpacePositionAOVImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("OpacityAOVImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("DepthAOVImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("AlbedoAOVImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("LuminanceAOVImage");
 	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("MaterialIDAOVImage");
 	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("RenderableIDAOVImage");
 	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("PrimitiveIDAOVImage");

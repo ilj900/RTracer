@@ -17,6 +17,8 @@
 
 #define MAX_TEXTURES 															512
 #define TOTAL_MATERIALS 														128 /// 126 Materials + IBL + material for inactive ray
+#define IBL_MATERIAL_INDEX														TOTAL_MATERIALS - 2
+#define INACTIVE_MATERIAL_INDEX													TOTAL_MATERIALS - 1
 #define BASIC_CHUNK_SIZE 														256
 #define LAST_BOUNCE 															11
 
@@ -162,18 +164,23 @@
 #define AOV_PASS_LAYOUT_INDEX 													0u
 
 #define AOV_PASS_NORMAL_BUFFER 													0u
-#define AOV_PASS_NORMAL_AOV_IMAGE_INDEX 										1u
-#define AOV_PASS_UV_BUFFER 														2u
-#define AOV_PASS_UV_AOV_IMAGE_INDEX 											3u
-#define AOV_PASS_WORLD_SPACE_POSITION_BUFFER 									4u
-#define AOV_PASS_WORLD_SPACE_POSITION_AOV_IMAGE_INDEX							5u
-#define AOV_PASS_HITS_BUFFER 													6u
-#define AOV_PASS_RENDERABLE_INDEX_IMAGE_INDEX									7u
-#define AOV_PASS_PRIMITIVE_INDEX_IMAGE_INDEX									8u
-#define AOV_PASS_MATERIAL_INDEX_BUFFER											9u
-#define AOV_PASS_MATERIAL_INDEX_IMAGE_INDEX										10u
-#define AOV_PASS_DEBUG_LAYER_BUFFER 											11u
-#define AOV_PASS_DEBUG_LAYER_IMAGE_INDEX										12u
+#define AOV_PASS_SHADING_NORMAL_AOV_IMAGE_INDEX 								1u
+#define AOV_PASS_GEOMETRIC_NORMAL_AOV_IMAGE_INDEX 								2u
+#define AOV_PASS_UV_BUFFER 														3u
+#define AOV_PASS_UV_AOV_IMAGE_INDEX 											4u
+#define AOV_PASS_WORLD_SPACE_POSITION_BUFFER 									5u
+#define AOV_PASS_WORLD_SPACE_POSITION_AOV_IMAGE_INDEX							6u
+#define AOV_PASS_OPACITY_AOV_IMAGE_INDEX										7u
+#define AOV_PASS_DEPTH_AOV_IMAGE_INDEX											8u
+#define AOV_PASS_ALBEDO_AOV_IMAGE_INDEX											9u
+#define AOV_PASS_LUMINANCE_AOV_IMAGE_INDEX										10u
+#define AOV_PASS_HITS_BUFFER 													11u
+#define AOV_PASS_RENDERABLE_INDEX_IMAGE_INDEX									12u
+#define AOV_PASS_PRIMITIVE_INDEX_IMAGE_INDEX									13u
+#define AOV_PASS_MATERIAL_INDEX_BUFFER											14u
+#define AOV_PASS_MATERIAL_INDEX_IMAGE_INDEX										15u
+#define AOV_PASS_DEBUG_LAYER_BUFFER 											16u
+#define AOV_PASS_DEBUG_LAYER_IMAGE_INDEX										18u
 
 /// Task advance render count descriptor set layout defines
 #define ADVANCE_RENDER_COUNT_LAYOUT_INDEX 										0u

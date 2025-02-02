@@ -54,38 +54,31 @@ void FAccumulateTask::Init()
 
 void FAccumulateTask::UpdateDescriptorSets()
 {
+	static const std::unordered_map<EOutputType, std::string> OutputToImageNameMap = {
+		{EOutputType::Color, 				"ColorImage"},
+		{EOutputType::ShadingNormal, 		"ShadingNormalAOVImage"},
+		{EOutputType::GeometricNormal, 	"GeometricNormalAOVImage"},
+		{EOutputType::UV, 					"UVAOVImage"},
+		{EOutputType::WorldSpacePosition, 	"WorldSpacePositionAOVImage"},
+		{EOutputType::Opacity, 			"OpacityAOVImage"},
+		{EOutputType::Depth, 				"DepthAOVImage"},
+		{EOutputType::Albedo, 				"AlbedoAOVImage"},
+		{EOutputType::Luminance, 			"LuminanceAOVImage"},
+		{EOutputType::MaterialID, 			"MaterialIDAOVImage"},
+		{EOutputType::RenderableID, 		"RenderableIDAOVImage"},
+		{EOutputType::PrimitiveID, 		"PrimitiveIDAOVImage"},
+	};
+
     for (uint32_t i = 0; i < TotalSize; ++i)
     {
-		switch (RENDER_STATE()->RenderTarget)
+		auto Iter = OutputToImageNameMap.find(RENDER_STATE()->RenderTarget);
+
+		if (Iter == OutputToImageNameMap.end())
 		{
-			case EOutputType::Color:
-				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("ColorImage"));
-				break;
-			case EOutputType::ShadingNormal:
-				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("NormalAOVImage"));
-				break;
-			case EOutputType::UV:
-				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("UVAOVImage"));
-				break;
-			case EOutputType::WorldSpacePosition:
-				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("WorldSpacePositionAOVImage"));
-				break;
-			case EOutputType::MaterialID:
-				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("MaterialIDAOVImage"));
-				break;
-			case EOutputType::RenderableID:
-				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("RenderableIDAOVImage"));
-				break;
-			case EOutputType::PrimitiveID:
-				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("PrimitiveIDAOVImage"));
-				break;
-			case EOutputType::DebugLayer:
-				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("DebugLayerImage"));
-				break;
-			default:
-				throw std::runtime_error("Unsupported AOV input.");
+			throw std::runtime_error("Unsupported AOV input.");
 		}
 
+		UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage(Iter->second));
         UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, ACCUMULATE_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("AccumulatorImage"));
         UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, ESTIMATED_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("EstimatedImage"));
     }
