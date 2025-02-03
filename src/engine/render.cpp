@@ -1320,52 +1320,41 @@ ECS::FEntity FRender::CreateEmptyModel()
 
 void FRender::AllocateDependentResources()
 {
-	/// Create internal buffers which depend on resolution or some other parameters that might change during runtime
-	FBuffer ThroughputBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "ThroughputBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(ThroughputBuffer, "ThroughputBuffer");
+	struct FBufferDescription
+	{
+		std::string Name;
+		VkDeviceSize Size;
+		VkBufferUsageFlags Flags;
+	};
+	auto CreateAndRegisterBufferLambda = [](std::vector<FBufferDescription>& BufferDescriptions)
+	{
+		for (auto & BufferDescription : BufferDescriptions)
+		{
+			FBuffer Buffer = RESOURCE_ALLOCATOR()->CreateBuffer(BufferDescription.Size,
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | BufferDescription.Flags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, BufferDescription.Name);
+			RESOURCE_ALLOCATOR()->RegisterBuffer(Buffer, BufferDescription.Name);
+		}
+	};
 
-	FBuffer InitialRaysBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FRayData) * Width * Width, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "InitialRaysBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(InitialRaysBuffer, "InitialRaysBuffer");
+	std::vector<FBufferDescription> BufferDescriptions = {
+		{"ThroughputBuffer", 					sizeof(FVector4) * Width * Height, 0},
+		{"InitialRaysBuffer", 				sizeof(FRayData) * Width * Height, 0},
+		{"PixelIndexBuffer", 					sizeof(uint32_t) * Width * Height, 0},
+		{"NormalAOVBuffer", 					sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT},
+		{"PreviousBounceNormalAOVBuffer", 	sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{"UVAOVBuffer", 						sizeof(FVector2) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{"WorldSpacePositionAOVBuffer", 		sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{"SampledIBLBuffer", 					sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{"SampledPointLightBuffer", 			sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{"SampledDirectionalLightBuffer", 	sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{"SampledSpotLightBuffer", 			sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{"TransformIndexBuffer", 				sizeof(uint32_t) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{"ActiveRayCountBuffer", 				sizeof(uint32_t) * 3, 				VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT},
+		{"CumulativeMaterialColorBuffer", 	sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{"DebugLayerBuffer", 					sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+	};
 
-	FBuffer PixelIndexBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * Width * Width, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "PixelIndexBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(PixelIndexBuffer, "PixelIndexBuffer");
-
-	FBuffer NormalAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height,
-		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "NormalAOVBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(NormalAOVBuffer, "NormalAOVBuffer");
-
-	FBuffer PreviousBounceNormalAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "PreviousBounceNormalAOVBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(PreviousBounceNormalAOVBuffer, "PreviousBounceNormalAOVBuffer");
-
-	FBuffer UVAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector2) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "UVAOVBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(UVAOVBuffer, "UVAOVBuffer");
-
-	FBuffer WorldSpacePositionAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "WorldSpacePositionAOVBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(WorldSpacePositionAOVBuffer, "WorldSpacePositionAOVBuffer");
-
-	FBuffer SampledIBLBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "SampledIBLBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(SampledIBLBuffer, "SampledIBLBuffer");
-
-	FBuffer SampledPointLightBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "SampledPointLightBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(SampledPointLightBuffer, "SampledPointLightBuffer");
-
-	FBuffer SampledDirectionalLightBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "SampledDirectionalLightBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(SampledDirectionalLightBuffer, "SampledDirectionalLightBuffer");
-
-	FBuffer SampledSpotLightBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "SampledSpotLightBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(SampledSpotLightBuffer, "SampledSpotLightBuffer");
-
-	FBuffer TransformIndexBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "TransformIndexBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(TransformIndexBuffer, "TransformIndexBuffer");
-
-	auto ActiveRayCountBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * 3, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "ActiveRayCountBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(ActiveRayCountBuffer, "ActiveRayCountBuffer");
-
-	FBuffer CumulativeMaterialColorBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "CumulativeMaterialColorBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(CumulativeMaterialColorBuffer, "CumulativeMaterialColorBuffer");
-
-	FBuffer DebugLayerBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "DebugLayerBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(DebugLayerBuffer, "DebugLayerBuffer");
+	CreateAndRegisterBufferLambda(BufferDescriptions);
 
 	/// Create internal images
 	auto ColorImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "ColorImage");
