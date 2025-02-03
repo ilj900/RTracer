@@ -45,6 +45,7 @@ set(ECS_SOURCE
         )
 
 set(INCLUDE
+        named_resources.h
         render.h
         renderer_options.h
         tasks/executable_task.h

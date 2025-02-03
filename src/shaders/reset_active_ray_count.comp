@@ -2,7 +2,7 @@
 
 #include "common_defines.h"
 
-layout (set = RESET_ACTIVE_RAY_COUNT_LAYOUT_INDEX, binding = ACTIVE_RAY_COUNT_BUFFER) buffer writeonly ActiveRayCountBufferObject
+layout (set = RESET_ACTIVE_RAY_COUNT_LAYOUT_INDEX, binding = ACTIVE_RAY_COUNT_BUFFER_INDEX) buffer writeonly ActiveRayCountBufferObject
 {
     uint ActiveRayCount[];
 };

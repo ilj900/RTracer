@@ -1,3 +1,4 @@
+#include "named_resources.h"
 #include "light_component.h"
 #include "point_light_system.h"
 
@@ -18,7 +19,7 @@ namespace ECS
 
 			if (UtilityPointLight.ActiveLightsCount != CurrentPointLightsCount)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer("UtilityInfoPointLight", {sizeof(FUtilityPointLight)}, {0}, {&UtilityPointLight});
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_POINT_LIGHT_BUFFER, {sizeof(FUtilityPointLight)}, {0}, {&UtilityPointLight});
 				CurrentPointLightsCount = UtilityPointLight.ActiveLightsCount;
 			}
 
@@ -41,7 +42,7 @@ namespace ECS
 
 			if (UtilityPointLight.ActiveLightsCount != CurrentPointLightsCount)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer("UtilityInfoPointLight", {sizeof(FUtilityPointLight)}, {0}, {&UtilityPointLight});
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_POINT_LIGHT_BUFFER, {sizeof(FUtilityPointLight)}, {0}, {&UtilityPointLight});
 				CurrentPointLightsCount = UtilityPointLight.ActiveLightsCount;
 			}
 

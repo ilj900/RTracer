@@ -206,14 +206,14 @@ int FRender::Init()
 
 	/// Create all required tasks
 	UpdateTLASTask 						= std::make_shared<FUpdateTLASTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	ResetRenderIterations				= std::make_shared<FClearBufferTask>				("RenderIterationBuffer", 			Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ResetRenderIterations				= std::make_shared<FClearBufferTask>				(RENDER_ITERATION_BUFFER, 			Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ClearImageTask 						= std::make_shared<FClearImageTask>					("AccumulatorImage", 				Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	ClearCumulativeMaterialColorBuffer	= std::make_shared<FClearBufferTask>				("CumulativeMaterialColorBuffer", 		Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice, 0x3F800000);
+	ClearCumulativeMaterialColorBuffer	= std::make_shared<FClearBufferTask>				(CUMULATIVE_MATERIAL_COLOR_BUFFER, 		Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice, 0x3F800000);
     GenerateRaysTask 					= std::make_shared<FGenerateInitialRays>			(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetActiveRayCountTask 			= std::make_shared<FResetActiveRayCountTask>		(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	CopyNormalAOVBuffer					= std::make_shared<FCopyBufferTask>					("NormalAOVBuffer", "PreviousBounceNormalAOVBuffer", Width, Height, RecursionDepth - 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	ClearDebugLayerBuffer				= std::make_shared<FClearBufferTask>				("DebugLayerBuffer", 				Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	std::vector<std::string> BatchCleaning{"NormalAOVBuffer", "UVAOVBuffer", "WorldSpacePositionAOVBuffer", "TransformIndexBuffer", "SampledIBLBuffer", "SampledPointLightBuffer", "SampledDirectionalLightBuffer", "SampledSpotLightBuffer", "DebugLayerBuffer", "CountedMaterialsPerChunkBuffer"};
+	CopyNormalAOVBuffer					= std::make_shared<FCopyBufferTask>					(NORMAL_AOV_BUFFER, HISTORY_NORMAL_AOV_BUFFER, Width, Height, RecursionDepth - 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ClearDebugLayerBuffer				= std::make_shared<FClearBufferTask>				(DEBUG_LAYER_BUFFER, 				Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	std::vector<std::string> BatchCleaning{NORMAL_AOV_BUFFER, UV_AOV_BUFFER, WORLD_SPACE_POSITION_AOV_BUFFER, TRANSFORM_INDEX_BUFFER, SAMPLED_IBL_BUFFER, SAMPLED_POINT_LIGHT_BUFFER, SAMPLED_DIRECTIONAL_LIGHT_BUFFER, SAMPLED_SPOT_LIGHT_BUFFER, DEBUG_LAYER_BUFFER, COUNTED_MATERIALS_PER_CHUNK_BUFFER};
 	ClearBuffersTask 					= std::make_shared<FClearBufferTask>				(BatchCleaning , Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     RayTraceTask 						= std::make_shared<FRaytraceTask>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ClearTotalMaterialsCountTask 		= std::make_shared<FClearTotalMaterialsCountTask>	(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -560,12 +560,12 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 	SynchronizationPoint = PassthroughTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
-	if (Counter == 512)
-	{
-		WaitIdle();
-		PrintScreenPng("Estimated");
-		PrintScreenExr("Estimated");
-	}
+	//if (Counter == 512)
+	//{
+	//	WaitIdle();
+	//	PrintScreenPng("Estimated");
+	//	PrintScreenExr("Estimated");
+	//}
 
 	bAnyUpdate = false;
 
@@ -1322,21 +1322,21 @@ void FRender::AllocateDependentResources()
 {
 	/// Create internal buffers
 	std::vector<FBufferDescription> BufferDescriptions = {
-		{"ThroughputBuffer", 					sizeof(FVector4) * Width * Height, 0},
-		{"InitialRaysBuffer", 				sizeof(FRayData) * Width * Height, 0},
-		{"PixelIndexBuffer", 					sizeof(uint32_t) * Width * Height, 0},
-		{"NormalAOVBuffer", 					sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT},
-		{"PreviousBounceNormalAOVBuffer", 	sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{"UVAOVBuffer", 						sizeof(FVector2) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{"WorldSpacePositionAOVBuffer", 		sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{"SampledIBLBuffer", 					sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{"SampledPointLightBuffer", 			sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{"SampledDirectionalLightBuffer", 	sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{"SampledSpotLightBuffer", 			sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{"TransformIndexBuffer", 				sizeof(uint32_t) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{"ActiveRayCountBuffer", 				sizeof(uint32_t) * 3, 				VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT},
-		{"CumulativeMaterialColorBuffer", 	sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{"DebugLayerBuffer", 					sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{THROUGHPUT_BUFFER, 					sizeof(FVector4) * Width * Height, 0},
+		{INITIAL_RAYS_BUFFER, 				sizeof(FRayData) * Width * Height, 0},
+		{PIXEL_INDEX_BUFFER, 					sizeof(uint32_t) * Width * Height, 0},
+		{NORMAL_AOV_BUFFER, 					sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT},
+		{HISTORY_NORMAL_AOV_BUFFER, 			sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{UV_AOV_BUFFER, 						sizeof(FVector2) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{WORLD_SPACE_POSITION_AOV_BUFFER, 		sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{SAMPLED_IBL_BUFFER, 					sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{SAMPLED_POINT_LIGHT_BUFFER, 			sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{SAMPLED_DIRECTIONAL_LIGHT_BUFFER, 	sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{SAMPLED_SPOT_LIGHT_BUFFER, 			sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{TRANSFORM_INDEX_BUFFER, 				sizeof(uint32_t) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{ACTIVE_RAY_COUNT_BUFFER, 				sizeof(uint32_t) * 3, 				VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT},
+		{CUMULATIVE_MATERIAL_COLOR_BUFFER, 	sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{DEBUG_LAYER_BUFFER, 					sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 	};
 
 	CreateAndRegisterBufferShortcut(BufferDescriptions);
@@ -1373,45 +1373,45 @@ void FRender::AllocateIndependentResources()
 {
 	/// Allocate buffers that doesn't require recreation
 	std::vector<FBufferDescription> BufferDescriptions = {
-		{"RenderIterationBuffer",				sizeof(uint32_t),																												VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{"CountedMaterialsPerChunkBuffer",	sizeof(uint32_t) * TOTAL_MATERIALS * CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE),	VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{"TotalCountedMaterialsBuffer",		sizeof(uint32_t) * TOTAL_MATERIALS * 3,																						VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT},
-		{"MaterialsOffsetsPerMaterialBuffer",	sizeof(uint32_t) * TOTAL_MATERIALS,																							0},
+		{RENDER_ITERATION_BUFFER,				sizeof(uint32_t),																												VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{COUNTED_MATERIALS_PER_CHUNK_BUFFER,	sizeof(uint32_t) * TOTAL_MATERIALS * CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE),	VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{TOTAL_COUNTED_MATERIALS_BUFFER,		sizeof(uint32_t) * TOTAL_MATERIALS * 3,																						VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT},
+		{MATERIALS_OFFSETS_PER_MATERIAL_BUFFER,	sizeof(uint32_t) * TOTAL_MATERIALS,																							0},
 	};
 
 	CreateAndRegisterBufferShortcut(BufferDescriptions);
 
 	auto UtilityInfoPointLight = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FUtilityPointLight),
-		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "UtilityInfoPointLight");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(UtilityInfoPointLight, "UtilityInfoPointLight");
+		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UTILITY_INFO_POINT_LIGHT_BUFFER);
+	RESOURCE_ALLOCATOR()->RegisterBuffer(UtilityInfoPointLight, UTILITY_INFO_POINT_LIGHT_BUFFER);
 
 	auto UtilityInfoDirectionalLight = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FUtilityDirectionalLight),
-		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "UtilityInfoDirectionalLight");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(UtilityInfoDirectionalLight, "UtilityInfoDirectionalLight");
+		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UTILITY_INFO_DIRECTIONAL_LIGHT_BUFFER);
+	RESOURCE_ALLOCATOR()->RegisterBuffer(UtilityInfoDirectionalLight, UTILITY_INFO_DIRECTIONAL_LIGHT_BUFFER);
 
 	auto UtilityInfoSpotLight = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FUtilitySpotLight),
-		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "UtilityInfoSpotLight");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(UtilityInfoSpotLight, "UtilityInfoSpotLight");
+		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UTILITY_INFO_SPOT_LIGHT_BUFFER);
+	RESOURCE_ALLOCATOR()->RegisterBuffer(UtilityInfoSpotLight, UTILITY_INFO_SPOT_LIGHT_BUFFER);
 }
 
 void FRender::FreeDependentResources()
 {
 	/// Free buffers
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("ThroughputBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("InitialRaysBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("PixelIndexBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("NormalAOVBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("PreviousBounceNormalAOVBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("UVAOVBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("WorldSpacePositionAOVBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("SampledIBLBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("SampledPointLightBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("SampledDirectionalLightBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("SampledSpotLightBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("TransformIndexBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("ActiveRayCountBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("CumulativeMaterialColorBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("DebugLayerBuffer");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(THROUGHPUT_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(INITIAL_RAYS_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(PIXEL_INDEX_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(NORMAL_AOV_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(HISTORY_NORMAL_AOV_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(UV_AOV_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(WORLD_SPACE_POSITION_AOV_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(SAMPLED_IBL_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(SAMPLED_POINT_LIGHT_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(SAMPLED_DIRECTIONAL_LIGHT_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(SAMPLED_SPOT_LIGHT_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(TRANSFORM_INDEX_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(ACTIVE_RAY_COUNT_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(CUMULATIVE_MATERIAL_COLOR_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(DEBUG_LAYER_BUFFER);
 
 	/// Free images
 	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("ColorImage");
@@ -1434,13 +1434,13 @@ void FRender::FreeDependentResources()
 void FRender::FreeIndependentResources()
 {
 	/// Free buffers
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("RenderIterationBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("CountedMaterialsPerChunkBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("TotalCountedMaterialsBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("MaterialsOffsetsPerMaterialBuffer");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("UtilityInfoPointLight");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("UtilityInfoDirectionalLight");
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("UtilityInfoSpotLight");
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(RENDER_ITERATION_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(COUNTED_MATERIALS_PER_CHUNK_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(TOTAL_COUNTED_MATERIALS_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(MATERIALS_OFFSETS_PER_MATERIAL_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(UTILITY_INFO_POINT_LIGHT_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(UTILITY_INFO_DIRECTIONAL_LIGHT_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(UTILITY_INFO_SPOT_LIGHT_BUFFER);
 }
 
 void FRender::CreateAndRegisterBufferShortcut(const std::vector<FBufferDescription>& BufferDescriptions)

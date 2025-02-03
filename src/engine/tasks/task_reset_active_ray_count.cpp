@@ -16,7 +16,7 @@ FResetActiveRayCountTask::FResetActiveRayCountTask(uint32_t WidthIn, uint32_t He
 
 	auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
-	DescriptorSetManager->AddDescriptorLayout(Name, RESET_ACTIVE_RAY_COUNT_LAYOUT_INDEX, ACTIVE_RAY_COUNT_BUFFER,
+	DescriptorSetManager->AddDescriptorLayout(Name, RESET_ACTIVE_RAY_COUNT_LAYOUT_INDEX, ACTIVE_RAY_COUNT_BUFFER_INDEX,
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
 
 	VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t)};
@@ -52,7 +52,7 @@ void FResetActiveRayCountTask::UpdateDescriptorSets()
 {
 	for (size_t i = 0; i < TotalSize; ++i)
 	{
-		UpdateDescriptorSet(RESET_ACTIVE_RAY_COUNT_LAYOUT_INDEX, ACTIVE_RAY_COUNT_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("ActiveRayCountBuffer"));
+		UpdateDescriptorSet(RESET_ACTIVE_RAY_COUNT_LAYOUT_INDEX, ACTIVE_RAY_COUNT_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(ACTIVE_RAY_COUNT_BUFFER));
 	}
 };
 

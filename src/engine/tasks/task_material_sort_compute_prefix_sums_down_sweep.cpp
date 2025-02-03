@@ -49,7 +49,7 @@ void FComputePrefixSumsDownSweepTask::UpdateDescriptorSets()
 {
     for (uint32_t i = 0; i < TotalSize; ++i)
     {
-        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_PREFIX_SUMS_DOWN_SWEEP_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_DOWN_SWEEP_BUFFER_A, i, RESOURCE_ALLOCATOR()->GetBuffer("CountedMaterialsPerChunkBuffer"));
+        UpdateDescriptorSet(MATERIAL_SORT_COMPUTE_PREFIX_SUMS_DOWN_SWEEP_LAYOUT_INDEX, MATERIAL_SORT_COMPUTE_PREFIX_SUMS_DOWN_SWEEP_BUFFER_A, i, RESOURCE_ALLOCATOR()->GetBuffer(COUNTED_MATERIALS_PER_CHUNK_BUFFER));
     }
 };
 

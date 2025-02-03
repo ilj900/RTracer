@@ -1,5 +1,7 @@
+#include "named_resources.h"
 #include "light_component.h"
 #include "directional_light_system.h"
+
 
 namespace ECS
 {
@@ -19,7 +21,7 @@ namespace ECS
 
 			if (UtilityDirectionalLight.ActiveLightsCount != CurrentDirectionalLightsCount)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer("UtilityInfoDirectionalLight", {sizeof(FUtilityDirectionalLight)}, {0}, {&UtilityDirectionalLight});
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_DIRECTIONAL_LIGHT_BUFFER, {sizeof(FUtilityDirectionalLight)}, {0}, {&UtilityDirectionalLight});
 				CurrentDirectionalLightsCount = UtilityDirectionalLight.ActiveLightsCount;
 			}
 
@@ -42,7 +44,7 @@ namespace ECS
 
 			if (UtilityDirectionalLight.ActiveLightsCount != CurrentDirectionalLightsCount)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer("UtilityInfoDirectionalLight", {sizeof(FUtilityDirectionalLight)}, {0}, {&UtilityDirectionalLight});
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_DIRECTIONAL_LIGHT_BUFFER, {sizeof(FUtilityDirectionalLight)}, {0}, {&UtilityDirectionalLight});
 				CurrentDirectionalLightsCount = UtilityDirectionalLight.ActiveLightsCount;
 			}
 

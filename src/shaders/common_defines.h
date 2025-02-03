@@ -59,7 +59,7 @@
 /// Task reset active ray count descriptor set layout defines
 #define RESET_ACTIVE_RAY_COUNT_LAYOUT_INDEX 									0u
 
-#define ACTIVE_RAY_COUNT_BUFFER 												0u
+#define ACTIVE_RAY_COUNT_BUFFER_INDEX											0u
 
 /// Task compute shading data descriptor set layout defines
 #define COMPUTE_SHADING_DATA_LAYOUT_INDEX 										0u

@@ -3,6 +3,7 @@
 #include "image.h"
 #include "vk_pipeline.h"
 #include "vk_utils.h"
+#include "named_resources.h"
 
 enum DirtyType {UNINITIALIZED 			= 1u,
 				OUTDATED_DESCRIPTOR_SET = 1u << 1,

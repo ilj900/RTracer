@@ -45,7 +45,7 @@ void FAdvanceRenderCount::UpdateDescriptorSets()
 {
     for (uint32_t i = 0; i < TotalSize; ++i)
     {
-        UpdateDescriptorSet(ADVANCE_RENDER_COUNT_LAYOUT_INDEX, ADVANCE_RENDER_COUNT_RENDER_ITERATION_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("RenderIterationBuffer"));
+        UpdateDescriptorSet(ADVANCE_RENDER_COUNT_LAYOUT_INDEX, ADVANCE_RENDER_COUNT_RENDER_ITERATION_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer(RENDER_ITERATION_BUFFER));
     }
 };
 

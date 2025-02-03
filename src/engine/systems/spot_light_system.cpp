@@ -1,3 +1,4 @@
+#include "named_resources.h"
 #include "light_component.h"
 #include "spot_light_system.h"
 
@@ -18,7 +19,7 @@ namespace ECS
 
 			if (UtilitySpotLight.ActiveLightsCount != CurrentSpotLightsCount)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer("UtilityInfoSpotLight", {sizeof(FUtilitySpotLight)}, {0}, {&UtilitySpotLight});
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_SPOT_LIGHT_BUFFER, {sizeof(FUtilitySpotLight)}, {0}, {&UtilitySpotLight});
 				CurrentSpotLightsCount = UtilitySpotLight.ActiveLightsCount;
 			}
 
@@ -41,7 +42,7 @@ namespace ECS
 
 			if (UtilitySpotLight.ActiveLightsCount != CurrentSpotLightsCount)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer("UtilityInfoSpotLight", {sizeof(FUtilitySpotLight)}, {0}, {&UtilitySpotLight});
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_SPOT_LIGHT_BUFFER, {sizeof(FUtilitySpotLight)}, {0}, {&UtilitySpotLight});
 				CurrentSpotLightsCount = UtilitySpotLight.ActiveLightsCount;
 			}
 

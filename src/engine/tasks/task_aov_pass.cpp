@@ -88,12 +88,12 @@ void FAOVPassTask::UpdateDescriptorSets()
 {
 	for (size_t i = 0; i < TotalSize; ++i)
 	{
-		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_NORMAL_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("NormalAOVBuffer"));
+		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_NORMAL_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer(NORMAL_AOV_BUFFER));
 		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_SHADING_NORMAL_AOV_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("ShadingNormalAOVImage"));
 		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_GEOMETRIC_NORMAL_AOV_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("GeometricNormalAOVImage"));
-		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_UV_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("UVAOVBuffer"));
+		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_UV_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer(UV_AOV_BUFFER));
 		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_UV_AOV_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("UVAOVImage"));
-		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_WORLD_SPACE_POSITION_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("WorldSpacePositionAOVBuffer"));
+		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_WORLD_SPACE_POSITION_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer(WORLD_SPACE_POSITION_AOV_BUFFER));
 		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_WORLD_SPACE_POSITION_AOV_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("WorldSpacePositionAOVImage"));
 		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_OPACITY_AOV_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("OpacityAOVImage"));
 		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_DEPTH_AOV_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("DepthAOVImage"));
@@ -104,7 +104,7 @@ void FAOVPassTask::UpdateDescriptorSets()
 		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_PRIMITIVE_INDEX_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("PrimitiveIDAOVImage"));
 		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_MATERIAL_INDEX_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("MaterialIndicesAOVBuffer"));
 		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_MATERIAL_INDEX_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("MaterialIDAOVImage"));
-		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_DEBUG_LAYER_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("DebugLayerBuffer"));
+		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_DEBUG_LAYER_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer(DEBUG_LAYER_BUFFER));
 		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_DEBUG_LAYER_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("DebugLayerImage"));
 	}
 };
