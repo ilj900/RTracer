@@ -1341,25 +1341,25 @@ void FRender::AllocateDependentResources()
 
 	CreateAndRegisterBufferShortcut(BufferDescriptions);
 
+	/// Create internal images
 	std::vector<FImageDescription> ImageDescriptions = {
-		{"ColorImage", Width, Height, 0},
-		{"ShadingNormalAOVImage", Width, Height, 0},
-		{"GeometricNormalAOVImage", Width, Height, 0},
-		{"UVAOVImage", Width, Height, 0},
-		{"WorldSpacePositionAOVImage", Width, Height, 0},
-		{"OpacityAOVImage", Width, Height, 0},
-		{"DepthAOVImage", Width, Height, 0},
-		{"AlbedoAOVImage", Width, Height, 0},
-		{"LuminanceAOVImage", Width, Height, 0},
-		{"MaterialIDAOVImage", Width, Height, 0},
-		{"RenderableIDAOVImage", Width, Height, 0},
-		{"PrimitiveIDAOVImage", Width, Height, 0},
-		{"DebugLayerImage", Width, Height, 0}
+		{"ColorImage", 					Width, Height, 0},
+		{"ShadingNormalAOVImage", 		Width, Height, 0},
+		{"GeometricNormalAOVImage", 		Width, Height, 0},
+		{"UVAOVImage", 					Width, Height, 0},
+		{"WorldSpacePositionAOVImage", 	Width, Height, 0},
+		{"OpacityAOVImage", 				Width, Height, 0},
+		{"DepthAOVImage", 				Width, Height, 0},
+		{"AlbedoAOVImage", 				Width, Height, 0},
+		{"LuminanceAOVImage", 			Width, Height, 0},
+		{"MaterialIDAOVImage", 			Width, Height, 0},
+		{"RenderableIDAOVImage", 			Width, Height, 0},
+		{"PrimitiveIDAOVImage", 			Width, Height, 0},
+		{"DebugLayerImage", 				Width, Height, 0},
 	};
 
 	CreateRegisterAndTransitionImageShortcut(ImageDescriptions);
 
-	/// Create internal images
 	auto AccumulatorImage = TEXTURE_MANAGER()->CreateClearableStorageImage(Width, Height,"AccumulatorImage");
 	TEXTURE_MANAGER()->RegisterFramebuffer(AccumulatorImage, "AccumulatorImage");
 	AccumulatorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
@@ -1372,33 +1372,26 @@ void FRender::AllocateDependentResources()
 void FRender::AllocateIndependentResources()
 {
 	/// Allocate buffers that doesn't require recreation
-	FBuffer RenderIterationBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t),
-		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT  | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "RenderIterationBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(RenderIterationBuffer, "RenderIterationBuffer");
+	std::vector<FBufferDescription> BufferDescriptions = {
+		{"RenderIterationBuffer",				sizeof(uint32_t),																												VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{"CountedMaterialsPerChunkBuffer",	sizeof(uint32_t) * TOTAL_MATERIALS * CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE),	VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{"TotalCountedMaterialsBuffer",		sizeof(uint32_t) * TOTAL_MATERIALS * 3,																						VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT},
+		{"MaterialsOffsetsPerMaterialBuffer",	sizeof(uint32_t) * TOTAL_MATERIALS,																							0},
+	};
 
-	FBuffer CountedMaterialsPerChunkBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE),
-		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "CountedMaterialsPerChunkBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(CountedMaterialsPerChunkBuffer, "CountedMaterialsPerChunkBuffer");
+	CreateAndRegisterBufferShortcut(BufferDescriptions);
 
-	FBuffer TotalCountedMaterialsBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS * 3,
-		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "TotalCountedMaterialsBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(TotalCountedMaterialsBuffer, "TotalCountedMaterialsBuffer");
-
-	FBuffer MaterialsOffsetsPerMaterialBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * TOTAL_MATERIALS,
-		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialsOffsetsPerMaterialBuffer");
-	RESOURCE_ALLOCATOR()->RegisterBuffer(MaterialsOffsetsPerMaterialBuffer, "MaterialsOffsetsPerMaterialBuffer");
-
-	auto UtilityInfoPointLight = GetResourceAllocator()->CreateBuffer(sizeof(FUtilityPointLight),
+	auto UtilityInfoPointLight = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FUtilityPointLight),
 		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "UtilityInfoPointLight");
-	GetResourceAllocator()->RegisterBuffer(UtilityInfoPointLight, "UtilityInfoPointLight");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(UtilityInfoPointLight, "UtilityInfoPointLight");
 
-	auto UtilityInfoDirectionalLight = GetResourceAllocator()->CreateBuffer(sizeof(FUtilityDirectionalLight),
+	auto UtilityInfoDirectionalLight = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FUtilityDirectionalLight),
 		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "UtilityInfoDirectionalLight");
-	GetResourceAllocator()->RegisterBuffer(UtilityInfoDirectionalLight, "UtilityInfoDirectionalLight");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(UtilityInfoDirectionalLight, "UtilityInfoDirectionalLight");
 
-	auto UtilityInfoSpotLight = GetResourceAllocator()->CreateBuffer(sizeof(FUtilitySpotLight),
+	auto UtilityInfoSpotLight = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FUtilitySpotLight),
 		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "UtilityInfoSpotLight");
-	GetResourceAllocator()->RegisterBuffer(UtilityInfoSpotLight, "UtilityInfoSpotLight");
+	RESOURCE_ALLOCATOR()->RegisterBuffer(UtilityInfoSpotLight, "UtilityInfoSpotLight");
 }
 
 void FRender::FreeDependentResources()
