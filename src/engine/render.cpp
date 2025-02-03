@@ -303,7 +303,7 @@ int FRender::Cleanup()
     return 0;
 }
 
-int FRender::SetSize(int WidthIn, int HeightIn)
+int FRender::SetSize(uint32_t WidthIn, uint32_t HeightIn)
 {
     Width = WidthIn;
     Height = HeightIn;
@@ -1320,22 +1320,7 @@ ECS::FEntity FRender::CreateEmptyModel()
 
 void FRender::AllocateDependentResources()
 {
-	struct FBufferDescription
-	{
-		std::string Name;
-		VkDeviceSize Size;
-		VkBufferUsageFlags Flags;
-	};
-	auto CreateAndRegisterBufferLambda = [](std::vector<FBufferDescription>& BufferDescriptions)
-	{
-		for (auto & BufferDescription : BufferDescriptions)
-		{
-			FBuffer Buffer = RESOURCE_ALLOCATOR()->CreateBuffer(BufferDescription.Size,
-				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | BufferDescription.Flags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, BufferDescription.Name);
-			RESOURCE_ALLOCATOR()->RegisterBuffer(Buffer, BufferDescription.Name);
-		}
-	};
-
+	/// Create internal buffers
 	std::vector<FBufferDescription> BufferDescriptions = {
 		{"ThroughputBuffer", 					sizeof(FVector4) * Width * Height, 0},
 		{"InitialRaysBuffer", 				sizeof(FRayData) * Width * Height, 0},
@@ -1354,57 +1339,27 @@ void FRender::AllocateDependentResources()
 		{"DebugLayerBuffer", 					sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 	};
 
-	CreateAndRegisterBufferLambda(BufferDescriptions);
+	CreateAndRegisterBufferShortcut(BufferDescriptions);
+
+	std::vector<FImageDescription> ImageDescriptions = {
+		{"ColorImage", Width, Height, 0},
+		{"ShadingNormalAOVImage", Width, Height, 0},
+		{"GeometricNormalAOVImage", Width, Height, 0},
+		{"UVAOVImage", Width, Height, 0},
+		{"WorldSpacePositionAOVImage", Width, Height, 0},
+		{"OpacityAOVImage", Width, Height, 0},
+		{"DepthAOVImage", Width, Height, 0},
+		{"AlbedoAOVImage", Width, Height, 0},
+		{"LuminanceAOVImage", Width, Height, 0},
+		{"MaterialIDAOVImage", Width, Height, 0},
+		{"RenderableIDAOVImage", Width, Height, 0},
+		{"PrimitiveIDAOVImage", Width, Height, 0},
+		{"DebugLayerImage", Width, Height, 0}
+	};
+
+	CreateRegisterAndTransitionImageShortcut(ImageDescriptions);
 
 	/// Create internal images
-	auto ColorImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "ColorImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(ColorImage, "ColorImage");
-	ColorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-	auto ShadingNormalAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "ShadingNormalAOVImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(ShadingNormalAOVImage, "ShadingNormalAOVImage");
-	ShadingNormalAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-	auto GeometricNormalAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "GeometricNormalAOVImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(GeometricNormalAOVImage, "GeometricNormalAOVImage");
-	GeometricNormalAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-	auto UVAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "UVAOVImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(UVAOVImage, "UVAOVImage");
-	UVAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-	auto WorldSpacePositionAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "WorldSpacePositionAOVImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(WorldSpacePositionAOVImage, "WorldSpacePositionAOVImage");
-	WorldSpacePositionAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-	auto OpacityAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "OpacityAOVImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(OpacityAOVImage, "OpacityAOVImage");
-	OpacityAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-	auto DepthAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "DepthAOVImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(DepthAOVImage, "DepthAOVImage");
-	DepthAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-	auto AlbedoAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "AlbedoAOVImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(AlbedoAOVImage, "AlbedoAOVImage");
-	AlbedoAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-	auto LuminanceAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "LuminanceAOVImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(LuminanceAOVImage, "LuminanceAOVImage");
-	LuminanceAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-	auto MaterialIDAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "MaterialIDAOVImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(MaterialIDAOVImage, "MaterialIDAOVImage");
-	MaterialIDAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-	auto RenderableIDAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "RenderableIDAOVImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(RenderableIDAOVImage, "RenderableIDAOVImage");
-	RenderableIDAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-	auto PrimitiveIDAOVImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "PrimitiveIDAOVImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(PrimitiveIDAOVImage, "PrimitiveIDAOVImage");
-	PrimitiveIDAOVImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
 	auto AccumulatorImage = TEXTURE_MANAGER()->CreateClearableStorageImage(Width, Height,"AccumulatorImage");
 	TEXTURE_MANAGER()->RegisterFramebuffer(AccumulatorImage, "AccumulatorImage");
 	AccumulatorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
@@ -1412,10 +1367,6 @@ void FRender::AllocateDependentResources()
 	auto EstimatedImage = TEXTURE_MANAGER()->CreateSampledStorageImage(Width, Height, "EstimatedImage");
 	TEXTURE_MANAGER()->RegisterFramebuffer(EstimatedImage, "EstimatedImage");
 	EstimatedImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-	auto DebugLayerImage = TEXTURE_MANAGER()->CreateStorageImage(Width, Height, "DebugLayerImage");
-	TEXTURE_MANAGER()->RegisterFramebuffer(DebugLayerImage, "DebugLayerImage");
-	DebugLayerImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 }
 
 void FRender::AllocateIndependentResources()
@@ -1499,4 +1450,22 @@ void FRender::FreeIndependentResources()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("UtilityInfoSpotLight");
 }
 
+void FRender::CreateAndRegisterBufferShortcut(const std::vector<FBufferDescription>& BufferDescriptions)
+{
+	for (auto & BufferDescription : BufferDescriptions)
+	{
+		FBuffer Buffer = RESOURCE_ALLOCATOR()->CreateBuffer(BufferDescription.Size,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | BufferDescription.Flags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, BufferDescription.Name);
+		RESOURCE_ALLOCATOR()->RegisterBuffer(Buffer, BufferDescription.Name);
+	}
+};
 
+void FRender::CreateRegisterAndTransitionImageShortcut(const std::vector<FImageDescription>& ImageDescriptions)
+{
+	for (auto & ImageDescription : ImageDescriptions)
+	{
+		auto Image = TEXTURE_MANAGER()->CreateStorageImage(ImageDescription.Width, ImageDescription.Height, ImageDescription.Name);
+		TEXTURE_MANAGER()->RegisterFramebuffer(Image, ImageDescription.Name);
+		Image->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	}
+}

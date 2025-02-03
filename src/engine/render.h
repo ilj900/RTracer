@@ -46,7 +46,7 @@ public:
     void RegisterExternalOutputs(std::vector<ImagePtr> OutputImagesIn, const std::vector<FSynchronizationPoint>& ExternalImageIsReadyIn);
     int Init();
     int Cleanup();
-    int SetSize(int WidthIn, int HeightIn);
+    int SetSize(uint32_t WidthIn, uint32_t HeightIn);
 	void SetRenderTarget(EOutputType OutputType);
 
     ECS::FEntity CreateCamera();
@@ -246,8 +246,27 @@ private:
 	void AllocateIndependentResources();
 	void FreeDependentResources();
 	void FreeIndependentResources();
-    int Width;
-    int Height;
+
+	struct FBufferDescription
+	{
+		std::string Name;
+		VkDeviceSize Size;
+		VkBufferUsageFlags Flags;
+	};
+
+	struct FImageDescription
+	{
+		std::string Name;
+		uint32_t Width;
+		uint32_t Height;
+		uint32_t Format;
+	};
+
+	void CreateAndRegisterBufferShortcut(const std::vector<FBufferDescription>& BufferDescriptions);
+	void CreateRegisterAndTransitionImageShortcut(const std::vector<FImageDescription>& ImageDescriptions);
+
+    uint32_t Width;
+    uint32_t Height;
 	uint32_t RecursionDepth = 12;
 	bool bAnyUpdate = false;
 	std::chrono::time_point<std::chrono::steady_clock> Time;
