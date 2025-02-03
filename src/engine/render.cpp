@@ -212,7 +212,7 @@ int FRender::Init()
     GenerateRaysTask 					= std::make_shared<FGenerateInitialRays>			(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetActiveRayCountTask 			= std::make_shared<FResetActiveRayCountTask>		(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	CopyNormalAOVBuffer					= std::make_shared<FCopyBufferTask>					(NORMAL_AOV_BUFFER, HISTORY_NORMAL_AOV_BUFFER, Width, Height, RecursionDepth - 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	ClearDebugLayerBuffer				= std::make_shared<FClearBufferTask>				(DEBUG_LAYER_BUFFER, 				Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	ClearDebugLayerBuffer				= std::make_shared<FClearBufferTask>				(DEBUG_LAYER_BUFFER, 				Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	std::vector<std::string> BatchCleaning{NORMAL_AOV_BUFFER, UV_AOV_BUFFER, WORLD_SPACE_POSITION_AOV_BUFFER, TRANSFORM_INDEX_BUFFER, SAMPLED_IBL_BUFFER, SAMPLED_POINT_LIGHT_BUFFER, SAMPLED_DIRECTIONAL_LIGHT_BUFFER, SAMPLED_SPOT_LIGHT_BUFFER, DEBUG_LAYER_BUFFER, COUNTED_MATERIALS_PER_CHUNK_BUFFER};
 	ClearBuffersTask 					= std::make_shared<FClearBufferTask>				(BatchCleaning , Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     RayTraceTask 						= std::make_shared<FRaytraceTask>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -1120,73 +1120,44 @@ void FRender::GetAllTimings(std::vector<std::string>& Names, std::vector<std::ve
 
 	FrameTime = std::chrono::duration<float, std::chrono::milliseconds ::period>(Time - PreviousTime).count();
 
-	Names.push_back(UpdateTLASTask->Name);
-	Timings.push_back(UpdateTLASTask->RequestTiming(FrameIndex));
+	auto TimingFillingLambda = [&NamesIn = Names, &TimingsIn = Timings](const std::shared_ptr<FExecutableTask>& Task, uint32_t FrameIndex)
+	{
+		NamesIn.push_back(Task->Name);
+		TimingsIn.push_back(Task->RequestTiming(FrameIndex));
+	};
 
-	Names.push_back(ResetRenderIterations->Name);
-	Timings.push_back(ResetRenderIterations->RequestTiming(FrameIndex));
-
-	Names.push_back(ClearImageTask->Name);
-	Timings.push_back(ClearImageTask->RequestTiming(FrameIndex));
-
-	Names.push_back(GenerateRaysTask->Name);
-	Timings.push_back(GenerateRaysTask->RequestTiming(FrameIndex));
-
-	Names.push_back(ResetActiveRayCountTask->Name);
-	Timings.push_back(ResetActiveRayCountTask->RequestTiming(FrameIndex));
-
-	Names.push_back(ClearBuffersTask->Name);
-	Timings.push_back(ClearBuffersTask->RequestTiming(FrameIndex));
-
-	Names.push_back(RayTraceTask->Name);
-	Timings.push_back(RayTraceTask->RequestTiming(FrameIndex));
-
-	Names.push_back(ClearTotalMaterialsCountTask->Name);
-	Timings.push_back(ClearTotalMaterialsCountTask->RequestTiming(FrameIndex));
-
-	Names.push_back(CountMaterialsPerChunkTask->Name);
-	Timings.push_back(CountMaterialsPerChunkTask->RequestTiming(FrameIndex));
-
-	Names.push_back(ComputePrefixSumsUpSweepTask->Name);
-	Timings.push_back(ComputePrefixSumsUpSweepTask->RequestTiming(FrameIndex));
-
-	Names.push_back(ComputePrefixSumsZeroOutTask->Name);
-	Timings.push_back(ComputePrefixSumsZeroOutTask->RequestTiming(FrameIndex));
-
-	Names.push_back(ComputePrefixSumsDownSweepTask->Name);
-	Timings.push_back(ComputePrefixSumsDownSweepTask->RequestTiming(FrameIndex));
-
-	Names.push_back(ComputeOffsetsPerMaterialTask->Name);
-	Timings.push_back(ComputeOffsetsPerMaterialTask->RequestTiming(FrameIndex));
-
-	Names.push_back(SortMaterialsTask->Name);
-	Timings.push_back(SortMaterialsTask->RequestTiming(FrameIndex));
-
-	Names.push_back(ComputeShadingData->Name);
-	Timings.push_back(ComputeShadingData->RequestTiming(FrameIndex));
-
-	Names.push_back(SampleIBLTask->Name);
-	Timings.push_back(SampleIBLTask->RequestTiming(FrameIndex));
-
-	Names.push_back(ShadeTask->Name);
-	Timings.push_back(ShadeTask->RequestTiming(FrameIndex));
-
-	Names.push_back(MissTask->Name);
-	Timings.push_back(MissTask->RequestTiming(FrameIndex));
-
-	Names.push_back(AccumulateTask->Name);
-	Timings.push_back(AccumulateTask->RequestTiming(FrameIndex));
-
-	Names.push_back(PassthroughTask->Name);
-	Timings.push_back(PassthroughTask->RequestTiming(FrameIndex));
-
-	Names.push_back(AdvanceRenderCountTask->Name);
-	Timings.push_back(AdvanceRenderCountTask->RequestTiming(FrameIndex));
+	TimingFillingLambda(UpdateTLASTask, FrameIndex);
+	TimingFillingLambda(ResetRenderIterations, FrameIndex);
+	TimingFillingLambda(ClearImageTask, FrameIndex);
+	TimingFillingLambda(ClearCumulativeMaterialColorBuffer, FrameIndex);
+	TimingFillingLambda(ClearDebugLayerBuffer, FrameIndex);
+	TimingFillingLambda(GenerateRaysTask, FrameIndex);
+	TimingFillingLambda(ResetActiveRayCountTask, FrameIndex);
+	TimingFillingLambda(CopyNormalAOVBuffer, FrameIndex);
+	TimingFillingLambda(ClearBuffersTask, FrameIndex);
+	TimingFillingLambda(RayTraceTask, FrameIndex);
+	TimingFillingLambda(ClearTotalMaterialsCountTask, FrameIndex);
+	TimingFillingLambda(CountMaterialsPerChunkTask, FrameIndex);
+	TimingFillingLambda(ComputePrefixSumsUpSweepTask, FrameIndex);
+	TimingFillingLambda(ComputePrefixSumsZeroOutTask, FrameIndex);
+	TimingFillingLambda(ComputePrefixSumsDownSweepTask, FrameIndex);
+	TimingFillingLambda(ComputeOffsetsPerMaterialTask, FrameIndex);
+	TimingFillingLambda(SortMaterialsTask, FrameIndex);
+	TimingFillingLambda(ComputeShadingData, FrameIndex);
+	TimingFillingLambda(SampleIBLTask, FrameIndex);
+	TimingFillingLambda(SamplePointLightTask, FrameIndex);
+	TimingFillingLambda(SampleDirectionalLightTask, FrameIndex);
+	TimingFillingLambda(SampleSpotLightTask, FrameIndex);
+	TimingFillingLambda(ShadeTask, FrameIndex);
+	TimingFillingLambda(MissTask, FrameIndex);
+	TimingFillingLambda(AOVPassTask, FrameIndex);
+	TimingFillingLambda(AccumulateTask, FrameIndex);
+	TimingFillingLambda(AdvanceRenderCountTask, FrameIndex);
+	TimingFillingLambda(PassthroughTask, FrameIndex);
 
 	for (auto& Task : ExternalTasks)
 	{
-		Names.push_back(Task->Name);
-		Timings.push_back(Task->RequestTiming(FrameIndex));
+		TimingFillingLambda(Task, FrameIndex);
 	}
 }
 
