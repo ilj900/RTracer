@@ -212,9 +212,10 @@ int FRender::Init()
     GenerateRaysTask 					= std::make_shared<FGenerateInitialRays>			(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetActiveRayCountTask 			= std::make_shared<FResetActiveRayCountTask>		(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	CopyNormalAOVBuffer					= std::make_shared<FCopyBufferTask>					(NORMAL_AOV_BUFFER, HISTORY_NORMAL_AOV_BUFFER, Width, Height, RecursionDepth - 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	ClearDebugLayerBuffer				= std::make_shared<FClearBufferTask>				(DEBUG_LAYER_BUFFER, 				Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	std::vector<std::string> BatchCleaning{NORMAL_AOV_BUFFER, UV_AOV_BUFFER, WORLD_SPACE_POSITION_AOV_BUFFER, TRANSFORM_INDEX_BUFFER, SAMPLED_IBL_BUFFER, SAMPLED_POINT_LIGHT_BUFFER, SAMPLED_DIRECTIONAL_LIGHT_BUFFER, SAMPLED_SPOT_LIGHT_BUFFER, DEBUG_LAYER_BUFFER, COUNTED_MATERIALS_PER_CHUNK_BUFFER};
-	ClearBuffersTask 					= std::make_shared<FClearBufferTask>				(BatchCleaning , Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	std::vector<std::string> BuffersToCleanEachFrame{NORMAL_AOV_BUFFER, UV_AOV_BUFFER, WORLD_SPACE_POSITION_AOV_BUFFER, TRANSFORM_INDEX_BUFFER, SAMPLED_IBL_BUFFER, SAMPLED_POINT_LIGHT_BUFFER, SAMPLED_DIRECTIONAL_LIGHT_BUFFER, SAMPLED_SPOT_LIGHT_BUFFER, DEBUG_LAYER_BUFFER};
+	ClearBuffersEachFrameTask 			= std::make_shared<FClearBufferTask>				(BuffersToCleanEachFrame , Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	std::vector<std::string> BuffersToCleanEachBounce{COUNTED_MATERIALS_PER_CHUNK_BUFFER};
+	ClearBuffersEachBounceTask 			= std::make_shared<FClearBufferTask>				(BuffersToCleanEachBounce , Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     RayTraceTask 						= std::make_shared<FRaytraceTask>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ClearTotalMaterialsCountTask 		= std::make_shared<FClearTotalMaterialsCountTask>	(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     CountMaterialsPerChunkTask 			= std::make_shared<FCountMaterialsPerChunkTask>		(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -273,8 +274,9 @@ int FRender::Cleanup()
     GenerateRaysTask 					= nullptr;
 	ResetActiveRayCountTask 			= nullptr;
 	CopyNormalAOVBuffer					= nullptr;
-	ClearDebugLayerBuffer				= nullptr;
-	ClearBuffersTask					= nullptr;
+	ClearBuffersEachFrameTask			= nullptr;
+	ClearBuffersEachBounceTask			= nullptr;
+	ClearBuffersEachBounceTask			= nullptr;
     RayTraceTask 						= nullptr;
     ClearTotalMaterialsCountTask 		= nullptr;
     CountMaterialsPerChunkTask 			= nullptr;
@@ -437,8 +439,8 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	ResetActiveRayCountTask->Reload();
 	RayTraceTask->Reload();
 	CopyNormalAOVBuffer->Reload();
-	ClearDebugLayerBuffer->Reload();
-	ClearBuffersTask->Reload();
+	ClearBuffersEachFrameTask->Reload();
+	ClearBuffersEachBounceTask->Reload();
 	ClearTotalMaterialsCountTask->Reload();
 	CountMaterialsPerChunkTask->Reload();
 	ComputePrefixSumsUpSweepTask->Reload();
@@ -493,7 +495,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 	SynchronizationPoint = ClearCumulativeMaterialColorBuffer->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
-	SynchronizationPoint = ClearDebugLayerBuffer->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
+	SynchronizationPoint = ClearBuffersEachFrameTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
 	SynchronizationPoint = GenerateRaysTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
@@ -510,7 +512,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 			SynchronizationPoint = CopyNormalAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i - 1, CurrentFrame);
 		}
 
-		SynchronizationPoint = ClearBuffersTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
+		SynchronizationPoint = ClearBuffersEachBounceTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = RayTraceTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
@@ -1130,11 +1132,11 @@ void FRender::GetAllTimings(std::vector<std::string>& Names, std::vector<std::ve
 	TimingFillingLambda(ResetRenderIterations, FrameIndex);
 	TimingFillingLambda(ClearImageTask, FrameIndex);
 	TimingFillingLambda(ClearCumulativeMaterialColorBuffer, FrameIndex);
-	TimingFillingLambda(ClearDebugLayerBuffer, FrameIndex);
+	TimingFillingLambda(ClearBuffersEachFrameTask, FrameIndex);
 	TimingFillingLambda(GenerateRaysTask, FrameIndex);
 	TimingFillingLambda(ResetActiveRayCountTask, FrameIndex);
 	TimingFillingLambda(CopyNormalAOVBuffer, FrameIndex);
-	TimingFillingLambda(ClearBuffersTask, FrameIndex);
+	TimingFillingLambda(ClearBuffersEachBounceTask, FrameIndex);
 	TimingFillingLambda(RayTraceTask, FrameIndex);
 	TimingFillingLambda(ClearTotalMaterialsCountTask, FrameIndex);
 	TimingFillingLambda(CountMaterialsPerChunkTask, FrameIndex);
