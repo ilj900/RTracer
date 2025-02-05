@@ -28,7 +28,7 @@ FClearTotalMaterialsCountTask::~FClearTotalMaterialsCountTask()
 {
 };
 
-void FClearTotalMaterialsCountTask::Init()
+void FClearTotalMaterialsCountTask::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 

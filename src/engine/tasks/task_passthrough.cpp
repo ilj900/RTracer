@@ -35,7 +35,7 @@ FPassthroughTask::~FPassthroughTask()
     vkDestroyRenderPass(LogicalDevice, RenderPass, nullptr);
 }
 
-void FPassthroughTask::Init()
+void FPassthroughTask::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 

@@ -24,7 +24,7 @@ FAdvanceRenderCount::FAdvanceRenderCount(uint32_t WidthIn, uint32_t HeightIn, ui
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
 }
 
-void FAdvanceRenderCount::Init()
+void FAdvanceRenderCount::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 

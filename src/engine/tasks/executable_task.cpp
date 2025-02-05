@@ -99,11 +99,11 @@ void FExecutableTask::RegisterOutput(const std::string& InputName, ImagePtr Imag
     Outputs[InputName] = std::move(Image);
 }
 
-void FExecutableTask::Reload()
+void FExecutableTask::Reload(FCompileDefinitions* CompileDefinitions)
 {
 	if (CheckFlag(DitryFlags, DirtyType::UNINITIALIZED))
 	{
-		Init();
+		Init(CompileDefinitions);
 	}
 
 	if (CheckFlag(DitryFlags, DirtyType::OUTDATED_DESCRIPTOR_SET))

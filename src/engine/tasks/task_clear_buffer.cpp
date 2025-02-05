@@ -29,7 +29,7 @@ FClearBufferTask::FClearBufferTask(const std::string& BufferNameIn, uint32_t Wid
 	QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
 }
 
-void FClearBufferTask::Init()
+void FClearBufferTask::Init(FCompileDefinitions* CompileDefinitions)
 {
 };
 

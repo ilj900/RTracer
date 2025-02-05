@@ -42,7 +42,7 @@ FGenerateInitialRays::~FGenerateInitialRays()
 {
 };
 
-void FGenerateInitialRays::Init()
+void FGenerateInitialRays::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 

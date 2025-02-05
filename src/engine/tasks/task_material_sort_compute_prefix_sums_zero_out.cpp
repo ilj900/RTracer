@@ -30,7 +30,7 @@ FComputePrefixSumsZeroOutTask::FComputePrefixSumsZeroOutTask(uint32_t WidthIn, u
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
 }
 
-void FComputePrefixSumsZeroOutTask::Init()
+void FComputePrefixSumsZeroOutTask::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 

@@ -30,7 +30,7 @@ FResetActiveRayCountTask::~FResetActiveRayCountTask()
 {
 };
 
-void FResetActiveRayCountTask::Init()
+void FResetActiveRayCountTask::Init(FCompileDefinitions* CompileDefinitions)
 {
 	auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 

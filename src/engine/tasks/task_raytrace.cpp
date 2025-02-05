@@ -50,7 +50,7 @@ FRaytraceTask::~FRaytraceTask()
     GetResourceAllocator()->DestroyBuffer(SBTBuffer);
 };
 
-void FRaytraceTask::Init()
+void FRaytraceTask::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 

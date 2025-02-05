@@ -29,7 +29,7 @@ FCountMaterialsPerChunkTask::FCountMaterialsPerChunkTask(uint32_t WidthIn, uint3
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
 }
 
-void FCountMaterialsPerChunkTask::Init()
+void FCountMaterialsPerChunkTask::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 

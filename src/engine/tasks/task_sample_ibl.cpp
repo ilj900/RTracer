@@ -57,7 +57,7 @@ FSampleIBLTask::~FSampleIBLTask()
     GetResourceAllocator()->DestroyBuffer(SBTBuffer);
 };
 
-void FSampleIBLTask::Init()
+void FSampleIBLTask::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 

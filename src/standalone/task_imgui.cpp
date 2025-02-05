@@ -48,7 +48,7 @@ void FImguiTask::SetRender(std::shared_ptr<FRender> RenderIn)
 	Render = RenderIn;
 }
 
-void FImguiTask::Init()
+void FImguiTask::Init(FCompileDefinitions* CompileDefinitions)
 {
 }
 

@@ -50,7 +50,7 @@ FMissTask::~FMissTask()
 	vkDestroySampler(LogicalDevice, IBLImageSamplerNearest, nullptr);
 };
 
-void FMissTask::Init()
+void FMissTask::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 

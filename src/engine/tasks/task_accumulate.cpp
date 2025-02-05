@@ -34,7 +34,7 @@ FAccumulateTask::FAccumulateTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t S
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
 }
 
-void FAccumulateTask::Init()
+void FAccumulateTask::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 

@@ -17,7 +17,7 @@ FCopyBufferTask::FCopyBufferTask(const std::string& SrcBufferNameIn, const std::
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
 }
 
-void FCopyBufferTask::Init()
+void FCopyBufferTask::Init(FCompileDefinitions* CompileDefinitions)
 {
 };
 

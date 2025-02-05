@@ -66,7 +66,7 @@ FAOVPassTask::~FAOVPassTask()
 {
 };
 
-void FAOVPassTask::Init()
+void FAOVPassTask::Init(FCompileDefinitions* CompileDefinitions)
 {
 	auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 

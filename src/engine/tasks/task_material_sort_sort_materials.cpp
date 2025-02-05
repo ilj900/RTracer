@@ -36,7 +36,7 @@ FSortMaterialsTask::~FSortMaterialsTask()
 {
 };
 
-void FSortMaterialsTask::Init()
+void FSortMaterialsTask::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 

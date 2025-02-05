@@ -47,7 +47,7 @@ FSampleDirectionalLightTask::~FSampleDirectionalLightTask()
     GetResourceAllocator()->DestroyBuffer(SBTBuffer);
 };
 
-void FSampleDirectionalLightTask::Init()
+void FSampleDirectionalLightTask::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 

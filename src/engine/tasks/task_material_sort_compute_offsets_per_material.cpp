@@ -2,7 +2,6 @@
 #include "vk_debug.h"
 #include "vk_functions.h"
 #include "common_defines.h"
-#include "utils.h"
 
 #include "vk_shader_compiler.h"
 
@@ -32,7 +31,7 @@ FComputeOffsetsPerMaterialTask::~FComputeOffsetsPerMaterialTask()
 {
 };
 
-void FComputeOffsetsPerMaterialTask::Init()
+void FComputeOffsetsPerMaterialTask::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 

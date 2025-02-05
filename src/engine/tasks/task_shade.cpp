@@ -74,7 +74,7 @@ FShadeTask::~FShadeTask()
     vkDestroySampler(LogicalDevice, MaterialTextureSampler, nullptr);
 }
 
-void FShadeTask::Init()
+void FShadeTask::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
@@ -83,9 +83,9 @@ void FShadeTask::Init()
     for (auto& Material : *MATERIAL_SYSTEM())
     {
         auto MaterialCode = MATERIAL_SYSTEM()->GenerateMaterialCode(Material);
-        FCompileDefinitions CompileDefinitions;
-        CompileDefinitions.Push("FDeviceMaterial GetMaterial(vec2 TextureCoords);", MaterialCode);
-        auto ShadeShader = FShader("../../../src/shaders/shade.comp", &CompileDefinitions);
+        FCompileDefinitions CombinedCompileDefinitions(*CompileDefinitions);
+		CombinedCompileDefinitions.Push("FDeviceMaterial GetMaterial(vec2 TextureCoords);", MaterialCode);
+        auto ShadeShader = FShader("../../../src/shaders/shade.comp", &CombinedCompileDefinitions);
         uint32_t MaterialIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
         MaterialIndexToPipelineMap[MaterialIndex] = VK_CONTEXT()->CreateComputePipeline(ShadeShader(), PipelineLayout);
     }

@@ -17,7 +17,7 @@ FClearImageTask::FClearImageTask(const std::string& ImageNameIn, uint32_t WidthI
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
 }
 
-void FClearImageTask::Init()
+void FClearImageTask::Init(FCompileDefinitions* CompileDefinitions)
 {
 };
 

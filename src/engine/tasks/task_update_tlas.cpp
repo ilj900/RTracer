@@ -20,7 +20,7 @@ FUpdateTLASTask::~FUpdateTLASTask()
 	RESOURCE_ALLOCATOR()->DestroyBuffer(ScratchBuffer);
 }
 
-void FUpdateTLASTask::Init()
+void FUpdateTLASTask::Init(FCompileDefinitions* CompileDefinitions)
 {
 };
 

@@ -48,7 +48,7 @@ FComputeShadingDataTask::~FComputeShadingDataTask()
 {
 }
 
-void FComputeShadingDataTask::Init()
+void FComputeShadingDataTask::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 

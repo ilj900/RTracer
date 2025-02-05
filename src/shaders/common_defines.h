@@ -20,7 +20,6 @@
 #define IBL_MATERIAL_INDEX														TOTAL_MATERIALS - 2
 #define INACTIVE_MATERIAL_INDEX													TOTAL_MATERIALS - 1
 #define BASIC_CHUNK_SIZE 														256
-#define LAST_BOUNCE 															11
 
 #define FLOAT_EPSILON															0.0001f
 

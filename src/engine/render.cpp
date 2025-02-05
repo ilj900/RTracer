@@ -453,7 +453,9 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	SampleDirectionalLightTask->Reload();
 	SampleSpotLightTask->Reload();
 	ComputeShadingData->Reload();
-	ShadeTask->Reload();
+	FCompileDefinitions CompileDefinitions;
+	CompileDefinitions.Push("LAST_BOUNCE", std::to_string(RecursionDepth - 1));
+	ShadeTask->Reload(&CompileDefinitions);
 	MissTask->Reload();
 	AOVPassTask->Reload();
 	AccumulateTask->Reload();

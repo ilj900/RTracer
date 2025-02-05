@@ -17,7 +17,7 @@ public:
 	void SetRender(std::shared_ptr<FRender> RenderIn);
 
 	void Init(std::vector<ImagePtr> Images);
-	void Init() override;
+	void Init(FCompileDefinitions* CompileDefinitions = nullptr) override;
 	void UpdateDescriptorSets() override;
 	void RecordCommands() override;
 	FSynchronizationPoint Submit(VkPipelineStageFlags& PipelineStageFlagsIn, FSynchronizationPoint SynchronizationPoint, uint32_t X, uint32_t Y) override;

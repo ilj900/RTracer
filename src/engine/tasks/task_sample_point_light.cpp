@@ -47,7 +47,7 @@ FSamplePointLightTask::~FSamplePointLightTask()
     GetResourceAllocator()->DestroyBuffer(SBTBuffer);
 };
 
-void FSamplePointLightTask::Init()
+void FSamplePointLightTask::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 

@@ -28,7 +28,7 @@ FComputePrefixSumsDownSweepTask::FComputePrefixSumsDownSweepTask(uint32_t WidthI
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
 }
 
-void FComputePrefixSumsDownSweepTask::Init()
+void FComputePrefixSumsDownSweepTask::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 

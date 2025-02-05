@@ -2,6 +2,7 @@
 
 #include "image.h"
 #include "vk_pipeline.h"
+#include "vk_shader_compiler.h"
 #include "vk_utils.h"
 #include "named_resources.h"
 
@@ -40,10 +41,10 @@ public:
     FExecutableTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice);
     virtual ~FExecutableTask();
 
-    virtual void Init() = 0;
+    virtual void Init(FCompileDefinitions* CompileDefinitions = nullptr) = 0;
     virtual void UpdateDescriptorSets() = 0;
     virtual void RecordCommands() = 0;
-	virtual void Reload();
+	virtual void Reload(FCompileDefinitions* CompileDefinitions = nullptr);
 	/// SynchronizationPoint will be updated after this
 	/// X - for bounce
 	/// Y - for frame
