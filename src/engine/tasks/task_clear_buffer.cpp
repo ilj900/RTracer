@@ -12,7 +12,7 @@ FClearBufferTask::FClearBufferTask(const std::vector<std::string>& BufferNamesIn
 	FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice)
 {
 	static int Counter = 0;
-	
+
 	if (BufferNames.size() == 1)
 	{
 		Name = "Clear buffer " + BufferNames[0] + " pipeline";

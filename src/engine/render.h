@@ -267,7 +267,10 @@ private:
 
     uint32_t Width;
     uint32_t Height;
-	uint32_t RecursionDepth = 6;
+	uint32_t RecursionDepth = 7;
+	uint32_t DiffuseRecursionDepth = 4;
+	uint32_t ReflectionRecursionDepth = 4;
+	uint32_t RefractionRecursionDepth = 7;
 	bool bAnyUpdate = false;
 	std::chrono::time_point<std::chrono::steady_clock> Time;
 	std::chrono::time_point<std::chrono::steady_clock> PreviousTime;

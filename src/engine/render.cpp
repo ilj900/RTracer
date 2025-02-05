@@ -455,6 +455,9 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	ComputeShadingData->Reload();
 	FCompileDefinitions CompileDefinitions;
 	CompileDefinitions.Push("LAST_BOUNCE", std::to_string(RecursionDepth - 1));
+	CompileDefinitions.Push("LAST_DIFFUSE_BOUNCE", std::to_string(DiffuseRecursionDepth - 1));
+	CompileDefinitions.Push("LAST_REFLECTION_BOUNCE", std::to_string(ReflectionRecursionDepth - 1));
+	CompileDefinitions.Push("LAST_REFRACTION_BOUNCE", std::to_string(RefractionRecursionDepth - 1));
 	ShadeTask->Reload(&CompileDefinitions);
 	MissTask->Reload();
 	AOVPassTask->Reload();

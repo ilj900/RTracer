@@ -20,7 +20,7 @@ layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_OUTPUT_IMAGE_I
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_RAYS_BUFFER_INDEX) buffer RaysBufferObject
 {
-    FRayData RayData[];
+    FRayData RayDataBuffer[];
 };
 
 layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_TEXTURE_SAMPLER) uniform sampler Sampler;
@@ -94,12 +94,12 @@ layout (set = COMPUTE_SHADE_LAYOUT_INDEX, binding = COMPUTE_SHADE_WORLD_SPACE_PO
 
 FRayData FetchRayData(uint RayIndex)
 {
-    return RayData[RayIndex];
+    return RayDataBuffer[RayIndex];
 }
 
 void SetRayData(uint RayIndex, FRayData RayDataIn)
 {
-    RayData[RayIndex] = RayDataIn;
+    RayDataBuffer[RayIndex] = RayDataIn;
 }
 
 vec3 SampleVec3(uint TextureIndex, vec2 TextureCoords)
@@ -110,6 +110,11 @@ vec3 SampleVec3(uint TextureIndex, vec2 TextureCoords)
 float SampleFloat(uint TextureIndex, vec2 TextureCoords)
 {
     return texture(sampler2D(Textures[TextureIndex], Sampler), TextureCoords).r;
+}
+
+bool IsRayType(uint RayFlags, uint Flag)
+{
+    return (RayFlags & Flag) == Flag;
 }
 
 FDeviceMaterial GetMaterial(vec2 TextureCoords);
@@ -177,7 +182,7 @@ void main()
     CumulativeMaterialColor *= SamplingResult;
     CumulativeMaterialColorBuffer[NewPixelIndex] = vec4(CumulativeMaterialColor, 1);
 
-    if ((RayData.RayFlags & TRANSMISSION_LAYER) != TRANSMISSION_LAYER && (RayData.RayFlags & SPECULAR_LAYER) != SPECULAR_LAYER)
+    if (!IsRayType(RayData.RayFlags, TRANSMISSION_LAYER) && !IsRayType(RayData.RayFlags, SPECULAR_LAYER))
     {
         vec4 IBLSamplingResult = SampledIBLBuffer[NewPixelIndex];
         vec4 PointLightSamplingResult = SampledPointLightsBuffer[NewPixelIndex];
@@ -200,9 +205,19 @@ void main()
 
     ThroughputBuffer[NewPixelIndex].xyz = ThroughputBuffer[NewPixelIndex].xyz + SamplingResult;
 
+    if ((PushConstants.BounceIndex == LAST_DIFFUSE_BOUNCE && IsRayType(RayData.RayFlags, DIFFUSE_LAYER))
+        || (PushConstants.BounceIndex == LAST_REFLECTION_BOUNCE && IsRayType(RayData.RayFlags, SPECULAR_LAYER))
+        || (PushConstants.BounceIndex == LAST_REFRACTION_BOUNCE && IsRayType(RayData.RayFlags, TRANSMISSION_LAYER)))
+    {
+        RayDataBuffer[NewPixelIndex].RayFlags = RAY_DATA_RAY_MISSED;
+        imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(ThroughputBuffer[NewPixelIndex].xyz , 1));
+        return;
+    }
+
     if (PushConstants.BounceIndex == LAST_BOUNCE)
     {
         imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(ThroughputBuffer[NewPixelIndex].xyz , 1));
+        return;
     }
 
     SetRayData(NewPixelIndex, RayData);
