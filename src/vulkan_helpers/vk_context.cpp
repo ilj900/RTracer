@@ -834,6 +834,61 @@ FAccelerationStructure FVulkanContext::GenerateTlas(const FBuffer& BlasInstanceB
 	return TLAS;
 }
 
+FBuffer FVulkanContext::GenerateSBT(VkPipeline Pipeline, VkStridedDeviceAddressRegionKHR& RayMissRegion, VkStridedDeviceAddressRegionKHR& RayHitRegion, VkStridedDeviceAddressRegionKHR& RayGenRegion)
+{
+	static const auto RTProperties = VK_CONTEXT()->GetRTProperties();
+	static const uint32_t HandleSize = RTProperties.shaderGroupHandleSize;
+
+	uint32_t MissCount = 1;
+	uint32_t HitCount = 1;
+	auto HandleCount = 1 + MissCount + HitCount;
+
+	auto AlignUp = [](uint32_t X, uint32_t A)-> uint32_t
+	{
+		return (X + (A - 1)) & ~(A - 1);
+	};
+
+	uint32_t HandleSizeAligned = AlignUp(HandleSize, RTProperties.shaderGroupHandleAlignment);
+
+	RayGenRegion.stride = AlignUp(HandleSize, RTProperties.shaderGroupBaseAlignment);
+	RayGenRegion.size = RayGenRegion.stride;
+
+	RayMissRegion.stride = HandleSizeAligned;
+	RayMissRegion.size = AlignUp(MissCount * HandleSizeAligned, RTProperties.shaderGroupBaseAlignment);
+
+	RayHitRegion.stride = HandleSizeAligned;
+	RayHitRegion.size = AlignUp(HitCount * HandleSizeAligned, RTProperties.shaderGroupBaseAlignment);
+
+	uint32_t DataSize = HandleCount * HandleSize;
+	std::vector<uint8_t> Handles(DataSize);
+
+	auto Result = V::vkGetRayTracingShaderGroupHandlesKHR(LogicalDevice, Pipeline, 0, HandleCount, DataSize, Handles.data());
+	assert(Result == VK_SUCCESS && "Failed to get handles for SBT");
+
+	VkDeviceSize SBTSize = RayGenRegion.size + RayMissRegion.size + RayHitRegion.size;
+	FBuffer SBTBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(SBTSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V::Raytrace_SBT_Buffer");
+
+	auto SBTBufferAddress = VK_CONTEXT()->GetBufferDeviceAddressInfo(SBTBuffer);
+	RayGenRegion.deviceAddress = SBTBufferAddress;
+	RayMissRegion.deviceAddress = RayGenRegion.deviceAddress + RayGenRegion.size;
+	RayHitRegion.deviceAddress = RayMissRegion.deviceAddress + RayMissRegion.size;
+
+	auto GetHandle = [&](int i)
+	{
+		return Handles.data() + i * HandleSize;
+	};
+
+	uint32_t HandleIndex{0};
+	std::vector<uint8_t> SBTData(SBTSize);
+	memcpy(SBTData.data(), GetHandle(HandleIndex++), HandleSize);
+	memcpy(SBTData.data() + RayGenRegion.size, GetHandle(HandleIndex++), HandleSize);
+	memcpy(SBTData.data() + RayGenRegion.size + RayMissRegion.size, GetHandle(HandleIndex++), HandleSize);
+	RESOURCE_ALLOCATOR()->LoadDataToBuffer(SBTBuffer, {SBTSize}, {0}, {SBTData.data()});
+
+	return SBTBuffer;
+}
+
 VkDevice FVulkanContext::CreateLogicalDevice(VkPhysicalDevice PhysicalDeviceIn, FVulkanContextOptions& VulkanContextOptions)
 {
     std::set<uint32_t> QueueIndices;

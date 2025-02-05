@@ -103,6 +103,7 @@ public:
 	VkAccelerationStructureBuildSizesInfoKHR GetAccelerationStructureBuildSizesInfo(const VkAccelerationStructureBuildGeometryInfoKHR& AccelerationStructureBuildGeometryInfo, uint32_t& PrimitivesCount);
     FAccelerationStructure GenerateBlas(FBuffer& VertexBuffer, FBuffer& IndexBuffer, VkDeviceSize VertexStride, uint32_t MaxVertices, FMemoryPtr& VertexBufferPtr, FMemoryPtr& IndexBufferPtr);
     FAccelerationStructure GenerateTlas(const FBuffer& BlasInstanceBuffer, uint32_t BLASCount);
+	FBuffer GenerateSBT(VkPipeline Pipeline, VkStridedDeviceAddressRegionKHR& RayMissRegion, VkStridedDeviceAddressRegionKHR& RayHitRegion, VkStridedDeviceAddressRegionKHR& RayGenRegion);
 
     ImagePtr CreateImage2D(uint32_t Width, uint32_t Height, bool bMipMapsRequired, VkSampleCountFlagBits NumSamples, VkFormat Format,
                                VkImageTiling Tiling, VkImageUsageFlags Usage, VkMemoryPropertyFlags Properties,

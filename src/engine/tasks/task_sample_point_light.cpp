@@ -66,63 +66,7 @@ void FSamplePointLightTask::Init(FCompileDefinitions* CompileDefinitions)
 
     DescriptorSetManager->AllocateAllDescriptorSets(Name);
 
-    auto RTProperties = VK_CONTEXT()->GetRTProperties();
-
-    uint32_t MissCount = 1;
-    uint32_t HitCount = 1;
-    auto HandleCount = 1 + MissCount + HitCount;
-    uint32_t HandleSize = RTProperties.shaderGroupHandleSize;
-
-    auto AlignUp = [](uint32_t X, uint32_t A)-> uint32_t
-    {
-        return (X + (A - 1)) & ~(A - 1);
-    };
-
-    uint32_t HandleSizeAligned = AlignUp(HandleSize, RTProperties.shaderGroupHandleAlignment);
-
-    RGenRegion.stride = AlignUp(HandleSize, RTProperties.shaderGroupBaseAlignment);
-    RGenRegion.size = RGenRegion.stride;
-
-    RMissRegion.stride = HandleSizeAligned;
-    RMissRegion.size = AlignUp(MissCount * HandleSizeAligned, RTProperties.shaderGroupBaseAlignment);
-
-    RHitRegion.stride = HandleSizeAligned;
-    RHitRegion.size = AlignUp(HitCount * HandleSizeAligned, RTProperties.shaderGroupBaseAlignment);
-
-    uint32_t DataSize = HandleCount * HandleSize;
-    std::vector<uint8_t> Handles(DataSize);
-
-    auto Result = V::vkGetRayTracingShaderGroupHandlesKHR(LogicalDevice, Pipeline, 0, HandleCount, DataSize, Handles.data());
-    assert(Result == VK_SUCCESS && "Failed to get handles for SBT");
-
-    VkDeviceSize SBTSize = RGenRegion.size + RMissRegion.size + RHitRegion.size;
-    SBTBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(SBTSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
-                                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "V::Sample_Point_Light_SBT_Buffer");
-
-    auto SBTBufferAddress = VK_CONTEXT()->GetBufferDeviceAddressInfo(SBTBuffer);
-    RGenRegion.deviceAddress = SBTBufferAddress;
-    RMissRegion.deviceAddress = RGenRegion.deviceAddress + RGenRegion.size;
-    RHitRegion.deviceAddress = RMissRegion.deviceAddress + RMissRegion.size;
-
-    auto GetHandle = [&](int i)
-    {
-        return Handles.data() + i * HandleSize;
-    };
-
-    auto* SBTBufferPtr = reinterpret_cast<uint8_t*>(RESOURCE_ALLOCATOR()->Map(SBTBuffer));
-    uint8_t* DataPtr{nullptr};
-    uint32_t HandleIndex{0};
-
-    DataPtr = SBTBufferPtr;
-    memcpy(DataPtr, GetHandle(HandleIndex++), HandleSize);
-
-    DataPtr = SBTBufferPtr + RGenRegion.size;
-    memcpy(DataPtr, GetHandle(HandleIndex++), HandleSize);
-
-    DataPtr = SBTBufferPtr + RGenRegion.size + RMissRegion.size;
-    memcpy(DataPtr, GetHandle(HandleIndex++), HandleSize);
-
-    RESOURCE_ALLOCATOR()->Unmap(SBTBuffer);
+	SBTBuffer = VK_CONTEXT()->GenerateSBT(Pipeline, RMissRegion, RHitRegion, RGenRegion);
 };
 
 void FSamplePointLightTask::UpdateDescriptorSets()
