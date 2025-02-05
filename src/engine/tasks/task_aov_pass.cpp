@@ -99,7 +99,7 @@ void FAOVPassTask::UpdateDescriptorSets()
 		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_DEPTH_AOV_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("DepthAOVImage"));
 		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_ALBEDO_AOV_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("AlbedoAOVImage"));
 		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_LUMINANCE_AOV_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("LuminanceAOVImage"));
-		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_HITS_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("HitsBuffer"));
+		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_HITS_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer(HITS_BUFFER));
 		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_RENDERABLE_INDEX_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("RenderableIDAOVImage"));
 		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_PRIMITIVE_INDEX_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("PrimitiveIDAOVImage"));
 		UpdateDescriptorSet(AOV_PASS_LAYOUT_INDEX, AOV_PASS_MATERIAL_INDEX_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("MaterialIndicesAOVBuffer"));
