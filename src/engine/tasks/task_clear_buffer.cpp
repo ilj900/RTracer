@@ -12,8 +12,16 @@ FClearBufferTask::FClearBufferTask(const std::vector<std::string>& BufferNamesIn
 	FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice)
 {
 	static int Counter = 0;
-    Name = "Clear buffer(s) pipeline " + std::to_string(Counter);
-	++Counter;
+	
+	if (BufferNames.size() == 1)
+	{
+		Name = "Clear buffer " + BufferNames[0] + " pipeline";
+	}
+	else
+	{
+		Name = "Clear buffer(s) pipeline " + std::to_string(Counter);
+		++Counter;
+	}
 
     PipelineStageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;

@@ -66,7 +66,7 @@ FVulkanContext::FVulkanContext(const std::vector<std::string>& AdditionalDeviceE
 {
     /// Fill in vulkan context creation options
     FVulkanContextOptions VulkanContextOptions;
-    VulkanContextOptions.AddInstanceLayer("VK_LAYER_KHRONOS_validation");
+    //VulkanContextOptions.AddInstanceLayer("VK_LAYER_KHRONOS_validation");
 
 #ifndef NDEBUG
     VkDebugUtilsMessengerCreateInfoEXT DebugCreateInfo = {};
