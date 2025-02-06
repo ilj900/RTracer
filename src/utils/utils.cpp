@@ -24,3 +24,8 @@ void AddPrecedingZeroes(std::string& String, int ZeroesCount)
 	std::string Zeroes(ZeroesToAdd, '0');
 	String = Zeroes + String;
 }
+
+float LinearToSRGB(float X)
+{
+	return (X <= 0.00311308f) ? (12.92f * X) : (1.055f * powf(X, 1.f / 2.4f) - 0.055f);
+}

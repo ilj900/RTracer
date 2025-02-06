@@ -4,6 +4,8 @@
 
 #include "texture_manager.h"
 
+#include "utils.h"
+
 #include <algorithm>
 #include <iostream>
 #include <random>
@@ -1012,9 +1014,9 @@ void FVulkanContext::SaveImagePng(const std::string& ImageName, const std::strin
 
 		for (int i = 0; i < ImageSize; ++i)
 		{
-			ImageData[i * NumberOfComponents] = static_cast<uint8_t>(std::clamp(Data[i * NumberOfComponents] * 255., 0., 255.));
-			ImageData[i * NumberOfComponents + 1] = static_cast<uint8_t>(std::clamp(Data[i * NumberOfComponents + 1] * 255., 0., 255.));
-			ImageData[i * NumberOfComponents + 2] = static_cast<uint8_t>(std::clamp(Data[i * NumberOfComponents + 2] * 255., 0., 255.));
+			ImageData[i * NumberOfComponents] = static_cast<uint8_t>(std::clamp(LinearToSRGB(Data[i * NumberOfComponents]) * 255., 0., 255.));
+			ImageData[i * NumberOfComponents + 1] = static_cast<uint8_t>(std::clamp(LinearToSRGB(Data[i * NumberOfComponents + 1]) * 255., 0., 255.));
+			ImageData[i * NumberOfComponents + 2] = static_cast<uint8_t>(std::clamp(LinearToSRGB(Data[i * NumberOfComponents + 2]) * 255., 0., 255.));
 			ImageData[i * NumberOfComponents + 3] = static_cast<uint8_t>(std::clamp(Data[i * NumberOfComponents + 3] * 255., 0., 255.));
 		}
 	}
