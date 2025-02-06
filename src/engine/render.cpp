@@ -1379,6 +1379,7 @@ void FRender::FreeDependentResources()
 	/// Free buffers
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(THROUGHPUT_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(INITIAL_RAYS_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(HITS_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(PIXEL_INDEX_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(MATERIAL_INDEX_AOV_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(NORMAL_AOV_BUFFER);
