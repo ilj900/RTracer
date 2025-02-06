@@ -1304,6 +1304,7 @@ void FRender::AllocateDependentResources()
 		{INITIAL_RAYS_BUFFER, 				sizeof(FRayData) * Width * Height, 0},
 		{HITS_BUFFER, 						sizeof(FHit) * Width * Height, 	0},
 		{PIXEL_INDEX_BUFFER, 					sizeof(uint32_t) * Width * Height, 0},
+		{MATERIAL_INDEX_AOV_BUFFER,			sizeof(uint32_t) * Width * Height, 0},
 		{NORMAL_AOV_BUFFER, 					sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT},
 		{HISTORY_NORMAL_AOV_BUFFER, 			sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 		{UV_AOV_BUFFER, 						sizeof(FVector2) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
@@ -1379,6 +1380,7 @@ void FRender::FreeDependentResources()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(THROUGHPUT_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(INITIAL_RAYS_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(PIXEL_INDEX_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(MATERIAL_INDEX_AOV_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(NORMAL_AOV_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(HISTORY_NORMAL_AOV_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(UV_AOV_BUFFER);

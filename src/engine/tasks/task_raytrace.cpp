@@ -31,9 +31,6 @@ FRaytraceTask::FRaytraceTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t Submi
     DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_MATERIAL_INDEX_BUFFER,
                                               {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 
-    FBuffer MaterialIndicesAOVBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(uint32_t) * WidthIn * HeightIn, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "MaterialIndicesAOVBuffer");
-    RESOURCE_ALLOCATOR()->RegisterBuffer(MaterialIndicesAOVBuffer, "MaterialIndicesAOVBuffer");
-
     DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
 
     PipelineStageFlags = VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
@@ -42,7 +39,6 @@ FRaytraceTask::FRaytraceTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t Submi
 
 FRaytraceTask::~FRaytraceTask()
 {
-    RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer("MaterialIndicesAOVBuffer");
     GetResourceAllocator()->DestroyBuffer(SBTBuffer);
 };
 
@@ -77,7 +73,7 @@ void FRaytraceTask::UpdateDescriptorSets()
 		UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_PIXEL_INDEX_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer(PIXEL_INDEX_BUFFER));
         UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_RENDERABLE_BUFFER_INDEX, i, RENDERABLE_SYSTEM()->DeviceBuffer);
         UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_HIT_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer(HITS_BUFFER));
-        UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_MATERIAL_INDEX_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer("MaterialIndicesAOVBuffer"));
+        UpdateDescriptorSet(RAYTRACE_LAYOUT_INDEX, RAYTRACE_MATERIAL_INDEX_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer(MATERIAL_INDEX_AOV_BUFFER));
     }
 };
 

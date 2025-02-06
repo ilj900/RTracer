@@ -4,6 +4,7 @@ constexpr const char* THROUGHPUT_BUFFER = "ThroughputBuffer";
 constexpr const char* INITIAL_RAYS_BUFFER = "InitialRaysBuffer";
 constexpr const char* HITS_BUFFER = "HitsBuffer";
 constexpr const char* PIXEL_INDEX_BUFFER = "PixelIndexBuffer";
+constexpr const char* MATERIAL_INDEX_AOV_BUFFER = "MaterialIndicesAOVBuffer";
 constexpr const char* NORMAL_AOV_BUFFER = "NormalAOVBuffer";
 constexpr const char* HISTORY_NORMAL_AOV_BUFFER = "PreviousBounceNormalAOVBuffer";
 constexpr const char* UV_AOV_BUFFER = "UVAOVBuffer";
