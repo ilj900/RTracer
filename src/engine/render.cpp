@@ -1306,6 +1306,7 @@ void FRender::AllocateDependentResources()
 		{PIXEL_INDEX_BUFFER, 					sizeof(uint32_t) * Width * Height, 0},
 		{MATERIAL_INDEX_AOV_BUFFER,			sizeof(uint32_t) * Width * Height, 0},
 		{NORMAL_AOV_BUFFER, 					sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT},
+		{COUNTED_MATERIALS_PER_CHUNK_BUFFER,	sizeof(uint32_t) * TOTAL_MATERIALS * CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE),	VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 		{HISTORY_NORMAL_AOV_BUFFER, 			sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 		{UV_AOV_BUFFER, 						sizeof(FVector2) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 		{WORLD_SPACE_POSITION_AOV_BUFFER, 	sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
@@ -1314,7 +1315,6 @@ void FRender::AllocateDependentResources()
 		{SAMPLED_DIRECTIONAL_LIGHT_BUFFER, 	sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 		{SAMPLED_SPOT_LIGHT_BUFFER, 			sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 		{TRANSFORM_INDEX_BUFFER, 				sizeof(uint32_t) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{ACTIVE_RAY_COUNT_BUFFER, 			sizeof(uint32_t) * 3, 				VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT},
 		{CUMULATIVE_MATERIAL_COLOR_BUFFER, 	sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 		{DEBUG_LAYER_BUFFER, 					sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 	};
@@ -1353,10 +1353,10 @@ void FRender::AllocateIndependentResources()
 {
 	/// Allocate buffers that doesn't require recreation
 	std::vector<FBufferDescription> BufferDescriptions = {
-		{RENDER_ITERATION_BUFFER,				sizeof(uint32_t),																												VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{COUNTED_MATERIALS_PER_CHUNK_BUFFER,	sizeof(uint32_t) * TOTAL_MATERIALS * CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE),	VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{TOTAL_COUNTED_MATERIALS_BUFFER,		sizeof(uint32_t) * TOTAL_MATERIALS * 3,																						VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT},
-		{MATERIALS_OFFSETS_PER_MATERIAL_BUFFER,	sizeof(uint32_t) * TOTAL_MATERIALS,																							0},
+		{RENDER_ITERATION_BUFFER,				sizeof(uint32_t),							VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{TOTAL_COUNTED_MATERIALS_BUFFER,		sizeof(uint32_t) * TOTAL_MATERIALS * 3,	VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT},
+		{ACTIVE_RAY_COUNT_BUFFER, 			sizeof(uint32_t) * 3,						VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT},
+		{MATERIALS_OFFSETS_PER_MATERIAL_BUFFER,	sizeof(uint32_t) * TOTAL_MATERIALS,	0},
 	};
 
 	CreateAndRegisterBufferShortcut(BufferDescriptions);
@@ -1390,8 +1390,8 @@ void FRender::FreeDependentResources()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(SAMPLED_DIRECTIONAL_LIGHT_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(SAMPLED_SPOT_LIGHT_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(TRANSFORM_INDEX_BUFFER);
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(ACTIVE_RAY_COUNT_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(CUMULATIVE_MATERIAL_COLOR_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(COUNTED_MATERIALS_PER_CHUNK_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(DEBUG_LAYER_BUFFER);
 
 	/// Free images
@@ -1416,11 +1416,11 @@ void FRender::FreeIndependentResources()
 {
 	/// Free buffers
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(RENDER_ITERATION_BUFFER);
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(COUNTED_MATERIALS_PER_CHUNK_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(TOTAL_COUNTED_MATERIALS_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(MATERIALS_OFFSETS_PER_MATERIAL_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(UTILITY_INFO_POINT_LIGHT_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(UTILITY_INFO_DIRECTIONAL_LIGHT_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(ACTIVE_RAY_COUNT_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(UTILITY_INFO_SPOT_LIGHT_BUFFER);
 }
 
