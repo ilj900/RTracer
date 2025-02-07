@@ -20,14 +20,8 @@
 #include "tasks/task_material_sort_compute_prefix_sums_down_sweep.h"
 #include "tasks/task_material_sort_compute_offsets_per_material.h"
 #include "tasks/task_material_sort_sort_materials.h"
-#include "tasks/task_compute_shading_data.h"
-#include "tasks/task_sample_ibl.h"
-#include "tasks/task_sample_point_light.h"
-#include "tasks/task_sample_directional_light.h"
-#include "tasks/task_sample_spot_light.h"
-#include "tasks/task_shade.h"
+#include "tasks/task_master_shader.h"
 #include "tasks/task_miss.h"
-#include "tasks/task_aov_pass.h"
 #include "tasks/task_accumulate.h"
 #include "tasks/task_passthrough.h"
 #include "tasks/task_advance_render_count.h"
@@ -219,14 +213,8 @@ public:
     std::shared_ptr<FComputePrefixSumsDownSweepTask> ComputePrefixSumsDownSweepTask = nullptr;
     std::shared_ptr<FComputeOffsetsPerMaterialTask> ComputeOffsetsPerMaterialTask = nullptr;
     std::shared_ptr<FSortMaterialsTask> SortMaterialsTask = nullptr;
-	std::shared_ptr<FComputeShadingDataTask> ComputeShadingData = nullptr;
-	std::shared_ptr<FSampleIBLTask> SampleIBLTask = nullptr;
-	std::shared_ptr<FSamplePointLightTask> SamplePointLightTask = nullptr;
-	std::shared_ptr<FSampleDirectionalLightTask> SampleDirectionalLightTask = nullptr;
-	std::shared_ptr<FSampleSpotLightTask> SampleSpotLightTask = nullptr;
-    std::shared_ptr<FShadeTask> ShadeTask = nullptr;
+	std::shared_ptr<FMasterShader> MasterShader = nullptr;
     std::shared_ptr<FMissTask> MissTask = nullptr;
-	std::shared_ptr<FAOVPassTask> AOVPassTask = nullptr;
     std::shared_ptr<FAccumulateTask> AccumulateTask = nullptr;
     std::shared_ptr<FPassthroughTask> PassthroughTask = nullptr;
 	std::shared_ptr<FAdvanceRenderCount> AdvanceRenderCountTask = nullptr;

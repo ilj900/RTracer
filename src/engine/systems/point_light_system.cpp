@@ -8,7 +8,9 @@ namespace ECS
     {
         void FPointLightSystem::Init(uint32_t NumberOfSimultaneousSubmits)
         {
-			UtilityPointLight.ActiveLightsCount = 0;
+			LoadedPointLightsCount = 0;
+			CurrentPointLightsCount = 0;
+
             FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(ECS::COMPONENTS::FPointLightComponent) * MAX_POINT_LIGHTS,
                                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Point_Lights");
         }
@@ -17,10 +19,10 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
-			if (UtilityPointLight.ActiveLightsCount != CurrentPointLightsCount)
+			if (LoadedPointLightsCount != CurrentPointLightsCount)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_POINT_LIGHT_BUFFER, {sizeof(FUtilityPointLight)}, {0}, {&UtilityPointLight});
-				CurrentPointLightsCount = UtilityPointLight.ActiveLightsCount;
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t)}, { offsetof(FUtilityData, ActivePointLightsCount)}, {&CurrentPointLightsCount});
+				CurrentPointLightsCount = LoadedPointLightsCount;
 			}
 
 			for (auto& Entry : EntitiesToUpdate)
@@ -40,10 +42,10 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
-			if (UtilityPointLight.ActiveLightsCount != CurrentPointLightsCount)
+			if (LoadedPointLightsCount != CurrentPointLightsCount)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_POINT_LIGHT_BUFFER, {sizeof(FUtilityPointLight)}, {0}, {&UtilityPointLight});
-				CurrentPointLightsCount = UtilityPointLight.ActiveLightsCount;
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t)}, { offsetof(FUtilityData, ActivePointLightsCount)}, {&CurrentPointLightsCount});
+				CurrentPointLightsCount = LoadedPointLightsCount;
 			}
 
 			for (auto& Entry : EntitiesToUpdate)
@@ -106,7 +108,7 @@ namespace ECS
             LightComponent.Intensity = Intensity;
             MarkDirty(Light);
 
-			UtilityPointLight.ActiveLightsCount++;
+			CurrentPointLightsCount++;
 
             return Light;
         }

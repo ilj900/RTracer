@@ -9,7 +9,8 @@ namespace ECS
     {
         void FDirectionalLightSystem::Init(uint32_t NumberOfSimultaneousSubmits)
         {
-			UtilityDirectionalLight.ActiveLightsCount = 0;
+			LoadedDirectionalLightsCount = 0;
+			CurrentDirectionalLightsCount = 0;
 
             FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(ECS::COMPONENTS::FDirectionalLightComponent) * MAX_DIRECTIONAL_LIGHTS,
                                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Directional_Lights");
@@ -19,10 +20,10 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
-			if (UtilityDirectionalLight.ActiveLightsCount != CurrentDirectionalLightsCount)
+			if (LoadedDirectionalLightsCount != CurrentDirectionalLightsCount)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_DIRECTIONAL_LIGHT_BUFFER, {sizeof(FUtilityDirectionalLight)}, {0}, {&UtilityDirectionalLight});
-				CurrentDirectionalLightsCount = UtilityDirectionalLight.ActiveLightsCount;
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t)}, { offsetof(FUtilityData, ActiveDirectionalLightsCount)}, {&CurrentDirectionalLightsCount});
+				CurrentDirectionalLightsCount = LoadedDirectionalLightsCount;
 			}
 
 			for (auto& Entry : EntitiesToUpdate)
@@ -42,10 +43,10 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
-			if (UtilityDirectionalLight.ActiveLightsCount != CurrentDirectionalLightsCount)
+			if (LoadedDirectionalLightsCount != CurrentDirectionalLightsCount)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_DIRECTIONAL_LIGHT_BUFFER, {sizeof(FUtilityDirectionalLight)}, {0}, {&UtilityDirectionalLight});
-				CurrentDirectionalLightsCount = UtilityDirectionalLight.ActiveLightsCount;
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t)}, { offsetof(FUtilityData, ActiveDirectionalLightsCount)}, {&CurrentDirectionalLightsCount});
+				CurrentDirectionalLightsCount = LoadedDirectionalLightsCount;
 			}
 
 			for (auto& Entry : EntitiesToUpdate)
@@ -126,7 +127,7 @@ namespace ECS
             LightComponent.Intensity = Intensity;
             MarkDirty(Light);
 
-			UtilityDirectionalLight.ActiveLightsCount++;
+			CurrentDirectionalLightsCount++;
 
             return Light;
         }

@@ -93,21 +93,11 @@ struct FSpotLight
 	float OuterAngle;
 };
 
-struct FUtilityDirectionalLight
-{
-	uint32_t ActiveLightsCount;
-};
-
 struct FUtilityData
 {
 	uint32_t ActiveDirectionalLightsCount;
 	uint32_t ActiveSpotLightsCount;
 	uint32_t ActivePointLightsCount;
-};
-
-struct FUtilitySpotLight
-{
-	uint32_t ActiveLightsCount;
 };
 
 struct FDeviceMaterial

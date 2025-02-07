@@ -14,7 +14,7 @@
 FMasterShader::FMasterShader(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, uint32_t SubmitYIn, VkDevice LogicalDevice) :
         FExecutableTask(WidthIn, HeightIn, SubmitXIn, SubmitYIn, LogicalDevice)
 {
-    Name = "RayTracing pipeline";
+    Name = "Master shader pipeline";
 	MaterialPipelines.resize(MATERIAL_SYSTEM()->MAX_MATERIALS, VK_NULL_HANDLE);
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
@@ -119,7 +119,21 @@ void FMasterShader::UpdateDescriptorSets()
     for (size_t i = 0; i < TotalSize; ++i)
     {
         VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_TLAS_INDEX, i, &ACCELERATION_STRUCTURE_SYSTEM()->TLAS.AccelerationStructure);
-		VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_TLAS_INDEX, i, &ACCELERATION_STRUCTURE_SYSTEM()->TLAS.AccelerationStructure);
+		VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_RAYS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(INITIAL_RAYS_BUFFER));
+		VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_RAYS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(INITIAL_RAYS_BUFFER));
+		VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_RAYS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(INITIAL_RAYS_BUFFER));
+		VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_RAYS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(INITIAL_RAYS_BUFFER));
+		VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_RAYS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(INITIAL_RAYS_BUFFER));
+		VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_RAYS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(INITIAL_RAYS_BUFFER));
+		VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_RAYS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(INITIAL_RAYS_BUFFER));
+		VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_RAYS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(INITIAL_RAYS_BUFFER));
+		VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_RAYS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(INITIAL_RAYS_BUFFER));
+		VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_RAYS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(INITIAL_RAYS_BUFFER));
+		VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_RAYS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(INITIAL_RAYS_BUFFER));
+		VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_RAYS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(INITIAL_RAYS_BUFFER));
+		VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_RAYS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(INITIAL_RAYS_BUFFER));
+		VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_RAYS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(INITIAL_RAYS_BUFFER));
+		VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_RAYS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(INITIAL_RAYS_BUFFER));
     }
 };
 

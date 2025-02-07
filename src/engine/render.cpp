@@ -224,14 +224,8 @@ int FRender::Init()
     ComputePrefixSumsDownSweepTask 		= std::make_shared<FComputePrefixSumsDownSweepTask>	(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     ComputeOffsetsPerMaterialTask 		= std::make_shared<FComputeOffsetsPerMaterialTask>	(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     SortMaterialsTask 					= std::make_shared<FSortMaterialsTask>				(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	ComputeShadingData 					= std::make_shared<FComputeShadingDataTask>			(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	SampleIBLTask 						= std::make_shared<FSampleIBLTask>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	SamplePointLightTask				= std::make_shared<FSamplePointLightTask>			(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	SampleDirectionalLightTask			= std::make_shared<FSampleDirectionalLightTask>		(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	SampleSpotLightTask					= std::make_shared<FSampleSpotLightTask>			(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-    ShadeTask 							= std::make_shared<FShadeTask>						(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
+	MasterShader 						= std::make_shared<FMasterShader>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     MissTask 							= std::make_shared<FMissTask>						(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	AOVPassTask							= std::make_shared<FAOVPassTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     AccumulateTask 						= std::make_shared<FAccumulateTask>					(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     PassthroughTask 					= std::make_shared<FPassthroughTask>				(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	AdvanceRenderCountTask 				= std::make_shared<FAdvanceRenderCount>				(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -285,14 +279,8 @@ int FRender::Cleanup()
     ComputePrefixSumsDownSweepTask 		= nullptr;
     ComputeOffsetsPerMaterialTask 		= nullptr;
     SortMaterialsTask 					= nullptr;
-	ComputeShadingData					= nullptr;
-	SampleIBLTask						= nullptr;
-	SamplePointLightTask				= nullptr;
-	SampleDirectionalLightTask			= nullptr;
-	SampleSpotLightTask					= nullptr;
-    ShadeTask 							= nullptr;
+	MasterShader						= nullptr;
     MissTask 							= nullptr;
-	AOVPassTask							= nullptr;
     AccumulateTask 						= nullptr;
     PassthroughTask 					= nullptr;
 	AdvanceRenderCountTask				= nullptr;
@@ -448,19 +436,13 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	ComputePrefixSumsDownSweepTask->Reload();
 	ComputeOffsetsPerMaterialTask->Reload();
 	SortMaterialsTask->Reload();
-	SampleIBLTask->Reload();
-	SamplePointLightTask->Reload();
-	SampleDirectionalLightTask->Reload();
-	SampleSpotLightTask->Reload();
-	ComputeShadingData->Reload();
 	FCompileDefinitions CompileDefinitions;
 	CompileDefinitions.Push("LAST_BOUNCE", std::to_string(RecursionDepth - 1));
 	CompileDefinitions.Push("LAST_DIFFUSE_BOUNCE", std::to_string(DiffuseRecursionDepth - 1));
 	CompileDefinitions.Push("LAST_REFLECTION_BOUNCE", std::to_string(ReflectionRecursionDepth - 1));
 	CompileDefinitions.Push("LAST_REFRACTION_BOUNCE", std::to_string(RefractionRecursionDepth - 1));
-	ShadeTask->Reload(&CompileDefinitions);
+	MasterShader->Reload(&CompileDefinitions);
 	MissTask->Reload();
-	AOVPassTask->Reload();
 	AccumulateTask->Reload();
 	PassthroughTask->Reload();
 	AdvanceRenderCountTask->Reload();
@@ -535,24 +517,9 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 		SynchronizationPoint = SortMaterialsTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
-		SynchronizationPoint = ComputeShadingData->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
-
-		SynchronizationPoint = SampleIBLTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
-
-		SynchronizationPoint = SamplePointLightTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
-
-		SynchronizationPoint = SampleDirectionalLightTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
-
-		SynchronizationPoint = SampleSpotLightTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
-
-		SynchronizationPoint = ShadeTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
+		SynchronizationPoint = MasterShader->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = MissTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
-
-		if (i == 0)
-		{
-			SynchronizationPoint = AOVPassTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
-		}
 	}
 
 	SynchronizationPoint = AccumulateTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
@@ -1150,14 +1117,8 @@ void FRender::GetAllTimings(std::vector<std::string>& Names, std::vector<std::ve
 	TimingFillingLambda(ComputePrefixSumsDownSweepTask, FrameIndex);
 	TimingFillingLambda(ComputeOffsetsPerMaterialTask, FrameIndex);
 	TimingFillingLambda(SortMaterialsTask, FrameIndex);
-	TimingFillingLambda(ComputeShadingData, FrameIndex);
-	TimingFillingLambda(SampleIBLTask, FrameIndex);
-	TimingFillingLambda(SamplePointLightTask, FrameIndex);
-	TimingFillingLambda(SampleDirectionalLightTask, FrameIndex);
-	TimingFillingLambda(SampleSpotLightTask, FrameIndex);
-	TimingFillingLambda(ShadeTask, FrameIndex);
+	TimingFillingLambda(MasterShader, FrameIndex);
 	TimingFillingLambda(MissTask, FrameIndex);
-	TimingFillingLambda(AOVPassTask, FrameIndex);
 	TimingFillingLambda(AccumulateTask, FrameIndex);
 	TimingFillingLambda(AdvanceRenderCountTask, FrameIndex);
 	TimingFillingLambda(PassthroughTask, FrameIndex);
@@ -1353,25 +1314,17 @@ void FRender::AllocateIndependentResources()
 {
 	/// Allocate buffers that doesn't require recreation
 	std::vector<FBufferDescription> BufferDescriptions = {
-		{RENDER_ITERATION_BUFFER,				sizeof(uint32_t),							VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{TOTAL_COUNTED_MATERIALS_BUFFER,		sizeof(uint32_t) * TOTAL_MATERIALS * 3,	VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT},
-		{ACTIVE_RAY_COUNT_BUFFER, 			sizeof(uint32_t) * 3,						VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT},
+		{RENDER_ITERATION_BUFFER,					sizeof(uint32_t),							VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{TOTAL_COUNTED_MATERIALS_BUFFER,			sizeof(uint32_t) * TOTAL_MATERIALS * 3,	VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT},
+		{ACTIVE_RAY_COUNT_BUFFER, 				sizeof(uint32_t) * 3,						VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT},
 		{MATERIALS_OFFSETS_PER_MATERIAL_BUFFER,	sizeof(uint32_t) * TOTAL_MATERIALS,	0},
 	};
 
 	CreateAndRegisterBufferShortcut(BufferDescriptions);
 
-	auto UtilityInfoPointLight = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FUtilityPointLight),
-		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UTILITY_INFO_POINT_LIGHT_BUFFER);
-	RESOURCE_ALLOCATOR()->RegisterBuffer(UtilityInfoPointLight, UTILITY_INFO_POINT_LIGHT_BUFFER);
-
-	auto UtilityInfoDirectionalLight = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FUtilityDirectionalLight),
-		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UTILITY_INFO_DIRECTIONAL_LIGHT_BUFFER);
-	RESOURCE_ALLOCATOR()->RegisterBuffer(UtilityInfoDirectionalLight, UTILITY_INFO_DIRECTIONAL_LIGHT_BUFFER);
-
-	auto UtilityInfoSpotLight = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FUtilitySpotLight),
-		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UTILITY_INFO_SPOT_LIGHT_BUFFER);
-	RESOURCE_ALLOCATOR()->RegisterBuffer(UtilityInfoSpotLight, UTILITY_INFO_SPOT_LIGHT_BUFFER);
+	auto UtilityInfoPointLight = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FUtilityData),
+		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, UTILITY_INFO_BUFFER);
+	RESOURCE_ALLOCATOR()->RegisterBuffer(UtilityInfoPointLight, UTILITY_INFO_BUFFER);
 }
 
 void FRender::FreeDependentResources()
@@ -1419,10 +1372,8 @@ void FRender::FreeIndependentResources()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(RENDER_ITERATION_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(TOTAL_COUNTED_MATERIALS_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(MATERIALS_OFFSETS_PER_MATERIAL_BUFFER);
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(UTILITY_INFO_POINT_LIGHT_BUFFER);
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(UTILITY_INFO_DIRECTIONAL_LIGHT_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(UTILITY_INFO_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(ACTIVE_RAY_COUNT_BUFFER);
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(UTILITY_INFO_SPOT_LIGHT_BUFFER);
 }
 
 void FRender::CreateAndRegisterBufferShortcut(const std::vector<FBufferDescription>& BufferDescriptions)

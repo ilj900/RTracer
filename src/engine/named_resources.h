@@ -21,6 +21,4 @@ constexpr const char* RENDER_ITERATION_BUFFER = "RenderIterationBuffer";
 constexpr const char* COUNTED_MATERIALS_PER_CHUNK_BUFFER = "CountedMaterialsPerChunkBuffer";
 constexpr const char* TOTAL_COUNTED_MATERIALS_BUFFER = "TotalCountedMaterialsBuffer";
 constexpr const char* MATERIALS_OFFSETS_PER_MATERIAL_BUFFER = "MaterialsOffsetsPerMaterialBuffer";
-constexpr const char* UTILITY_INFO_POINT_LIGHT_BUFFER = "UtilityInfoPointLight";
-constexpr const char* UTILITY_INFO_DIRECTIONAL_LIGHT_BUFFER = "UtilityInfoDirectionalLight";
-constexpr const char* UTILITY_INFO_SPOT_LIGHT_BUFFER = "UtilityInfoSpotLight";
+constexpr const char* UTILITY_INFO_BUFFER = "UtilityInfoBuffer";
