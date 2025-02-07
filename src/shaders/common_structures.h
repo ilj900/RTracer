@@ -24,7 +24,7 @@ struct FHitPayload
     uint32_t MaterialIndex;
 };
 
-struct FLightHitPayload
+struct FSimpleHitPayload
 {
 	uint32_t PayloadFlags;
 };
@@ -98,9 +98,11 @@ struct FUtilityDirectionalLight
 	uint32_t ActiveLightsCount;
 };
 
-struct FUtilityPointLight
+struct FUtilityData
 {
-	uint32_t ActiveLightsCount;
+	uint32_t ActiveDirectionalLightsCount;
+	uint32_t ActiveSpotLightsCount;
+	uint32_t ActivePointLightsCount;
 };
 
 struct FUtilitySpotLight

@@ -1,0 +1,504 @@
+#version 460
+
+#extension GL_EXT_ray_tracing : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+#extension GL_EXT_scalar_block_layout : enable
+#extension GL_EXT_buffer_reference2 : require
+#extension GL_EXT_nonuniform_qualifier : enable // ?
+
+//#define DEBUG_PRINTF
+#ifdef DEBUG_PRINTF
+#extension GL_EXT_debug_printf : enable
+bool b = false;
+#endif
+
+#include "common_defines.h"
+#include "common_structures.h"
+#include "random.h"
+#include "process_material_interaction.h"
+
+layout (location = 0) rayPayloadEXT FSimpleHitPayload SimpleHitPayload;
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_TLAS_INDEX) uniform accelerationStructureEXT TLAS;
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_RAYS_BUFFER_INDEX) buffer RaysBufferObject
+{
+    FRayData RayData[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_HITS_BUFFER_INDEX) buffer HitsBufferObject
+{
+    FHit Hits[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_RENDERABLES_BUFFER_INDEX) buffer RenderablesBufferObject
+{
+    FRenderable Renderables[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_TRANSFORMS_BUFFER_INDEX) buffer TransformsBufferObject
+{
+    FDeviceTransform DeviceTransforms[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_PIXEL_INDEX_BUFFER) buffer PixelIndexIndexMapBufferObject
+{
+    uint PixelIndexIndexMap[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_DIRECTIONAL_LIGHTS_BUFFER_INDEX) buffer DirectionalLightsBufferObject
+{
+    FDirectionalLight DirectionalLightsBuffer[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_SPOT_LIGHTS_BUFFER_INDEX) buffer SpotLightsBufferObject
+{
+    FSpotLight SpotLightsBuffer[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_POINT_LIGHTS_BUFFER_INDEX) buffer PointLightsBufferObject
+{
+    FPointLight PointLightsBuffer[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_UTILITY_BUFFER_INDEX) uniform UtilityDataUniformBufferObject
+{
+    FUtilityData UtilityData;
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_RENDER_ITERATION_BUFFER_INDEX) buffer RenderIterationBufferObject
+{
+    uint RenderIteration;
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_COLOR_AOV_IMAGE_INDEX, rgba32f) uniform image2D OutcomingImage;
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_SHADING_NORMAL_AOV_IMAGE_INDEX, rgba32f) uniform image2D ShadingNormalAOVImage;
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_GEOMETRIC_NORMAL_AOV_IMAGE_INDEX, rgba32f) uniform image2D GeometricNormalAOVImage;
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_UV_AOV_IMAGE_INDEX, rg32f) uniform image2D UVAOVImage;
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_WORLD_SPACE_POSITION_AOV_IMAGE_INDEX, rgba32f) uniform image2D WorldSpacePositionAOVImage;
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_OPACITY_AOV_IMAGE_INDEX, rgba32f) uniform image2D OpacityAOVImage;
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_DEPTH_AOV_IMAGE_INDEX, rgba32f) uniform image2D DepthAOVImage;
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_ALBEDO_AOV_IMAGE_INDEX, rgba32f) uniform image2D AlbedoAOVImage;
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_LUMINANCE_AOV_IMAGE_INDEX, rgba32f) uniform image2D LuminanceAOVImage;
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_RENDERABLE_INDEX_IMAGE_INDEX, rgba32f) uniform image2D RenderableIndexAOVImage;
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_PRIMITIVE_INDEX_IMAGE_INDEX, rgba32f) uniform image2D PrimitiveIndexAOVImage;
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_MATERIAL_INDEX_IMAGE_INDEX, rgba32f) uniform image2D MaterialindexAOVImage;
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_DEBUG_LAYER_IMAGE_INDEX, rgba32f) uniform image2D DebugLayerImage;
+
+layout (buffer_reference, scalar) buffer Vertices
+{
+    FDeviceVertex V[];
+};
+
+layout (buffer_reference, scalar) buffer Indices
+{
+    int I[];
+};
+
+bool CheckFlag(uint Mask, uint Field)
+{
+    return (Mask & Field) == Field;
+}
+
+FVertex UnpackDeviceVertex(FDeviceVertex DV)
+{
+    FVertex V;
+    V.Position.x = DV.A.x;
+    V.Position.y = DV.A.y;
+    V.Position.z = DV.A.z;
+    V.Normal.x = DV.A.w;
+    V.Normal.y = DV.B.x;
+    V.Normal.z = DV.B.y;
+    V.TexCoord.x = DV.B.z;
+    V.TexCoord.y = DV.B.w;
+    return V;
+}
+
+void ComputeShadingData(FRenderable Renderable, vec3 Barycentrics, FDeviceTRansform Transform,
+    out vec3 Normal, out vec3 PointOfIntersectionInWorldSpace, out vec2 TextureCoords)
+{
+    Vertices Verts = Vertices(Renderable.VertexBufferAddress);
+    Indices Inds = Indices(Renderable.IndexBufferAddress);
+
+    FDeviceVertex DV0;
+    FDeviceVertex DV1;
+    FDeviceVertex DV2;
+
+    if (IsIndexed(Renderable))
+    {
+        uint I0 = 0;
+        uint I1 = 1;
+        uint I2 = 2;
+
+        I0 = Inds.I[Hit.PrimitiveIndex * 3];
+        I1 = Inds.I[Hit.PrimitiveIndex * 3 + 1];
+        I2 = Inds.I[Hit.PrimitiveIndex * 3 + 2];
+
+        DV0 = Verts.V[I0];
+        DV1 = Verts.V[I1];
+        DV2 = Verts.V[I2];
+    }
+    else
+    {
+        uint Index = Hit.PrimitiveIndex * 3;
+        DV0 = Verts.V[Index];
+        DV1 = Verts.V[Index + 1];
+        DV2 = Verts.V[Index + 2];
+    }
+
+    FVertex V0 = UnpackDeviceVertex(DV0);
+    FVertex V1 = UnpackDeviceVertex(DV1);
+    FVertex V2 = UnpackDeviceVertex(DV2);
+
+    NormalInWorldSpace = (V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z);
+    NormalInWorldSpace = Normal * mat3(Transform.InverseModelMatrix);
+
+    PointOfIntersectionInWorldSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
+    PointOfIntersectionInWorldSpace = vec3(Transform.ModelMatrix * vec4(PointOfIntersectionInWorldSpace, 1.f));
+
+    TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
+}
+
+vec3 ComputeDirectionalLightInput(FSamplingState SamplingState, uint DirectionalLightsCount, vec3 Normal, vec3 WorldSpacePosition)
+{
+    /// Get light index
+    const uint LightIndex = uint(RandomFloat(SamplingState) * DirectionalLightsCount);
+    FDirectionalLight DirectionalLight = DirectionalLightsBuffer[LightIndex];
+
+    /// Check whether light is over the surface
+    float NDotI = dot(Normal, -DirectionalLight.Direction);
+
+    if(NDotI <= 0)
+    {
+        return vec3(0);
+    }
+
+    /// Construct a ray that goes to the light
+    FRayData RayData;
+    RayData.RayFlags = 0;
+    RayData.Direction.xyz = -DirectionalLight.Direction;
+    RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
+
+    /// Trace the ray
+    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
+
+    /// And if we didn't hit any geometry, then we store light data
+    if (SimpleHitPayload.PayloadFlags == 0)
+    {
+        return DirectionalLight.Color * DirectionalLight.Intensity * NDotI;
+    }
+    else
+    {
+        return vec3(0);
+    }
+}
+
+vec3 ComputePointLightInput(FSamplingState SamplingState, uint PointLightsCount, vec3 Normal, vec3 WorldSpacePosition)
+{
+    /// Get light index
+    const uint LightIndex = uint(RandomFloat(SamplingState) * PointLightsCount);
+    FPointLight PointLight = PointLightsBuffer[LightIndex];
+    vec3 LightDirection = PointLight.Position - WorldSpacePosition;
+    float LightDistance = length(LightDirection);
+    LightDirection = normalize(LightDirection);
+
+    /// Check whether light is over the surface
+    float NDotI = dot(Normal, LightDirection);
+
+    if(NDotI <= 0)
+    {
+        return vec3(0);
+    }
+
+    /// Construct a ray that goes to the light
+    FRayData RayData;
+    RayData.RayFlags = 0;
+    RayData.Direction.xyz = -DirectionalLight.Direction;
+    RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
+
+    /// Trace the ray
+    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
+
+    /// And if we didn't hit any geometry, then we store light data
+    if (SimpleHitPayload.PayloadFlags == 0)
+    {
+        float Attenuation = 1.f / LightDistance;
+        Attenuation *= Attenuation;
+        return PointLight.Color * PointLight.Intensity * Attenuation * NDotI;
+    }
+    else
+    {
+        return vec3(0);
+    }
+}
+
+vec3 ComputeSpotLightInput(FSamplingState SamplingState, uint SpotLightsCount, vec3 Normal, vec3 WorldSpacePosition)
+{
+    /// Get light index
+    const uint LightIndex = uint(RandomFloat(SamplingState) * SpotLightsCount);
+    FSpotLight SpotLight = SpotLightsBuffer[LightIndex];
+    vec3 LightDirection = SpotLight.Position - WorldSpacePosition;
+    float LightDistance = length(LightDirection);
+    LightDirection = normalize(LightDirection);
+
+    /// Check whether light is over the surface
+    float NDotI = dot(Normal, LightDirection);
+
+    if(NDotI <= 0)
+    {
+        return vec3(0);
+    }
+
+    float LightAngle = acos(dot(SpotLight.Direction, -LightDirection));
+    /// If point is outside out outer angle, it is also not illuminated
+    if (LightAngle > SpotLight.OuterAngle)
+    {
+        return vec3(0);
+    }
+
+    /// Construct a ray that goes to the light
+    FRayData RayData;
+    RayData.RayFlags = 0;
+    RayData.Direction.xyz = -DirectionalLight.Direction;
+    RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
+
+    /// Trace the ray
+    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
+
+    /// And if we didn't hit any geometry, then we store light data
+    if (SimpleHitPayload.PayloadFlags == 0)
+    {
+        float Attenuation = 1.f / LightDistance;
+        Attenuation *= Attenuation;
+
+        /// If point between outer and inner angle - interpolate
+        if (LightAngle > SpotLight.InnerAngle)
+        {
+            float Fraction = LightAngle - SpotLight.InnerAngle;
+            float Delta = SpotLight.OuterAngle - SpotLight.InnerAngle;
+            Fraction = Fraction / Delta;
+            Attenuation *= pow((1. - Fraction), 2.4);
+        }
+
+        return SpotLight.Color * SpotLight.Intensity * Attenuation * NDotI;
+    }
+    else
+    {
+        return vec3(0);
+    }
+}
+
+vec3 ComputeIBLInput(FSamplingState SamplingState, uint SpotLightsCount, vec3 Normal, vec3 WorldSpacePosition)
+{
+    const vec2 SampleUV = Sample2DUnitQuad(SamplingState);
+    const uvec2 IBLSize = textureSize(IBLTextureSampler, 0);
+    const uint SampleIndex = uint(IBLSize.x * IBLSize.y * SampleUV.y) + uint(IBLSize.x * SampleUV.x);
+    /// Get the interval of pixels that we want to sample
+    uvec2 ImportanceSampleInterval = IBLImportanceBuffer[SampleIndex];
+    /// Get texel index
+    uint TexelIndex = ImportanceSampleInterval.x + uint(float((ImportanceSampleInterval.y - ImportanceSampleInterval.x)) * RandomFloat(SamplingState));
+    /// Transform texel index into actual UV coordinates
+    vec2 UVCoordinates = vec2((float(TexelIndex % IBLSize.x) + 0.5) / float(IBLSize.x), (float(TexelIndex / IBLSize.x) + 0.5) / float(IBLSize.y));
+    /// Map them to spherical coordinates
+    vec2 SphericalCoordinates = UVCoordinates * vec2(M_2_PI, M_PI);
+    SphericalCoordinates.x -= M_PI_2;
+    vec3 CartesianCoordinates;
+    CartesianCoordinates.x = sin(SphericalCoordinates.y) * cos(SphericalCoordinates.x);
+    CartesianCoordinates.y = cos(SphericalCoordinates.y);
+    CartesianCoordinates.z = sin(SphericalCoordinates.y) * sin(SphericalCoordinates.x);
+
+    float NDotI = dot(Normal, RayData.Direction.xyz);
+
+    if(NDotI <= 0)
+    {
+        return vec3(0);
+    }
+
+    FRayData RayData;
+    RayData.RayFlags = 0;
+    RayData.Direction.xyz = CartesianCoordinates;
+    RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
+
+    /// Trace the ray
+    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, FLOAT_EPSILON, RayData.Direction.xyz, 10000, 0);
+
+    /// And if we didn't hit any geometry, then we sample the IBL
+    if (LightHitPayload.PayloadFlags == 0)
+    {
+        /// TODO: We can multiply IBL and Weight on CPU
+        float Weight = IBLWeightsBuffer[TexelIndex];
+        return texture(IBLTextureSampler, UVCoordinates).xyz * Weight * NDotI;
+    }
+    else
+    {
+        return vec3(0);
+    }
+}
+
+vec4 IndexToColor(uint Value)
+{
+    uint ColorHash = MurMur3_32(Value, 0);
+    vec4 Color = vec4(1);
+    Color.x = ((ColorHash >> 24) & 0xFFu) / 255.;
+    Color.y = ((ColorHash >> 18) & 0xFFu) / 255.;
+    Color.z = ((ColorHash >> 12) & 0xFFu) / 255.;
+    return Color;
+}
+
+void SaveAOVs(ivec2 PixelCoords, vec3 ShadingNormal, vec3 GeometricNormal, vec2 UV, vec3 WorldSpacePosition, float Opacity, float Depth, vec3 Albedo,
+              vec3 Luminance, uint RenderableIndex, uint PrimitiveIndex, uint Materialindex, vec4 DebugData)
+{
+    imageStore(ShadingNormalAOVImage, ivec2(PixelCoords), vec4(ShadingNormal, 1));
+    imageStore(GeometricNormalAOVImage, ivec2(PixelCoords), vec4(GeometricNormal, 1));
+    imageStore(UVAOVImage, ivec2(PixelCoords), vec4(UV, 0, 1));
+    imageStore(WorldSpacePositionAOVImage, ivec2(PixelCoords), vec4(WorldSpacePosition, 1));
+    imageStore(OpacityAOVImage, ivec2(PixelCoords), vec4(Opacity, Opacity, Opacity, 1));
+    imageStore(DepthAOVImage, ivec2(PixelCoords), vec4(Depth, Depth, Depth, 1));
+    imageStore(AlbedoAOVImage, ivec2(PixelCoords), vec4(Albedo, 1));
+    imageStore(LuminanceAOVImage, ivec2(PixelCoords), vec4(Luminance, 1));
+
+    vec4 RenderableIdColor = IndexToColor(RenderableIndex);
+    imageStore(RenderableIndexAOVImage, ivec2(PixelCoords), RenderableIdColor);
+
+    vec4 PrimitiveIdColor = IndexToColor(PrimitiveIndex);
+    imageStore(PrimitiveIndexAOVImage, ivec2(PixelCoords), PrimitiveIdColor);
+
+    vec4 MaterialIdColor = IndexToColor(Materialindex);
+    imageStore(MaterialindexAOVImage, ivec2(PixelCoords), MaterialIdColor);
+
+    imageStore(DebugLayerImage, ivec2(PixelCoords), DebugData);
+}
+
+void main()
+{
+    /// Find actual pixel we are working with
+    uint PixelIndex = PixelIndexIndexMap[gl_LaunchIDEXT.x];
+    uvec2 PixelCoords = uvec2(PixelIndex % PushConstants.Width, PixelIndex / PushConstants.Width);
+
+#ifdef DEBUG_PRINTF
+    if (PixelCoords.x == PushConstants.Width / 2 && PixelCoords.y == PushConstants.Height / 2 /*&& PushConstants.BounceIndex == 0*/)
+    {
+        b = true;
+        //debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
+    }
+#endif
+
+    /// Fetch required data
+    FRayData RayData = RayData[PixelIndex];
+    FHit Hit = Hits[PixelIndex];
+    FRenderable Renderable = Renderables[Hit.RenderableIndex];
+    FDeviceTransform Transform = FetchTransform(Renderable.TransformIndex);
+    const vec3 Barycentrics = vec3(1.0 - Hit.HitUV.x - Hit.HitUV.y, Hit.HitUV.x, Hit.HitUV.y);
+
+    vec3 NormalInWorldSpace = vec3(1);
+    vec3 PointOfIntersectionInWorldSpace = vec3(1);
+    vec2 TextureCoords = vec2(1);
+    ComputeShadingData(Renderable, Barycentrics, Transform, NormalInWorldSpace, PointOfIntersectionInWorldSpace, TextureCoords);
+    bool bFrontFacing = true;
+
+    if (dot(NormalInWorldSpace, RayData.Direction.xyz) > 0)
+    {
+        bFrontFacing = false;
+    }
+
+    /// Sample directional light
+    vec3 DirectionalLightSamplingResult = vec3(0);
+    uint DirectionalLightsCount = UtilityData.ActiveDirectionalLightsCount;
+    FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_LIGHT);
+
+    if (DirectionalLightsCount != 0)
+    {
+        DirectionalLightSamplingResult = ComputeDirectionalLightInput(SamplingState, DirectionalLightsCount, NormalInWorldSpace, PointOfIntersectionInWorldSpace);
+    }
+
+    /// Sample point light
+    vec3 PointLightSamplingResult = vec3(0);
+    uint PointLightsCount = UtilityData.ActivePointLightsCount;
+
+    if (PointLightsCount != 0)
+    {
+        PointLightSamplingResult = ComputePointLightInput(SamplingState, PointLightsCount, NormalInWorldSpace, PointOfIntersectionInWorldSpace);
+    }
+
+    /// Sample spot light
+    vec3 SpotLightSamplingResult = vec3(0);
+    uint SpotLightsCount = UtilityData.ActiveSpotLightsCount;
+
+    if (SpotLightsCount != 0)
+    {
+        SpotLightSamplingResult = ComputeSpotLightInput(SamplingState, SpotLightsCount, NormalInWorldSpace, PointOfIntersectionInWorldSpace);
+    }
+
+    /// Sample IBL
+    vec3 IBLSamplingResult = vec3(0);
+
+    if (UtilityData.IBLIsActive)
+    {
+        IBLSamplingResult = ComputeIBLInput(SamplingState, SpotLightsCount, NormalInWorldSpace, PointOfIntersectionInWorldSpace);
+    }
+
+    /// Process material interaction
+    FDeviceMaterial Material = GetMaterial(TextureCoords);
+
+    SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
+    vec3 SamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace.xyz, SamplingState, bFrontFacing);
+
+    if ((RayData.RayFlags & TRANSMISSION_LAYER) != TRANSMISSION_LAYER)
+    {
+        SamplingResult *= abs(NDotI);
+    }
+
+    RayData.Origin.xyz = PointOfIntersectionInWorldSpace;
+
+    vec3 CumulativeMaterialColor = CumulativeMaterialColorBuffer[PixelIndex].xyz;
+    CumulativeMaterialColor *= SamplingResult;
+    CumulativeMaterialColorBuffer[PixelIndex] = vec4(CumulativeMaterialColor, 1);
+
+    vec3 TotalIncomingLight = vec3(0);
+    if (!CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER) && !CheckFlag(RayData.RayFlags, SPECULAR_LAYER))
+    {
+        TotalIncomingLight = IBLSamplingResult + PointLightSamplingResult + DirectionaLightSamplingResult + SpotLightSamplingResult;
+        SamplingResult = CumulativeMaterialColor * TotalIncomingLight;
+    }
+    else
+    {
+        SamplingResult = vec3(0);
+    }
+
+    ThroughputBuffer[PixelIndex].xyz = ThroughputBuffer[PixelIndex].xyz + SamplingResult;
+
+    if ((PushConstants.BounceIndex == LAST_DIFFUSE_BOUNCE && CheckFlag(RayData.RayFlags, DIFFUSE_LAYER))
+    || (PushConstants.BounceIndex == LAST_REFLECTION_BOUNCE && CheckFlag(RayData.RayFlags, SPECULAR_LAYER))
+    || (PushConstants.BounceIndex == LAST_REFRACTION_BOUNCE && CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER)))
+    {
+        RayData[PixelIndex].RayFlags = RAY_DATA_RAY_MISSED;
+        imageStore(OutcomingImage, ivec2(PixelCoords), vec4(ThroughputBuffer[PixelIndex].xyz , 1));
+        return;
+    }
+
+    if (PushConstants.BounceIndex == LAST_BOUNCE)
+    {
+        imageStore(OutcomingImage, ivec2(PixelCoords), vec4(ThroughputBuffer[PixelIndex].xyz , 1));
+        return;
+    }
+
+    RayData[PixelIndex] = RayData;
+
+    if(PushConstants.BounceIndex == 0)
+    {
+        SaveAOVs(PixelCoords, NormalInWorldSpace, NormalInWorldSpace, TextureCoords, WorldSpacePositionAOVImage, 1, 1,
+        Material.BaseAlbedo, TotalIncomingLight, Hit.RenderableIndex, Hit.PrimitiveIndex, PushConstants.MaterialIndex);
+    }
+}
