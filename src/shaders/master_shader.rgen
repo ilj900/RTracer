@@ -464,6 +464,7 @@ void main()
     ComputeShadingData(Renderable, Hit, Transform, NormalInWorldSpace, WorldSpacePosition, TextureCoords);
     float NDotI = dot(NormalInWorldSpace.xyz, RayData.Direction.xyz);
     bool bFrontFacing = true;
+    float Depth = length(WorldSpacePosition - RayData.Origin.xyz) * 0.0001f;
 
     if (NDotI > 0)
     {
@@ -560,7 +561,7 @@ void main()
 
     if(PushConstants.BounceIndex == 0)
     {
-        SaveAOVs(PixelCoords, NormalInWorldSpace, NormalInWorldSpace, TextureCoords, WorldSpacePosition, 1., 1.,
+        SaveAOVs(PixelCoords, NormalInWorldSpace, NormalInWorldSpace, TextureCoords, WorldSpacePosition, 1., Depth,
         Material.BaseColor, TotalIncomingLight, Hit.RenderableIndex, Hit.PrimitiveIndex, PushConstants.MaterialIndex, vec4(1));
     }
 }
