@@ -517,6 +517,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 		SynchronizationPoint = SortMaterialsTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
+
 		SynchronizationPoint = MasterShader->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = MissTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
@@ -1315,7 +1316,7 @@ void FRender::AllocateIndependentResources()
 	/// Allocate buffers that doesn't require recreation
 	std::vector<FBufferDescription> BufferDescriptions = {
 		{RENDER_ITERATION_BUFFER,					sizeof(uint32_t),							VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{TOTAL_COUNTED_MATERIALS_BUFFER,			sizeof(uint32_t) * TOTAL_MATERIALS * 3,	VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT},
+		{TOTAL_COUNTED_MATERIALS_BUFFER,			sizeof(uint32_t) * TOTAL_MATERIALS * 3,	VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT},
 		{ACTIVE_RAY_COUNT_BUFFER, 				sizeof(uint32_t) * 3,						VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT},
 		{MATERIALS_OFFSETS_PER_MATERIAL_BUFFER,	sizeof(uint32_t) * TOTAL_MATERIALS,	0},
 	};

@@ -36,6 +36,8 @@ FMasterShader::FMasterShader(uint32_t WidthIn, uint32_t HeightIn, uint32_t Submi
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_TRANSFORMS_BUFFER_INDEX,
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_MATERIALS_OFFSETS,
+		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_PIXEL_INDEX_BUFFER,
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_DIRECTIONAL_LIGHTS_BUFFER_INDEX,
@@ -152,6 +154,7 @@ void FMasterShader::UpdateDescriptorSets()
 		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_HITS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(HITS_BUFFER));
 		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_RENDERABLES_BUFFER_INDEX, i, RENDERABLE_SYSTEM()->DeviceBuffer);
 		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_TRANSFORMS_BUFFER_INDEX, i, TRANSFORM_SYSTEM()->DeviceBuffer);
+		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_MATERIALS_OFFSETS, i, RESOURCE_ALLOCATOR()->GetBuffer(MATERIALS_OFFSETS_PER_MATERIAL_BUFFER));
 		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_PIXEL_INDEX_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer(PIXEL_INDEX_BUFFER));
 		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_DIRECTIONAL_LIGHTS_BUFFER_INDEX, i, DIRECTIONAL_LIGHT_SYSTEM()->DeviceBuffer);
 		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_SPOT_LIGHTS_BUFFER_INDEX, i, SPOT_LIGHT_SYSTEM()->DeviceBuffer);
@@ -182,7 +185,7 @@ void FMasterShader::UpdateDescriptorSets()
 void FMasterShader::RecordCommands()
 {
     CommandBuffers.resize(TotalSize);
-	auto ActiveRayCountBufferDeviceAddress = VK_CONTEXT()->GetBufferDeviceAddressInfo(RESOURCE_ALLOCATOR()->GetBuffer(ACTIVE_RAY_COUNT_BUFFER));
+	auto TotalCountedMaterialsBuffer = VK_CONTEXT()->GetBufferDeviceAddressInfo(RESOURCE_ALLOCATOR()->GetBuffer(TOTAL_COUNTED_MATERIALS_BUFFER));
 
     for (uint32_t i = 0; i < TotalSize; ++i)
     {
@@ -201,9 +204,9 @@ void FMasterShader::RecordCommands()
 					0, 1, &RayTracingDescriptorSet, 0, nullptr);
 
 				FPushConstants PushConstants = { Width, Height, 1.f / float(Width), 1.f / float(Height), Width * Height, MaterialIndex, i % SubmitX };
-				vkCmdPushConstants(CommandBuffer, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants), &PushConstants);
+				vkCmdPushConstants(CommandBuffer, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name), VK_SHADER_STAGE_RAYGEN_BIT_KHR, 0, sizeof(FPushConstants), &PushConstants);
 
-				V::vkCmdTraceRaysIndirectKHR(CommandBuffer, &RGenRegions[MaterialIndex], &RMissRegion, &RHitRegion, &RCallRegion, ActiveRayCountBufferDeviceAddress);
+				V::vkCmdTraceRaysIndirectKHR(CommandBuffer, &RGenRegions[MaterialIndex], &RMissRegion, &RHitRegion, &RCallRegion, TotalCountedMaterialsBuffer + (MaterialIndex * 3 * sizeof(uint32_t)));
 			}
         }, QueueFlagsBits);
 

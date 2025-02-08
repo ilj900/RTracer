@@ -30,9 +30,4 @@ void main()
     }
 
     ActiveRayCount[0] = MaterialOffsets[IBL_MATERIAL_INDEX];
-
-    for (uint i = 0; i < TOTAL_MATERIALS; ++i)
-    {
-        TotalMaterialCount[i * 3] = (TotalMaterialCount[i * 3] + BASIC_CHUNK_SIZE - 1) / BASIC_CHUNK_SIZE;
-    }
 }

@@ -45,6 +45,11 @@ layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_TRANSFORMS_BUF
     FDeviceTransform DeviceTransforms[];
 };
 
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_MATERIALS_OFFSETS) buffer MaterialsOffsetsBufferObject
+{
+    uint MaterialsOffsets[];
+};
+
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_PIXEL_INDEX_BUFFER) buffer PixelIndexIndexMapBufferObject
 {
     uint PixelIndexIndexMap[];
@@ -435,7 +440,8 @@ void SaveAOVs(uvec2 PixelCoords, vec3 ShadingNormal, vec3 GeometricNormal, vec2 
 void main()
 {
     /// Find actual pixel we are working with
-    uint PixelIndex = PixelIndexIndexMap[gl_LaunchIDEXT.x];
+    uint OriginalPixelIndex = MaterialsOffsets[PushConstants.MaterialIndex] + gl_LaunchIDEXT.x;
+    uint PixelIndex = PixelIndexIndexMap[OriginalPixelIndex];
     uvec2 PixelCoords = uvec2(PixelIndex % PushConstants.Width, PixelIndex / PushConstants.Width);
 
 #ifdef DEBUG_PRINTF
