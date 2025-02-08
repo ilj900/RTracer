@@ -61,6 +61,18 @@ layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_POINT_LIGHTS_B
     FPointLight PointLightsBuffer[];
 };
 
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_IMPORTANCE_BUFFER_INDEX) buffer IBLImportanceBufferObject
+{
+    uvec2 IBLImportanceBuffer[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_IMAGE_SAMPLER_INDEX) uniform sampler2D IBLTextureSampler;
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_WEIGHTS_BUFFER_INDEX) buffer IBLWeightsBufferObject
+{
+    float IBLWeightsBuffer[];
+};
+
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_UTILITY_BUFFER_INDEX) uniform UtilityDataUniformBufferObject
 {
     FUtilityData UtilityData;
@@ -112,6 +124,11 @@ bool CheckFlag(uint Mask, uint Field)
     return (Mask & Field) == Field;
 }
 
+bool IsIndexed(FRenderable Renderable)
+{
+    return CheckFlag(Renderable.RenderablePropertyMask, RENDERABLE_IS_INDEXED);
+}
+
 FVertex UnpackDeviceVertex(FDeviceVertex DV)
 {
     FVertex V;
@@ -126,11 +143,12 @@ FVertex UnpackDeviceVertex(FDeviceVertex DV)
     return V;
 }
 
-void ComputeShadingData(FRenderable Renderable, vec3 Barycentrics, FDeviceTRansform Transform,
-    out vec3 Normal, out vec3 PointOfIntersectionInWorldSpace, out vec2 TextureCoords)
+void ComputeShadingData(FRenderable Renderable, FHit Hit, FDeviceTransform Transform,
+out vec3 NormalInWorldSpace, out vec3 PointOfIntersectionInWorldSpace, out vec2 TextureCoords)
 {
     Vertices Verts = Vertices(Renderable.VertexBufferAddress);
     Indices Inds = Indices(Renderable.IndexBufferAddress);
+    vec3 Barycentrics = vec3(1.0 - Hit.HitUV.x - Hit.HitUV.y, Hit.HitUV.x, Hit.HitUV.y);
 
     FDeviceVertex DV0;
     FDeviceVertex DV1;
@@ -163,11 +181,12 @@ void ComputeShadingData(FRenderable Renderable, vec3 Barycentrics, FDeviceTRansf
     FVertex V2 = UnpackDeviceVertex(DV2);
 
     NormalInWorldSpace = (V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z);
-    NormalInWorldSpace = Normal * mat3(Transform.InverseModelMatrix);
+    NormalInWorldSpace = NormalInWorldSpace * mat3(Transform.InverseModelMatrix);
 
     PointOfIntersectionInWorldSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
     PointOfIntersectionInWorldSpace = vec3(Transform.ModelMatrix * vec4(PointOfIntersectionInWorldSpace, 1.f));
 
+    /// TODO: Can Hit.HitUV just be used?
     TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
 }
 
@@ -225,7 +244,7 @@ vec3 ComputePointLightInput(FSamplingState SamplingState, uint PointLightsCount,
     /// Construct a ray that goes to the light
     FRayData RayData;
     RayData.RayFlags = 0;
-    RayData.Direction.xyz = -DirectionalLight.Direction;
+    RayData.Direction.xyz = LightDirection;
     RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
 
     /// Trace the ray
@@ -271,7 +290,7 @@ vec3 ComputeSpotLightInput(FSamplingState SamplingState, uint SpotLightsCount, v
     /// Construct a ray that goes to the light
     FRayData RayData;
     RayData.RayFlags = 0;
-    RayData.Direction.xyz = -DirectionalLight.Direction;
+    RayData.Direction.xyz = LightDirection;
     RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
 
     /// Trace the ray
@@ -400,12 +419,11 @@ void main()
     FHit Hit = Hits[PixelIndex];
     FRenderable Renderable = Renderables[Hit.RenderableIndex];
     FDeviceTransform Transform = FetchTransform(Renderable.TransformIndex);
-    const vec3 Barycentrics = vec3(1.0 - Hit.HitUV.x - Hit.HitUV.y, Hit.HitUV.x, Hit.HitUV.y);
 
     vec3 NormalInWorldSpace = vec3(1);
     vec3 PointOfIntersectionInWorldSpace = vec3(1);
     vec2 TextureCoords = vec2(1);
-    ComputeShadingData(Renderable, Barycentrics, Transform, NormalInWorldSpace, PointOfIntersectionInWorldSpace, TextureCoords);
+    ComputeShadingData(Renderable, Hit, Transform, NormalInWorldSpace, PointOfIntersectionInWorldSpace, TextureCoords);
     bool bFrontFacing = true;
 
     if (dot(NormalInWorldSpace, RayData.Direction.xyz) > 0)

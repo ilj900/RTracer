@@ -15,6 +15,7 @@ public:
 
 	VkSampler MaterialTextureSampler = VK_NULL_HANDLE;
 	std::vector<VkPipeline> MaterialPipelines;
+	VkSampler IBLSampler = VK_NULL_HANDLE;
 
     std::vector<FBuffer> SBTBuffers;
 

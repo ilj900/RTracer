@@ -5,10 +5,10 @@
 
 #include "common_structures.h"
 
-layout (location = 0) rayPayloadInEXT FLightHitPayload HitPayload;
+layout (location = 0) rayPayloadInEXT FSimpleHitPayload SimpleHitPayload;
 
 void main()
 {
     /// We only need to mark it that we missed any geometry
-    HitPayload.PayloadFlags = 0;
+    SimpleHitPayload.PayloadFlags = 0;
 }
