@@ -54,6 +54,10 @@ FMasterShader::FMasterShader(uint32_t WidthIn, uint32_t HeightIn, uint32_t Submi
 		{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_RENDER_ITERATION_BUFFER_INDEX,
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_CUMULATIVE_MATERIAL_COLOR_BUFFER_INDEX,
+		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_THROUGHPUT_BUFFER,
+		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_COLOR_AOV_IMAGE_INDEX,
 		{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_SHADING_NORMAL_AOV_IMAGE_INDEX,
@@ -81,7 +85,8 @@ FMasterShader::FMasterShader(uint32_t WidthIn, uint32_t HeightIn, uint32_t Submi
 	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_DEBUG_LAYER_IMAGE_INDEX,
 		{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 
-    DescriptorSetManager->CreateDescriptorSetLayout({}, Name);
+	VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_RAYGEN_BIT_KHR, 0, sizeof(FPushConstants)};
+	DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
     PipelineStageFlags = VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
     QueueFlagsBits = VK_QUEUE_COMPUTE_BIT;
@@ -109,6 +114,8 @@ void FMasterShader::Init(FCompileDefinitions* CompileDefinitions)
 
 	auto RayClosestHitShader = FShader("../../../src/shaders/master_shader.rchit");
 	auto RayMissShader = FShader("../../../src/shaders/master_shader.rmiss");
+	RGenRegions.resize(MATERIAL_SYSTEM()->Entities.size());
+	SBTBuffers.resize(RGenRegions.size());
 
 	for (auto& Material : *MATERIAL_SYSTEM())
 	{
@@ -118,7 +125,7 @@ void FMasterShader::Init(FCompileDefinitions* CompileDefinitions)
 		auto RayGenerationShader = FShader("../../../src/shaders/master_shader.rgen", &CombinedCompileDefinitions);
 		uint32_t MaterialIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
 		MaterialPipelines[MaterialIndex] = VK_CONTEXT()->CreateRayTracingPipeline(RayGenerationShader(), RayMissShader(), RayClosestHitShader(), PipelineLayout);
-		SBTBuffers[MaterialIndex] = VK_CONTEXT()->GenerateSBT(Pipeline, RMissRegion, RHitRegion, RGenRegions[MaterialIndex]);
+		SBTBuffers[MaterialIndex] = VK_CONTEXT()->GenerateSBT(MaterialPipelines[MaterialIndex], RMissRegion, RHitRegion, RGenRegions[MaterialIndex]);
 	}
 
 	MaterialTextureSampler = VK_CONTEXT()->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT, VK_FILTER_NEAREST);
@@ -154,6 +161,8 @@ void FMasterShader::UpdateDescriptorSets()
 		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_IBL_WEIGHTS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer("InversePDFWeightBuffer"));
 		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_UTILITY_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(UTILITY_INFO_BUFFER));
 		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_RENDER_ITERATION_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(RENDER_ITERATION_BUFFER));
+		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_CUMULATIVE_MATERIAL_COLOR_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(CUMULATIVE_MATERIAL_COLOR_BUFFER));
+		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_THROUGHPUT_BUFFER, i, RESOURCE_ALLOCATOR()->GetBuffer(THROUGHPUT_BUFFER));
 		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_COLOR_AOV_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("ColorImage"));
 		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_SHADING_NORMAL_AOV_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("ShadingNormalAOVImage"));
 		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_GEOMETRIC_NORMAL_AOV_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("GeometricNormalAOVImage"));
@@ -186,9 +195,9 @@ void FMasterShader::RecordCommands()
 			{
 				uint32_t MaterialIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
 
-				vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, MaterialPipelines[MaterialIndex]);
+				vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, MaterialPipelines[MaterialIndex]);
 				auto RayTracingDescriptorSet = VK_CONTEXT()->DescriptorSetManager->GetSet(Name, MASTER_SHADER_LAYOUT_INDEX, i);
-				vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
+				vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, VK_CONTEXT()->DescriptorSetManager->GetPipelineLayout(Name),
 					0, 1, &RayTracingDescriptorSet, 0, nullptr);
 
 				FPushConstants PushConstants = { Width, Height, 1.f / float(Width), 1.f / float(Height), Width * Height, MaterialIndex, i % SubmitX };
