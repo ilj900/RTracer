@@ -65,7 +65,7 @@ layout (push_constant) uniform PushConstantsBlock
 {
     FPushConstants PushConstants;
 };
-
+/// TODO: Is "local_size_x = BASIC_CHUNK_SIZE" correct?
 layout (local_size_x = BASIC_CHUNK_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 void main()
@@ -94,15 +94,14 @@ void main()
     Phi /= M_2_PI;
     Theta /= M_PI;
 
-    #ifdef DEBUG_PRINTF
-
+#ifdef DEBUG_PRINTF
     if (NewPixelCoords.x == PushConstants.Width / 2 && NewPixelCoords.y == PushConstants.Height / 2)
     {
         b = true;
         //debugPrintfEXT("RayData.Direction is %f, %f, %f\n", RayData.Direction.x, RayData.Direction.y, RayData.Direction.z);
         //debugPrintfEXT("Phi and Theta is %f, %f\n\n", Phi, Theta);
     }
-    #endif
+#endif
 
     vec3 SampledColor = vec3(1, 0, 1);
     float NDotI = dot(PreviousBounceNormalAOVData[NewPixelIndex].xyz, RayData.Direction.xyz);

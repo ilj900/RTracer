@@ -6,7 +6,7 @@
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_nonuniform_qualifier : enable // ?
 
-#define DEBUG_PRINTF
+//#define DEBUG_PRINTF
 #ifdef DEBUG_PRINTF
 #extension GL_EXT_debug_printf : enable
 bool b = false;
@@ -445,7 +445,7 @@ void main()
     uvec2 PixelCoords = uvec2(PixelIndex % PushConstants.Width, PixelIndex / PushConstants.Width);
 
 #ifdef DEBUG_PRINTF
-    if (PixelCoords.x == PushConstants.Width / 2 && PixelCoords.y == PushConstants.Height / 2 && PushConstants.BounceIndex == 0)
+    if (PixelCoords.x == PushConstants.Width / 2 && PixelCoords.y == PushConstants.Height / 2 /*&& PushConstants.BounceIndex == 0*/)
     {
         b = true;
         //debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
@@ -534,10 +534,6 @@ void main()
     else
     {
         SamplingResult = vec3(0);
-    }
-    if (b)
-    {
-        debugPrintfEXT("PushConstants.MaterialIndex: %i\n", PushConstants.MaterialIndex);
     }
 
     ThroughputBuffer[PixelIndex].xyz = ThroughputBuffer[PixelIndex].xyz + SamplingResult;

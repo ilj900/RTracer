@@ -2,7 +2,6 @@
 #include "vk_debug.h"
 #include "vk_functions.h"
 
-#include "mesh_component.h"
 #include "mesh_system.h"
 #include "renderable_system.h"
 #include "acceleration_structure_system.h"
