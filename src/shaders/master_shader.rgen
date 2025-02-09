@@ -6,7 +6,7 @@
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_nonuniform_qualifier : enable // ?
 
-//#define DEBUG_PRINTF
+#define DEBUG_PRINTF
 #ifdef DEBUG_PRINTF
 #extension GL_EXT_debug_printf : enable
 bool b = false;
@@ -95,6 +95,11 @@ layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_RENDER_ITERATI
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_CUMULATIVE_MATERIAL_COLOR_BUFFER_INDEX) buffer CumulativeMaterialColorBufferObject
 {
     vec4 CumulativeMaterialColorBuffer[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_NORMAL_BUFFER) buffer NormalBufferObject
+{
+    vec4 NormalBuffer[];
 };
 
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_THROUGHPUT_BUFFER) buffer ThroughputBufferObject
@@ -448,7 +453,7 @@ void main()
     if (PixelCoords.x == PushConstants.Width / 2 && PixelCoords.y == PushConstants.Height / 2 /*&& PushConstants.BounceIndex == 0*/)
     {
         b = true;
-        //debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
+        debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
     }
 #endif
 
@@ -469,6 +474,7 @@ void main()
     if (NDotI > 0)
     {
         bFrontFacing = false;
+        NormalInWorldSpace = -NormalInWorldSpace;
     }
 
     /// Sample directional light
@@ -512,7 +518,7 @@ void main()
     FDeviceMaterial Material = GetMaterial(TextureCoords);
 
     SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
-    vec3 SamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace.xyz, SamplingState, bFrontFacing);
+    vec3 SamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace, SamplingState, bFrontFacing);
 
     if ((RayData.RayFlags & TRANSMISSION_LAYER) != TRANSMISSION_LAYER)
     {
@@ -554,6 +560,7 @@ void main()
     }
 
     RayDataBuffer[PixelIndex] = RayData;
+    NormalBuffer[PixelIndex] = vec4(NormalInWorldSpace, 1);
 
     if(PushConstants.BounceIndex == 0)
     {

@@ -2,7 +2,7 @@
 
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 
-//#define DEBUG_PRINTF
+#define DEBUG_PRINTF
 #ifdef DEBUG_PRINTF
 #extension GL_EXT_debug_printf : enable
 bool b = false;
@@ -98,13 +98,12 @@ void main()
     if (NewPixelCoords.x == PushConstants.Width / 2 && NewPixelCoords.y == PushConstants.Height / 2)
     {
         b = true;
-        //debugPrintfEXT("RayData.Direction is %f, %f, %f\n", RayData.Direction.x, RayData.Direction.y, RayData.Direction.z);
+        debugPrintfEXT("PushConstants.BounceIndex: %i\n", PushConstants.BounceIndex);
         //debugPrintfEXT("Phi and Theta is %f, %f\n\n", Phi, Theta);
     }
 #endif
 
     vec3 SampledColor = vec3(1, 0, 1);
-    float NDotI = dot(PreviousBounceNormalAOVData[NewPixelIndex].xyz, RayData.Direction.xyz);
 
     if (PushConstants.BounceIndex == 0)
     {
@@ -113,12 +112,23 @@ void main()
     else
     {
         SampledColor = vec3(texture(IBLTextureSamplerNearest, vec2(Phi, Theta)));
+        float NDotI = dot(PreviousBounceNormalAOVData[NewPixelIndex].xyz, RayData.Direction.xyz);
+        if (b)
+        {
+            debugPrintfEXT("SampledColor: %f, %f, %f\n", SampledColor.x, SampledColor.y, SampledColor.z);
+            debugPrintfEXT("NDotI: %f\n", NDotI);
+        }
         SampledColor *= abs(NDotI);
     }
 
     vec3 CumulativeMaterialColor = CumulativeMaterialColorBuffer[NewPixelIndex].xyz;
     vec3 ThroughputColor = ThroughputBuffer[NewPixelIndex].xyz;
     vec3 Result = ThroughputColor + CumulativeMaterialColor * SampledColor;
+    if (b)
+    {
+        debugPrintfEXT("CumulativeMaterialColor: %f, %f, %f\n", CumulativeMaterialColor.x, CumulativeMaterialColor.y, CumulativeMaterialColor.z);
+        debugPrintfEXT("ThroughputColor: %f, %f, %f\n", ThroughputColor.x, ThroughputColor.y, ThroughputColor.z);
+    }
 
     imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(Result, PushConstants.BounceIndex == 0 ? 0.f : 1.f));
 

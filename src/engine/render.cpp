@@ -211,7 +211,6 @@ int FRender::Init()
 	ClearCumulativeMaterialColorBuffer	= std::make_shared<FClearBufferTask>				(CUMULATIVE_MATERIAL_COLOR_BUFFER, 		Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice, 0x3F800000);
     GenerateRaysTask 					= std::make_shared<FGenerateInitialRays>			(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ResetActiveRayCountTask 			= std::make_shared<FResetActiveRayCountTask>		(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	CopyNormalAOVBuffer					= std::make_shared<FCopyBufferTask>					(NORMAL_AOV_BUFFER, HISTORY_NORMAL_AOV_BUFFER, Width, Height, RecursionDepth - 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	std::vector<std::string> BuffersToCleanEachFrame{NORMAL_AOV_BUFFER, UV_AOV_BUFFER, WORLD_SPACE_POSITION_AOV_BUFFER, TRANSFORM_INDEX_BUFFER, SAMPLED_IBL_BUFFER, SAMPLED_POINT_LIGHT_BUFFER, SAMPLED_DIRECTIONAL_LIGHT_BUFFER, SAMPLED_SPOT_LIGHT_BUFFER, DEBUG_LAYER_BUFFER};
 	ClearBuffersEachFrameTask 			= std::make_shared<FClearBufferTask>				(BuffersToCleanEachFrame , Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	std::vector<std::string> BuffersToCleanEachBounce{COUNTED_MATERIALS_PER_CHUNK_BUFFER};
@@ -267,7 +266,6 @@ int FRender::Cleanup()
 	ClearCumulativeMaterialColorBuffer	= nullptr;
     GenerateRaysTask 					= nullptr;
 	ResetActiveRayCountTask 			= nullptr;
-	CopyNormalAOVBuffer					= nullptr;
 	ClearBuffersEachFrameTask			= nullptr;
 	ClearBuffersEachBounceTask			= nullptr;
 	ClearBuffersEachBounceTask			= nullptr;
@@ -426,7 +424,6 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	GenerateRaysTask->Reload();
 	ResetActiveRayCountTask->Reload();
 	RayTraceTask->Reload();
-	CopyNormalAOVBuffer->Reload();
 	ClearBuffersEachFrameTask->Reload();
 	ClearBuffersEachBounceTask->Reload();
 	ClearTotalMaterialsCountTask->Reload();
@@ -494,11 +491,6 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 	for (uint32_t i = 0; i < RecursionDepth; ++i)
 	{
-		if (i != 0)
-		{
-			SynchronizationPoint = CopyNormalAOVBuffer->Submit(PipelineStageFlags, SynchronizationPoint, i - 1, CurrentFrame);
-		}
-
 		SynchronizationPoint = ClearBuffersEachBounceTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = RayTraceTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
@@ -517,10 +509,9 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 		SynchronizationPoint = SortMaterialsTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
+		SynchronizationPoint = MissTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 
 		SynchronizationPoint = MasterShader->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
-
-		SynchronizationPoint = MissTask->Submit(PipelineStageFlags, SynchronizationPoint, i, CurrentFrame);
 	}
 
 	SynchronizationPoint = AccumulateTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
@@ -1108,7 +1099,6 @@ void FRender::GetAllTimings(std::vector<std::string>& Names, std::vector<std::ve
 	TimingFillingLambda(ClearBuffersEachFrameTask, FrameIndex);
 	TimingFillingLambda(GenerateRaysTask, FrameIndex);
 	TimingFillingLambda(ResetActiveRayCountTask, FrameIndex);
-	TimingFillingLambda(CopyNormalAOVBuffer, FrameIndex);
 	TimingFillingLambda(ClearBuffersEachBounceTask, FrameIndex);
 	TimingFillingLambda(RayTraceTask, FrameIndex);
 	TimingFillingLambda(ClearTotalMaterialsCountTask, FrameIndex);
@@ -1269,7 +1259,6 @@ void FRender::AllocateDependentResources()
 		{MATERIAL_INDEX_AOV_BUFFER,			sizeof(uint32_t) * Width * Height, 0},
 		{NORMAL_AOV_BUFFER, 					sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT},
 		{COUNTED_MATERIALS_PER_CHUNK_BUFFER,	sizeof(uint32_t) * TOTAL_MATERIALS * CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE),	VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{HISTORY_NORMAL_AOV_BUFFER, 			sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 		{UV_AOV_BUFFER, 						sizeof(FVector2) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 		{WORLD_SPACE_POSITION_AOV_BUFFER, 	sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 		{SAMPLED_IBL_BUFFER, 					sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
@@ -1337,7 +1326,6 @@ void FRender::FreeDependentResources()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(PIXEL_INDEX_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(MATERIAL_INDEX_AOV_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(NORMAL_AOV_BUFFER);
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(HISTORY_NORMAL_AOV_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(UV_AOV_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(WORLD_SPACE_POSITION_AOV_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(SAMPLED_IBL_BUFFER);
