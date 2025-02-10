@@ -112,8 +112,9 @@ std::vector<uint32_t> CompileShaderToSpirVData(const std::string &Path,  const F
     FTimer Timer("Shader : " + Path + " compilation time: ");
     static shaderc::Compiler Compiler;
     static shaderc::CompileOptions CompileOptions;
-    CompileOptions.SetTargetEnvironment(shaderc_target_env_vulkan, 460);
+    CompileOptions.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version::shaderc_env_version_vulkan_1_3);
     CompileOptions.SetTargetSpirv(shaderc_spirv_version_1_6);
+	//CompileOptions.SetOptimizationLevel(shaderc_optimization_level::shaderc_optimization_level_performance);
 #ifndef NDEBUG
 	CompileOptions.SetGenerateDebugInfo();
 #endif
