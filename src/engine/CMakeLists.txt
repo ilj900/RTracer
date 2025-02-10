@@ -53,7 +53,6 @@ set(INCLUDE
         tasks/task_copy_buffer.h
         tasks/task_clear_buffer.h
         tasks/task_clear_image.h
-        tasks/task_generate_initial_rays.h
         tasks/task_reset_active_ray_count.h
         tasks/task_raytrace.h
         tasks/task_material_sort_clear_total_materials_count.h
@@ -78,7 +77,6 @@ set(SOURCE
         tasks/task_copy_buffer.cpp
         tasks/task_clear_buffer.cpp
         tasks/task_clear_image.cpp
-        tasks/task_generate_initial_rays.cpp
         tasks/task_reset_active_ray_count.cpp
         tasks/task_raytrace.cpp
         tasks/task_material_sort_clear_total_materials_count.cpp

@@ -54,6 +54,9 @@
 #define RAYTRACE_RENDERABLE_BUFFER_INDEX 										3u
 #define RAYTRACE_HIT_BUFFER 													4u
 #define RAYTRACE_MATERIAL_INDEX_BUFFER 											5u
+#define RAYTRACE_CAMERA_POSITION_BUFFER 										6u
+#define RAYTRACE_RENDER_ITERATION_BUFFER 										7u
+#define RAYTRACE_THROUGHPUT_BUFFER 												8u
 
 /// Task reset active ray count descriptor set layout defines
 #define RESET_ACTIVE_RAY_COUNT_LAYOUT_INDEX 									0u
@@ -115,15 +118,6 @@
 #define ADVANCE_RENDER_COUNT_LAYOUT_INDEX 										0u
 
 #define ADVANCE_RENDER_COUNT_RENDER_ITERATION_BUFFER 							0u
-
-/// Task generate rays descriptor set layout defines
-#define GENERATE_RAYS_LAYOUT_INDEX 												0u
-
-#define CAMERA_RAYS_BUFFER 														0u
-#define CAMERA_POSITION_BUFFER 													1u
-#define GENERATE_RAYS_PIXEL_INDEX_BUFFER 										2u
-#define GENERATE_RAYS_RENDER_ITERATION_BUFFER 									3u
-#define GENERATE_RAYS_THROUGHPUT_BUFFER 										4u
 
 /// Task material sort count materials set layout defines
 #define MATERIAL_SORT_COUNT_MATERIALS_PER_CHUNK_INDEX 							0u
