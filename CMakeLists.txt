@@ -8,6 +8,8 @@ option(ENABLE_GPU_TIMINGS "Enables GPU timings for profiling" ON)
 
 find_package(Vulkan REQUIRED COMPONENTS shaderc_combined)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+
 add_subdirectory(3rdparty/glfw)
 add_subdirectory(3rdparty/Catch2)
 add_subdirectory(src/standalone)
