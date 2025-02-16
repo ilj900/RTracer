@@ -334,6 +334,26 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->SetIBL("../resources/brown_photostudio_02_4k.exr");
 	}
+	else if (Name == SCENE_SPECULAR_ROUGHNESS)
+	{
+		auto Plane = Render->CreatePlane({1024, 1024});
+		auto Sphere = Render->CreateUVSphere(512, 256, 0.5f);
+
+		auto PlaneInstance = Render->CreateInstance(Plane, {0, -2, 0}, {0, 1, 0}, {0, 0, 1});
+		auto Material_1 = Render->CreateReflectiveMaterial({0.8, 0.8, 0.8});
+		Render->MaterialSetSpecularRoughness(Material_1, 1.f);
+		Render->ShapeSetMaterial(PlaneInstance, Material_1);
+
+		for (int i = 0; i < 20; ++i)
+		{
+			auto SphereInstance = Render->CreateInstance(Sphere, {float(-10 + i), -1.499, 1});
+			auto Material = Render->CreateReflectiveMaterial({1, 0.8431f, 0});
+			Render->MaterialSetSpecularRoughness(Material, i * 0.05f);
+			Render->ShapeSetMaterial(SphereInstance, Material);
+		}
+
+		Render->SetIBL("../../../resources/sun.exr");
+	}
 	else
 	{
 		throw std::runtime_error("Scene not found");

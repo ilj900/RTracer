@@ -4,12 +4,14 @@
 #include "vk_context.h"
 
 #include "random.h"
+#include "bxdf.h"
 
 #include "stb_image_write.h"
 #include "tinyexr.h"
 
 #include "scene_loader.h"
 
+#include <iostream>
 #include <fstream>
 #include <random>
 
@@ -172,5 +174,68 @@ TEST_CASE( "Test random unit sphere", "[Utility]")
 	{
 		File.write(reinterpret_cast<const char*>(Sampled3DSphere.data()), sizeof(FVector3) * Sampled3DSphere.size());
 		File.close();
+	}
+}
+
+TEST_CASE( "Test GGX normal generator", "[GGX]")
+{
+	float Roughness = 0.;
+	uint32_t NumberOfSamplePerStep = 1000u;
+	uint32_t NumberOfRoughnessSteps = 10;
+
+	for (uint32_t i = 0; i <= NumberOfRoughnessSteps; ++i)
+	{
+		float a2 = Roughness * Roughness;
+		FSamplingState SamplingState = {0, 0, i, SAMPLE_TYPE_GENERATE_RAYS, 0};
+		std::vector<FVector3> Values(NumberOfSamplePerStep);
+		for (int j = 0; j < NumberOfSamplePerStep; ++j)
+		{
+			auto Random = Sample2DUnitQuad(SamplingState);
+			SamplingState.RenderIteration++;
+			auto SphericalCoords = CDFCookTorrance(a2, Random.X, Random.Y);
+			Values[j].X = cos(SphericalCoords.Y) * sin(SphericalCoords.X);
+			Values[j].Y = cos(SphericalCoords.X);
+			Values[j].Z = sin(SphericalCoords.Y) * sin(SphericalCoords.X);
+		}
+
+		std::ofstream File("../data/debug/GGX_" + std::to_string(Roughness) + ".bin", std::ios::binary);
+		if (File)
+		{
+			File.write(reinterpret_cast<const char*>(Values.data()), sizeof(FVector3) * Values.size());
+			File.close();
+		}
+
+		Roughness += 1.f / NumberOfRoughnessSteps;
+	}
+}
+
+TEST_CASE( "Test GGX of VNDF", "[GGX]")
+{
+	float Roughness = 0.;
+	uint32_t NumberOfSamplePerStep = 1000u;
+	uint32_t NumberOfRoughnessSteps = 10;
+
+	for (uint32_t i = 0; i <= NumberOfRoughnessSteps; ++i)
+	{
+		FSamplingState SamplingState = {0, 0, i, SAMPLE_TYPE_GENERATE_RAYS, 0};
+		std::vector<FVector3> Values(NumberOfSamplePerStep);
+		for (int j = 0; j < NumberOfSamplePerStep; ++j)
+		{
+			auto Random = Sample2DUnitQuad(SamplingState);
+			SamplingState.RenderIteration++;
+			auto SphericalCoords = SampleGGXVNDF(FVector3(1, 0, 1).GetNormalized(), Roughness, Roughness, Random.X, Random.Y);
+			Values[j].x = SphericalCoords.x;
+			Values[j].y = SphericalCoords.z;
+			Values[j].z = SphericalCoords.y;
+		}
+
+		std::ofstream File("../data/debug/GGX_VNDF_" + std::to_string(Roughness) + ".bin", std::ios::binary);
+		if (File)
+		{
+			File.write(reinterpret_cast<const char*>(Values.data()), sizeof(FVector3) * Values.size());
+			File.close();
+		}
+
+		Roughness += 1.f / NumberOfRoughnessSteps;
 	}
 }

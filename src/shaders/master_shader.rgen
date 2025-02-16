@@ -6,7 +6,7 @@
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_nonuniform_qualifier : enable // ?
 
-//#define DEBUG_PRINTF
+#define DEBUG_PRINTF
 #ifdef DEBUG_PRINTF
 #extension GL_EXT_debug_printf : enable
 bool b = false;
@@ -15,6 +15,8 @@ bool b = false;
 #include "common_defines.h"
 #include "common_structures.h"
 #include "random.h"
+#include "glsl_math.h"
+#include "bxdf.h"
 #include "process_material_interaction.h"
 
 layout (location = 0) rayPayloadEXT FSimpleHitPayload SimpleHitPayload;

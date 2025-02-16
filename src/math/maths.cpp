@@ -718,6 +718,21 @@ FMatrix4 GetPerspective(float FOV, float AspectRatio, float NearDistance, float 
 
 }
 
+FVector3 normalize(FVector3 Vec)
+{
+	return Vec.GetNormalized();
+}
+
+FVector3 cross(FVector3 A, FVector3 B)
+{
+	return Cross(A, B);
+}
+
+float max(float A, float B)
+{
+	return (A > B) ? A : B;
+}
+
 uint32_t Log2(uint32_t Integer)
 {
     uint32_t Power = 0;

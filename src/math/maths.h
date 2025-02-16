@@ -224,6 +224,10 @@ FMatrix4 Transform(const FVector3& Position, const FVector3& Direction, const FV
 FMatrix4 LookAt(const FVector3& Eye, const FVector3& Point, const FVector3& Up);
 FMatrix4 GetPerspective(float FOV, float AspectRatio, float NearDistance, float FarDistance);
 
+FVector3 normalize(FVector3 Vec);
+FVector3 cross(FVector3 A, FVector3 B);
+float max(float A, float B);
+
 /// Template specializations for hashing functions
 template<>
 struct std::hash<FVector2>

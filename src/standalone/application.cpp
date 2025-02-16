@@ -45,8 +45,8 @@ FApplication::~FApplication()
 int FApplication::Run()
 {
 	uint32_t ImageIndex = UINT32_MAX;
-	LoadCamera(Controller->Camera, "../data/cameras/Blender");
-	SceneLoader->LoadScene(SCENE_CORNELL_BOX);
+	LoadCamera(Controller->Camera, "../data/cameras/Test");
+	SceneLoader->LoadScene(SCENE_SPECULAR_ROUGHNESS);
 
 	FSynchronizationPoint RenderingFinished;
 
