@@ -46,7 +46,7 @@ def plot_points(points):
 
 
 def main():
-    file_path = '2d_points.txt'  # Path to your text file containing 3D points
+    file_path = '../data/debug/2d_points.txt'  # Path to your text file containing 3D points
     points = read_points(file_path)
     plot_points(points)
 

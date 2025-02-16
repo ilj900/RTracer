@@ -37,7 +37,7 @@ def plot_points(points):
 # Main execution
 if __name__ == "__main__":
     # Replace 'points.bin' with your binary file's path
-    binary_file = 'Sampled3DSphere.bin'
+    binary_file = '../data/debug/Unit_sphere.bin'
 
     try:
         points = read_binary_file(binary_file)

@@ -30,7 +30,7 @@ TEST_CASE( "Basic scene loading", "[Basic]" )
 	}
 
 	Render->WaitIdle();
-	Render->SaveOutputPng(EOutputType::Color, "Basic scene loading");
+	Render->SaveOutputPng(EOutputType::Color, "../data/debug/Basic_scene_loading");
 
 	SceneLoader->UpdateScene(0, 0);
 	Render->SetIBL("../resources/brown_photostudio_02_4k.exr");
@@ -42,7 +42,7 @@ TEST_CASE( "Basic scene loading", "[Basic]" )
 	}
 
 	Render->WaitIdle();
-	Render->SaveOutputPng(EOutputType::Color, "Basic scene loading_1");
+	Render->SaveOutputPng(EOutputType::Color, "../data/debug/Basic_scene_loading_1");
 
 	Render = nullptr;
 }
@@ -68,7 +68,7 @@ TEST_CASE( "Test random Mersenne twister", "[Utility]")
 		Texture[PixelIndex * 3 + 2] = char(255);
 	}
 
-	stbi_write_bmp("Mersenne_twister.bmp" , ImageSize, ImageSize, 3, Texture.data());
+	stbi_write_bmp("../data/debug/Mersenne_twister.bmp" , ImageSize, ImageSize, 3, Texture.data());
 }
 
 TEST_CASE( "Test random CMJ", "[Utility]")
@@ -89,7 +89,7 @@ TEST_CASE( "Test random CMJ", "[Utility]")
 		TextureCMJ[PixelIndex * 3 + 2] = char(255);
 	}
 
-	stbi_write_bmp("CMJ.bmp" , ImageSize, ImageSize, 3, TextureCMJ.data());
+	stbi_write_bmp("../data/debug/CMJ.bmp" , ImageSize, ImageSize, 3, TextureCMJ.data());
 }
 
 TEST_CASE( "Test random unit square", "[Utility]")
@@ -113,7 +113,7 @@ TEST_CASE( "Test random unit square", "[Utility]")
 		SamplingState.RenderIteration++;
 	}
 
-	stbi_write_bmp("Unit_square.bmp" , ImageSize, ImageSize, 3, Texture.data());
+	stbi_write_bmp("../data/debug/Unit_square.bmp" , ImageSize, ImageSize, 3, Texture.data());
 
 	std::vector<float> ScreenTexture(ImageSize * ImageSize * 3, 0);
 	SamplingState = {0, 0, 0, SAMPLE_TYPE_GENERATE_RAYS, 0};
@@ -129,7 +129,7 @@ TEST_CASE( "Test random unit square", "[Utility]")
 	}
 
 	const char* Err = NULL;
-	SaveEXR(ScreenTexture.data(), ImageSize, ImageSize, 3, false, "Scree_UV.exr", &Err);
+	SaveEXR(ScreenTexture.data(), ImageSize, ImageSize, 3, false, "../data/debug/Scree_UV.exr", &Err);
 }
 
 TEST_CASE( "Test random unit disk", "[Utility]")
@@ -151,7 +151,7 @@ TEST_CASE( "Test random unit disk", "[Utility]")
 		Texture[PixelIndex * 3 + 2] = char(255);
 	}
 
-	stbi_write_bmp("Unit_disk.bmp" , ImageSize, ImageSize, 3, Texture.data());
+	stbi_write_bmp("../data/debug/Unit_disk.bmp" , ImageSize, ImageSize, 3, Texture.data());
 }
 
 TEST_CASE( "Test random unit sphere", "[Utility]")
@@ -167,7 +167,7 @@ TEST_CASE( "Test random unit sphere", "[Utility]")
 		Sampled3DSphere[i] = Sample3DUnitSphere(SamplingState);
 	}
 
-	std::ofstream File("Unit_sphere.bin", std::ios::binary);
+	std::ofstream File("../data/debug/Unit_sphere.bin", std::ios::binary);
 	if (File)
 	{
 		File.write(reinterpret_cast<const char*>(Sampled3DSphere.data()), sizeof(FVector3) * Sampled3DSphere.size());

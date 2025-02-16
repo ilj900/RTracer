@@ -36,6 +36,6 @@ def plot_3d_points(points):
 
 
 # Example usage:
-file_path = '3d_points.txt'  # Path to your text file containing 3D points
+file_path = '../data/debug/3d_points.txt'  # Path to your text file containing 3D points
 points = read_points_from_file(file_path)
 plot_3d_points(points)
