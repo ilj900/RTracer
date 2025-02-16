@@ -41,8 +41,8 @@ void FPassthroughTask::Init(FCompileDefinitions* CompileDefinitions)
 
     Sampler = VK_CONTEXT()->CreateTextureSampler(VK_CONTEXT()->MipLevels, VK_FILTER_LINEAR);
 
-    auto VertexShader = FShader("../../../src/shaders/passthrough.vert");
-    auto FragmentShader = FShader("../../../src/shaders/passthrough.frag");
+    auto VertexShader = FShader("../src/shaders/passthrough.vert");
+    auto FragmentShader = FShader("../src/shaders/passthrough.frag");
 
     GraphicsPipelineOptions.RegisterColorAttachment(0, Outputs["PassthroughOutput" + std::to_string(0)], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
     GraphicsPipelineOptions.SetPipelineLayout(DescriptorSetManager->GetPipelineLayout(Name));

@@ -34,7 +34,7 @@ void FComputePrefixSumsZeroOutTask::Init(FCompileDefinitions* CompileDefinitions
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
-    auto MaterialCountShader = FShader("../../../src/shaders/material_sort_prefix_sums_zero_out.comp");
+    auto MaterialCountShader = FShader("../src/shaders/material_sort_prefix_sums_zero_out.comp");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
     Pipeline = VK_CONTEXT()->CreateComputePipeline(MaterialCountShader(), PipelineLayout);

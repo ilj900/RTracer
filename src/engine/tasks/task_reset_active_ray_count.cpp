@@ -34,7 +34,7 @@ void FResetActiveRayCountTask::Init(FCompileDefinitions* CompileDefinitions)
 {
 	auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
-	auto ShadeShader = FShader("../../../src/shaders/reset_active_ray_count.comp");
+	auto ShadeShader = FShader("../src/shaders/reset_active_ray_count.comp");
 
 	PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
 

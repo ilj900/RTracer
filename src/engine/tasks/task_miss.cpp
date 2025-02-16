@@ -54,7 +54,7 @@ void FMissTask::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
-    auto ShadeShader = FShader("../../../src/shaders/miss.comp");
+    auto ShadeShader = FShader("../src/shaders/miss.comp");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
 

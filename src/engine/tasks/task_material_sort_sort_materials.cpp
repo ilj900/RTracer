@@ -40,7 +40,7 @@ void FSortMaterialsTask::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
-    auto MaterialCountShader = FShader("../../../src/shaders/material_sort_sort_materials.comp");
+    auto MaterialCountShader = FShader("../src/shaders/material_sort_sort_materials.comp");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
     Pipeline = VK_CONTEXT()->CreateComputePipeline(MaterialCountShader(), PipelineLayout);

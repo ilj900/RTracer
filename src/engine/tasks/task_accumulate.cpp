@@ -38,7 +38,7 @@ void FAccumulateTask::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
-    auto AccumulateShader = FShader("../../../src/shaders/accumulate.comp");
+    auto AccumulateShader = FShader("../src/shaders/accumulate.comp");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
 

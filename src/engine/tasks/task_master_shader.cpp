@@ -116,8 +116,8 @@ void FMasterShader::Init(FCompileDefinitions* CompileDefinitions)
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
 
-	auto RayClosestHitShader = FShader("../../../src/shaders/master_shader.rchit");
-	auto RayMissShader = FShader("../../../src/shaders/master_shader.rmiss");
+	auto RayClosestHitShader = FShader("../src/shaders/master_shader.rchit");
+	auto RayMissShader = FShader("../src/shaders/master_shader.rmiss");
 	RGenRegions.resize(MATERIAL_SYSTEM()->Entities.size());
 	SBTBuffers.resize(RGenRegions.size());
 
@@ -126,7 +126,7 @@ void FMasterShader::Init(FCompileDefinitions* CompileDefinitions)
 		auto MaterialCode = MATERIAL_SYSTEM()->GenerateMaterialCode(Material);
 		FCompileDefinitions CombinedCompileDefinitions(*CompileDefinitions);
 		CombinedCompileDefinitions.Push("FDeviceMaterial GetMaterial(vec2 TextureCoords);", MaterialCode);
-		auto RayGenerationShader = FShader("../../../src/shaders/master_shader.rgen", &CombinedCompileDefinitions);
+		auto RayGenerationShader = FShader("../src/shaders/master_shader.rgen", &CombinedCompileDefinitions);
 		uint32_t MaterialIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
 		MaterialPipelines[MaterialIndex] = VK_CONTEXT()->CreateRayTracingPipeline(RayGenerationShader(), RayMissShader(), RayClosestHitShader(), PipelineLayout);
 		SBTBuffers[MaterialIndex] = VK_CONTEXT()->GenerateSBT(MaterialPipelines[MaterialIndex], RMissRegion, RHitRegion, RGenRegions[MaterialIndex]);

@@ -28,7 +28,7 @@ void FAdvanceRenderCount::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
-    auto RayGenerationShader = FShader("../../../src/shaders/advance_render_iteration.comp");
+    auto RayGenerationShader = FShader("../src/shaders/advance_render_iteration.comp");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
     Pipeline = VK_CONTEXT()->CreateComputePipeline(RayGenerationShader(), PipelineLayout);

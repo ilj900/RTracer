@@ -33,7 +33,7 @@ TEST_CASE( "Basic scene loading", "[Basic]" )
 	Render->SaveOutputPng(EOutputType::Color, "Basic scene loading");
 
 	SceneLoader->UpdateScene(0, 0);
-	Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
+	Render->SetIBL("../resources/brown_photostudio_02_4k.exr");
 
 	for (int i = 0; i < 100; ++i)
 	{

@@ -33,7 +33,7 @@ void FCountMaterialsPerChunkTask::Init(FCompileDefinitions* CompileDefinitions)
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
-    auto MaterialCountShader = FShader("../../../src/shaders/material_sort_count_materials_per_chunk.comp");
+    auto MaterialCountShader = FShader("../src/shaders/material_sort_count_materials_per_chunk.comp");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
     Pipeline = VK_CONTEXT()->CreateComputePipeline(MaterialCountShader(), PipelineLayout);

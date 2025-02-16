@@ -27,7 +27,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Lights.emplace_back(Render->CreatePointLight({5, 5, 5}, {1, 1, 1}, 1));
 
-		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
+		Render->SetIBL("../resources/brown_photostudio_02_4k.exr");
 
 		Updater = [&](float DeltaTime, float CurrentTime)
 		{
@@ -63,7 +63,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto GlassMaterial = Render->CreateRefractiveMaterial({1, 1, 1});
 		auto DiffuseMaterial = Render->CreateDiffuseMaterial({1, 1, 0});
 		auto MetalMaterial = Render->CreateReflectiveMaterial({1, 0, 1});
-		auto CheckerboardTexture = Render->CreateTexture("../../../resources/Checkerboard_256.png");
+		auto CheckerboardTexture = Render->CreateTexture("../resources/Checkerboard_256.png");
 		Render->MaterialSetBaseColor(WhiteMaterial, CheckerboardTexture);
 
 		Render->ShapeSetMaterial(BackWall, WhiteMaterial);
@@ -77,7 +77,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		//auto Light = Render->CreateLight({0, 1.95, 0});
 
-		Render->SetIBL("../../../resources/sun.exr");
+		Render->SetIBL("../resources/sun.exr");
 	}
 	else if (Name == SCENE_CORNELL_BOX_2)
 	{
@@ -99,7 +99,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto GlassMaterial = Render->CreateRefractiveMaterial({1, 1, 1});
 		auto DiffuseMaterial = Render->CreateDiffuseMaterial({1, 1, 0});
 		auto MetalMaterial = Render->CreateReflectiveMaterial({1, 0, 1});
-		auto CheckerboardTexture = Render->CreateTexture("../../../resources/Checkerboard_256.png");
+		auto CheckerboardTexture = Render->CreateTexture("../resources/Checkerboard_256.png");
 		Render->MaterialSetBaseColor(WhiteMaterial, CheckerboardTexture);
 
 		Render->ShapeSetMaterial(BackWall, WhiteMaterial);
@@ -114,20 +114,20 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto Light = Render->CreateDirectionalLight({-1, -1, -1}, {1, 1, 1}, 1);
 		auto Light2 = Render->CreateDirectionalLight({1, -1, -1}, {1, 1, 1}, 1);
 
-		Render->SetIBL("../../../resources/hdr_black_image.exr");
+		Render->SetIBL("../resources/hdr_black_image.exr");
 	}
 	else if (Name == SCENE_STANFORD_DRAGON)
 	{
 
 		auto Wall = Render->CreatePlane({32, 32});
-		auto Dragon = Render->CreateModel("../../../models/Dragon/dragon.obj");
+		auto Dragon = Render->CreateModel("../models/Dragon/dragon.obj");
 
 		auto BottomWall = Render->CreateInstance(Wall, {0, -2, 0}, {0, 1, 0}, {0, 0, -1});
 		auto DragonInstance = Render->CreateInstance(Dragon, {0, -1.292, 1}, {-1, 0, 0}, {0, 1, 0}, {2.5, 2.5, 2.5});
 
 		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
 		auto GlassMaterial = Render->CreateRefractiveMaterial({1, 1, 1});
-		auto CheckerboardTexture = Render->CreateTexture("../../../resources/Checkerboard_256.png");
+		auto CheckerboardTexture = Render->CreateTexture("../resources/Checkerboard_256.png");
 		Render->MaterialSetBaseColor(WhiteMaterial, CheckerboardTexture);
 
 
@@ -136,7 +136,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		//auto Light = Render->CreateLight({0, 1.95, 0});
 
-		Render->SetIBL("../../../resources/sun.exr");
+		Render->SetIBL("../resources/sun.exr");
 	}
 	else if (Name == SCENE_DIRECTIONAL_LIGHT)
 	{
@@ -161,7 +161,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		auto Light = Render->CreateDirectionalLight({-1, -1, -1}, {1, 1, 1}, 1);
 
-		Render->SetIBL("../../../resources/hdr_black_image.exr");
+		Render->SetIBL("../resources/hdr_black_image.exr");
 	}
 	else if (Name == SCENE_POINT_LIGHT)
 	{
@@ -186,7 +186,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto Light2 = Render->CreatePointLight({0, 9, -3}, {1, 1, 1}, 1);
 		auto Light3 = Render->CreatePointLight({-3, 3, 0}, {1, 1, 1}, 3);
 
-		Render->SetIBL("../../../resources/hdr_black_image.exr");
+		Render->SetIBL("../resources/hdr_black_image.exr");
 	}
 	else if (Name == SCENE_SPOT_LIGHT)
 	{
@@ -209,7 +209,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		auto Light1 = Render->CreateSpotLight({10, 5, 10}, {-2, -1, -2}, {1, 1, 1}, 1, 0.6981f, 0.5235f);
 
-		Render->SetIBL("../../../resources/hdr_black_image.exr");
+		Render->SetIBL("../resources/hdr_black_image.exr");
 	}
 	else if (Name == SCENE_WORLD_COORDINATES_AOV)
 	{
@@ -221,7 +221,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->ShapeSetMaterial(PlaneInstance, WhiteMaterial);
 
-		Render->SetIBL("../../../resources/sun.exr");
+		Render->SetIBL("../resources/sun.exr");
 	}
 	else if (Name == SCENE_CORNELL_BOX_ANIMATED)
 	{
@@ -258,7 +258,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		auto Light = Render->CreatePointLight({0, 1.95, 0}, {1, 1, 1}, 1);
 
-		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
+		Render->SetIBL("../resources/brown_photostudio_02_4k.exr");
 
 		Updater = [&](float, float CurrentTime)
 		{
@@ -284,7 +284,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		Render->ShapeSetMaterial(Sphere2, DiffuseMaterial);
 		Render->ShapeSetMaterial(Sphere3, PlasticMaterial);
 
-		Render->SetIBL("../../../resources/hdr_image.exr");
+		Render->SetIBL("../resources/hdr_image.exr");
 	}
 	else if (Name == SCENE_BIG_PLANES)
 	{
@@ -298,7 +298,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		Render->ShapeSetMaterial(BackWall1, RedMaterial);
 		Render->ShapeSetMaterial(BackWall, GreenMaterial);
 
-		Render->SetIBL("../../../resources/hdr_image.exr");
+		Render->SetIBL("../resources/hdr_image.exr");
 	}
 	else if (Name == SCENE_COORDINATE_SYSTEM_REMINDER)
 	{
@@ -318,21 +318,21 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		Render->ShapeSetMaterial(SphereZ, BlueMaterial);
 		Render->ShapeSetMaterial(SphereC, WhiteMaterial);
 
-		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
+		Render->SetIBL("../resources/brown_photostudio_02_4k.exr");
 	}
 	else if (Name == SCENE_VIKINGS_ROOM)
 	{
-		auto Model = Render->CreateModel("../../../models/viking_room/viking_room.obj");
+		auto Model = Render->CreateModel("../models/viking_room/viking_room.obj");
 		auto ModelInstance = Render->CreateInstance(Model, {3, 0, 0}, {1, 0, 0}, {0, 1, 0});
 
-		auto Texture = Render->CreateTexture("../../../models/viking_room/viking_room.png");
+		auto Texture = Render->CreateTexture("../models/viking_room/viking_room.png");
 
 		auto Material =  Render->CreateEmptyMaterial();
 		Render->MaterialSetBaseColor(Material, Texture);
 
 		Render->ShapeSetMaterial(ModelInstance, Material);
 
-		Render->SetIBL("../../../resources/brown_photostudio_02_4k.exr");
+		Render->SetIBL("../resources/brown_photostudio_02_4k.exr");
 	}
 	else
 	{

@@ -32,7 +32,7 @@ void FComputePrefixSumsUpSweepTask::Init(FCompileDefinitions* CompileDefinitions
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
-    auto MaterialCountShader = FShader("../../../src/shaders/material_sort_compute_prefix_sums_up_sweep.comp");
+    auto MaterialCountShader = FShader("../src/shaders/material_sort_compute_prefix_sums_up_sweep.comp");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
     Pipeline = VK_CONTEXT()->CreateComputePipeline(MaterialCountShader(), PipelineLayout);

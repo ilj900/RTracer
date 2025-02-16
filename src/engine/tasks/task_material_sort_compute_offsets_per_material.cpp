@@ -35,7 +35,7 @@ void FComputeOffsetsPerMaterialTask::Init(FCompileDefinitions* CompileDefinition
 {
     auto& DescriptorSetManager = VK_CONTEXT()->DescriptorSetManager;
 
-    auto MaterialCountShader = FShader("../../../src/shaders/material_sort_compute_offsets_per_material.comp");
+    auto MaterialCountShader = FShader("../src/shaders/material_sort_compute_offsets_per_material.comp");
 
     PipelineLayout = DescriptorSetManager->GetPipelineLayout(Name);
     Pipeline = VK_CONTEXT()->CreateComputePipeline(MaterialCountShader(), PipelineLayout);
