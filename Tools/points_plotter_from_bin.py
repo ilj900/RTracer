@@ -29,7 +29,7 @@ def plot_points(points):
     ax.set_ylabel('Y Coordinate')
     ax.set_zlabel('Z Coordinate')
 
-    ax.set_box_aspect((1, 0.5, 1))
+    ax.set_box_aspect((1, 1, 1))
     plt.title("3D Point Cloud")
     plt.show()
 
