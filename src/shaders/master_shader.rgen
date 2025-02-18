@@ -225,6 +225,7 @@ out vec3 NormalInWorldSpace, out vec3 PointOfIntersectionInWorldSpace, out vec2 
 
     NormalInWorldSpace = (V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z);
     NormalInWorldSpace = NormalInWorldSpace * mat3(Transform.InverseModelMatrix);
+    NormalInWorldSpace = normalize(NormalInWorldSpace);
 
     PointOfIntersectionInWorldSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
     PointOfIntersectionInWorldSpace = vec3(Transform.ModelMatrix * vec4(PointOfIntersectionInWorldSpace, 1.f));

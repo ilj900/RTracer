@@ -16,7 +16,7 @@ mat3 CreateTNBMatrix(vec3 Normal)
 {
 	vec3 T = Normal.x == 0. ? vec3(1, 0, 0) : vec3(0, 1, 0);
 	vec3 B = normalize(cross(Normal, T));
-	T = normalize(cross(Normal, B));
+	T = cross(B, Normal);
 	return mat3(T, Normal, B);
 }
 

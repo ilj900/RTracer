@@ -69,40 +69,26 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 		Color = Material.SpecularColor;
 		vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
 		mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
-		vec3 LocalViewDirection = RayData.Direction.xyz * transpose(TNBMatrix);
-		vec3 NewNormal = SampleGGXVNDF(-RayData.Direction.xyz, Material.SpecularRoughness, Material.SpecularRoughness, RandomSquare.x, RandomSquare.y) * TNBMatrix;
+		vec3 TangentSpaceViewDirection = RayData.Direction.xyz * transpose(TNBMatrix);
+		vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.SpecularRoughness, Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
 		if (b)
 		{
-			debugPrintfEXT("((0, 0, 0), (%f, %f, %f), 'r'),  # NormalInWorldSpace\n", NormalInWorldSpace.x, NormalInWorldSpace.y, NormalInWorldSpace.z);
-			debugPrintfEXT("((0, 0, 0), (%f, %f, %f), 'g'),  # NewNormal generated\n", NewNormal.x, NewNormal.y, NewNormal.z);
+			//debugPrintfEXT("((0, 0, 0), (%f, %f, %f), 'r'),  # NormalInWorldSpace\n", NormalInWorldSpace.x, NormalInWorldSpace.y, NormalInWorldSpace.z);
+			//debugPrintfEXT("((0, 0, 0), (%f, %f, %f), 'g'),  # NewNormal generated\n", NewNormal.x, NewNormal.y, NewNormal.z);
 		}
-		NewNormal = normalize(NewNormal * transpose(TNBMatrix));
+		NewNormal = normalize(NewNormal * TNBMatrix);
 		if (b)
 		{
 			debugPrintfEXT("((0, 0, 0), (%f, %f, %f), 'b'),  # NewNormal in world space\n", NewNormal.x, NewNormal.y, NewNormal.z);
-		}
-		float CosAngle = dot(NewNormal, RayData.Direction.xyz);
-		if (b)
-		{
-			debugPrintfEXT("CosAngle %f\n", CosAngle);
-		}
-		if (CosAngle > 0.)
-		{
-			NewNormal = reflect(-NewNormal, NormalInWorldSpace);
-			if (b)
-			{
-				debugPrintfEXT("Had to reflectNormal\n");
-			}
-		}
-		if (b)
-		{
-			debugPrintfEXT("((%f, %f, %f), (0, 0, 0), 'c'),  # RayData.Direction before\n", -RayData.Direction.x, -RayData.Direction.y, -RayData.Direction.z);
+			debugPrintfEXT("((0, 0, 0), (%f, %f, %f), 'r'),  # TNBMatrix[0] in world space\n", TNBMatrix[0].x, TNBMatrix[0].y, TNBMatrix[0].z);
+			debugPrintfEXT("((0, 0, 0), (%f, %f, %f), 'g'),  # TNBMatrix[1] in world space\n", TNBMatrix[1].x, TNBMatrix[1].y, TNBMatrix[1].z);
+			debugPrintfEXT("((0, 0, 0), (%f, %f, %f), 'b'),  # TNBMatrix[2] in world space\n", TNBMatrix[2].x, TNBMatrix[2].y, TNBMatrix[2].z);
+			debugPrintfEXT("((%f, %f, %f), (0, 0, 0), 'm'),  # RayData.Direction before\n", -RayData.Direction.x, -RayData.Direction.y, -RayData.Direction.z);
 		}
 		RayData.Direction.xyz = reflect(RayData.Direction.xyz, NewNormal);
 		if (b)
 		{
-			debugPrintfEXT("((0, 0, 0), (%f, %f, %f), 'm'),  # NewNormal final\n", NewNormal.x, NewNormal.y, NewNormal.z);
-			debugPrintfEXT("((0, 0, 0), (%f, %f, %f), 'y'),  # RayData.Direction after\n", RayData.Direction.x, RayData.Direction.y, RayData.Direction.z);
+			debugPrintfEXT("((0, 0, 0), (%f, %f, %f), 'm'),  # RayData.Direction after\n", RayData.Direction.x, RayData.Direction.y, RayData.Direction.z);
 		}
 		break;
 	case TRANSMISSION_LAYER:

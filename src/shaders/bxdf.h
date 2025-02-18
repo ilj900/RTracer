@@ -37,7 +37,7 @@ FVector3 SampleGGXVNDF(FVector3 ViewDirection, float AlphaX, float AlphaZ, float
 	FVector3 Vh = normalize(FVector3(AlphaX * ViewDirection.x, AlphaZ * ViewDirection.y, ViewDirection.z));
 	// Section 4.1: orthonormal basis (with special case if cross product is zero)
 	float lensq = Vh.x * Vh.x + Vh.y * Vh.y;
-	FVector3 T1 = lensq > 0 ? FVector3(-Vh.y, Vh.x, 0) / sqrt(lensq) : FVector3(1,0,0);
+	FVector3 T1 = lensq > 0 ? normalize(FVector3(-Vh.y, Vh.x, 0)) : FVector3(1,0,0);
 	FVector3 T2 = cross(Vh, T1);
 	// Section 4.2: parameterization of the projected area
 	float r = sqrt(U1);
@@ -49,7 +49,7 @@ FVector3 SampleGGXVNDF(FVector3 ViewDirection, float AlphaX, float AlphaZ, float
 	// Section 4.3: reprojection onto hemisphere
 	FVector3 Nh = T1 * t1 + T2 * t2 + Vh * sqrt(max(0.0, 1.0 - t1*t1 - t2*t2));
 	// Section 3.4: transforming the normal back to the ellipsoid configuration
-	FVector3 Ne = normalize(FVector3(AlphaX * Nh.x, AlphaZ * Nh.y, std::max<float>(0.0, Nh.z)));
+	FVector3 Ne = normalize(FVector3(AlphaX * Nh.x, AlphaZ * Nh.y, max(0.0, Nh.z)));
 	return Ne;
 #endif
 }

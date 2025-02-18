@@ -521,12 +521,18 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 
 	SynchronizationPoint = PassthroughTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
-	//if (Counter == 512)
+	//if (Counter == 256)
 	//{
 	//	WaitIdle();
-	//	PrintScreenPng("Estimated");
-	//	PrintScreenExr("Estimated");
+	//	PrintScreenPng("Estimated_" + std::to_string(Counter));
+	//	PrintScreenExr("Estimated_" + std::to_string(Counter));
 	//}
+
+	if (Counter == 8)
+	{
+		WaitIdle();
+		exit(0);
+	}
 
 	bAnyUpdate = false;
 
