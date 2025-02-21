@@ -150,7 +150,7 @@ So the formula will look like this:
 uint32_t PermutationIndex = SamplingState.Type + SamplingState.RenderIteration * 256 + SamplingState.Bounce * 16 + SamplingState.Generation;
 ```
 It assumes that in one bounce no more than 16 cmj call will be used, no more than 16 bounces in one render iteration, \
-and that there would no more that 1kk render call for each Type. If, for example, Generation exceeds 16,\
+and that there would be no more that 1kk render call for each Type. If, for example, Generation exceeds 16,\
 then the permutation index will be the same as first call on the next bounce.
 So, the final function to sample a uniform quad will look like this:
 ```c++

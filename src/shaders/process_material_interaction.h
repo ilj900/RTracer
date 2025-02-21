@@ -68,31 +68,20 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 	case SPECULAR_LAYER:
 		Color = Material.SpecularColor;
 		mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
-		vec3 TangentSpaceViewDirection = RayData.Direction.xyz * transpose(TNBMatrix);
-		for (int i = 0; i < 8; ++i)
+		vec3 TangentSpaceViewDirection = RayData.Direction.xyz * TNBMatrix;
+
+		for (int i = 0; i < 4; ++i)
 		{
 			vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
 			vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.SpecularRoughness, Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
-			if (b)
-			{
-				debugPrintfEXT("((0, 0, 0), (%f, %f, %f), 'm'),  # NewNormal\n", NewNormal.x, NewNormal.y, NewNormal.z);
-				debugPrintfEXT("((%f, %f, %f), (0, 0, 0), 'm'),  # TangentSpaceViewDirection before\n", -TangentSpaceViewDirection.x, -TangentSpaceViewDirection.y, -TangentSpaceViewDirection.z);
-			}
 			TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
-			if (b)
-			{
-				debugPrintfEXT("((0, 0, 0), (%f, %f, %f), 'm'),  # TangentSpaceViewDirection after\n", TangentSpaceViewDirection.x, TangentSpaceViewDirection.y, TangentSpaceViewDirection.z);
-			}
 			if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
 			{
-				if (b)
-				{
-					debugPrintfEXT("Exit on %i\n", i);
-				}
 				break;
 			}
 		}
-		RayData.Direction.xyz = TangentSpaceViewDirection * TNBMatrix;
+
+		RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
 		break;
 	case TRANSMISSION_LAYER:
 		Color = Material.TransmissionColor;
