@@ -521,31 +521,31 @@ void main()
     FDeviceMaterial Material = GetMaterial(TextureCoords);
 
     SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
-    vec3 SamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace, SamplingState, bFrontFacing);
+    vec3 MaterialSamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace, SamplingState, bFrontFacing);
 
-    if ((RayData.RayFlags & TRANSMISSION_LAYER) != TRANSMISSION_LAYER)
+    if (!CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER))
     {
-        SamplingResult *= abs(NDotI);
+        MaterialSamplingResult *= abs(NDotI);
     }
 
     RayData.Origin.xyz = WorldSpacePosition;
 
     vec3 CumulativeMaterialColor = CumulativeMaterialColorBuffer[PixelIndex].xyz;
-    CumulativeMaterialColor *= SamplingResult;
+    CumulativeMaterialColor *= MaterialSamplingResult;
     CumulativeMaterialColorBuffer[PixelIndex] = vec4(CumulativeMaterialColor, 1);
 
     vec3 TotalIncomingLight = vec3(0);
     if (!CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER) && !CheckFlag(RayData.RayFlags, SPECULAR_LAYER))
     {
         TotalIncomingLight = IBLSamplingResult + PointLightSamplingResult + DirectionalLightSamplingResult + SpotLightSamplingResult;
-        SamplingResult = CumulativeMaterialColor * TotalIncomingLight;
+        MaterialSamplingResult = CumulativeMaterialColor * TotalIncomingLight;
     }
     else
     {
-        SamplingResult = vec3(0);
+        MaterialSamplingResult = vec3(0);
     }
 
-    ThroughputBuffer[PixelIndex].xyz = ThroughputBuffer[PixelIndex].xyz + SamplingResult;
+    ThroughputBuffer[PixelIndex].xyz = ThroughputBuffer[PixelIndex].xyz + MaterialSamplingResult;
 
     if ((PushConstants.BounceIndex == LAST_DIFFUSE_BOUNCE && CheckFlag(RayData.RayFlags, DIFFUSE_LAYER))
     || (PushConstants.BounceIndex == LAST_REFLECTION_BOUNCE && CheckFlag(RayData.RayFlags, SPECULAR_LAYER))
