@@ -528,11 +528,11 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	//	PrintScreenExr("Estimated_" + std::to_string(Counter));
 	//}
 
-	if (Counter == 8)
-	{
-		WaitIdle();
-		exit(0);
-	}
+	//if (Counter == 8)
+	//{
+	//	WaitIdle();
+	//	exit(0);
+	//}
 
 	bAnyUpdate = false;
 
