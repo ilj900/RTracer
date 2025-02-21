@@ -70,7 +70,7 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 		mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
 		vec3 TangentSpaceViewDirection = RayData.Direction.xyz * TNBMatrix;
 
-		for (int i = 0; i < 4; ++i)
+		for (int i = 0; i < 16; ++i)
 		{
 			vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
 			vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.SpecularRoughness, Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
