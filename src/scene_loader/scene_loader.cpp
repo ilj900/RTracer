@@ -340,8 +340,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto Sphere = Render->CreateUVSphere(512, 256, 0.5f);
 
 		auto PlaneInstance = Render->CreateInstance(Plane, {0, -2, 0}, {0, 1, 0}, {0, 0, 1});
-		auto Material_1 = Render->CreateReflectiveMaterial({0.8, 0.8, 0.8});
-		Render->MaterialSetSpecularRoughness(Material_1, 1.f);
+		auto Material_1 = Render->CreateDiffuseMaterial({0.8, 0.8, 0.8});
 		Render->ShapeSetMaterial(PlaneInstance, Material_1);
 
 		for (int i = 0; i < 20; ++i)

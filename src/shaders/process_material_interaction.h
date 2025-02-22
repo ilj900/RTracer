@@ -74,7 +74,7 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 		for (int i = 0; i < 16; ++i)
 		{
 			vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
-			vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.SpecularRoughness, Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
+			vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
 			TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
 			if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
 			{
