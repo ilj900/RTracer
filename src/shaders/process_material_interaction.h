@@ -51,22 +51,23 @@ vec3 ScatterDiffuse(vec3 NormalInWorldSpace, FSamplingState SamplingState)
 	return Result;
 }
 
-vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 NormalInWorldSpace, inout FSamplingState SamplingState, bool bFrontFacing)
+vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 NormalInWorldSpace, inout FSamplingState SamplingState, bool bFrontFacing)
 {
 	float LayerSample = RandomFloat(SamplingState);
 	uint RayType = SelectLayer(Material, LayerSample);
 	RayData.RayFlags = 0u;
-	vec3 Color = vec3(0);
+	vec4 Color = vec4(1.f);
 
 	switch (RayType)
 	{
 	case DIFFUSE_LAYER:
-		Color = Material.BaseColor;
+		Color.xyz = Material.BaseColor;
 		vec3 ReflectionDirection = ScatterDiffuse(NormalInWorldSpace, SamplingState);
 		RayData.Direction.xyz = ReflectionDirection;
 		break;
 	case SPECULAR_LAYER:
-		Color = Material.SpecularColor;
+		/// -1.f means that by default ray considered to be  lost in the process of multiple scattering
+		Color = vec4(Material.SpecularColor, -1.f);
 		mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
 		vec3 TangentSpaceViewDirection = RayData.Direction.xyz * TNBMatrix;
 
@@ -77,14 +78,16 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 			TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
 			if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
 			{
+				/// Ray successfully left the surface on the correct side
+				Color.w = 1.f;
+				RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
 				break;
 			}
 		}
-
-		RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
+		/// If ray failed to leave the surface, then it's direction is not changed, and thus shouldn't be used later
 		break;
 	case TRANSMISSION_LAYER:
-		Color = Material.TransmissionColor;
+		Color.xyz = Material.TransmissionColor;
 		float IOR1 = bFrontFacing ? RayData.Eta : Material.SpecularIOR;
 		float IOR2 = bFrontFacing ? Material.SpecularIOR : 1;
 		float EtaRatio = IOR1 / IOR2;
@@ -116,23 +119,23 @@ vec3 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 			else
 			{
 				RayData.Direction.xyz = EtaRatio * RayData.Direction.xyz - (EtaRatio * NDotI + sqrt(k)) * NormalInWorldSpace;
-				Color *= EtaRatio * EtaRatio;
+				Color.xyz *= EtaRatio * EtaRatio;
 			}
 		}
 
 		RayData.Eta = Material.SpecularIOR;
 		break;
 	case SUBSURFACE_LAYER:
-		Color = Material.SubsurfaceColor;
+		Color.xyz = Material.SubsurfaceColor;
 		break;
 	case SHEEN_LAYER:
-		Color = Material.SheenColor;
+		Color.xyz = Material.SheenColor;
 		break;
 	case COAT_LAYER:
-		Color = Material.CoatColor;
+		Color.xyz = Material.CoatColor;
 		break;
 	case EMISSION_LAYER:
-		Color = Material.EmissionColor;
+		Color.xyz = Material.EmissionColor;
 		break;
 	}
 

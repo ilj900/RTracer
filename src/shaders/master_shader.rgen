@@ -6,7 +6,7 @@
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_nonuniform_qualifier : enable // ?
 
-#define DEBUG_PRINTF
+//#define DEBUG_PRINTF
 #ifdef DEBUG_PRINTF
 #extension GL_EXT_debug_printf : enable
 bool b = false;
@@ -521,7 +521,7 @@ void main()
     FDeviceMaterial Material = GetMaterial(TextureCoords);
 
     SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
-    vec3 MaterialSamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace, SamplingState, bFrontFacing);
+    vec4 MaterialSamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace, SamplingState, bFrontFacing);
 
     if (!CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER))
     {
@@ -531,25 +531,23 @@ void main()
     RayData.Origin.xyz = WorldSpacePosition;
 
     vec3 CumulativeMaterialColor = CumulativeMaterialColorBuffer[PixelIndex].xyz;
-    CumulativeMaterialColor *= MaterialSamplingResult;
+    CumulativeMaterialColor *= MaterialSamplingResult.xyz;
     CumulativeMaterialColorBuffer[PixelIndex] = vec4(CumulativeMaterialColor, 1);
 
     vec3 TotalIncomingLight = vec3(0);
+    vec3 BounceInput = vec3(0);
     if (!CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER) && !CheckFlag(RayData.RayFlags, SPECULAR_LAYER))
     {
         TotalIncomingLight = IBLSamplingResult + PointLightSamplingResult + DirectionalLightSamplingResult + SpotLightSamplingResult;
-        MaterialSamplingResult = CumulativeMaterialColor * TotalIncomingLight;
-    }
-    else
-    {
-        MaterialSamplingResult = vec3(0);
+        BounceInput = CumulativeMaterialColor * TotalIncomingLight;
     }
 
-    ThroughputBuffer[PixelIndex].xyz = ThroughputBuffer[PixelIndex].xyz + MaterialSamplingResult;
+    ThroughputBuffer[PixelIndex].xyz = ThroughputBuffer[PixelIndex].xyz + BounceInput;
 
     if ((PushConstants.BounceIndex == LAST_DIFFUSE_BOUNCE && CheckFlag(RayData.RayFlags, DIFFUSE_LAYER))
     || (PushConstants.BounceIndex == LAST_REFLECTION_BOUNCE && CheckFlag(RayData.RayFlags, SPECULAR_LAYER))
-    || (PushConstants.BounceIndex == LAST_REFRACTION_BOUNCE && CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER)))
+    || (PushConstants.BounceIndex == LAST_REFRACTION_BOUNCE && CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER))
+    || MaterialSamplingResult.w < 0.)
     {
         RayDataBuffer[PixelIndex].RayFlags = RAY_DATA_RAY_MISSED;
         imageStore(OutcomingImage, ivec2(PixelCoords), vec4(ThroughputBuffer[PixelIndex].xyz , 1));
