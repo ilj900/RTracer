@@ -29,7 +29,7 @@ def plot_points(points):
     ax.set_ylabel('Y Coordinate')
     ax.set_zlabel('Z Coordinate')
 
-    ax.set_box_aspect((1, 1, 1))
+    ax.set_box_aspect((1, 0.5, 1))
     plt.title("3D Point Cloud")
     plt.show()
 
@@ -37,7 +37,7 @@ def plot_points(points):
 # Main execution
 if __name__ == "__main__":
     # Replace 'points.bin' with your binary file's path
-    binary_file = '../data/debug/Unit_sphere.bin'
+    binary_file = '../data/debug/Cosine_hemisphere.bin'
 
     try:
         points = read_binary_file(binary_file)

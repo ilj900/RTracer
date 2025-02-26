@@ -51,23 +51,54 @@ vec3 ScatterDiffuse(vec3 NormalInWorldSpace, FSamplingState SamplingState)
 	return Result;
 }
 
+/// Generates a cosine weighted direction in tangent-space
+vec3 ScatterOrenNayar(FSamplingState SamplingState)
+{
+	return SampleCosineHemisphere(SamplingState);
+}
+
+vec4 SampleOrenNayar(vec3 IncomingTangentSpaceDirection, vec3 OutgoingTangentSpaceDirection, vec3 Albedo, float Sigma)
+{
+	float Sigma2 = Sigma * Sigma;
+	float A = 1.f - (Sigma2 * 0.5f / (Sigma2 + 0.33f));
+	float B = 0.45f * Sigma2 / (Sigma2 + 0.09f);
+	float Alpha = IncomingTangentSpaceDirection.y > OutgoingTangentSpaceDirection.y ? acos(IncomingTangentSpaceDirection.y) : acos(OutgoingTangentSpaceDirection.y);
+	float Beta = IncomingTangentSpaceDirection.y < OutgoingTangentSpaceDirection.y ? acos(IncomingTangentSpaceDirection.y) : acos(OutgoingTangentSpaceDirection.y);
+	float CosPhiIncoming = CosPhi(IncomingTangentSpaceDirection);
+	float SinPhiIncoming = SinPhi(IncomingTangentSpaceDirection);
+	float CosPhiOutgoing = CosPhi(OutgoingTangentSpaceDirection);
+	float SinPhiOutgoing = SinPhi(OutgoingTangentSpaceDirection);
+	float DeltaCosPhi = CosPhiIncoming * CosPhiOutgoing + SinPhiIncoming * SinPhiOutgoing;
+	vec4 Result = vec4(0);
+	Result.xyz = M_INV_PI * Albedo * (A + (B * max(0.f, DeltaCosPhi) * sin(Alpha) * tan(Beta)));
+
+	Result.w = OutgoingTangentSpaceDirection.y * M_INV_PI;
+
+	return Result;
+}
+
 vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 NormalInWorldSpace, inout FSamplingState SamplingState, bool bFrontFacing)
 {
 	float LayerSample = RandomFloat(SamplingState);
 	uint RayType = SelectLayer(Material, LayerSample);
 	RayData.RayFlags = 0u;
-	vec4 Color = vec4(1.f);
+	vec4 BXDF = vec4(1.f);
 
 	switch (RayType)
 	{
 	case DIFFUSE_LAYER:
-		Color.xyz = Material.BaseColor;
-		vec3 ReflectionDirection = ScatterDiffuse(NormalInWorldSpace, SamplingState);
-		RayData.Direction.xyz = ReflectionDirection;
+	{
+		vec3 TangentSpaceReflectionDirection = ScatterOrenNayar(SamplingState);
+		mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
+		vec3 TangentSpaceViewDirection = RayData.Direction.xyz * TNBMatrix;
+		BXDF = SampleOrenNayar(-TangentSpaceViewDirection, TangentSpaceReflectionDirection, Material.BaseColor, Material.DiffuseRoughness * M_PI_2);
+		RayData.Direction.xyz = TangentSpaceReflectionDirection;
 		break;
+	}
 	case SPECULAR_LAYER:
+	{
 		/// -1.f means that by default ray considered to be  lost in the process of multiple scattering
-		Color = vec4(Material.SpecularColor, -1.f);
+		BXDF = vec4(Material.SpecularColor, -1.f);
 		mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
 		vec3 TangentSpaceViewDirection = RayData.Direction.xyz * TNBMatrix;
 
@@ -79,15 +110,17 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 			if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
 			{
 				/// Ray successfully left the surface on the correct side
-				Color.w = 1.f;
+				BXDF.w = 1.f;
 				RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
 				break;
 			}
 		}
 		/// If ray failed to leave the surface, then it's direction is not changed, and thus shouldn't be used later
 		break;
+	}
 	case TRANSMISSION_LAYER:
-		Color.xyz = Material.TransmissionColor;
+	{
+		BXDF.xyz = Material.TransmissionColor;
 		float IOR1 = bFrontFacing ? RayData.Eta : Material.SpecularIOR;
 		float IOR2 = bFrontFacing ? Material.SpecularIOR : 1;
 		float EtaRatio = IOR1 / IOR2;
@@ -119,27 +152,36 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 			else
 			{
 				RayData.Direction.xyz = EtaRatio * RayData.Direction.xyz - (EtaRatio * NDotI + sqrt(k)) * NormalInWorldSpace;
-				Color.xyz *= EtaRatio * EtaRatio;
+				BXDF.xyz *= EtaRatio * EtaRatio;
 			}
 		}
 
 		RayData.Eta = Material.SpecularIOR;
 		break;
+	}
 	case SUBSURFACE_LAYER:
-		Color.xyz = Material.SubsurfaceColor;
+	{
+		BXDF.xyz = Material.SubsurfaceColor;
 		break;
+	}
 	case SHEEN_LAYER:
-		Color.xyz = Material.SheenColor;
+	{
+		BXDF.xyz = Material.SheenColor;
 		break;
+	}
 	case COAT_LAYER:
-		Color.xyz = Material.CoatColor;
+	{
+		BXDF.xyz = Material.CoatColor;
 		break;
+	}
 	case EMISSION_LAYER:
-		Color.xyz = Material.EmissionColor;
+	{
+		BXDF.xyz = Material.EmissionColor;
 		break;
+	}
 	}
 
 	RayData.RayFlags |= RayType;
-	return Color;
+	return BXDF;
 }
 #endif // PROCESS_MATERIAL_INTERACTION_H

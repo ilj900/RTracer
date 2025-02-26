@@ -177,6 +177,27 @@ TEST_CASE( "Test random unit sphere", "[Utility]")
 	}
 }
 
+TEST_CASE( "Test random cosine hemisphere", "[Utility]")
+{
+	/// Create a set of vertices with cosine PDF
+	/// To visualize result use "points_plotter_from_bin.py"
+	FSamplingState SamplingState = {0, 0, 0, SAMPLE_TYPE_GENERATE_RAYS, 0};
+	std::vector<FVector3> SampledCosineHemisphere(CMJ_TOTAL_GRID_SIZE);
+
+	for (int i = 0; i < CMJ_TOTAL_GRID_SIZE; ++i)
+	{
+		SamplingState.RenderIteration++;
+		SampledCosineHemisphere[i] = SampleCosineHemisphere(SamplingState);
+	}
+
+	std::ofstream File("../data/debug/Cosine_hemisphere.bin", std::ios::binary);
+	if (File)
+	{
+		File.write(reinterpret_cast<const char*>(SampledCosineHemisphere.data()), sizeof(FVector3) * SampledCosineHemisphere.size());
+		File.close();
+	}
+}
+
 TEST_CASE( "Test GGX normal generator", "[GGX]")
 {
 	float Roughness = 0.;

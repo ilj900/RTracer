@@ -20,4 +20,18 @@ mat3 CreateTNBMatrix(vec3 Normal)
 	return mat3(T, Normal, B);
 }
 
+float SinPhi(vec3 Vector)
+{
+	float Cos2Theta = Vector.y * Vector.y;
+	float SinTheta = sqrt(max(0.f, 1.f - Cos2Theta));
+	return SinTheta == 0.f ? 0.f : clamp(Vector.z / SinTheta, -1.f, 1.f);
+}
+
+float CosPhi(vec3 Vector)
+{
+	float Cos2Theta = Vector.y * Vector.y;
+	float SinTheta = sqrt(max(0.f, 1.f - Cos2Theta));
+	return SinTheta == 0.f ? 1.f : clamp(Vector.x / SinTheta, -1.f, 1.f);
+}
+
 #endif //GLSL_MATH_H

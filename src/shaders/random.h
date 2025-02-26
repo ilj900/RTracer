@@ -134,6 +134,19 @@ FVector3 Sample3DUnitHemisphere(inout FSamplingState SamplingState)
 	return Result;
 }
 
+FVector3 SampleCosineHemisphere(inout FSamplingState SamplingState)
+{
+	FVector2 Sample = Sample2DUnitQuad(SamplingState);
+	float Theta = Sample.x * M_2_PI;
+	float Phi = Sample.y * M_PI_2;
+	FVector3 Result = {1, 0, 0};
+	Result.x = cos(Theta) * sin(Phi);
+	Result.y = cos(Phi);
+	Result.z = sin(Theta) * sin(Phi);
+
+	return Result;
+}
+
 float RandomFloat(inout FSamplingState SamplingState)
 {
 	uint32_t StratumIndex = Permute((SamplingState.PixelIndex * 524287 + SamplingState.RenderIteration) % CMJ_TOTAL_GRID_SIZE, CMJ_TOTAL_GRID_SIZE, (SamplingState.PixelIndex * 524287 + SamplingState.RenderIteration) / CMJ_TOTAL_GRID_SIZE);
