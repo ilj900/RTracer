@@ -424,8 +424,8 @@ vec4 IndexToColor(uint Value)
 void SaveAOVs(uvec2 PixelCoords, vec3 ShadingNormal, vec3 GeometricNormal, vec2 UV, vec3 WorldSpacePosition, float Opacity, float Depth, vec3 Albedo,
               vec3 Luminance, uint RenderableIndex, uint PrimitiveIndex, uint Materialindex, vec4 DebugData)
 {
-    imageStore(ShadingNormalAOVImage, ivec2(PixelCoords), vec4((ShadingNormal + vec3(1)) * vec3(0.5), 1));
-    imageStore(GeometricNormalAOVImage, ivec2(PixelCoords), vec4((GeometricNormal+ vec3(1)) * vec3(0.5), 1));
+    imageStore(ShadingNormalAOVImage, ivec2(PixelCoords), vec4((ShadingNormal + vec3(1)) * vec3(0.5), 0));
+    imageStore(GeometricNormalAOVImage, ivec2(PixelCoords), vec4((GeometricNormal+ vec3(1)) * vec3(0.5), 0));
     imageStore(UVAOVImage, ivec2(PixelCoords), vec4(UV, 0, 1));
     imageStore(WorldSpacePositionAOVImage, ivec2(PixelCoords), vec4(WorldSpacePosition, 1));
     imageStore(OpacityAOVImage, ivec2(PixelCoords), vec4(Opacity, Opacity, Opacity, 1));
