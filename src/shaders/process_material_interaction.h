@@ -57,7 +57,7 @@ vec3 ScatterOrenNayar(FSamplingState SamplingState)
 	return SampleCosineHemisphere(SamplingState);
 }
 
-vec4 SampleOrenNayar(vec3 IncomingTangentSpaceDirection, vec3 OutgoingTangentSpaceDirection, vec3 Albedo, float Sigma)
+vec3 SampleOrenNayar(vec3 IncomingTangentSpaceDirection, vec3 OutgoingTangentSpaceDirection, vec3 Albedo, float Sigma)
 {
 	float Sigma2 = Sigma * Sigma;
 	float A = 1.f - (Sigma2 * 0.5f / (Sigma2 + 0.33f));
@@ -69,12 +69,14 @@ vec4 SampleOrenNayar(vec3 IncomingTangentSpaceDirection, vec3 OutgoingTangentSpa
 	float CosPhiOutgoing = CosPhi(OutgoingTangentSpaceDirection);
 	float SinPhiOutgoing = SinPhi(OutgoingTangentSpaceDirection);
 	float DeltaCosPhi = CosPhiIncoming * CosPhiOutgoing + SinPhiIncoming * SinPhiOutgoing;
-	vec4 Result = vec4(0);
-	Result.xyz = M_INV_PI * Albedo * (A + (B * max(0.f, DeltaCosPhi) * sin(Alpha) * tan(Beta)));
-
-	Result.w = OutgoingTangentSpaceDirection.y * M_INV_PI;
+	vec3 Result = M_INV_PI * Albedo * (A + (B * max(0.f, DeltaCosPhi) * sin(Alpha) * tan(Beta)));
 
 	return Result;
+}
+
+float PDFOrenNayar(vec3 OutgoingTangentSpaceDirection)
+{
+	return OutgoingTangentSpaceDirection.y * M_INV_PI;
 }
 
 vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 NormalInWorldSpace, inout FSamplingState SamplingState, bool bFrontFacing)
@@ -91,7 +93,8 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 		vec3 TangentSpaceReflectionDirection = ScatterOrenNayar(SamplingState);
 		mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
 		vec3 TangentSpaceViewDirection = RayData.Direction.xyz * TNBMatrix;
-		BXDF = SampleOrenNayar(-TangentSpaceViewDirection, TangentSpaceReflectionDirection, Material.BaseColor, Material.DiffuseRoughness * M_PI_2);
+		BXDF.xyz = SampleOrenNayar(-TangentSpaceViewDirection, TangentSpaceReflectionDirection, Material.BaseColor, Material.DiffuseRoughness * M_PI_2);
+		BXDF.w = PDFOrenNayar(TangentSpaceReflectionDirection);
 		RayData.Direction.xyz = TangentSpaceReflectionDirection * transpose(TNBMatrix);
 		break;
 	}

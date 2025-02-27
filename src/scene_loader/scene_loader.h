@@ -18,6 +18,7 @@
 #define SCENE_FLOATING_SPHERES "Floating spheres"
 #define SCENE_COORDINATE_SYSTEM_REMINDER "Coordinate system reminder"
 #define SCENE_VIKINGS_ROOM "Vikings room"
+#define SCENE_DIFFUSE_MATERIAL "Diffuse material"
 
 class FSceneLoader
 {

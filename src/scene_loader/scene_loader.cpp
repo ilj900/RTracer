@@ -320,6 +320,32 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->SetIBL("../resources/brown_photostudio_02_4k.exr");
 	}
+	else if (Name == SCENE_DIFFUSE_MATERIAL)
+	{
+		auto Plane = Render->CreatePlane({32, 32});
+		auto Dragon = Render->CreateModel("../models/Dragon/dragon.obj");
+		auto Sphere = Render->CreateUVSphere(64, 32, 0.5f);
+
+		auto Floor = Render->CreateInstance(Plane, {0, -2, 0}, {0, 1, 0}, {0, 0, -1});
+		auto DragonInstance = Render->CreateInstance(Dragon, {0, -1.292, 1}, {-1, 0, 0}, {0, 1, 0}, {2.5, 2.5, 2.5});
+		auto CrimsonSphere = Render->CreateInstance(Sphere, {-2, -1.5, 2}, {0, 1, 0}, {0, 0, -1});
+		auto WhiteSphere = Render->CreateInstance(Sphere, {0, -1.5, 3}, {0, 1, 0}, {0, 0, -1});
+		auto OrangeSphere = Render->CreateInstance(Sphere, {1.5, -1.5, 2.5}, {0, 1, 0}, {0, 0, -1});
+
+		auto GreyMaterial = Render->CreateDiffuseMaterial({0.5f, 0.5f, 0.5f});
+		auto JadeMaterial = Render->CreateDiffuseMaterial({0, 0.7333f, 0.4666f});
+		auto CrimsonMaterial = Render->CreateDiffuseMaterial({0.698f, 0.1333f, 0.1333f});
+		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
+		auto OrangeMaterial = Render->CreateDiffuseMaterial({1, 0.3019f, 0});
+
+		Render->ShapeSetMaterial(Floor, GreyMaterial);
+		Render->ShapeSetMaterial(DragonInstance, JadeMaterial);
+		Render->ShapeSetMaterial(CrimsonSphere, CrimsonMaterial);
+		Render->ShapeSetMaterial(WhiteSphere, WhiteMaterial);
+		Render->ShapeSetMaterial(OrangeSphere, OrangeMaterial);
+
+		Render->SetIBL("../resources/sun.exr");
+	}
 	else if (Name == SCENE_VIKINGS_ROOM)
 	{
 		auto Model = Render->CreateModel("../models/viking_room/viking_room.obj");

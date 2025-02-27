@@ -430,7 +430,7 @@ void SaveAOVs(uvec2 PixelCoords, vec3 ShadingNormal, vec3 GeometricNormal, vec2 
     imageStore(WorldSpacePositionAOVImage, ivec2(PixelCoords), vec4(WorldSpacePosition, 1));
     imageStore(OpacityAOVImage, ivec2(PixelCoords), vec4(Opacity, Opacity, Opacity, 1));
     imageStore(DepthAOVImage, ivec2(PixelCoords), vec4(Depth, Depth, Depth, 1));
-    imageStore(AlbedoAOVImage, ivec2(PixelCoords), vec4(Albedo, 1));
+    imageStore(AlbedoAOVImage, ivec2(PixelCoords), vec4(Albedo, 0));
     imageStore(LuminanceAOVImage, ivec2(PixelCoords), vec4(Luminance, 1));
 
     vec4 RenderableIdColor = IndexToColor(RenderableIndex);
@@ -523,10 +523,7 @@ void main()
     SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
     vec4 MaterialSamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace, SamplingState, bFrontFacing);
 
-    if (!CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER))
-    {
-        MaterialSamplingResult *= abs(NDotI);
-    }
+    MaterialSamplingResult.xyz *= MaterialSamplingResult.w;
 
     RayData.Origin.xyz = WorldSpacePosition;
 
