@@ -92,7 +92,7 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 		mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
 		vec3 TangentSpaceViewDirection = RayData.Direction.xyz * TNBMatrix;
 		BXDF = SampleOrenNayar(-TangentSpaceViewDirection, TangentSpaceReflectionDirection, Material.BaseColor, Material.DiffuseRoughness * M_PI_2);
-		RayData.Direction.xyz = TangentSpaceReflectionDirection;
+		RayData.Direction.xyz = TangentSpaceReflectionDirection * transpose(TNBMatrix);
 		break;
 	}
 	case SPECULAR_LAYER:
