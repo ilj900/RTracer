@@ -386,112 +386,128 @@ FMatrix4 FMatrix4::GetInverse()
 {
 	FMatrix4 Result{};
 
-	Result.Data[0].X = Data[1].Y  * Data[2].Z * Data[3].W -
-		Data[1].Y  * Data[2].W * Data[3].Z -
-		Data[2].Y  * Data[1].Z  * Data[3].W +
-		Data[2].Y  * Data[1].W  * Data[3].Z +
-		Data[3].Y * Data[1].Z  * Data[2].W -
-		Data[3].Y * Data[1].W  * Data[2].Z;
+	Result.Data[0].X =
+		Data[1].Y * Data[2].Z * Data[3].W -
+		Data[1].Y * Data[2].W * Data[3].Z -
+		Data[2].Y * Data[1].Z * Data[3].W +
+		Data[2].Y * Data[1].W * Data[3].Z +
+		Data[3].Y * Data[1].Z * Data[2].W -
+		Data[3].Y * Data[1].W * Data[2].Z;
 
-	Result.Data[1].X = -Data[1].X  * Data[2].Z * Data[3].W +
-		Data[1].X  * Data[2].W * Data[3].Z +
-		Data[2].X  * Data[1].Z  * Data[3].W -
-		Data[2].X  * Data[1].W  * Data[3].Z -
-		Data[3].X * Data[1].Z  * Data[2].W +
-		Data[3].X * Data[1].W  * Data[2].Z;
+	Result.Data[1].X =
+	   -Data[1].X * Data[2].Z * Data[3].W +
+		Data[1].X * Data[2].W * Data[3].Z +
+		Data[2].X * Data[1].Z * Data[3].W -
+		Data[2].X * Data[1].W * Data[3].Z -
+		Data[3].X * Data[1].Z * Data[2].W +
+		Data[3].X * Data[1].W * Data[2].Z;
 
-	Result.Data[2].X = Data[1].X  * Data[2].Y * Data[3].W -
-		Data[1].X  * Data[2].W * Data[3].Y -
-		Data[2].X  * Data[1].Y * Data[3].W +
-		Data[2].X  * Data[1].W * Data[3].Y +
+	Result.Data[2].X =
+		Data[1].X * Data[2].Y * Data[3].W -
+		Data[1].X * Data[2].W * Data[3].Y -
+		Data[2].X * Data[1].Y * Data[3].W +
+		Data[2].X * Data[1].W * Data[3].Y +
 		Data[3].X * Data[1].Y * Data[2].W -
 		Data[3].X * Data[1].W * Data[2].Y;
 
-	Result.Data[3].X = -Data[1].X  * Data[2].Y * Data[3].Z +
-		Data[1].X  * Data[2].Z * Data[3].Y +
-		Data[2].X  * Data[1].Y * Data[3].Z -
-		Data[2].X  * Data[1].Z * Data[3].Y -
+	Result.Data[3].X =
+	   -Data[1].X * Data[2].Y * Data[3].Z +
+		Data[1].X * Data[2].Z * Data[3].Y +
+		Data[2].X * Data[1].Y * Data[3].Z -
+		Data[2].X * Data[1].Z * Data[3].Y -
 		Data[3].X * Data[1].Y * Data[2].Z +
 		Data[3].X * Data[1].Z * Data[2].Y;
 
-	Result.Data[0].Y = -Data[0].Y  * Data[2].Z * Data[3].W +
-		Data[0].Y  * Data[2].W * Data[3].Z +
-		Data[2].Y  * Data[0].Z * Data[3].W -
-		Data[2].Y  * Data[0].W * Data[3].Z -
+	Result.Data[0].Y =
+	   -Data[0].Y * Data[2].Z * Data[3].W +
+		Data[0].Y * Data[2].W * Data[3].Z +
+		Data[2].Y * Data[0].Z * Data[3].W -
+		Data[2].Y * Data[0].W * Data[3].Z -
 		Data[3].Y * Data[0].Z * Data[2].W +
 		Data[3].Y * Data[0].W * Data[2].Z;
 
-	Result.Data[1].Y = Data[0].X  * Data[2].Z * Data[3].W -
-		Data[0].X  * Data[2].W * Data[3].Z -
-		Data[2].X  * Data[0].Z * Data[3].W +
-		Data[2].X  * Data[0].W * Data[3].Z +
+	Result.Data[1].Y =
+		Data[0].X * Data[2].Z * Data[3].W -
+		Data[0].X * Data[2].W * Data[3].Z -
+		Data[2].X * Data[0].Z * Data[3].W +
+		Data[2].X * Data[0].W * Data[3].Z +
 		Data[3].X * Data[0].Z * Data[2].W -
 		Data[3].X * Data[0].W * Data[2].Z;
 
-	Result.Data[2].Y = -Data[0].X  * Data[2].Y * Data[3].W +
-		Data[0].X  * Data[2].W * Data[3].Y +
-		Data[2].X  * Data[0].Y * Data[3].W -
-		Data[2].X  * Data[0].W * Data[3].Y -
+	Result.Data[2].Y =
+	   -Data[0].X * Data[2].Y * Data[3].W +
+		Data[0].X * Data[2].W * Data[3].Y +
+		Data[2].X * Data[0].Y * Data[3].W -
+		Data[2].X * Data[0].W * Data[3].Y -
 		Data[3].X * Data[0].Y * Data[2].W +
 		Data[3].X * Data[0].W * Data[2].Y;
 
-	Result.Data[3].Y = Data[0].X  * Data[2].Y * Data[3].Z -
-		Data[0].X  * Data[2].Z * Data[3].Y -
-		Data[2].X  * Data[0].Y * Data[3].Z +
-		Data[2].X  * Data[0].Z * Data[3].Y +
+	Result.Data[3].Y =
+		Data[0].X * Data[2].Y * Data[3].Z -
+		Data[0].X * Data[2].Z * Data[3].Y -
+		Data[2].X * Data[0].Y * Data[3].Z +
+		Data[2].X * Data[0].Z * Data[3].Y +
 		Data[3].X * Data[0].Y * Data[2].Z -
 		Data[3].X * Data[0].Z * Data[2].Y;
 
-	Result.Data[0].Z = Data[0].Y  * Data[1].Z * Data[3].W -
-		Data[0].Y  * Data[1].W * Data[3].Z -
-		Data[1].Y  * Data[0].Z * Data[3].W +
-		Data[1].Y  * Data[0].W * Data[3].Z +
+	Result.Data[0].Z =
+		Data[0].Y * Data[1].Z * Data[3].W -
+		Data[0].Y * Data[1].W * Data[3].Z -
+		Data[1].Y * Data[0].Z * Data[3].W +
+		Data[1].Y * Data[0].W * Data[3].Z +
 		Data[3].Y * Data[0].Z * Data[1].W -
 		Data[3].Y * Data[0].W * Data[1].Z;
 
-	Result.Data[1].Z = -Data[0].X  * Data[1].Z * Data[3].W +
-		Data[0].X  * Data[1].W * Data[3].Z +
-		Data[1].X  * Data[0].Z * Data[3].W -
-		Data[1].X  * Data[0].W * Data[3].Z -
+	Result.Data[1].Z =
+	   -Data[0].X * Data[1].Z * Data[3].W +
+		Data[0].X * Data[1].W * Data[3].Z +
+		Data[1].X * Data[0].Z * Data[3].W -
+		Data[1].X * Data[0].W * Data[3].Z -
 		Data[3].X * Data[0].Z * Data[1].W +
 		Data[3].X * Data[0].W * Data[1].Z;
 
-	Result.Data[2].Z = Data[0].X  * Data[1].Y * Data[3].W -
-		Data[0].X  * Data[1].W * Data[3].Y -
-		Data[1].X  * Data[0].Y * Data[3].W +
-		Data[1].X  * Data[0].W * Data[3].Y +
+	Result.Data[2].Z =
+		Data[0].X * Data[1].Y * Data[3].W -
+		Data[0].X * Data[1].W * Data[3].Y -
+		Data[1].X * Data[0].Y * Data[3].W +
+		Data[1].X * Data[0].W * Data[3].Y +
 		Data[3].X * Data[0].Y * Data[1].W -
 		Data[3].X * Data[0].W * Data[1].Y;
 
-	Result.Data[3].Z = -Data[0].X  * Data[1].Y * Data[3].Z +
-		Data[0].X  * Data[1].Z * Data[3].Y +
-		Data[1].X  * Data[0].Y * Data[3].Z -
-		Data[1].X  * Data[0].Z * Data[3].Y -
+	Result.Data[3].Z =
+	   -Data[0].X * Data[1].Y * Data[3].Z +
+		Data[0].X * Data[1].Z * Data[3].Y +
+		Data[1].X * Data[0].Y * Data[3].Z -
+		Data[1].X * Data[0].Z * Data[3].Y -
 		Data[3].X * Data[0].Y * Data[1].Z +
 		Data[3].X * Data[0].Z * Data[1].Y;
 
-	Result.Data[0].W = -Data[0].Y * Data[1].Z * Data[2].W +
+	Result.Data[0].W =
+	   -Data[0].Y * Data[1].Z * Data[2].W +
 		Data[0].Y * Data[1].W * Data[2].Z +
 		Data[1].Y * Data[0].Z * Data[2].W -
 		Data[1].Y * Data[0].W * Data[2].Z -
 		Data[2].Y * Data[0].Z * Data[1].W +
 		Data[2].Y * Data[0].W * Data[1].Z;
 
-	Result.Data[1].W = Data[0].X * Data[1].Z * Data[2].W -
+	Result.Data[1].W =
+		Data[0].X * Data[1].Z * Data[2].W -
 		Data[0].X * Data[1].W * Data[2].Z -
 		Data[1].X * Data[0].Z * Data[2].W +
 		Data[1].X * Data[0].W * Data[2].Z +
 		Data[2].X * Data[0].Z * Data[1].W -
 		Data[2].X * Data[0].W * Data[1].Z;
 
-	Result.Data[2].W = -Data[0].X * Data[1].Y * Data[2].W +
+	Result.Data[2].W =
+	   -Data[0].X * Data[1].Y * Data[2].W +
 		Data[0].X * Data[1].W * Data[2].Y +
 		Data[1].X * Data[0].Y * Data[2].W -
 		Data[1].X * Data[0].W * Data[2].Y -
 		Data[2].X * Data[0].Y * Data[1].W +
 		Data[2].X * Data[0].W * Data[1].Y;
 
-	Result.Data[3].W = Data[0].X * Data[1].Y * Data[2].Z -
+	Result.Data[3].W =
+		Data[0].X * Data[1].Y * Data[2].Z -
 		Data[0].X * Data[1].Z * Data[2].Y -
 		Data[1].X * Data[0].Y * Data[2].Z +
 		Data[1].X * Data[0].Z * Data[2].Y +
@@ -505,7 +521,7 @@ FMatrix4 FMatrix4::GetInverse()
 		throw std::runtime_error("You are about to divide by zero");
 	}
 
-	Determinant = 1.0 / Determinant;
+	Determinant = 1.f / Determinant;
 
 	Result = Result * Determinant;
 
@@ -669,24 +685,21 @@ FMatrix4 GetRotationMatrixZ(float Angle)
 
 FMatrix4 Transform(const FVector3& Position, const FVector3& Direction, const FVector3& Up, const FVector3& Scale)
 {
-    FMatrix4 ScaleMatrix{Scale.X, 0.f, 0.f, 0.f,
-                         0.f, Scale.Y, 0.f, 0.f,
-                         0.f, 0.f, Scale.Z, 0.f,
-                         0.f, 0.f, 0.f, 1.f};
+	FVector3 F = Direction.GetNormalized();
+	FVector3 R = Cross(F, Up).GetNormalized();
+	FVector3 U = Cross(F, R);
 
-    /// Get rotation matrix to rotate base direction to align it with the desired one
-    FMatrix4 RotationMatrixFirst = GetRotationMatrix(FVector3{0.f, 0.f, 1.f}, Direction);
-    /// Calculate new UP direction
-    FVector3 RotatedUp = RotationMatrixFirst * FVector3{0.f, 1.f, 0.f};
-    /// Get second rotation matrix to align new UP direction with desired one.
-    FMatrix4 RotationMatrixSecond = GetRotationMatrix(RotatedUp, Up);
+	R *= Scale.X;
+	U *= Scale.Y;
+	F *= Scale.Z;
 
-    FMatrix4 TranslationMatrix(1.f, 0.f, 0.f, 0.f,
-                               0.f, 1.f, 0.f, 0.f,
-                               0.f, 0.f, 1.f, 0.f,
-                               Position.X, Position.Y, Position.Z, 1.f);
+	FMatrix4 LocalToWorldMatrix = {
+		R.X, R.Y, R.Z, 0.f,
+		U.X, U.Y, U.Z, 0.f,
+		F.X, F.Y, F.Z, 0.f,
+		Position.X, Position.Y, Position.Z, 1.f,};
 
-    return ScaleMatrix * RotationMatrixFirst * RotationMatrixSecond * TranslationMatrix;
+	return LocalToWorldMatrix;
 }
 
 FMatrix4 LookAt(const FVector3& Eye, const FVector3& Point, const FVector3& Up)

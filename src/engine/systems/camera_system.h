@@ -5,6 +5,8 @@
 #include "gpu_bufferable_system.h"
 #include "coordinator.h"
 
+#include <optional>
+
 namespace ECS
 {
     namespace SYSTEMS
@@ -16,6 +18,7 @@ namespace ECS
             bool Update() override;
             bool Update(int Index) override;
 
+			void SetPosition(FEntity CameraEntity, const FVector3& Position, const std::optional<FVector3>& Direction, const std::optional<FVector3>& Up);
             void MoveCameraForward(FEntity CameraEntity, float Value);
             void MoveCameraRight(FEntity CameraEntity, float Value);
             void MoveCameraUpward(FEntity CameraEntity, float Value);

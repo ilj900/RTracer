@@ -367,6 +367,18 @@ void FRender::SetActiveCamera(ECS::FEntity Camera)
     ActiveCamera = Camera;
 }
 
+void FRender::SetCameraPosition(const FVector3& Position, const std::optional<FVector3>& Direction, const std::optional<FVector3>& Up, const std::optional<ECS::FEntity>& Camera)
+{
+	if (Camera)
+	{
+		CAMERA_SYSTEM()->SetPosition(Camera.value(), Position, Direction, Up);
+	}
+	else
+	{
+		CAMERA_SYSTEM()->SetPosition(ActiveCamera, Position, Direction, Up);
+	}
+}
+
 void FRender::SaveFramebufferPng(ECS::FEntity Framebuffer, const std::string& Filename)
 {
     auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);

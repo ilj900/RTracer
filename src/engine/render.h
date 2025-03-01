@@ -27,6 +27,7 @@
 
 #include "renderer_options.h"
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -43,11 +44,13 @@ public:
 	void SetRenderTarget(EOutputType OutputType);
 
     ECS::FEntity CreateCamera();
+    void SetActiveCamera(ECS::FEntity Camera);
+	void SetCameraPosition(const FVector3& Position, const std::optional<FVector3>& Direction, const std::optional<FVector3>& Up, const std::optional<ECS::FEntity>& Camera);
+
     ECS::FEntity CreateFramebuffer(int WidthIn, int HeightIn, const std::string& DebugName = "");
 	void DestroyFramebuffer(ECS::FEntity Framebuffer);
     ECS::FEntity CreateFramebufferFromExternalImage(ImagePtr ImageIn, const std::string& DebugName = "");
 	ECS::FEntity CreateColorAttachment(int WidthIn, int HeightIn, const std::string& DebugName = "");
-    void SetActiveCamera(ECS::FEntity Camera);
     void SaveFramebufferPng(ECS::FEntity Framebuffer, const std::string& Filename = "");
 	void SaveFramebufferExr(ECS::FEntity Framebuffer, const std::string& Filename = "");
 	void SaveOutputPng(EOutputType OutputType, const std::string& Filename = "");

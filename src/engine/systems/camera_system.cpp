@@ -45,6 +45,26 @@ namespace ECS
 			return bAnyUpdate;
         }
 
+		void FCameraSystem::SetPosition(FEntity CameraEntity, const FVector3& Position, const std::optional<FVector3>& Direction, const std::optional<FVector3>& Up)
+		{
+			auto& DeviceCameraComponent = GetComponent<ECS::COMPONENTS::FDeviceCameraComponent>(CameraEntity);
+			DeviceCameraComponent.Origin = Position;
+
+			if (Direction)
+			{
+				DeviceCameraComponent.Direction = Direction.value().GetNormalized();
+			}
+
+			if (Up)
+			{
+				DeviceCameraComponent.Up = Up.value().GetNormalized();
+			}
+
+			DeviceCameraComponent.Right = Cross(DeviceCameraComponent.Direction, DeviceCameraComponent.Up);
+
+			MarkDirty(CameraEntity);
+		}
+
         void FCameraSystem::MoveCameraForward(FEntity CameraEntity, float Value)
         {
             auto& DeviceCameraComponent = GetComponent<ECS::COMPONENTS::FDeviceCameraComponent>(CameraEntity);

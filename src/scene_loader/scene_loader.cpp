@@ -324,13 +324,13 @@ void FSceneLoader::LoadScene(const std::string& Name)
 	{
 		auto Plane = Render->CreatePlane({32, 32});
 		auto Dragon = Render->CreateModel("../models/Dragon/dragon.obj");
-		auto Sphere = Render->CreateUVSphere(64, 32, 0.5f);
+		auto Sphere = Render->CreateUVSphere(256, 128, 0.5f);
 
 		auto Floor = Render->CreateInstance(Plane, {0, -2, 0}, {0, 1, 0}, {0, 0, -1});
-		auto DragonInstance = Render->CreateInstance(Dragon, {0, -1.292, 1}, {-1, 0, 0}, {0, 1, 0}, {2.5, 2.5, 2.5});
+		auto DragonInstance = Render->CreateInstance(Dragon, {0, -1.292, 1}, {1, 0, 0}, {0, -1, 0}, {2.5, 2.5, 2.5});
 		auto CrimsonSphere = Render->CreateInstance(Sphere, {-2, -1.5, 2}, {0, 1, 0}, {0, 0, -1});
-		auto WhiteSphere = Render->CreateInstance(Sphere, {0, -1.5, 3}, {0, 1, 0}, {0, 0, -1});
-		auto OrangeSphere = Render->CreateInstance(Sphere, {1.5, -1.5, 2.5}, {0, 1, 0}, {0, 0, -1});
+		auto WhiteSphere = Render->CreateInstance(Sphere, {0, -1.5, 2}, {0, 1, 0}, {0, 0, -1});
+		auto OrangeSphere = Render->CreateInstance(Sphere, {1.5, -1.5, 2}, {0, 1, 0}, {0, 0, -1});
 
 		auto GreyMaterial = Render->CreateDiffuseMaterial({0.5f, 0.5f, 0.5f});
 		auto JadeMaterial = Render->CreateDiffuseMaterial({0, 0.7333f, 0.4666f});
@@ -343,6 +343,42 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		Render->ShapeSetMaterial(CrimsonSphere, CrimsonMaterial);
 		Render->ShapeSetMaterial(WhiteSphere, WhiteMaterial);
 		Render->ShapeSetMaterial(OrangeSphere, OrangeMaterial);
+
+		Render->SetIBL("../resources/sun.exr");
+	}
+	else if (Name == SCENE_TEST_1)
+	{
+		auto Sphere = Render->CreateUVSphere(64, 32, 2.5f);
+
+		auto SphereRight = Render->CreateInstance(Sphere, {50, 0, 0});
+		auto SphereLeft = Render->CreateInstance(Sphere, {-50, 0, 0});
+		auto SphereFront = Render->CreateInstance(Sphere, {0, 0, -50});
+		auto SphereBack = Render->CreateInstance(Sphere, {0, 0, 50});
+		auto SphereUp = Render->CreateInstance(Sphere, {0, 50, 0});
+		auto SphereDown = Render->CreateInstance(Sphere, {0, -50, 0});
+
+		auto OrangeMaterial = Render->CreateDiffuseMaterial({1, 0.3019f, 0});
+
+		Render->ShapeSetMaterial(SphereRight, OrangeMaterial);
+		Render->ShapeSetMaterial(SphereLeft, OrangeMaterial);
+		Render->ShapeSetMaterial(SphereFront, OrangeMaterial);
+		Render->ShapeSetMaterial(SphereBack, OrangeMaterial);
+		Render->ShapeSetMaterial(SphereUp, OrangeMaterial);
+		Render->ShapeSetMaterial(SphereDown, OrangeMaterial);
+
+		Render->SetIBL("../resources/sun.exr");
+	}
+	else if (Name == SCENE_TEST_2)
+	{
+		auto Sphere = Render->CreateUVSphere(64, 32, 2.5f);
+
+		auto SphereInstance = Render->CreateInstance(Sphere, {0, 0, 0}, {0, 1, 0}, {0, 0, -1});
+
+		auto OrangeMaterial = Render->CreateDiffuseMaterial({1, 0.3019f, 0});
+
+		Render->SetCameraPosition({0, 7.5, 0}, {{0, -1.f, 0.f}}, {{0, 0, 1}}, {});
+
+		Render->ShapeSetMaterial(SphereInstance, OrangeMaterial);
 
 		Render->SetIBL("../resources/sun.exr");
 	}

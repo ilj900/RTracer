@@ -414,7 +414,7 @@ vec3 ComputeIBLInput(FSamplingState SamplingState, uint SpotLightsCount, vec3 No
 vec4 IndexToColor(uint Value)
 {
     uint ColorHash = MurMur3_32(Value, 0);
-    vec4 Color = vec4(1);
+    vec4 Color = vec4(0);
     Color.x = ((ColorHash >> 24) & 0xFFu) / 255.;
     Color.y = ((ColorHash >> 18) & 0xFFu) / 255.;
     Color.z = ((ColorHash >> 12) & 0xFFu) / 255.;
@@ -425,13 +425,13 @@ void SaveAOVs(uvec2 PixelCoords, vec3 ShadingNormal, vec3 GeometricNormal, vec2 
               vec3 Luminance, uint RenderableIndex, uint PrimitiveIndex, uint Materialindex, vec4 DebugData)
 {
     imageStore(ShadingNormalAOVImage, ivec2(PixelCoords), vec4((ShadingNormal + vec3(1)) * vec3(0.5), 0));
-    imageStore(GeometricNormalAOVImage, ivec2(PixelCoords), vec4((GeometricNormal+ vec3(1)) * vec3(0.5), 0));
-    imageStore(UVAOVImage, ivec2(PixelCoords), vec4(UV, 0, 1));
-    imageStore(WorldSpacePositionAOVImage, ivec2(PixelCoords), vec4(WorldSpacePosition, 1));
-    imageStore(OpacityAOVImage, ivec2(PixelCoords), vec4(Opacity, Opacity, Opacity, 1));
-    imageStore(DepthAOVImage, ivec2(PixelCoords), vec4(Depth, Depth, Depth, 1));
+    imageStore(GeometricNormalAOVImage, ivec2(PixelCoords), vec4((GeometricNormal + vec3(1)) * vec3(0.5), 0));
+    imageStore(UVAOVImage, ivec2(PixelCoords), vec4(UV, 0, 0));
+    imageStore(WorldSpacePositionAOVImage, ivec2(PixelCoords), vec4(WorldSpacePosition, 0));
+    imageStore(OpacityAOVImage, ivec2(PixelCoords), vec4(Opacity, Opacity, Opacity, 0));
+    imageStore(DepthAOVImage, ivec2(PixelCoords), vec4(Depth, Depth, Depth, 0));
     imageStore(AlbedoAOVImage, ivec2(PixelCoords), vec4(Albedo, 0));
-    imageStore(LuminanceAOVImage, ivec2(PixelCoords), vec4(Luminance, 1));
+    imageStore(LuminanceAOVImage, ivec2(PixelCoords), vec4(Luminance, 0));
 
     vec4 RenderableIdColor = IndexToColor(RenderableIndex);
     imageStore(RenderableIndexAOVImage, ivec2(PixelCoords), RenderableIdColor);
@@ -453,10 +453,10 @@ void main()
     uvec2 PixelCoords = uvec2(PixelIndex % PushConstants.Width, PixelIndex / PushConstants.Width);
 
 #ifdef DEBUG_PRINTF
-    if (PixelCoords.x == PushConstants.Width / 2 && PixelCoords.y == PushConstants.Height / 2 /*&& PushConstants.BounceIndex == 0*/)
+    if (PixelCoords.x == PushConstants.Width / 2 && PixelCoords.y == PushConstants.Height / 2 && PushConstants.BounceIndex == 0)
     {
         b = true;
-        debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
+        //debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
     }
 #endif
 

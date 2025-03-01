@@ -19,6 +19,8 @@
 #define SCENE_COORDINATE_SYSTEM_REMINDER "Coordinate system reminder"
 #define SCENE_VIKINGS_ROOM "Vikings room"
 #define SCENE_DIFFUSE_MATERIAL "Diffuse material"
+#define SCENE_TEST_1 "Test 1"
+#define SCENE_TEST_2 "Test 2"
 
 class FSceneLoader
 {
