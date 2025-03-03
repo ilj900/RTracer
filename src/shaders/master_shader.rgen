@@ -523,7 +523,7 @@ void main()
     SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
     vec4 MaterialSamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace, SamplingState, bFrontFacing);
 
-    MaterialSamplingResult.xyz *= MaterialSamplingResult.w;
+    MaterialSamplingResult.xyz /= MaterialSamplingResult.w;
 
     RayData.Origin.xyz = WorldSpacePosition;
 

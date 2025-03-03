@@ -79,6 +79,16 @@ float PDFOrenNayar(vec3 OutgoingTangentSpaceDirection)
 	return OutgoingTangentSpaceDirection.y * M_INV_PI;
 }
 
+vec3 SampleLambertian(vec3 Albedo)
+{
+	return Albedo * M_INV_PI;
+}
+
+float PDFLambertian(vec3 OutgoingTangentSpaceDirection)
+{
+	return OutgoingTangentSpaceDirection.y * M_INV_PI;
+}
+
 vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 NormalInWorldSpace, inout FSamplingState SamplingState, bool bFrontFacing)
 {
 	float LayerSample = RandomFloat(SamplingState);
@@ -93,8 +103,14 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 		vec3 TangentSpaceReflectionDirection = ScatterOrenNayar(SamplingState);
 		mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
 		vec3 TangentSpaceViewDirection = RayData.Direction.xyz * TNBMatrix;
-		BXDF.xyz = SampleOrenNayar(-TangentSpaceViewDirection, TangentSpaceReflectionDirection, Material.BaseColor, Material.DiffuseRoughness * M_PI_2);
+#define OREN_NAYAR
+#ifdef OREN_NAYAR
+		BXDF.xyz = SampleOrenNayar(-TangentSpaceViewDirection, TangentSpaceReflectionDirection, Material.BaseColor, Material.DiffuseRoughness);
+		BXDF.w = PDFLambertian(TangentSpaceReflectionDirection);
+#else
+		BXDF.xyz = SampleLambertian(Material.BaseColor);
 		BXDF.w = PDFOrenNayar(TangentSpaceReflectionDirection);
+#endif
 		RayData.Direction.xyz = TangentSpaceReflectionDirection * transpose(TNBMatrix);
 		break;
 	}

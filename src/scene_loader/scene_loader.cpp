@@ -332,11 +332,17 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto WhiteSphere = Render->CreateInstance(Sphere, {0, -1.5, 2}, {0, 1, 0}, {0, 0, -1});
 		auto OrangeSphere = Render->CreateInstance(Sphere, {1.5, -1.5, 2}, {0, 1, 0}, {0, 0, -1});
 
+		float DiffuseRoughness = 1.f;
 		auto GreyMaterial = Render->CreateDiffuseMaterial({0.5f, 0.5f, 0.5f});
+		Render->MaterialSetDiffuseRoughness(GreyMaterial, DiffuseRoughness);
 		auto JadeMaterial = Render->CreateDiffuseMaterial({0, 0.7333f, 0.4666f});
+		Render->MaterialSetDiffuseRoughness(JadeMaterial, DiffuseRoughness);
 		auto CrimsonMaterial = Render->CreateDiffuseMaterial({0.698f, 0.1333f, 0.1333f});
+		Render->MaterialSetDiffuseRoughness(CrimsonMaterial, DiffuseRoughness);
 		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
+		Render->MaterialSetDiffuseRoughness(WhiteMaterial, DiffuseRoughness);
 		auto OrangeMaterial = Render->CreateDiffuseMaterial({1, 0.3019f, 0});
+		Render->MaterialSetDiffuseRoughness(OrangeMaterial, DiffuseRoughness);
 
 		Render->ShapeSetMaterial(Floor, GreyMaterial);
 		Render->ShapeSetMaterial(DragonInstance, JadeMaterial);
