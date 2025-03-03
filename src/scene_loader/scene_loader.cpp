@@ -374,6 +374,18 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->SetIBL("../resources/sun.exr");
 	}
+	else if (Name == SCENE_WHITE_FURNACE)
+	{
+		auto Sphere = Render->CreateUVSphere(256, 128, 0.5f);
+		auto WhiteSphere = Render->CreateInstance(Sphere, {0, -1.5, 2}, {0, 1, 0}, {0, 0, -1});
+
+		float DiffuseRoughness = 0.f;
+		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
+		Render->MaterialSetDiffuseRoughness(WhiteMaterial, DiffuseRoughness);
+		Render->ShapeSetMaterial(WhiteSphere, WhiteMaterial);
+
+		Render->SetIBL("../resources/white_furnace.exr");
+	}
 	else if (Name == SCENE_TEST_2)
 	{
 		auto Sphere = Render->CreateUVSphere(64, 32, 2.5f);
