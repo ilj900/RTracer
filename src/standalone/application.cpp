@@ -45,7 +45,7 @@ FApplication::~FApplication()
 int FApplication::Run()
 {
 	uint32_t ImageIndex = UINT32_MAX;
-	LoadCamera(Controller->Camera, "../data/cameras/Test");
+	LoadCamera(Controller->Camera, Render, "../data/cameras/Test");
 	SceneLoader->LoadScene(SCENE_DIFFUSE_MATERIAL);
 
 	FSynchronizationPoint RenderingFinished;

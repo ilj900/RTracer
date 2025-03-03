@@ -116,19 +116,23 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 	}
 	case SPECULAR_LAYER:
 	{
-		/// -1.f means that by default ray considered to be  lost in the process of multiple scattering
-		BXDF = vec4(Material.SpecularColor, -1.f);
+		/// We assume that by default that our attempt to scatter the ray fails, thus PDF would be 0.f
+		BXDF = vec4(Material.SpecularColor, 0.f);
+
+		/// Now lets try to scatter the ray
 		mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
 		vec3 TangentSpaceViewDirection = RayData.Direction.xyz * TNBMatrix;
 
+		/// Multi-scatter 16 times
 		for (int i = 0; i < 16; ++i)
 		{
 			vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
 			vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
 			TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
+
+			/// If ray's on the right side of the surface, then leave it
 			if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
 			{
-				/// Ray successfully left the surface on the correct side
 				BXDF.w = 1.f;
 				RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
 				break;

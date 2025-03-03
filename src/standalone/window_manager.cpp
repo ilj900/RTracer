@@ -96,7 +96,7 @@ void FWindowManager::KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, i
             if (Action == GLFW_PRESS)
             {
 				auto* WindowManager = (FWindowManager*)glfwGetWindowUserPointer(Window);
-				SaveCamera(WindowManager->Controller->Camera, "../data/cameras/Test");
+				SaveCamera(WindowManager->Controller->Camera, WindowManager->Controller->Render, "../data/cameras/Test");
             }
             break;
         }
@@ -106,7 +106,7 @@ void FWindowManager::KeyboardKeyPressedOrReleased(GLFWwindow* Window, int Key, i
 			if (Action == GLFW_PRESS)
 			{
 				auto* WindowManager = (FWindowManager*)glfwGetWindowUserPointer(Window);
-				LoadCamera(WindowManager->Controller->Camera, "../data/cameras/Test");
+				LoadCamera(WindowManager->Controller->Camera, WindowManager->Controller->Render,  "../data/cameras/Test");
 			}
 			break;
 		}

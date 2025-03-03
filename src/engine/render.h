@@ -46,6 +46,9 @@ public:
     ECS::FEntity CreateCamera();
     void SetActiveCamera(ECS::FEntity Camera);
 	void SetCameraPosition(const FVector3& Position, const std::optional<FVector3>& Direction, const std::optional<FVector3>& Up, const std::optional<ECS::FEntity>& Camera);
+	void SetCameraSensorProperties(const std::optional<float>& SensorSizeX, const std::optional<float>& SensorSizeY, const std::optional<float>& FocalDistance, const std::optional<ECS::FEntity>& Camera);
+	void GetCameraPosition(FVector3* Position, FVector3* Direction, FVector3* Up, const std::optional<ECS::FEntity>& Camera);
+	void GetCameraSensorProperties(float* SensorSizeX, float* SensorSizeY, float* FocalDistance, const std::optional<ECS::FEntity>& Camera);
 
     ECS::FEntity CreateFramebuffer(int WidthIn, int HeightIn, const std::string& DebugName = "");
 	void DestroyFramebuffer(ECS::FEntity Framebuffer);

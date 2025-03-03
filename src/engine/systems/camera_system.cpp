@@ -65,6 +65,28 @@ namespace ECS
 			MarkDirty(CameraEntity);
 		}
 
+		void FCameraSystem::SetCameraSensorProperties(FEntity Camera, const std::optional<float>& SensorSizeX, const std::optional<float>& SensorSizeY, const std::optional<float>& FocalDistance)
+		{
+			auto& DeviceCameraComponent = GetComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera);
+
+			if (SensorSizeX)
+			{
+				DeviceCameraComponent.SensorSizeX = SensorSizeX.value();
+			}
+
+			if (SensorSizeY)
+			{
+				DeviceCameraComponent.SensorSizeY = SensorSizeY.value();
+			}
+
+			if (FocalDistance)
+			{
+				DeviceCameraComponent.FocalDistance = FocalDistance.value();
+			}
+
+			MarkDirty(Camera);
+		}
+
         void FCameraSystem::MoveCameraForward(FEntity CameraEntity, float Value)
         {
             auto& DeviceCameraComponent = GetComponent<ECS::COMPONENTS::FDeviceCameraComponent>(CameraEntity);

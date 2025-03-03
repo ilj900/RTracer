@@ -19,6 +19,7 @@ namespace ECS
             bool Update(int Index) override;
 
 			void SetPosition(FEntity CameraEntity, const FVector3& Position, const std::optional<FVector3>& Direction, const std::optional<FVector3>& Up);
+			void SetCameraSensorProperties(FEntity Camera, const std::optional<float>& SensorSizeX, const std::optional<float>& SensorSizeY, const std::optional<float>& FocalDistance);
             void MoveCameraForward(FEntity CameraEntity, float Value);
             void MoveCameraRight(FEntity CameraEntity, float Value);
             void MoveCameraUpward(FEntity CameraEntity, float Value);

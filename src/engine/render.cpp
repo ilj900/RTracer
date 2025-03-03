@@ -379,6 +379,54 @@ void FRender::SetCameraPosition(const FVector3& Position, const std::optional<FV
 	}
 }
 
+void FRender::SetCameraSensorProperties(const std::optional<float>& SensorSizeX, const std::optional<float>& SensorSizeY, const std::optional<float>& FocalDistance, const std::optional<ECS::FEntity>& Camera)
+{
+	if (Camera)
+	{
+		CAMERA_SYSTEM()->SetCameraSensorProperties(Camera.value(), SensorSizeX, SensorSizeY, FocalDistance);
+	}
+	else
+	{
+		CAMERA_SYSTEM()->SetCameraSensorProperties(ActiveCamera, SensorSizeX, SensorSizeY, FocalDistance);
+	}
+}
+
+void FRender::GetCameraPosition(FVector3* Position, FVector3* Direction, FVector3* Up, const std::optional<ECS::FEntity>& Camera)
+{
+	if (Camera)
+	{
+		auto& DeviceCameraComponent = CAMERA_SYSTEM()->GetComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera.value());
+		*Position = DeviceCameraComponent.Origin;
+		*Direction = DeviceCameraComponent.Direction;
+		*Up = DeviceCameraComponent.Up;
+	}
+	else
+	{
+		auto& DeviceCameraComponent = CAMERA_SYSTEM()->GetComponent<ECS::COMPONENTS::FDeviceCameraComponent>(ActiveCamera);
+		*Position = DeviceCameraComponent.Origin;
+		*Direction = DeviceCameraComponent.Direction;
+		*Up = DeviceCameraComponent.Up;
+	}
+}
+
+void FRender::GetCameraSensorProperties(float* SensorSizeX, float* SensorSizeY, float* FocalDistance, const std::optional<ECS::FEntity>& Camera)
+{
+	if (Camera)
+	{
+		auto& DeviceCameraComponent = CAMERA_SYSTEM()->GetComponent<ECS::COMPONENTS::FDeviceCameraComponent>(Camera.value());
+		*SensorSizeX = DeviceCameraComponent.SensorSizeX;
+		*SensorSizeY = DeviceCameraComponent.SensorSizeY;
+		*FocalDistance = DeviceCameraComponent.FocalDistance;
+	}
+	else
+	{
+		auto& DeviceCameraComponent = CAMERA_SYSTEM()->GetComponent<ECS::COMPONENTS::FDeviceCameraComponent>(ActiveCamera);
+		*SensorSizeX = DeviceCameraComponent.SensorSizeX;
+		*SensorSizeY = DeviceCameraComponent.SensorSizeY;
+		*FocalDistance = DeviceCameraComponent.FocalDistance;
+	}
+}
+
 void FRender::SaveFramebufferPng(ECS::FEntity Framebuffer, const std::string& Filename)
 {
     auto& FramebufferComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FFramebufferComponent>(Framebuffer);
