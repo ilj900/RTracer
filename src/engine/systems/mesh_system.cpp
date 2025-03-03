@@ -135,7 +135,7 @@ namespace ECS
                             Attrib.normals[3 * Index.normal_index + 2]
                         };
 
-						Vert.Normal = Vert.Normal;
+						Vert.Normal = -Vert.Normal;
                     }
 
                     if (!Attrib.texcoords.empty())
