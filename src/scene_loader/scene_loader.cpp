@@ -123,7 +123,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto Dragon = Render->CreateModel("../models/Dragon/dragon.obj");
 
 		auto BottomWall = Render->CreateInstance(Wall, {0, -2, 0}, {0, 1, 0}, {0, 0, -1});
-		auto DragonInstance = Render->CreateInstance(Dragon, {0, -1.292, 1}, {-1, 0, 0}, {0, 1, 0}, {2.5, 2.5, 2.5});
+		auto DragonInstance = Render->CreateInstance(Dragon, {0, -1.292, 1}, {1, 0, 0}, {0, -1, 0}, {2.5, 2.5, 2.5});
 
 		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
 		auto GlassMaterial = Render->CreateRefractiveMaterial({1, 1, 1});
