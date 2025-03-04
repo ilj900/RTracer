@@ -140,16 +140,18 @@ void FSceneLoader::LoadScene(const std::string& Name)
 	}
 	else if (Name == SCENE_ROUGH_GLASS)
 	{
-		auto Plane = Render->CreatePlane({1024, 1024});
+		auto Plane = Render->CreatePlane({32, 32});
 		auto Sphere = Render->CreateUVSphere(512, 256, 0.5f);
 
 		auto PlaneInstance = Render->CreateInstance(Plane, {0, -2, 0}, {0, 1, 0}, {0, 0, 1});
 		auto Material_1 = Render->CreateDiffuseMaterial({0.8, 0.8, 0.8});
+		auto CheckerboardTexture = Render->CreateTexture("../resources/Checkerboard_256.png");
+		Render->MaterialSetBaseColor(Material_1, CheckerboardTexture);
 		Render->ShapeSetMaterial(PlaneInstance, Material_1);
 
 		for (int i = 0; i < 20; ++i)
 		{
-			auto SphereInstance = Render->CreateInstance(Sphere, {float(-10 + i), -1.499, 1});
+			auto SphereInstance = Render->CreateInstance(Sphere, {float(-10 + i), -1.49, 1});
 			auto Material = Render->CreateRefractiveMaterial({1, 1, 1});
 			Render->MaterialSetTransmissionRoughness(Material, i * 0.05f);
 			Render->ShapeSetMaterial(SphereInstance, Material);
