@@ -128,7 +128,7 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 		{
 			vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
 			/// We invert the TangentSpaceViewDirection because if i == 0 then it's ray's direction that points to (under) the surface, it i != 0, the only way we get here is if ray is still pointing under the surface.
-			vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
+			vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
 			TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
 
 			/// If ray's on the right side of the surface, then leave it
@@ -144,43 +144,83 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 	}
 	case TRANSMISSION_LAYER:
 	{
-		BXDF.xyz = Material.TransmissionColor;
+		BXDF = vec4(Material.TransmissionColor, 0.f);
+
+		mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
+		vec3 TangentSpaceViewDirection = RayData.Direction.xyz * TNBMatrix;
+
 		float IOR1 = bFrontFacing ? RayData.Eta : Material.SpecularIOR;
 		float IOR2 = bFrontFacing ? Material.SpecularIOR : 1;
 		float EtaRatio = IOR1 / IOR2;
 
 		float R0 = (IOR1 - IOR2) / (IOR1 + IOR2);
 		R0 *= R0;
-		/// NDotI also equals to cos(angle)
-		/// Ray's direction is inverted cause it's guaranteed to face normal.
-		float NDotI = dot(NormalInWorldSpace, RayData.Direction.xyz);
 
-		float RTheta = R0 + (1. - R0) * pow(1. - abs(NDotI), 5.f);
-
-		/// Decide on whether the ray is reflected or refracted
-		float RF = RandomFloat(SamplingState);
-		if (RF < RTheta)
+		for (int i = 0; i < 16; ++i)
 		{
-			RayData.Direction.xyz = reflect(RayData.Direction.xyz, NormalInWorldSpace);
-			RayType = SPECULAR_LAYER;
-		}
-		else
-		{
-			float k = 1. - EtaRatio * EtaRatio * (1. - NDotI * NDotI);
+			vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
+			/// We invert the TangentSpaceViewDirection because if i == 0 then it's ray's direction that points to (under) the surface, it i != 0, the only way we get here is if ray is still pointing under the surface.
+			vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, RandomSquare.x, RandomSquare.y).xzy;
 
-			if (k < 0. || RandomFloat(SamplingState) < RTheta)
+			/// NDotI also equals to cos(angle)
+			/// Ray's direction is inverted cause normal is guaranteed to be visible.
+			float NDotI = dot(NewNormal, -TangentSpaceViewDirection);
+
+			float RTheta = R0 + (1. - R0) * pow(1. - NDotI, 5.f);
+
+			/// Decide on whether the ray is reflected or refracted
+			float RF = RandomFloat(SamplingState);
+
+			if (RF < RTheta)
 			{
-				RayData.Direction.xyz = reflect(RayData.Direction.xyz, NormalInWorldSpace);
+				/// Reflection is happening
+				TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
 				RayType = SPECULAR_LAYER;
+
+				/// If reflected ray's on the correct side, then it's done.
+				if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
+				{
+					BXDF.w = 1.f;
+					RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
+					break;
+				}
 			}
 			else
 			{
-				RayData.Direction.xyz = EtaRatio * RayData.Direction.xyz - (EtaRatio * NDotI + sqrt(k)) * NormalInWorldSpace;
-				BXDF.xyz *= EtaRatio * EtaRatio;
+				/// Refraction or TIR is happening
+				float k = 1. - EtaRatio * EtaRatio * (1. - NDotI * NDotI);
+
+				if (k < 0. || RandomFloat(SamplingState) < RTheta)
+				{
+					/// Internal reflection is happening
+					TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
+					RayType = SPECULAR_LAYER;
+
+					/// If reflected ray's on the correct side, then it's done.
+					if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
+					{
+						BXDF.w = 1.f;
+						RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
+						break;
+					}
+				}
+				else
+				{
+					/// Refraction
+					TangentSpaceViewDirection = EtaRatio * TangentSpaceViewDirection - (EtaRatio * NDotI + sqrt(k)) * NewNormal;
+
+					if (dot(vec3(0, -1, 0), TangentSpaceViewDirection) > 0.)
+					{
+						BXDF.xyz *= EtaRatio * EtaRatio;
+						BXDF.w = 1.f;
+						RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
+						break;
+					}
+				}
 			}
 		}
 
-		RayData.Eta = Material.SpecularIOR;
+		/// If we are here, it means that ray's failed to leave the surface, thus PDF remains 0
 		break;
 	}
 	case SUBSURFACE_LAYER:
