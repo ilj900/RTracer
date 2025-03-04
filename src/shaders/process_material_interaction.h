@@ -127,7 +127,8 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 		for (int i = 0; i < 16; ++i)
 		{
 			vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
-			vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
+			/// We invert the TangentSpaceViewDirection because if i == 0 then it's ray's direction that points to (under) the surface, it i != 0, the only way we get here is if ray is still pointing under the surface.
+			vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
 			TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
 
 			/// If ray's on the right side of the surface, then leave it
