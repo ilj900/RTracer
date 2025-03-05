@@ -173,13 +173,12 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 
 			if (RF < RTheta)
 			{
-				/// Reflection is happening
 				TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
-				RayType = SPECULAR_LAYER;
 
 				/// If reflected ray's on the correct side, then it's done.
 				if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
 				{
+					RayType = SPECULAR_LAYER;
 					BXDF.w = 1.f;
 					RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
 					break;
@@ -190,15 +189,15 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 				/// Refraction or TIR is happening
 				float k = 1. - EtaRatio * EtaRatio * (1. - NDotI * NDotI);
 
-				if (k < 0. || RandomFloat(SamplingState) < RTheta)
+				if (k < 0.)
 				{
-					/// Internal reflection is happening
+					/// Total internal reflection is happening
 					TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
-					RayType = SPECULAR_LAYER;
 
 					/// If reflected ray's on the correct side, then it's done.
 					if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
 					{
+						RayType = SPECULAR_LAYER;
 						BXDF.w = 1.f;
 						RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
 						break;
@@ -208,14 +207,10 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 				{
 					/// Refraction
 					TangentSpaceViewDirection = EtaRatio * TangentSpaceViewDirection - (EtaRatio * NDotI + sqrt(k)) * NewNormal;
-
-					if (dot(vec3(0, -1, 0), TangentSpaceViewDirection) > 0.)
-					{
-						BXDF.xyz *= EtaRatio * EtaRatio;
-						BXDF.w = 1.f;
-						RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
-						break;
-					}
+					BXDF.xyz *= EtaRatio * EtaRatio;
+					BXDF.w = 1.f;
+					RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
+					break;
 				}
 			}
 		}
