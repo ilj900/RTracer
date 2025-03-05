@@ -206,7 +206,7 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 				else
 				{
 					/// Refraction
-					TangentSpaceViewDirection = EtaRatio * TangentSpaceViewDirection - (EtaRatio * NDotI + sqrt(k)) * NewNormal;
+					TangentSpaceViewDirection = normalize(EtaRatio * TangentSpaceViewDirection - (EtaRatio * NDotI + sqrt(k)) * NewNormal);
 					BXDF.xyz *= EtaRatio * EtaRatio;
 					BXDF.w = 1.f;
 					/// Also, ray is now traveling in a new media
