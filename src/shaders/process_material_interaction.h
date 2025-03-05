@@ -209,6 +209,8 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 					TangentSpaceViewDirection = EtaRatio * TangentSpaceViewDirection - (EtaRatio * NDotI + sqrt(k)) * NewNormal;
 					BXDF.xyz *= EtaRatio * EtaRatio;
 					BXDF.w = 1.f;
+					/// Also, ray is now traveling in a new media
+					RayData.Eta = Material.SpecularIOR;
 					RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
 					break;
 				}
