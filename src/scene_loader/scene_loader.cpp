@@ -146,7 +146,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		{
 			for (int j = 0; j < 4; ++j)
 			{
-				auto SphereInstance = Render->CreateInstance(Sphere, { float(-2 + i) * 1.05f, float(2 - j) * 1.05f, 1 });
+				auto SphereInstance = Render->CreateInstance(Sphere, { float(-2 + j) * 1.05f, float(2 - i) * 1.05f, 1 });
 				auto Material = Render->CreateRefractiveMaterial({ 1, 1, 1 });
 				Render->MaterialSetTransmissionRoughness(Material, i * 0.25f + j * 0.0625f);
 				Render->ShapeSetMaterial(SphereInstance, Material);

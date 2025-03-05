@@ -106,7 +106,7 @@ void main()
 
     if (PushConstants.BounceIndex == 0)
     {
-        SampledColor = vec3(texture(IBLTextureSamplerLinear, vec2(Phi, Theta)));
+        SampledColor = vec3(texture(IBLTextureSamplerNearest, vec2(Phi, Theta)));
     }
     else
     {
