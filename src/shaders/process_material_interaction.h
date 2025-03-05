@@ -165,14 +165,14 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 			/// NDotI also equals to cos(angle)
 			/// Ray's direction is inverted cause normal is guaranteed to be visible.
 			float NDotI = dot(NewNormal, -TangentSpaceViewDirection);
-
-			float RTheta = R0 + (1. - R0) * pow(1. - abs(NDotI), 5.f);
+			float RTheta = R0 + (1. - R0) * pow(1. - NDotI, 5.f);
 
 			/// Decide on whether the ray is reflected or refracted
 			float RF = RandomFloat(SamplingState);
 
 			if (RF < RTheta)
 			{
+				/// Reflected it be
 				TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
 
 				/// If reflected ray's on the correct side, then it's done.

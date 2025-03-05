@@ -157,7 +157,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 			Render->ShapeSetMaterial(SphereInstance, Material);
 		}
 
-		Render->SetIBL("../resources/sun.exr");
+		Render->SetIBL("../resources/palette.exr");
 	}
 	else if (Name == SCENE_DIRECTIONAL_LIGHT)
 	{
