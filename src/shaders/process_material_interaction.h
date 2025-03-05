@@ -166,7 +166,7 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 			/// Ray's direction is inverted cause normal is guaranteed to be visible.
 			float NDotI = dot(NewNormal, -TangentSpaceViewDirection);
 
-			float RTheta = R0 + (1. - R0) * pow(1. - NDotI, 5.f);
+			float RTheta = R0 + (1. - R0) * pow(1. - abs(NDotI), 5.f);
 
 			/// Decide on whether the ray is reflected or refracted
 			float RF = RandomFloat(SamplingState);
