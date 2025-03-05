@@ -207,7 +207,14 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 				{
 					/// Refraction
 					TangentSpaceViewDirection = normalize(EtaRatio * TangentSpaceViewDirection - (EtaRatio * NDotI + sqrt(k)) * NewNormal);
-					BXDF.xyz *= EtaRatio * EtaRatio;
+					if (bFrontFacing)
+					{
+						BXDF.xyz *= EtaRatio * EtaRatio;
+					}
+					else
+					{
+						BXDF.xyz = vec3(1);
+					}
 					BXDF.w = 1.f;
 					/// Also, ray is now traveling in a new media
 					RayData.Eta = Material.SpecularIOR;
