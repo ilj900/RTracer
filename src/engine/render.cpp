@@ -695,7 +695,7 @@ ECS::FEntity FRender::CreateRefractiveMaterial(const FVector3& BaseColor)
 
 	MATERIAL_SYSTEM()->SetTransmissionWeight(NewMaterial, 1.f);
 	MATERIAL_SYSTEM()->SetTransmissionColor(NewMaterial, BaseColor);
-	MATERIAL_SYSTEM()->SetSpecularIOR(NewMaterial, 1.5f);
+	MATERIAL_SYSTEM()->SetSpecularIOR(NewMaterial, 1.45f);
 
 	return NewMaterial;
 }

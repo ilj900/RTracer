@@ -140,20 +140,20 @@ void FSceneLoader::LoadScene(const std::string& Name)
 	}
 	else if (Name == SCENE_ROUGH_GLASS)
 	{
-		auto Sphere = Render->CreateUVSphere(512, 256, 0.5f);
+		auto Sphere = Render->CreateUVSphere(512, 256, 1.f);
 
 		for (int i = 0; i < 4; ++i)
 		{
 			for (int j = 0; j < 4; ++j)
 			{
-				auto SphereInstance = Render->CreateInstance(Sphere, { float(-2 + j) * 1.05f, float(2 - i) * 1.05f, 1 });
+				auto SphereInstance = Render->CreateInstance(Sphere, { 0, float(1 - j) * 2.1f, float(-2 + i) * 2.1f });
 				auto Material = Render->CreateRefractiveMaterial({ 1, 1, 1 });
 				Render->MaterialSetTransmissionRoughness(Material, i * 0.25f + j * 0.0625f);
 				Render->ShapeSetMaterial(SphereInstance, Material);
 			}
 		}
 
-		Render->SetIBL("../resources/palette.exr");
+		Render->SetIBL("../resources/sun.exr");
 	}
 	else if (Name == SCENE_DIRECTIONAL_LIGHT)
 	{
