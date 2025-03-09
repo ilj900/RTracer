@@ -208,13 +208,14 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 					/// Refraction
 					TangentSpaceViewDirection = normalize(EtaRatio * TangentSpaceViewDirection - (EtaRatio * NDotI + sqrt(k)) * NewNormal);
 
+					/// If the ray is leaving the surface, then we don't account for transmission color.
 					if (bFrontFacing)
 					{
 						BXDF.xyz *= EtaRatio * EtaRatio;
 					}
 					else
 					{
-						BXDF.xyz = vec3(1);
+						BXDF.xyz = vec3(EtaRatio * EtaRatio);
 					}
 
 					BXDF.w = 1.f;
