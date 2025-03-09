@@ -163,9 +163,9 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 			vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, RandomSquare.x, RandomSquare.y).xzy;
 
 			/// NDotI also equals to cos(angle)
-			/// Ray's direction is inverted cause normal is guaranteed to be visible.
-			float NDotI = dot(NewNormal, -TangentSpaceViewDirection);
-			float RTheta = R0 + (1. - R0) * pow(1. - NDotI, 5.f);
+			float NDotI = dot(NewNormal, TangentSpaceViewDirection);
+			/// We use abs(NDotI) cause TangentSpaceViewDirection was pointing "to" the surface
+			float RTheta = R0 + (1. - R0) * pow(1. - abs(NDotI), 5.f);
 
 			/// Decide on whether the ray is reflected or refracted
 			float RF = RandomFloat(SamplingState);
@@ -187,7 +187,7 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 			else
 			{
 				/// Refraction or TIR is happening
-				float k = 1. - EtaRatio * EtaRatio * (1. - NDotI * NDotI);
+				float k = 1. - (EtaRatio * EtaRatio * (1. - (NDotI * NDotI)));
 
 				if (k < 0.)
 				{
@@ -207,6 +207,7 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 				{
 					/// Refraction
 					TangentSpaceViewDirection = normalize(EtaRatio * TangentSpaceViewDirection - (EtaRatio * NDotI + sqrt(k)) * NewNormal);
+
 					if (bFrontFacing)
 					{
 						BXDF.xyz *= EtaRatio * EtaRatio;
@@ -215,6 +216,7 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 					{
 						BXDF.xyz = vec3(1);
 					}
+
 					BXDF.w = 1.f;
 					/// Also, ray is now traveling in a new media
 					RayData.Eta = Material.SpecularIOR;

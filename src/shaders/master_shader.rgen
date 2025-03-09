@@ -12,6 +12,8 @@
 bool b = false;
 #endif
 
+vec4 DebugGlobal = vec4(0);
+
 #include "common_defines.h"
 #include "common_structures.h"
 #include "random.h"
@@ -453,10 +455,10 @@ void main()
     uvec2 PixelCoords = uvec2(PixelIndex % PushConstants.Width, PixelIndex / PushConstants.Width);
 
 #ifdef DEBUG_PRINTF
-    if (PixelCoords.x == PushConstants.Width / 2 && PixelCoords.y == PushConstants.Height / 2 && PushConstants.BounceIndex == 0)
+    if (PixelCoords.x == PushConstants.Width / 2 && PixelCoords.y == PushConstants.Height / 2 /*&& PushConstants.BounceIndex == 0*/)
     {
         b = true;
-        //debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
+        debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
     }
 #endif
 
@@ -563,6 +565,6 @@ void main()
     if(PushConstants.BounceIndex == 0)
     {
         SaveAOVs(PixelCoords, NormalInWorldSpace, NormalInWorldSpace, TextureCoords, WorldSpacePosition, 1., Depth,
-        Material.BaseColor, TotalIncomingLight, Hit.RenderableIndex, Hit.PrimitiveIndex, PushConstants.MaterialIndex, vec4(1));
+        Material.BaseColor, TotalIncomingLight, Hit.RenderableIndex, Hit.PrimitiveIndex, PushConstants.MaterialIndex, DebugGlobal);
     }
 }
