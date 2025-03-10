@@ -1,58 +1,42 @@
 import numpy as np
 from PIL import Image
-import matplotlib.pyplot as plt
 
 
-def create_roughness_texture(size=512, center_square_ratio=0.3, save_path="roughness_texture.png"):
-    """
-    Create a square roughness texture where the edges are 0 and a center square is 1.
+def create_roughness_texture(image_size=1024, center_square_ratio=0.75,
+                             edge_roughness=0, center_roughness=1,
+                             save_path="roughness_texture.png"):
+    # Create texture with edge_roughness
+    texture = np.ones((image_size, image_size), dtype=np.float32) * edge_roughness
 
-    Parameters:
-    -----------
-    size : int
-        Size of the output image (will be size x size pixels)
-    center_square_ratio : float
-        Ratio of the center square size to the full image size (0.0 to 1.0)
-    save_path : str
-        Path to save the output image
+    # Calculate center square dimensions
+    center_size = int(image_size * center_square_ratio)
+    start_pixel = (image_size - center_size) // 2
+    end_pixel = start_pixel + center_size
 
-    Returns:
-    --------
-    numpy.ndarray
-        The generated roughness texture
-    """
-    # Create an empty image (all zeros)
-    texture = np.zeros((size, size), dtype=np.float32)
+    # Set center square to center_roughness
+    texture[start_pixel:end_pixel, start_pixel:end_pixel] = center_roughness
 
-    # Calculate the center square dimensions
-    center_size = int(size * center_square_ratio)
-    start_idx = (size - center_size) // 2
-    end_idx = start_idx + center_size
+    # Apply inverse gamma correction to counteract sRGB conversion
+    gamma_corrected = np.power(texture, 1 / 2.2)
 
-    # Set the center square to 1
-    texture[start_idx:end_idx, start_idx:end_idx] = 0.25
+    # Convert to 8-bit grayscale image
+    texture_image = (gamma_corrected * 255).astype(np.uint8)
 
     # Save the image
-    plt.figure(figsize=(6, 6))
-    plt.imshow(texture, cmap='gray', vmin=0, vmax=1)
-    plt.title("Roughness Texture")
-    plt.colorbar(label="Roughness Value")
-    plt.savefig(save_path, dpi=300, bbox_inches='tight')
-    plt.close()
+    img = Image.fromarray(texture_image, mode='L')
+    img.save(save_path)
 
-    # Also save as a raw PNG (without matplotlib formatting)
-    im = Image.fromarray((texture * 255).astype(np.uint8))
-    im.save(save_path.replace(".png", "_raw.png"))
-
-    print(f"Roughness texture saved to {save_path} and {save_path.replace('.png', '_raw.png')}")
-
+    print(f"Roughness texture saved to {save_path}")
     return texture
 
 
 # Example usage
 if __name__ == "__main__":
-    texture = create_roughness_texture(
-        size=1024,
-        center_square_ratio=0.75,
-        save_path="roughness_texture.png"
-    )
+    # Default: edges=0, center=1
+    create_roughness_texture(save_path="roughness_0_1.png")
+
+    # Edges=0, center=0.5
+    create_roughness_texture(center_roughness=0.5, save_path="roughness_0_0.5.png")
+
+    # Edges=0, center=0.25
+    create_roughness_texture(center_roughness=0.25, save_path="roughness_0_0.25.png")
