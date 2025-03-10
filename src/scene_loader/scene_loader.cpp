@@ -155,6 +155,25 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->SetIBL("../resources/sun.exr");
 	}
+	else if (Name == SCENE_GLASS_PLANES)
+	{
+		auto Plane = Render->CreateModel("../models/glass_plane.obj");
+
+		auto SolidPlane = Render->CreateInstance(Plane, { 0, 0, 0});
+		auto GlassPlane = Render->CreateInstance(Plane, { 0, 3, 0}, {0, 0, 1}, {0, 1, 0});
+
+		auto SolidMaterial = Render->CreateDiffuseMaterial({ 1, 1, 1 });
+		auto CheckerboardTexture = Render->CreateTexture("../resources/Checkerboard_32.png");
+		Render->MaterialSetBaseColor(SolidMaterial, CheckerboardTexture);
+		auto GlassMaterial = Render->CreateRefractiveMaterial({ 1, 1, 1 });
+		auto RoughnessTexture = Render->CreateTexture("../resources/roughness_texture_0.5.png");
+		Render->MaterialSetTransmissionRoughness(GlassMaterial, RoughnessTexture);
+
+		Render->ShapeSetMaterial(SolidPlane, SolidMaterial);
+		Render->ShapeSetMaterial(GlassPlane, GlassMaterial);
+
+		Render->SetIBL("../resources/sun.exr");
+	}
 	else if (Name == SCENE_DIRECTIONAL_LIGHT)
 	{
 		auto Plane = Render->CreatePlane({1024, 1024});

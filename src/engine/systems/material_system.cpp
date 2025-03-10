@@ -336,7 +336,7 @@ namespace ECS
 		{
 			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.DiffuseRoughness = TextureComponent.TextureIndex;
+			MaterialComponent.TransmissionRoughnessTexture = TextureComponent.TextureIndex;
 			return *this;
 		}
 
