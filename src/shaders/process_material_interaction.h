@@ -164,8 +164,8 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 
 			/// NDotI also equals to cos(angle)
 			float NDotI = dot(NewNormal, TangentSpaceViewDirection);
-			/// We use abs(NDotI) cause TangentSpaceViewDirection was pointing "to" the surface
-			float RTheta = R0 + (1. - R0) * pow(1. - abs(NDotI), 5.f);
+			/// NDotI is negative cause TangentSpaceViewDirection was pointing "to" the surface, so we add it instead of subtracting
+			float RTheta = R0 + (1. - R0) * pow(1. + NDotI, 5.f);
 
 			/// Decide on whether the ray is reflected or refracted
 			float RF = RandomFloat(SamplingState);
@@ -222,6 +222,7 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 					/// Also, ray is now traveling in a new media
 					RayData.Eta = Material.SpecularIOR;
 					RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
+					DebugGlobal.xyz = RayData.Direction.xyz;
 					break;
 				}
 			}
