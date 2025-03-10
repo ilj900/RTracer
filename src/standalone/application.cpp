@@ -45,8 +45,8 @@ FApplication::~FApplication()
 int FApplication::Run()
 {
 	uint32_t ImageIndex = UINT32_MAX;
-	LoadCamera(Controller->Camera, Render, "../data/cameras/Test");
-	SceneLoader->LoadScene(SCENE_ROUGH_GLASS);
+	LoadCamera(Controller->Camera, Render, "../data/cameras/rough_glass_spheres");
+	SceneLoader->LoadScene(SCENE_GLASS_PLANES);
 
 	FSynchronizationPoint RenderingFinished;
 
