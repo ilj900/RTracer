@@ -564,6 +564,7 @@ void main()
 
     if(PushConstants.BounceIndex == 0)
     {
+        DebugGlobal = bFrontFacing ? vec4(1) : vec4(0);
         SaveAOVs(PixelCoords, NormalInWorldSpace, NormalInWorldSpace, TextureCoords, WorldSpacePosition, 1., Depth,
         Material.BaseColor, TotalIncomingLight, Hit.RenderableIndex, Hit.PrimitiveIndex, PushConstants.MaterialIndex, DebugGlobal);
     }
