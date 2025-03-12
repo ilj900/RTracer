@@ -160,13 +160,17 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto Plane = Render->CreateModel("../models/glass_plane.obj");
 
 		auto SolidPlane = Render->CreateInstance(Plane, { 0, 0, 0});
-		auto GlassPlane = Render->CreateInstance(Plane, { 0, 3, 0}, {0, 0, 1}, {0, 1, 0});
+		FVector3 Direction = {0, 0, 1};
+		FVector3 Up = {0, 1, 0};
+		Direction.SelfRotateZ(-15 / M_RAD);
+		Up.SelfRotateZ(-15 / M_RAD);
+		auto GlassPlane = Render->CreateInstance(Plane, { 0, 3, 0}, Direction, Up);
 
 		auto SolidMaterial = Render->CreateDiffuseMaterial({ 1, 1, 1 });
 		auto CheckerboardTexture = Render->CreateTexture("../resources/Checkerboard_32.png");
 		Render->MaterialSetBaseColor(SolidMaterial, CheckerboardTexture);
 		auto GlassMaterial = Render->CreateRefractiveMaterial({ 1, 1, 1 });
-		auto RoughnessTexture = Render->CreateTexture("../resources/roughness_texture_0.5.png");
+		auto RoughnessTexture = Render->CreateTexture("../resources/roughness_texture_1.0.png");
 		Render->MaterialSetTransmissionRoughness(GlassMaterial, RoughnessTexture);
 
 		Render->ShapeSetMaterial(SolidPlane, SolidMaterial);

@@ -21,6 +21,10 @@
 #define M_PI_4 (M_PI / 4.f)
 #endif
 
+#ifndef M_RAD
+#define M_RAD (180.f / M_PI)
+#endif
+
 ///The selected coordinate system is right handed
 ///X positive direction goes right
 ///Y positive direction goes up
@@ -103,7 +107,9 @@ struct FVector3
     FVector3 GetNormalized() const;
     FVector3& Normalize();
     FVector3 Rotate(float Angle, const FVector3& Axis);
+	FVector3& SelfRotateX(float Angle);
     FVector3& SelfRotateY(float Angle);
+	FVector3& SelfRotateZ(float Angle);
     float Length();
     float Length2();
     std::string ToString();

@@ -190,6 +190,24 @@ FVector3& FVector3::SelfRotateY(float Angle)
     return *this;
 }
 
+FVector3& FVector3::SelfRotateX(float Angle)
+{
+	float CosAngle = std::cos(Angle);
+	float SinAngle = std::sin(Angle);
+	auto RotationMatrix = FMatrix3(1, 0, 0, 0, CosAngle, -SinAngle, 0, SinAngle, CosAngle);
+	*this = *this * RotationMatrix;
+	return *this;
+}
+
+FVector3& FVector3::SelfRotateZ(float Angle)
+{
+	float CosAngle = std::cos(Angle);
+	float SinAngle = std::sin(Angle);
+	auto RotationMatrix = FMatrix3(CosAngle, -SinAngle, 0, SinAngle, CosAngle, 0, 0, 0, 1);
+	*this = *this * RotationMatrix;
+	return *this;
+}
+
 float FVector3::Length()
 {
     return sqrt(X * X + Y * Y + Z * Z);
