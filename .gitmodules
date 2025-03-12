@@ -13,3 +13,6 @@
 [submodule "3rdparty/Catch2"]
 	path = 3rdparty/Catch2
 	url = https://github.com/catchorg/Catch2.git
+[submodule "3rdparty/imGuIZMO.quat"]
+	path = 3rdparty/imGuIZMO.quat
+	url = https://github.com/BrutPitt/imGuIZMO.quat.git
