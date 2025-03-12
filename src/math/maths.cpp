@@ -23,6 +23,13 @@ FQuaternion FQuaternion::GetConjugation()
     return {W, X == 0.f ? X : -X, Y == 0.f ? Y : -Y, Z == 0.f ? Z : -Z};
 };
 
+FQuaternion FQuaternion::GetNormalized()
+{
+    float Length = W * W + X * X + Y * Y + Z * Z;
+	Length = sqrt(Length);
+	return FQuaternion(W / Length, X / Length, Y / Length, Z / Length);
+};
+
 FQuaternion operator*(const FQuaternion& A, const FQuaternion& B)
 {
     FQuaternion Result;
@@ -762,6 +769,23 @@ FVector3 cross(FVector3 A, FVector3 B)
 float max(float A, float B)
 {
 	return (A > B) ? A : B;
+}
+
+FQuaternion QuatFromVectors(const FVector3& Right, const FVector3& Up, const FVector3& Front)
+{
+	FQuaternion Result;
+	Result.W = 0.5f * sqrt(abs(1 + Right.X + Up.Y + Front.Z));
+
+	Result.X = 0.5f * sqrt(abs(1 + Right.X - Up.Y - Front.Z));
+	Result.X = (Front.Y - Up.Z) < 0 ? -Result.X : Result.X;
+
+	Result.Y = 0.5f * sqrt(abs(1 - Right.X + Up.Y - Front.Z));
+	Result.Y = (Right.Z - Front.X) < 0 ? -Result.Y : Result.Y;
+
+	Result.Z = 0.5f * sqrt(abs(1 - Right.X - Up.Y + Front.Z));
+	Result.Z = (Up.X - Right.Y) < 0 ? -Result.Z : Result.Z;
+
+	return Result.GetNormalized();
 }
 
 uint32_t Log2(uint32_t Integer)

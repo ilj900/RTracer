@@ -182,7 +182,13 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 
 	if (ImGui::Begin("Axes hint", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings ))
 	{
-		quat qRot = quat(1.f, 0.f, 0.f, 0.2f);
+		FVector3 Right{};
+		FVector3 Up{};
+		FVector3 Front{};
+		Render->GetCameraPosition(&Right, &Front, &Up, {});
+		Right = Cross(Front, Up);
+		auto Quat = QuatFromVectors(Right, Up, -Front);
+		quat qRot = quat(Quat.W, Quat.X, Quat.Y, Quat.Z);
 		ImGui::gizmo3D(" ", qRot, GizmoSize);
 
 		ImGui::End();

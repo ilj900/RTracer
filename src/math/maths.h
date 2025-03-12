@@ -44,6 +44,7 @@ struct FQuaternion
     /// Functions
     FQuaternion GetConjugation();
     FQuaternion GetInverse();
+	FQuaternion GetNormalized();
 
     /// Data
     float X = 0.f;
@@ -233,6 +234,8 @@ FMatrix4 GetPerspective(float FOV, float AspectRatio, float NearDistance, float 
 FVector3 normalize(FVector3 Vec);
 FVector3 cross(FVector3 A, FVector3 B);
 float max(float A, float B);
+
+FQuaternion QuatFromVectors(const FVector3& Right, const FVector3& Up, const FVector3& Front);
 
 /// Template specializations for hashing functions
 template<>
