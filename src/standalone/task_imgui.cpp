@@ -2,9 +2,12 @@
 #include "vk_context.h"
 #include "vk_debug.h"
 
+#define IMGUI_DEFINE_MATH_OPERATORS
+
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
+#include "imGuIZMO.quat/imGuIZMO.quat/imGuIZMOquat.h"
 #include "ImGuiProfilerRenderer.h"
 
 #include "GLFW/glfw3.h"
@@ -170,6 +173,19 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 		ProfilerData.gpuGraph.LoadFrameData(GPUTasks.data(), GPUTasks.size());
 
 		ProfilerData.Render();
+	}
+
+	float GizmoSize = 200.f;
+	float GizmoHalfSize = GizmoSize * 0.5f;
+	ImVec2 viewportSize = ImGui::GetMainViewport()->Size;
+	ImGui::SetNextWindowPos(ImVec2(viewportSize.x - GizmoHalfSize, GizmoHalfSize), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+
+	if (ImGui::Begin("Axes hint", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings ))
+	{
+		quat qRot = quat(1.f, 0.f, 0.f, 0.2f);
+		ImGui::gizmo3D(" ", qRot, GizmoSize);
+
+		ImGui::End();
 	}
 
 	{
