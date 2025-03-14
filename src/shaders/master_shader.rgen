@@ -294,7 +294,7 @@ vec3 ComputePointLightInput(FSamplingState SamplingState, uint PointLightsCount,
     RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
 
     /// Trace the ray
-    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
+    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, LightDistance, 0);
 
     /// And if we didn't hit any geometry, then we store light data
     if (SimpleHitPayload.PayloadFlags == 0)

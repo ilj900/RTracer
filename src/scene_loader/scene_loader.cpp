@@ -279,7 +279,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto Sphere = Render->CreateIcosahedronSphere(0.5f, 5, false);
 		auto Cube = Render->CreateCube();
 
-		auto BackWall = Render->CreateInstance(Wall, {0, 0, -2}, {0, 0, -1}, {0, 1, 0});
+		auto BackWall = Render->CreateInstance(Wall, {0, 0, -2}, {0, 0, 1}, {0, 1, 0});
 		auto TopWall = Render->CreateInstance(Wall, {0, 2, 0}, {0, -1, 0}, {0, 0, 1});
 		auto BottomWall = Render->CreateInstance(Wall, {0, -2, 0}, {0, 1, 0}, {0, 0, -1});
 		auto LeftWall = Render->CreateInstance(Wall, {-2, 0, 0}, {1, 0, 0}, {0, 1, 0});
@@ -306,7 +306,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		Render->ShapeSetMaterial(Sphere3, PlasticMaterial);
 		Render->ShapeSetMaterial(Instances.back(), PlasticMaterial);
 
-		auto Light = Render->CreatePointLight({0, 1.95, 0}, {1, 1, 1}, 1);
+		auto Light = Render->CreatePointLight({0, 1.8, 0}, {1, 1, 1}, 1);
 
 		Render->SetIBL("../resources/brown_photostudio_02_4k.exr");
 
@@ -339,14 +339,14 @@ void FSceneLoader::LoadScene(const std::string& Name)
 	else if (Name == SCENE_BIG_PLANES)
 	{
 		auto Wall = Render->CreatePlane({10, 10});
-		auto BackWall1 = Render->CreateInstance(Wall, {0, 0, 0}, {0, 0, -1}, {0, 1, 0});
-		auto BackWall = Render->CreateInstance(Wall, {0, 0, 1}, {0, 0, -1}, {0, 1, 0});
+		auto Wall1 = Render->CreateInstance(Wall, {0.5f, 0, 0}, {1, 0, 0}, {0, 1, 0});
+		auto Wall2 = Render->CreateInstance(Wall, {-0.5f, 0, 0}, {1, 0, 0}, {0, 1, 0});
 
 		auto RedMaterial = Render->CreateDiffuseMaterial({1, 0, 0});
 		auto GreenMaterial = Render->CreateDiffuseMaterial({0, 1, 0});
 
-		Render->ShapeSetMaterial(BackWall1, RedMaterial);
-		Render->ShapeSetMaterial(BackWall, GreenMaterial);
+		Render->ShapeSetMaterial(Wall1, RedMaterial);
+		Render->ShapeSetMaterial(Wall2, GreenMaterial);
 
 		Render->SetIBL("../resources/hdr_image.exr");
 	}

@@ -46,7 +46,7 @@ int FApplication::Run()
 {
 	uint32_t ImageIndex = UINT32_MAX;
 	//LoadCamera(Controller->Camera, Render, "../data/cameras/rough_glass_spheres");
-	SceneLoader->LoadScene(SCENE_GLASS_PLANES);
+	SceneLoader->LoadScene(SCENE_CORNELL_BOX_ANIMATED);
 
 	FSynchronizationPoint RenderingFinished;
 
