@@ -1262,9 +1262,20 @@ ECS::FEntity FRender::CreateInstance(ECS::FEntity BaseModel, const FVector3& Pos
     return MeshInstance;
 }
 
-void FRender::SetInstancePosition(ECS::FEntity Instance, const FVector3& Position)
+void FRender::SetInstancePosition(ECS::FEntity Instance, const FVector3& Position,  const std::optional<FVector3>& Direction, const std::optional<FVector3>& Up)
 {
 	auto& TransformComponent = TRANSFORM_SYSTEM()->GetComponent<ECS::COMPONENTS::FTransformComponent>(Instance);
+
+	if (Direction)
+	{
+		TransformComponent.Direction = Direction.value();
+	}
+
+	if (Up)
+	{
+		TransformComponent.Up = Up.value();
+	}
+
 	TRANSFORM_SYSTEM()->SetTransform(Instance, Position, TransformComponent.Direction, TransformComponent.Up);
 	ACCELERATION_STRUCTURE_SYSTEM()->UpdateInstancePosition(Instance);
 }

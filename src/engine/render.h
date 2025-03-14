@@ -180,7 +180,7 @@ public:
     ECS::FEntity CreateModel(const std::string& Path);
 
     ECS::FEntity CreateInstance(ECS::FEntity BaseModel, const FVector3& Position, const FVector3& Direction = {0, 0, 1}, const FVector3& Up = {0, 1 ,0}, const FVector3& Scale = {1, 1 ,1});
-	void SetInstancePosition(ECS::FEntity Instance, const FVector3& Position);
+	void SetInstancePosition(ECS::FEntity Instance, const FVector3& Position, const std::optional<FVector3>& Direction, const std::optional<FVector3>& Up);
 	FVector3 GetInstancePosition(ECS::FEntity Instance);
 
 	/// Lights

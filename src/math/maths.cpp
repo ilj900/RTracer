@@ -192,7 +192,7 @@ FVector3& FVector3::SelfRotateY(float Angle)
 {
     float CosAngle = std::cos(Angle);
     float SinAngle = std::sin(Angle);
-    auto RotationMatrix = FMatrix3(CosAngle, 0, SinAngle, 0, 1, 0, -SinAngle, 0, CosAngle);
+    auto RotationMatrix = FMatrix3(CosAngle, 0, -SinAngle, 0, 1, 0, SinAngle, 0, CosAngle);
     *this = *this * RotationMatrix;
     return *this;
 }
@@ -201,7 +201,7 @@ FVector3& FVector3::SelfRotateX(float Angle)
 {
 	float CosAngle = std::cos(Angle);
 	float SinAngle = std::sin(Angle);
-	auto RotationMatrix = FMatrix3(1, 0, 0, 0, CosAngle, -SinAngle, 0, SinAngle, CosAngle);
+	auto RotationMatrix = FMatrix3(1, 0, 0, 0, CosAngle, SinAngle, 0, -SinAngle, CosAngle);
 	*this = *this * RotationMatrix;
 	return *this;
 }
@@ -210,7 +210,7 @@ FVector3& FVector3::SelfRotateZ(float Angle)
 {
 	float CosAngle = std::cos(Angle);
 	float SinAngle = std::sin(Angle);
-	auto RotationMatrix = FMatrix3(CosAngle, -SinAngle, 0, SinAngle, CosAngle, 0, 0, 0, 1);
+	auto RotationMatrix = FMatrix3(CosAngle, SinAngle, 0, -SinAngle, CosAngle, 0, 0, 0, 1);
 	*this = *this * RotationMatrix;
 	return *this;
 }
@@ -711,8 +711,8 @@ FMatrix4 GetRotationMatrixZ(float Angle)
 FMatrix4 Transform(const FVector3& Position, const FVector3& Direction, const FVector3& Up, const FVector3& Scale)
 {
 	FVector3 F = Direction.GetNormalized();
-	FVector3 R = Cross(F, Up).GetNormalized();
-	FVector3 U = Cross(F, R);
+	FVector3 R = Cross(Up, F).GetNormalized();
+	FVector3 U = Cross(R, F);
 
 	R *= Scale.X;
 	U *= Scale.Y;

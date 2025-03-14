@@ -36,7 +36,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 				auto NewInstanceCoordinates = Render->GetInstancePosition(Instance);
 				float R = sqrt(NewInstanceCoordinates.X * NewInstanceCoordinates.X + NewInstanceCoordinates.Z * NewInstanceCoordinates.Z);
 				NewInstanceCoordinates.Y = sin((R / 4 + CurrentTime)) * 2 - 5.f;
-				Render->SetInstancePosition(Instance, NewInstanceCoordinates);
+				Render->SetInstancePosition(Instance, NewInstanceCoordinates, {}, {});
 			}
 
 			auto NewLightCoordinates = Render->GetLightPosition(Lights.back()).SelfRotateY(DeltaTime);
@@ -164,7 +164,8 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		FVector3 Up = {0, 1, 0};
 		Direction.SelfRotateZ(-15 / M_RAD);
 		Up.SelfRotateZ(-15 / M_RAD);
-		auto GlassPlane = Render->CreateInstance(Plane, { 0, 3, 0}, Direction, Up);
+		static FVector3 Position = { 0, 3, 0};
+		static auto GlassPlane = Render->CreateInstance(Plane, Position, Direction, Up);
 
 		auto SolidMaterial = Render->CreateDiffuseMaterial({ 1, 1, 1 });
 		auto CheckerboardTexture = Render->CreateTexture("../resources/Checkerboard_32.png");
@@ -177,6 +178,15 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		Render->ShapeSetMaterial(GlassPlane, GlassMaterial);
 
 		Render->SetIBL("../resources/sun.exr");
+
+		//Updater = [&](float, float CurrentTime)
+		//{
+		//	FVector3 Direction = {0, 0, 1};
+		//	FVector3 Up = {0, 1, 0};
+		//	Direction.SelfRotateZ(15 * CurrentTime / M_RAD);
+		//	Up.SelfRotateZ(15 * CurrentTime / M_RAD);
+		//	Render->SetInstancePosition(GlassPlane, Position, Direction, Up);
+		//};
 	}
 	else if (Name == SCENE_DIRECTIONAL_LIGHT)
 	{
@@ -305,7 +315,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 			auto NewInstanceCoordinates = Render->GetInstancePosition(Instances.back());
 			float R = sqrt(NewInstanceCoordinates.X * NewInstanceCoordinates.X + NewInstanceCoordinates.Z * NewInstanceCoordinates.Z);
 			NewInstanceCoordinates.Y = sin((R / 4 + CurrentTime)) * 2;
-			Render->SetInstancePosition(Instances.back(), NewInstanceCoordinates);
+			Render->SetInstancePosition(Instances.back(), NewInstanceCoordinates, {}, {});
 		};
 
 	}
