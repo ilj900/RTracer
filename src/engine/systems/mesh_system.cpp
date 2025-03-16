@@ -362,35 +362,37 @@ namespace ECS
 		{
 			auto& MeshComponent = GetComponent<ECS::COMPONENTS::FMeshComponent>(Entity);
 			auto& Vertices = MeshComponent.Vertices;
-			Vertices.resize((LongitudeCount + 1) * (LatitudeCount - 1) + 2);
+			Vertices.resize((LongitudeCount) * (LatitudeCount - 1) + 2);
 
 			Vertices[0] = {0, Radius, 0, 0, 1, 0, 0, 0};
 
-			float LongitudeAngleStep = M_2_PI / float(LongitudeCount);
-			float LatitudeAngleStep = M_PI / float(LatitudeCount);
-			float UVLongitudeStep = 1.f / float(LongitudeCount);
-			float UVLatitudeStep = 1.f / float(LatitudeCount);
-			float CurrentLatitudeAngle = M_PI_2;
+			float PhiStep = M_2_PI / float(LongitudeCount);
+			float ThetaStep = M_PI / float(LatitudeCount);
+			float UStep = 1.f / float(LongitudeCount);
+			float VStep = 1.f / float(LatitudeCount);
+			float CurrentTheta = 0;
 			FVector2 UV = {};
+			int Index = 1;
 
 			for (int i = 0; i < (LatitudeCount - 1); ++i)
 			{
-				CurrentLatitudeAngle -= LatitudeAngleStep;
-				float CurrentLongitudeAngle = 0;
-				UV.Y += UVLatitudeStep;
+				CurrentTheta += ThetaStep;
+				float CurrentPhi = 0;
+				UV.Y += VStep;
 				UV.X = 0;
 
-				for (int j = 0; j < (LongitudeCount + 1); ++j)
+				for (int j = 0; j < LongitudeCount; ++j)
 				{
-					float X = abs(cos(CurrentLatitudeAngle)) * sin(CurrentLongitudeAngle);
-					float Y = sin(CurrentLatitudeAngle);
-					float Z = abs(cos(CurrentLatitudeAngle)) * cos(CurrentLongitudeAngle);
+					float X = sin(CurrentTheta) * sin(CurrentPhi);
+					float Y = cos(CurrentTheta);
+					float Z = sin(CurrentTheta) * cos(CurrentPhi);
 					FVector3 Coordinates = {X, Y, Z};
-					uint32_t Index = i * (LongitudeCount + 1) + j + 1;
 					Vertices[Index] = {Coordinates.X * Radius, Coordinates.Y * Radius, Coordinates.Z * Radius, Coordinates.X, Coordinates.Y, Coordinates.Z, UV.X, UV.Y};
 
-					CurrentLongitudeAngle += LongitudeAngleStep;
-					UV.X += UVLongitudeStep;
+					CurrentPhi += PhiStep;
+					UV.X += UStep;
+
+					Index++;
 				}
 			}
 
@@ -404,16 +406,25 @@ namespace ECS
 				/// Emplace upper cap of the sphere
 				int i = 0;
 
-				for (; i < LongitudeCount; ++i)
+				for (; i < LongitudeCount - 1; ++i)
 				{
 					Indices[i * 3] = 0;
 					Indices[i * 3 + 1] = i + 1;
 					Indices[i * 3 + 2] = i + 2;
 				}
+
+				Indices[i * 3] = 0;
+				Indices[i * 3 + 1] = i + 1;
+				Indices[i * 3 + 2] = 1;
+
 			}
 
-			uint32_t StartingIndex = LongitudeCount * 3;
-			uint32_t StartingValue = 1;
+			Index = LongitudeCount * 3;
+			uint32_t FaceStep = LongitudeCount;
+			uint32_t TopLeft = 1;
+			uint32_t TopRight;
+			uint32_t BotLeft;
+			uint32_t BotRight;
 
 			for (int j = 0; j < (LatitudeCount - 2); ++j)
 			{
@@ -421,36 +432,53 @@ namespace ECS
 
 				for (; i < LongitudeCount - 1; ++i)
 				{
-					uint32_t Index = ((j * LongitudeCount) + i) * 6;
-					Indices[StartingIndex + Index] = StartingValue + (j * (LongitudeCount + 1) + i);
-					Indices[StartingIndex + Index + 1] = StartingValue + ((j + 1) * (LongitudeCount + 1) + i);
-					Indices[StartingIndex + Index + 2] = StartingValue + (j * (LongitudeCount + 1) + i + 1);
-					Indices[StartingIndex + Index + 3] = StartingValue + ((j + 1) * (LongitudeCount + 1) + i);
-					Indices[StartingIndex + Index + 4] = StartingValue + ((j + 1) * (LongitudeCount + 1) + i + 1);
-					Indices[StartingIndex + Index + 5] = StartingValue + (j * (LongitudeCount + 1) + i + 1);
+					TopRight = TopLeft + 1;
+					BotLeft = TopLeft + FaceStep;
+					BotRight = BotLeft + 1;
+
+					Indices[Index++] = TopLeft;
+					Indices[Index++] = BotLeft;
+					Indices[Index++] = BotRight;
+					Indices[Index++] = TopLeft;
+					Indices[Index++] = BotRight;
+					Indices[Index++] = TopRight;
+
+					TopLeft++;
 				}
 
-				uint32_t Index = ((j * LongitudeCount) + i) * 6;
-				Indices[StartingIndex + Index] = StartingValue + (j * (LongitudeCount + 1) + i);
-				Indices[StartingIndex + Index + 1] = StartingValue + ((j + 1) * (LongitudeCount + 1) + i);
-				Indices[StartingIndex + Index + 2] = StartingValue + (j * (LongitudeCount + 1) + i + 1);
-				Indices[StartingIndex + Index + 3] = StartingValue + ((j + 1) * (LongitudeCount + 1) + i);
-				Indices[StartingIndex + Index + 4] = StartingValue + ((j + 1) * (LongitudeCount + 1) + i + 1);
-				Indices[StartingIndex + Index + 5] = StartingValue + (j * (LongitudeCount + 1) + i + 1);
+				TopRight = TopLeft + 1 - FaceStep;
+				BotLeft = TopLeft + FaceStep;
+				BotRight = BotLeft + 1 - FaceStep;
+
+				Indices[Index++] = TopLeft;
+				Indices[Index++] = BotLeft;
+				Indices[Index++] = BotRight;
+				Indices[Index++] = TopLeft;
+				Indices[Index++] = BotRight;
+				Indices[Index++] = TopRight;
+
+				TopLeft++;
 			}
 
 			{
-				StartingIndex += (LatitudeCount - 2) * LongitudeCount * 6;
-				StartingValue += (LatitudeCount - 2) * (LongitudeCount + 1);
-
 				uint32_t i = 0;
 
-				for (; i < LongitudeCount; ++i)
+				for (; i < LongitudeCount - 1; ++i)
 				{
-					Indices[StartingIndex + i * 3] = StartingValue + i;
-					Indices[StartingIndex + i * 3 + 1] = Vertices.size() - 1;
-					Indices[StartingIndex + i * 3 + 2] = StartingValue + i + 1;
+					TopRight = TopLeft + 1;
+
+					Indices[Index++] = TopLeft;
+					Indices[Index++] = Vertices.size() - 1;
+					Indices[Index++] = TopRight;
+
+					TopLeft++;
 				}
+
+				TopRight = TopLeft + 1 - FaceStep;
+
+				Indices[Index++] = TopLeft;
+				Indices[Index++] = Vertices.size() - 1;
+				Indices[Index++] = TopRight;
 			}
 		}
 
