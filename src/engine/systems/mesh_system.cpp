@@ -372,7 +372,7 @@ namespace ECS
 			float VStep = 1.f / float(LatitudeCount);
 			float CurrentTheta = 0;
 			FVector2 UV = {};
-			int Index = 1;
+			uint32_t Index = 1;
 
 			for (int i = 0; i < (LatitudeCount - 1); ++i)
 			{
