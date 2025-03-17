@@ -1,3 +1,5 @@
+#include "render.h"
+
 #include "scene_loader.h"
 
 FSceneLoader::FSceneLoader(std::shared_ptr<FRender> RenderIn) : Render(RenderIn)

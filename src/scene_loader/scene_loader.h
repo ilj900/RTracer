@@ -2,8 +2,6 @@
 
 #include <string>
 
-#include "render.h"
-
 #define SCENE_BIG_PLANES "Big Planes"
 #define SCENE_THREE_SPHERES "Three Spheres"
 #define SCENE_CORNELL_BOX_ANIMATED "Cornell Box Animated"
@@ -22,6 +20,8 @@
 #define SCENE_ROUGH_GLASS "Rough glass"
 #define SCENE_GLASS_PLANES "Glass planes"
 #define SCENE_WHITE_FURNACE "White furnace"
+
+class FRender;
 
 class FSceneLoader
 {
