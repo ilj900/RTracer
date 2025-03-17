@@ -6,7 +6,7 @@
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_nonuniform_qualifier : enable // ?
 
-#define DEBUG_PRINTF
+//#define DEBUG_PRINTF
 #ifdef DEBUG_PRINTF
 #extension GL_EXT_debug_printf : enable
 bool b = false;
@@ -209,11 +209,6 @@ out vec3 NormalInWorldSpace, out vec3 PointOfIntersectionInWorldSpace, out vec2 
         I1 = Inds.I[Hit.PrimitiveIndex * 3 + 1];
         I2 = Inds.I[Hit.PrimitiveIndex * 3 + 2];
 
-        if (b)
-        {
-            debugPrintfEXT("\nI0 = %i, I1 = %i, I2 = %i\n", I0, I1, I2);
-        }
-
         DV0 = Verts.V[I0];
         DV1 = Verts.V[I1];
         DV2 = Verts.V[I2];
@@ -230,41 +225,13 @@ out vec3 NormalInWorldSpace, out vec3 PointOfIntersectionInWorldSpace, out vec2 
     FVertex V1 = UnpackDeviceVertex(DV1);
     FVertex V2 = UnpackDeviceVertex(DV2);
 
-    if (b)
-    {
-        debugPrintfEXT("P0 = %1.3v3f, P1 = %1.3v3f, P2 = %1.3v3f\n", V0.Position, V1.Position, V2.Position);
-        debugPrintfEXT("N0 = %1.3v3f, N1 = %1.3v3f, N2 = %1.3v3f\n", V0.Normal, V1.Normal, V2.Normal);
-    }
-
     NormalInWorldSpace = (V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z);
-    if (b)
-    {
-        debugPrintfEXT("%1.3v3f ", NormalInWorldSpace);
-    }
+    /// Pay more attention to why vector * matrix, and not vice versa
     NormalInWorldSpace = NormalInWorldSpace * mat3(Transform.InverseModelMatrix);
-    if (b)
-    {
-        debugPrintfEXT("%1.3v3f ", NormalInWorldSpace);
-    }
     NormalInWorldSpace = normalize(NormalInWorldSpace);
 
-    if (b)
-    {
-        debugPrintfEXT("\n%1.3v3f\n", Transform.ModelMatrix[0]);
-        debugPrintfEXT("%1.3v3f\n", Transform.ModelMatrix[1]);
-        debugPrintfEXT("%1.3v3f\n\n", Transform.ModelMatrix[2]);
-    }
-
     PointOfIntersectionInWorldSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
-    if (b)
-    {
-        debugPrintfEXT("%1.3v3f\n", PointOfIntersectionInWorldSpace);
-    }
     PointOfIntersectionInWorldSpace = vec3(vec4(PointOfIntersectionInWorldSpace, 1.f) * Transform.ModelMatrix);
-    if (b)
-    {
-        debugPrintfEXT("%1.3v3f\n", PointOfIntersectionInWorldSpace);
-    }
 
     /// TODO: Can Hit.HitUV just be used?
     TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
