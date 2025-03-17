@@ -1250,7 +1250,6 @@ ECS::FEntity FRender::CreateInstance(ECS::FEntity BaseModel, const FVector3& Pos
 {
     auto MeshInstance = ACCELERATION_STRUCTURE_SYSTEM()->CreateInstance(BaseModel, Position, Direction, Up, Scale);
     RENDERABLE_SYSTEM()->SetRenderableDeviceAddress(MeshInstance, MESH_SYSTEM()->GetVertexBufferAddress(MeshInstance), MESH_SYSTEM()->GetIndexBufferAddress(MeshInstance));
-	TRANSFORM_SYSTEM()->SetTransform(MeshInstance, Position, Direction, Up, Scale);
     RENDERABLE_SYSTEM()->SyncTransform(MeshInstance);
     auto& MeshComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FMeshComponent>(BaseModel);
 

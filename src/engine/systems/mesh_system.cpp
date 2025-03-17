@@ -494,7 +494,7 @@ namespace ECS
 
             MeshComponent.Indexed = true;
             MeshComponent.Indices.resize(6);
-            MeshComponent.Indices = {0, 3, 2, 0, 2, 1};
+            MeshComponent.Indices = {0, 2, 3, 0, 1, 2};
         }
     }
 }
