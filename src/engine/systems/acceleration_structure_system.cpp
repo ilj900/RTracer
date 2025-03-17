@@ -80,9 +80,9 @@ namespace ECS
 
 			COORDINATOR().AddComponent<ECS::COMPONENTS::FMeshInstanceComponent>(NewMeshInstance, {});
             auto& MeshInstanceComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FMeshInstanceComponent>(NewMeshInstance);
-            MeshInstanceComponent.transform = { ModelMatrix[0].X, ModelMatrix[1].X, ModelMatrix[2].X, ModelMatrix[3].X,
-                                                ModelMatrix[0].Y, ModelMatrix[1].Y, ModelMatrix[2].Y, ModelMatrix[3].Y,
-                                                ModelMatrix[0].Z, ModelMatrix[1].Z, ModelMatrix[2].Z, ModelMatrix[3].Z,};
+            MeshInstanceComponent.transform = { ModelMatrix[0].X, ModelMatrix[0].Y, ModelMatrix[0].Z, ModelMatrix[0].W,
+                                                ModelMatrix[1].X, ModelMatrix[1].Y, ModelMatrix[1].Z, ModelMatrix[1].W,
+                                                ModelMatrix[2].X, ModelMatrix[2].Y, ModelMatrix[2].Z, ModelMatrix[2].W};
             MeshInstanceComponent.instanceCustomIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FMeshInstanceComponent>(NewMeshInstance);
             MeshInstanceComponent.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
             MeshInstanceComponent.mask = 0xFF;

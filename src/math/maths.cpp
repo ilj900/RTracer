@@ -712,17 +712,17 @@ FMatrix4 Transform(const FVector3& Position, const FVector3& Direction, const FV
 {
 	FVector3 F = Direction.GetNormalized();
 	FVector3 R = Cross(Up, F).GetNormalized();
-	FVector3 U = Cross(R, F);
+	FVector3 U = Cross(F, R);
 
 	R *= Scale.X;
 	U *= Scale.Y;
 	F *= Scale.Z;
 
 	FMatrix4 LocalToWorldMatrix = {
-		R.X, R.Y, R.Z, 0.f,
-		U.X, U.Y, U.Z, 0.f,
-		F.X, F.Y, F.Z, 0.f,
-		Position.X, Position.Y, Position.Z, 1.f,};
+		R.X, U.X, F.X, Position.X,
+		R.Y, U.Y, F.Y, Position.Y,
+		R.Z, U.Z, F.Z, Position.Z,
+		0, 0, 0, 1.f,};
 
 	return LocalToWorldMatrix;
 }

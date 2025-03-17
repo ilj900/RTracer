@@ -353,10 +353,13 @@ void FSceneLoader::LoadScene(const std::string& Name)
 	else if (Name == SCENE_COORDINATE_SYSTEM_REMINDER)
 	{
 		auto Sphere = Render->CreateUVSphere(64, 32, 0.5f);
+		//auto Plane = Render->CreatePlane({4, 4,});
+		
 		auto SphereX = Render->CreateInstance(Sphere, {3, 0, 0}, {1, 0, 0}, {0, 1, 0});
 		auto SphereY = Render->CreateInstance(Sphere, {0, 3, 0}, {1, 0, 0}, {0, 1, 0});
 		auto SphereZ = Render->CreateInstance(Sphere, {0, 0, 3}, {1, 0, 0}, {0, 1, 0});
 		auto SphereC = Render->CreateInstance(Sphere, {0, 0, 0}, {1, 0, 0}, {0, 1, 0});
+		//auto P1 = Render->CreateInstance(Plane, {0, 0, 0}, {1, 0, 0}, {0, 1, 0});
 
 		auto RedMaterial = Render->CreateDiffuseMaterial({1, 0, 0});
 		auto GreenMaterial = Render->CreateDiffuseMaterial({0, 1, 0});
@@ -367,6 +370,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		Render->ShapeSetMaterial(SphereY, GreenMaterial);
 		Render->ShapeSetMaterial(SphereZ, BlueMaterial);
 		Render->ShapeSetMaterial(SphereC, WhiteMaterial);
+		//Render->ShapeSetMaterial(P1, WhiteMaterial);
 
 		Render->SetIBL("../resources/brown_photostudio_02_4k.exr");
 	}
