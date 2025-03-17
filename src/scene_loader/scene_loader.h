@@ -15,15 +15,13 @@
 #define SCENE_SPOT_LIGHT "Spot Light"
 #define SCENE_SPECULAR_ROUGHNESS "Specular roughness"
 #define SCENE_WORLD_COORDINATES_AOV "World coordinates aov"
-#define SCENE_FLOATING_SPHERES "Floating spheres"
+#define SCENE_FLOATING_SPHERES "Floating spheres"	/// Shading is broken
 #define SCENE_COORDINATE_SYSTEM_REMINDER "Coordinate system reminder"
 #define SCENE_VIKINGS_ROOM "Vikings room"
 #define SCENE_DIFFUSE_MATERIAL "Diffuse material"
 #define SCENE_ROUGH_GLASS "Rough glass"
 #define SCENE_GLASS_PLANES "Glass planes"
 #define SCENE_WHITE_FURNACE "White furnace"
-#define SCENE_TEST_1 "Test 1"
-#define SCENE_TEST_2 "Test 2"
 
 class FSceneLoader
 {

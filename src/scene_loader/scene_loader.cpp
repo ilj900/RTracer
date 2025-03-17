@@ -123,7 +123,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto Dragon = Render->CreateModel("../models/Dragon/dragon.obj");
 
 		auto BottomWall = Render->CreateInstance(Wall, {0, -2, 0}, {0, 1, 0}, {0, 0, -1});
-		auto DragonInstance = Render->CreateInstance(Dragon, {0, -1.292, 1}, {1, 0, 0}, {0, -1, 0}, {2.5, 2.5, 2.5});
+		auto DragonInstance = Render->CreateInstance(Dragon, {0, -1.292, 1}, {1, 0, 0}, {0, 1, 0}, {2.5, 2.5, 2.5});
 
 		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
 		auto GlassMaterial = Render->CreateRefractiveMaterial({1, 1, 1});
@@ -146,7 +146,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		{
 			for (int j = 0; j < 4; ++j)
 			{
-				auto SphereInstance = Render->CreateInstance(Sphere, { 0, float(1 - j) * 2.1f, float(-2 + i) * 2.1f });
+				auto SphereInstance = Render->CreateInstance(Sphere, { float(-2 + i) * 2.1f, float(1 - j) * 2.1f, 0 });
 				auto Material = Render->CreateRefractiveMaterial({ 1, 1, 1 });
 				Render->MaterialSetTransmissionRoughness(Material, i * 0.25f + j * 0.0625f);
 				Render->ShapeSetMaterial(SphereInstance, Material);
@@ -378,7 +378,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto Sphere = Render->CreateUVSphere(256, 128, 0.5f);
 
 		auto Floor = Render->CreateInstance(Plane, {0, -2, 0}, {0, 1, 0}, {0, 0, -1});
-		auto DragonInstance = Render->CreateInstance(Dragon, {0, -1.292, 1}, {1, 0, 0}, {0, -1, 0}, {2.5, 2.5, 2.5});
+		auto DragonInstance = Render->CreateInstance(Dragon, {0, -1.292, 1}, {1, 0, 0}, {0, 1, 0}, {2.5, 2.5, 2.5});
 		auto CrimsonSphere = Render->CreateInstance(Sphere, {-2, -1.5, 2}, {0, 1, 0}, {0, 0, -1});
 		auto WhiteSphere = Render->CreateInstance(Sphere, {0, -1.5, 2}, {0, 1, 0}, {0, 0, -1});
 		auto OrangeSphere = Render->CreateInstance(Sphere, {1.5, -1.5, 2}, {0, 1, 0}, {0, 0, -1});
@@ -403,28 +403,6 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->SetIBL("../resources/sun.exr");
 	}
-	else if (Name == SCENE_TEST_1)
-	{
-		auto Sphere = Render->CreateUVSphere(64, 32, 2.5f);
-
-		auto SphereRight = Render->CreateInstance(Sphere, {50, 0, 0});
-		auto SphereLeft = Render->CreateInstance(Sphere, {-50, 0, 0});
-		auto SphereFront = Render->CreateInstance(Sphere, {0, 0, -50});
-		auto SphereBack = Render->CreateInstance(Sphere, {0, 0, 50});
-		auto SphereUp = Render->CreateInstance(Sphere, {0, 50, 0});
-		auto SphereDown = Render->CreateInstance(Sphere, {0, -50, 0});
-
-		auto OrangeMaterial = Render->CreateDiffuseMaterial({1, 0.3019f, 0});
-
-		Render->ShapeSetMaterial(SphereRight, OrangeMaterial);
-		Render->ShapeSetMaterial(SphereLeft, OrangeMaterial);
-		Render->ShapeSetMaterial(SphereFront, OrangeMaterial);
-		Render->ShapeSetMaterial(SphereBack, OrangeMaterial);
-		Render->ShapeSetMaterial(SphereUp, OrangeMaterial);
-		Render->ShapeSetMaterial(SphereDown, OrangeMaterial);
-
-		Render->SetIBL("../resources/sun.exr");
-	}
 	else if (Name == SCENE_WHITE_FURNACE)
 	{
 		auto Sphere = Render->CreateUVSphere(256, 128, 0.5f);
@@ -437,24 +415,10 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->SetIBL("../resources/white_furnace.exr");
 	}
-	else if (Name == SCENE_TEST_2)
-	{
-		auto Sphere = Render->CreateUVSphere(64, 32, 2.5f);
-
-		auto SphereInstance = Render->CreateInstance(Sphere, {0, 0, 0}, {0, 1, 0}, {0, 0, -1});
-
-		auto OrangeMaterial = Render->CreateDiffuseMaterial({1, 0.3019f, 0});
-
-		Render->SetCameraPosition({0, 7.5, 0}, {{0, -1.f, 0.f}}, {{0, 0, 1}}, {});
-
-		Render->ShapeSetMaterial(SphereInstance, OrangeMaterial);
-
-		Render->SetIBL("../resources/sun.exr");
-	}
 	else if (Name == SCENE_VIKINGS_ROOM)
 	{
 		auto Model = Render->CreateModel("../models/viking_room/viking_room.obj");
-		auto ModelInstance = Render->CreateInstance(Model, {3, 0, 0}, {1, 0, 0}, {0, 1, 0});
+		auto ModelInstance = Render->CreateInstance(Model, {0, -0.5f, 5}, {0, 1, 0}, {1, 0, 0});
 
 		auto Texture = Render->CreateTexture("../models/viking_room/viking_room.png");
 
