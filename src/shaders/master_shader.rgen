@@ -366,7 +366,7 @@ vec3 ComputeSpotLightInput(FSamplingState SamplingState, uint SpotLightsCount, v
     }
 }
 
-vec3 ComputeIBLInput(FSamplingState SamplingState, uint SpotLightsCount, vec3 Normal, vec3 WorldSpacePosition)
+vec3 ComputeIBLInput(FSamplingState SamplingState, vec3 Normal, vec3 WorldSpacePosition)
 {
     const vec2 SampleUV = Sample2DUnitQuad(SamplingState);
     const uvec2 IBLSize = textureSize(IBLTextureSampler, 0);
@@ -517,7 +517,7 @@ void main()
     /// TODO:
     if (true/*UtilityData.IBLIsActive*/)
     {
-        IBLSamplingResult = ComputeIBLInput(SamplingState, SpotLightsCount, NormalInWorldSpace, WorldSpacePosition);
+        IBLSamplingResult = ComputeIBLInput(SamplingState, NormalInWorldSpace, WorldSpacePosition);
     }
 
     /// Process material interaction
