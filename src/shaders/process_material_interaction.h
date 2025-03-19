@@ -54,7 +54,7 @@ vec3 ScatterDiffuse(vec3 NormalInWorldSpace, FSamplingState SamplingState)
 /// Generates a cosine weighted direction in tangent-space
 vec3 ScatterOrenNayar(FSamplingState SamplingState)
 {
-	return SampleCosineHemisphere(SamplingState);
+	return SampleCosineHemisphereMalleys(SamplingState);
 }
 
 vec3 SampleOrenNayar(vec3 IncomingTangentSpaceDirection, vec3 OutgoingTangentSpaceDirection, vec3 Albedo, float Sigma)
@@ -249,6 +249,7 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 	case EMISSION_LAYER:
 	{
 		BXDF.xyz = Material.EmissionColor;
+		BXDF.w = 1.f;
 		break;
 	}
 	}

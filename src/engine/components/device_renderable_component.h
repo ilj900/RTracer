@@ -12,10 +12,12 @@ namespace ECS
             FDeviceRenderableComponent()
             {
                 RenderableColor = {0.3f, 0.1f, 0.2f};
-                MeshIndex = 0;
+				MaterialIndex = 0;
 
                 RenderableIndex = 0;
                 RenderablePropertyMask = 0;
+				TransformIndex = 0;
+                MeshIndex = 0;
 
                 VertexBufferAddress = 0;
                 IndexBufferAddress = 0;

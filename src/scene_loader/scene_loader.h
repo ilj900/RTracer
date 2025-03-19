@@ -20,6 +20,7 @@
 #define SCENE_ROUGH_GLASS "Rough glass"
 #define SCENE_GLASS_PLANES "Glass planes"
 #define SCENE_WHITE_FURNACE "White furnace"
+#define SCENE_AREA_LIGHTS "Area lights"
 
 class FRender;
 

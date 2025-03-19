@@ -182,12 +182,12 @@ TEST_CASE( "Test random cosine hemisphere", "[Utility]")
 	/// Create a set of vertices with cosine PDF
 	/// To visualize result use "points_plotter_from_bin.py"
 	FSamplingState SamplingState = {0, 0, 0, SAMPLE_TYPE_GENERATE_RAYS, 0};
-	std::vector<FVector3> SampledCosineHemisphere(CMJ_TOTAL_GRID_SIZE);
+	std::vector<FVector3> SampledCosineHemisphere(256);
 
-	for (int i = 0; i < CMJ_TOTAL_GRID_SIZE; ++i)
+	for (int i = 0; i < 256; ++i)
 	{
 		SamplingState.RenderIteration++;
-		SampledCosineHemisphere[i] = SampleCosineHemisphere(SamplingState);
+		SampledCosineHemisphere[i] = SampleCosineHemisphereMalleys(SamplingState);
 	}
 
 	std::ofstream File("../data/debug/Cosine_hemisphere.bin", std::ios::binary);

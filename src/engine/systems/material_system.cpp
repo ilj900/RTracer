@@ -785,18 +785,23 @@ namespace ECS
             return Result;
         }
 
-		std::string FMaterialSystem::GenerateEmissiveMaterialsCode(const std::unordered_map<int, int>& EmissiveMaterials)
+		std::string FMaterialSystem::GenerateEmissiveMaterialsCode(const std::unordered_map<uint32_t , uint32_t>& EmissiveMaterials)
 		{
 			std::string Result;
+
+			if (EmissiveMaterials.empty())
+			{
+				return Result;
+			}
 
 			Result += "FDeviceMaterial GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex)\r\n";
 			Result += "{\r\n";
 			Result += "    FDeviceMaterial Material;\r\n";
 			Result += "    switch(MaterialIndex)\r\n";
 			Result += "    {\r\n";
-			for (auto Entry : EmissiveMaterials)
+			for (auto& Entry : EmissiveMaterials)
 			{
-				auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(Entry.second);
+				auto& MaterialComponent = GetComponentByIndex<ECS::COMPONENTS::FMaterialComponent>(Entry.first);
 				Result += "    case " + std::to_string(Entry.first) + ":\r\n";
 				Result += "    {\r\n";
 				Result += "    " + GenerateGetFunctionVector3("Material.EmissionColor", MaterialComponent.EmissionColorTexture, MaterialComponent.EmissionColor);

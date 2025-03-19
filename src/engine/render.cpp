@@ -50,6 +50,7 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FMeshInstanceComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FPointLightComponent>();
 	COORDINATOR().RegisterComponent<ECS::COMPONENTS::FSpotLightComponent>();
+	COORDINATOR().RegisterComponent<ECS::COMPONENTS::FAreaLightComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FTransformComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FTextureComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FFramebufferComponent>();
@@ -63,6 +64,7 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     auto PointLightSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FPointLightSystem>();
 	auto DirectionalLightSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FDirectionalLightSystem>();
 	auto SpotLightSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FSpotLightSystem>();
+	auto AreaLightSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FAreaLightSystem>();
     auto AccelerationSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FAccelerationStructureSystem>();
     auto TextureSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FTextureSystem>();
 
@@ -99,15 +101,20 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
 	PointLightSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FPointLightComponent>());
     COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FPointLightSystem>(PointLightSignature);
 
-	/// Register Point Light system signature
+	/// Register Directional Light system signature
 	ECS::FSignature DirectionalLightSignature;
 	DirectionalLightSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FDirectionalLightComponent>());
 	COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FDirectionalLightSystem>(DirectionalLightSignature);
 
-	/// Register Point Light system signature
+	/// Register Spot Light system signature
 	ECS::FSignature SpotLightSignature;
 	SpotLightSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FSpotLightComponent>());
 	COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FSpotLightSystem>(SpotLightSignature);
+
+	/// Register Area Light system signature
+	ECS::FSignature AreaLightSignature;
+	AreaLightSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FAreaLightComponent>());
+	COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FAreaLightSystem>(AreaLightSignature);
 
     /// Register Acceleration structure system signature
     ECS::FSignature AccelerationStructureSignature;
@@ -125,6 +132,7 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
 	POINT_LIGHT_SYSTEM()->Init(MaxFramesInFlight);
 	DIRECTIONAL_LIGHT_SYSTEM()->Init(MaxFramesInFlight);
     SPOT_LIGHT_SYSTEM()->Init(MaxFramesInFlight);
+	AREA_LIGHT_SYSTEM()->Init(MaxFramesInFlight);
     TRANSFORM_SYSTEM()->Init(MaxFramesInFlight);
     ACCELERATION_STRUCTURE_SYSTEM()->Init(MaxFramesInFlight);
 
@@ -626,6 +634,7 @@ int FRender::Update()
 	bAnyUpdate |= SPOT_LIGHT_SYSTEM()->Update();
 	bAnyUpdate |= DIRECTIONAL_LIGHT_SYSTEM()->Update();
 	bAnyUpdate |= SPOT_LIGHT_SYSTEM()->Update();
+	bAnyUpdate |= AREA_LIGHT_SYSTEM()->Update();
 	bAnyUpdate |= ACCELERATION_STRUCTURE_SYSTEM()->Update();
 
 	Counter = bAnyUpdate ? 0 : Counter;

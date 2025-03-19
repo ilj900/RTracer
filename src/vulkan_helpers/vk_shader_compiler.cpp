@@ -15,7 +15,7 @@ std::vector<uint32_t> CompileShaderToSpirVData(const std::string &Path,  const F
 
 void FCompileDefinitions::Push(const std::string& Define, const std::string& Value)
 {
-    Defines.push_back(std::pair<std::string, std::string>(Define, Value));
+    Defines.emplace_back(Define, Value);
 }
 
 FShader::FShader(const std::string &Path, const FCompileDefinitions* CompileDefinitions)

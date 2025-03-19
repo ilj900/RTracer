@@ -2,6 +2,8 @@
 
 #include "scene_loader.h"
 
+#include <random>
+
 FSceneLoader::FSceneLoader(std::shared_ptr<FRender> RenderIn) : Render(RenderIn)
 {
 }
@@ -115,6 +117,34 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		auto Light = Render->CreateDirectionalLight({-1, -1, -1}, {1, 1, 1}, 1);
 		auto Light2 = Render->CreateDirectionalLight({1, -1, -1}, {1, 1, 1}, 1);
+
+		Render->SetIBL("../resources/hdr_black_image.exr");
+	}
+	else if (Name == SCENE_AREA_LIGHTS)
+	{
+		auto Floor = Render->CreatePlane({32, 32});
+		auto Sphere = Render->CreateUVSphere(512, 256, 0.5f);
+
+		auto FloorInstance = Render->CreateInstance(Floor, {0, -2, 0}, {0, 1, 0}, {0, 0, -1});
+
+		auto EmissiveMaterial = Render->CreateEmptyMaterial();
+		Render->MaterialSetEmissionWeight(EmissiveMaterial, 1.f);
+		Render->MaterialSetEmissionColor(EmissiveMaterial, {1, 1, 1});
+		auto FloorMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
+
+		uint32_t Seed = 42;
+		std::mt19937 Generator(Seed);
+		std::uniform_real_distribution<float> XZ(-14.f, 14.f);
+		std::uniform_real_distribution<float> Y(-1.5, 8.f);
+
+		for (int i = 0; i < 32; ++i)
+		{
+			auto SphereInstance = Render->CreateInstance(Sphere, {XZ(Generator), Y(Generator), XZ(Generator)});
+			Render->ShapeSetMaterial(SphereInstance, EmissiveMaterial);
+			Render->CreateAreaLight(SphereInstance);
+		}
+
+		Render->ShapeSetMaterial(FloorInstance, FloorMaterial);
 
 		Render->SetIBL("../resources/hdr_black_image.exr");
 	}

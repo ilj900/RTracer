@@ -52,6 +52,14 @@ namespace ECS {
             return ComponentArray[EntityToIndexMap[Entity]];
         }
 
+		/// Get data of a single entity
+		T& GetDataByIndex(uint32_t ComponentIndex)
+		{
+			assert(EntityToIndexMap.size() >= ComponentIndex && "Index is greater than the size of the component array!");
+
+			return ComponentArray[ComponentIndex];
+		}
+
         /// Get index of the stored entity's component.
         uint32_t GetIndex(FEntity Entity)
         {

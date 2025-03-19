@@ -6,7 +6,7 @@
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_nonuniform_qualifier : enable // ?
 
-//#define DEBUG_PRINTF
+#define DEBUG_PRINTF
 #ifdef DEBUG_PRINTF
 #extension GL_EXT_debug_printf : enable
 bool b = false;
@@ -187,6 +187,8 @@ float SampleFloat(uint TextureIndex, vec2 TextureCoords)
 }
 
 FDeviceMaterial GetMaterial(vec2 TextureCoords);
+
+FDeviceMaterial GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex);
 
 void ComputeShadingData(FRenderable Renderable, FHit Hit, FDeviceTransform Transform,
 out vec3 NormalInWorldSpace, out vec3 PointOfIntersectionInWorldSpace, out vec2 TextureCoords)
@@ -456,7 +458,7 @@ void main()
     uvec2 PixelCoords = uvec2(PixelIndex % PushConstants.Width, PixelIndex / PushConstants.Width);
 
 #ifdef DEBUG_PRINTF
-    if (PixelCoords.x == PushConstants.Width / 2 && PixelCoords.y == PushConstants.Height / 2 /*&& PushConstants.BounceIndex == 0*/)
+    if (PixelCoords.x == PushConstants.Width / 2 && PixelCoords.y == PushConstants.Height / 2 && PushConstants.BounceIndex == 0)
     {
         b = true;
         //debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
@@ -526,6 +528,15 @@ void main()
     SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
     vec4 MaterialSamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace, SamplingState, bFrontFacing);
 
+    /// If we hit emissive material we add it's input and terminate the ray
+    if (CheckFlag(RayData.RayFlags, EMISSION_LAYER))
+    {
+        vec3 FinalValue = PushConstants.BounceIndex == 0 ? MaterialSamplingResult.xyz : (CumulativeMaterialColorBuffer[PixelIndex].xyz * MaterialSamplingResult.xyz);
+        RayDataBuffer[PixelIndex].RayFlags = RAY_DATA_RAY_MISSED;
+        imageStore(OutcomingImage, ivec2(PixelCoords), vec4(FinalValue , 1));
+        return;
+    }
+
     MaterialSamplingResult.xyz /= MaterialSamplingResult.w;
 
     RayData.Origin.xyz = WorldSpacePosition;
@@ -536,7 +547,8 @@ void main()
 
     vec3 TotalIncomingLight = vec3(0);
     vec3 BounceInput = vec3(0);
-    if (!CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER) && !CheckFlag(RayData.RayFlags, SPECULAR_LAYER))
+    if (!CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER)
+    &&!CheckFlag(RayData.RayFlags, SPECULAR_LAYER))
     {
         TotalIncomingLight = IBLSamplingResult + PointLightSamplingResult + DirectionalLightSamplingResult + SpotLightSamplingResult;
         BounceInput = CumulativeMaterialColor * TotalIncomingLight;
@@ -547,6 +559,7 @@ void main()
     if ((PushConstants.BounceIndex == LAST_DIFFUSE_BOUNCE && CheckFlag(RayData.RayFlags, DIFFUSE_LAYER))
     || (PushConstants.BounceIndex == LAST_REFLECTION_BOUNCE && CheckFlag(RayData.RayFlags, SPECULAR_LAYER))
     || (PushConstants.BounceIndex == LAST_REFRACTION_BOUNCE && CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER))
+    || CheckFlag(RayData.RayFlags, EMISSION_LAYER)
     || MaterialSamplingResult.w < 0.)
     {
         RayDataBuffer[PixelIndex].RayFlags = RAY_DATA_RAY_MISSED;

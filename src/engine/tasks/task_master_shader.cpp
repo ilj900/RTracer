@@ -47,6 +47,8 @@ FMasterShader::FMasterShader(uint32_t WidthIn, uint32_t HeightIn, uint32_t Submi
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_POINT_LIGHTS_BUFFER_INDEX,
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_AREA_LIGHTS_BUFFER_INDEX,
+		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_IBL_IMPORTANCE_BUFFER_INDEX,
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_IBL_IMAGE_SAMPLER_INDEX,
@@ -122,12 +124,15 @@ void FMasterShader::Init(FCompileDefinitions* CompileDefinitions)
 	RGenRegions.resize(MATERIAL_SYSTEM()->Entities.size());
 	SBTBuffers.resize(RGenRegions.size());
 
-	auto EmissiveMaterials = AREA_LIGHT_SYSTEM()->GetEmissiveMaterials();
+	const auto EmissiveMaterials = AREA_LIGHT_SYSTEM()->GetEmissiveMaterials();
+	auto EmissiveMaterialCode = MATERIAL_SYSTEM()->GenerateEmissiveMaterialsCode(EmissiveMaterials);
+	FCompileDefinitions MasterShaderCompileDefinitions(*CompileDefinitions);
+	MasterShaderCompileDefinitions.Push("FDeviceMaterial GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex);", EmissiveMaterialCode);
 
 	for (auto& Material : *MATERIAL_SYSTEM())
 	{
 		auto MaterialCode = MATERIAL_SYSTEM()->GenerateMaterialCode(Material);
-		FCompileDefinitions CombinedCompileDefinitions(*CompileDefinitions);
+		FCompileDefinitions CombinedCompileDefinitions(MasterShaderCompileDefinitions);
 		CombinedCompileDefinitions.Push("FDeviceMaterial GetMaterial(vec2 TextureCoords);", MaterialCode);
 		auto RayGenerationShader = FShader("../src/shaders/master_shader.rgen", &CombinedCompileDefinitions);
 		uint32_t MaterialIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
