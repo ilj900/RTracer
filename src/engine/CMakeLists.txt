@@ -17,6 +17,7 @@ set(ECS_INCLUDE
         components/texture_component.h
 
         systems/acceleration_structure_system.h
+        systems/area_light_system.h
         systems/camera_system.h
         systems/directional_light_system.h
         systems/gpu_bufferable_system.h
@@ -32,6 +33,7 @@ set(ECS_SOURCE
         components/mesh_component.cpp
 
         systems/acceleration_structure_system.cpp
+        systems/area_light_system.cpp
         systems/camera_system.cpp
         systems/directional_light_system.cpp
         systems/gpu_bufferable_system.cpp

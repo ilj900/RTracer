@@ -118,6 +118,7 @@ namespace ECS
 			FMaterialSystem& SetThinWalled(FEntity MaterialEntity, FEntity TextureEntity);
 
 			std::string GenerateMaterialCode(FEntity MaterialEntity);
+			std::string GenerateEmissiveMaterialsCode(const std::unordered_map<int, int>& EmissiveMaterials);
 
             const uint32_t MAX_MATERIALS = IBL_MATERIAL_INDEX;
         };

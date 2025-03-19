@@ -187,6 +187,7 @@ public:
 	ECS::FEntity CreateDirectionalLight(const FVector3& Direction, const FVector3& Color, float Intensity);
 	ECS::FEntity CreatePointLight(const FVector3& Position, const FVector3& Color, float Intensity);
 	ECS::FEntity CreateSpotLight(const FVector3& Position, const FVector3& Direction, const FVector3& Color, float Intensity, float OuterAngle, float InnerAngle);
+	ECS::FEntity CreateAreaLight(ECS::FEntity Renderable);
 	void SetLightPosition(ECS::FEntity Light, const FVector3& Position);
 	FVector3 GetLightPosition(ECS::FEntity Light);
     int SetIBL(const std::string& Path);

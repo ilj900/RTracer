@@ -93,11 +93,23 @@ struct FSpotLight
 	float OuterAngle;
 };
 
+struct FAreaLight
+{
+	uint32_t MeshIndex;
+	uint32_t NumberOfTriangles;
+	uint32_t TransformIndex;
+	uint32_t MaterialIndex;
+
+	uint64_t VertexBufferAddress;
+	uint64_t IndexBufferAddress;
+};
+
 struct FUtilityData
 {
 	uint32_t ActiveDirectionalLightsCount;
 	uint32_t ActiveSpotLightsCount;
 	uint32_t ActivePointLightsCount;
+	uint32_t ActiveAreaLightsCount;
 };
 
 struct FDeviceMaterial
@@ -165,6 +177,7 @@ struct FRenderable
     int RenderableIndex;
     uint32_t RenderablePropertyMask;
     uint32_t TransformIndex;
+	/// It's meshes' entity
     uint32_t MeshIndex;
 
     uint64_t VertexBufferAddress;

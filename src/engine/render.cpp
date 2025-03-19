@@ -1,5 +1,6 @@
 #include "coordinator.h"
 
+#include "area_light_system.h"
 #include "acceleration_structure_system.h"
 #include "mesh_system.h"
 #include "transform_system.h"
@@ -1297,6 +1298,11 @@ ECS::FEntity FRender::CreatePointLight(const FVector3& Position, const FVector3&
 ECS::FEntity FRender::CreateSpotLight(const FVector3& Position, const FVector3& Direction, const FVector3& Color, float Intensity, float OuterAngle, float InnerAngle)
 {
 	return SPOT_LIGHT_SYSTEM()->CreateSpotLight(Position, Direction, Color, Intensity, OuterAngle, InnerAngle);
+}
+
+ECS::FEntity FRender::CreateAreaLight(ECS::FEntity Renderable)
+{
+	return AREA_LIGHT_SYSTEM()->CreateAreaLightInstance(Renderable);
 }
 
 void FRender::SetLightPosition(ECS::FEntity Light, const FVector3& Position)

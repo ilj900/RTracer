@@ -7,6 +7,7 @@
 #include "renderable_system.h"
 #include "transform_system.h"
 #include "point_light_system.h"
+#include "area_light_system.h"
 #include "directional_light_system.h"
 #include "spot_light_system.h"
 #include "acceleration_structure_system.h"
@@ -120,6 +121,8 @@ void FMasterShader::Init(FCompileDefinitions* CompileDefinitions)
 	auto RayMissShader = FShader("../src/shaders/master_shader.rmiss");
 	RGenRegions.resize(MATERIAL_SYSTEM()->Entities.size());
 	SBTBuffers.resize(RGenRegions.size());
+
+	auto EmissiveMaterials = AREA_LIGHT_SYSTEM()->GetEmissiveMaterials();
 
 	for (auto& Material : *MATERIAL_SYSTEM())
 	{

@@ -17,7 +17,7 @@ namespace ECS
                 Color = {1, 1, 1};
             };
 
-			FPointLightComponent( const FVector3& PositionIn, const FVector3& ColorIn, float IntensityIn)
+			FPointLightComponent(const FVector3& PositionIn, const FVector3& ColorIn, float IntensityIn)
             {
                     Position = PositionIn;
                     Color = ColorIn;
@@ -35,7 +35,7 @@ namespace ECS
 					Direction = {0, -1, 0};
 			};
 
-			FDirectionalLightComponent( const FVector3& PositionIn, const FVector3& ColorIn, const FVector3& DirectionIn, float IntensityIn)
+			FDirectionalLightComponent(const FVector3& PositionIn, const FVector3& ColorIn, const FVector3& DirectionIn, float IntensityIn)
 			{
 					Position = PositionIn;
 					Intensity = IntensityIn;
@@ -56,7 +56,7 @@ namespace ECS
 					OuterAngle = 45.f;
 			};
 
-			FSpotLightComponent( const FVector3& PositionIn, const FVector3& ColorIn, const FVector3& DirectionIn, float IntensityIn, float InnerAngleIn, float OuterAngleIn)
+			FSpotLightComponent(const FVector3& PositionIn, const FVector3& ColorIn, const FVector3& DirectionIn, float IntensityIn, float InnerAngleIn, float OuterAngleIn)
 			{
 					Position = PositionIn;
 					Intensity = IntensityIn;
@@ -64,6 +64,32 @@ namespace ECS
 					Direction = DirectionIn;
 					InnerAngle = InnerAngleIn;
 					OuterAngle = OuterAngleIn;
+			};
+		};
+
+		struct FAreaLightComponent : FAreaLight
+		{
+			FAreaLightComponent()
+			{
+					MeshIndex = 0;
+					NumberOfTriangles = 0;
+					TransformIndex = 0;
+					Dummy = 0;
+
+					VertexBufferAddress = 0;
+					IndexBufferAddress = 0;
+			};
+
+			FAreaLightComponent(uint32_t MeshIndexIn, uint32_t NumberOfTrianglesIn, uint32_t TransformIndexIn, uint64_t VertexBufferAddressIn, uint64_t IndexBufferAddressIn)
+			{
+					MeshIndex = MeshIndexIn;
+					NumberOfTriangles = NumberOfTrianglesIn;
+					TransformIndex = TransformIndexIn;
+					Dummy = 0;
+
+					VertexBufferAddress = VertexBufferAddressIn;
+					IndexBufferAddress = IndexBufferAddressIn;
+
 			};
 		};
     }
