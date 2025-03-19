@@ -74,18 +74,18 @@ namespace ECS
 					MeshIndex = 0;
 					NumberOfTriangles = 0;
 					TransformIndex = 0;
-					Dummy = 0;
+					MaterialIndex = 0;
 
 					VertexBufferAddress = 0;
 					IndexBufferAddress = 0;
 			};
 
-			FAreaLightComponent(uint32_t MeshIndexIn, uint32_t NumberOfTrianglesIn, uint32_t TransformIndexIn, uint64_t VertexBufferAddressIn, uint64_t IndexBufferAddressIn)
+			FAreaLightComponent(uint32_t MeshIndexIn, uint32_t NumberOfTrianglesIn, uint32_t TransformIndexIn, uint32_t MaterialIndexIn, uint64_t VertexBufferAddressIn, uint64_t IndexBufferAddressIn)
 			{
 					MeshIndex = MeshIndexIn;
 					NumberOfTriangles = NumberOfTrianglesIn;
 					TransformIndex = TransformIndexIn;
-					Dummy = 0;
+					MaterialIndex = MaterialIndexIn;
 
 					VertexBufferAddress = VertexBufferAddressIn;
 					IndexBufferAddress = IndexBufferAddressIn;
