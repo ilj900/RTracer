@@ -388,20 +388,20 @@ vec3 ComputeAreaLightInput(inout FSamplingState SamplingState, uint AreaLightsCo
 
     if (b)
     {
-        //debugPrintfEXT("\nArea light data\n");
-        //debugPrintfEXT("%u IsIndexedFlagAndRenderableIndex\n", AreaLight.IsIndexedFlagAndRenderableIndex);
-        //debugPrintfEXT("%u NumberOfTriangles\n", AreaLight.NumberOfTriangles);
-        //debugPrintfEXT("%u TransformIndex\n", AreaLight.TransformIndex);
-        //debugPrintfEXT("%u MaterialIndex\n", AreaLight.MaterialIndex);
+        debugPrintfEXT("\nArea light data\n");
+        debugPrintfEXT("%u IsIndexedFlagAndRenderableIndex\n", AreaLight.IsIndexedFlagAndRenderableIndex);
+        debugPrintfEXT("%u NumberOfTriangles\n", AreaLight.NumberOfTriangles);
+        debugPrintfEXT("%u TransformIndex\n", AreaLight.TransformIndex);
+        debugPrintfEXT("%u MaterialIndex\n", AreaLight.MaterialIndex);
         if (RenderableIsIndexed)
         {
-            //debugPrintfEXT("Renderable is indexed\n");
+            debugPrintfEXT("Renderable is indexed\n");
         }
         else
         {
-            //debugPrintfEXT("Renderable is not indexed\n");
+            debugPrintfEXT("Renderable is not indexed\n");
         }
-        //debugPrintfEXT("%u RenderableIndex\n", RenderableIndex);
+        debugPrintfEXT("%u RenderableIndex\n", RenderableIndex);
     }
 
     FDeviceVertex DV0;
@@ -437,9 +437,9 @@ vec3 ComputeAreaLightInput(inout FSamplingState SamplingState, uint AreaLightsCo
 
     if (b)
     {
-        //debugPrintfEXT("%1.2v3f V0.Position\n", V0.Position);
-        //debugPrintfEXT("%1.2v3f V1.Position\n", V1.Position);
-        //debugPrintfEXT("%1.2v3f V2.Position\n", V2.Position);
+        debugPrintfEXT("%1.2v3f V0.Position\n", V0.Position);
+        debugPrintfEXT("%1.2v3f V1.Position\n", V1.Position);
+        debugPrintfEXT("%1.2v3f V2.Position\n", V2.Position);
     }
 
     /// Sample random point on that triangle
@@ -454,7 +454,7 @@ vec3 ComputeAreaLightInput(inout FSamplingState SamplingState, uint AreaLightsCo
 
     if (b)
     {
-        //debugPrintfEXT("%f %f\n", RandomVec2.x, RandomVec2.y);
+        debugPrintfEXT("%f %f\n", RandomVec2.x, RandomVec2.y);
     }
 
     /// Here, RandomPoint is in local space
@@ -462,7 +462,7 @@ vec3 ComputeAreaLightInput(inout FSamplingState SamplingState, uint AreaLightsCo
 
     if (b)
     {
-        //debugPrintfEXT("%f %f %f\n", RandomPoint.x, RandomPoint.y, RandomPoint.z);
+        debugPrintfEXT("%f %f %f\n", RandomPoint.x, RandomPoint.y, RandomPoint.z);
     }
 
     /// Transform point into world-space
@@ -470,7 +470,7 @@ vec3 ComputeAreaLightInput(inout FSamplingState SamplingState, uint AreaLightsCo
     RandomPoint = vec3(vec4(RandomPoint, 1.f) * Transform.ModelMatrix);
     if (b)
     {
-        //debugPrintfEXT("%1.2v3f RandomPoint World space\n", RandomPoint);
+        debugPrintfEXT("%1.2v3f RandomPoint World space\n", RandomPoint);
     }
     /// A direction to light
     vec3 LightDirection = RandomPoint - WorldSpacePosition;
@@ -496,10 +496,8 @@ vec3 ComputeAreaLightInput(inout FSamplingState SamplingState, uint AreaLightsCo
 
     if (b)
     {
-        //debugPrintfEXT("%u HitPayload.PrimitiveIndex\n", HitPayload.PrimitiveIndex);
-        //debugPrintfEXT("%u PrimitiveIndex\n", PrimitiveIndex);
-        //debugPrintfEXT("%u HitPayload.RenderableIndex\n", HitPayload.RenderableIndex);
-        //debugPrintfEXT("%u RenderableIndex\n", RenderableIndex);
+        debugPrintfEXT("%u HitPayload.PrimitiveIndex\n", HitPayload.PrimitiveIndex);
+        debugPrintfEXT("%u PrimitiveIndex\n", PrimitiveIndex);
     }
 
     /// And if we did hit a required triange, then we store light data
@@ -517,17 +515,16 @@ vec3 ComputeAreaLightInput(inout FSamplingState SamplingState, uint AreaLightsCo
         float Area = length(0.5f * cross((V1.Position - V0.Position), (V2.Position - V0.Position)));
         PDF /= Area;
         PDF /= NDotI;
-        if (b)
-        {
-            debugPrintfEXT("%f Distance2\n", Distance2);
-            debugPrintfEXT("%f Area\n", Area);
-            debugPrintfEXT("%f NDotI\n", NDotI);
-        }
+        PDF /= AreaLight.NumberOfTriangles;
 
         return EmissiveMaterial.EmissionColor / PDF ;
     }
     else
     {
+        if (b)
+        {
+            debugPrintfEXT("Returning 0\n");
+        }
         return vec3(0);
     }
 }
@@ -685,7 +682,7 @@ void main()
         AreaLightSamplingResult = ComputeAreaLightInput(SamplingState, AreaLightsCount, NormalInWorldSpace, WorldSpacePosition);
         if (b)
         {
-            debugPrintfEXT("%1.3v3f\n", AreaLightSamplingResult);
+            debugPrintfEXT("%1.6v3f\n", AreaLightSamplingResult);
         }
     }
 
