@@ -21,7 +21,7 @@ vec4 DebugGlobal = vec4(0);
 #include "bxdf.h"
 #include "process_material_interaction.h"
 
-layout (location = 0) rayPayloadEXT FSimpleHitPayload SimpleHitPayload;
+layout (location = 0) rayPayloadEXT FHitPayload HitPayload;
 
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_TLAS_INDEX) uniform accelerationStructureEXT TLAS;
 
@@ -72,6 +72,11 @@ layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_SPOT_LIGHTS_BU
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_POINT_LIGHTS_BUFFER_INDEX) buffer PointLightsBufferObject
 {
     FPointLight PointLightsBuffer[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_AREA_LIGHTS_BUFFER_INDEX) buffer AreaLightsBufferObject
+{
+    FAreaLight AreaLightsBuffer[];
 };
 
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_IMPORTANCE_BUFFER_INDEX) buffer IBLImportanceBufferObject
@@ -239,7 +244,7 @@ out vec3 NormalInWorldSpace, out vec3 PointOfIntersectionInWorldSpace, out vec2 
     TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
 }
 
-vec3 ComputeDirectionalLightInput(FSamplingState SamplingState, uint DirectionalLightsCount, vec3 Normal, vec3 WorldSpacePosition)
+vec3 ComputeDirectionalLightInput(inout FSamplingState SamplingState, uint DirectionalLightsCount, vec3 Normal, vec3 WorldSpacePosition)
 {
     /// Get light index
     const uint LightIndex = uint(RandomFloat(SamplingState) * DirectionalLightsCount);
@@ -263,7 +268,7 @@ vec3 ComputeDirectionalLightInput(FSamplingState SamplingState, uint Directional
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
 
     /// And if we didn't hit any geometry, then we store light data
-    if (SimpleHitPayload.PayloadFlags == 0)
+    if (HitPayload.RenderableIndex == UINT_MAX)
     {
         return DirectionalLight.Color * DirectionalLight.Intensity * NDotI;
     }
@@ -273,7 +278,7 @@ vec3 ComputeDirectionalLightInput(FSamplingState SamplingState, uint Directional
     }
 }
 
-vec3 ComputePointLightInput(FSamplingState SamplingState, uint PointLightsCount, vec3 Normal, vec3 WorldSpacePosition)
+vec3 ComputePointLightInput(inout FSamplingState SamplingState, uint PointLightsCount, vec3 Normal, vec3 WorldSpacePosition)
 {
     /// Get light index
     const uint LightIndex = uint(RandomFloat(SamplingState) * PointLightsCount);
@@ -300,7 +305,7 @@ vec3 ComputePointLightInput(FSamplingState SamplingState, uint PointLightsCount,
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, LightDistance, 0);
 
     /// And if we didn't hit any geometry, then we store light data
-    if (SimpleHitPayload.PayloadFlags == 0)
+    if (HitPayload.RenderableIndex == UINT_MAX)
     {
         float Attenuation = 1.f / LightDistance;
         Attenuation *= Attenuation;
@@ -312,7 +317,7 @@ vec3 ComputePointLightInput(FSamplingState SamplingState, uint PointLightsCount,
     }
 }
 
-vec3 ComputeSpotLightInput(FSamplingState SamplingState, uint SpotLightsCount, vec3 Normal, vec3 WorldSpacePosition)
+vec3 ComputeSpotLightInput(inout FSamplingState SamplingState, uint SpotLightsCount, vec3 Normal, vec3 WorldSpacePosition)
 {
     /// Get light index
     const uint LightIndex = uint(RandomFloat(SamplingState) * SpotLightsCount);
@@ -346,7 +351,7 @@ vec3 ComputeSpotLightInput(FSamplingState SamplingState, uint SpotLightsCount, v
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
 
     /// And if we didn't hit any geometry, then we store light data
-    if (SimpleHitPayload.PayloadFlags == 0)
+    if (HitPayload.RenderableIndex == UINT_MAX)
     {
         float Attenuation = 1.f / LightDistance;
         Attenuation *= Attenuation;
@@ -368,7 +373,166 @@ vec3 ComputeSpotLightInput(FSamplingState SamplingState, uint SpotLightsCount, v
     }
 }
 
-vec3 ComputeIBLInput(FSamplingState SamplingState, vec3 Normal, vec3 WorldSpacePosition)
+vec3 ComputeAreaLightInput(inout FSamplingState SamplingState, uint AreaLightsCount, vec3 Normal, vec3 WorldSpacePosition)
+{
+    /// Get light index
+    const uint LightIndex = uint(RandomFloat(SamplingState) * AreaLightsCount);
+    FAreaLight AreaLight = AreaLightsBuffer[LightIndex];
+
+    /// Get random triangle from the mesh that is marked as area light
+    Vertices Verts = Vertices(AreaLight.VertexBufferAddress);
+    Indices Inds = Indices(AreaLight.IndexBufferAddress);
+    const uint PrimitiveIndex = uint(RandomFloat(SamplingState) * AreaLight.NumberOfTriangles);
+    bool RenderableIsIndexed = (AreaLight.IsIndexedFlagAndRenderableIndex & 0x80000000) == 0x80000000;
+    uint RenderableIndex = AreaLight.IsIndexedFlagAndRenderableIndex & 0x7FFFFFFF;
+
+    if (b)
+    {
+        //debugPrintfEXT("\nArea light data\n");
+        //debugPrintfEXT("%u IsIndexedFlagAndRenderableIndex\n", AreaLight.IsIndexedFlagAndRenderableIndex);
+        //debugPrintfEXT("%u NumberOfTriangles\n", AreaLight.NumberOfTriangles);
+        //debugPrintfEXT("%u TransformIndex\n", AreaLight.TransformIndex);
+        //debugPrintfEXT("%u MaterialIndex\n", AreaLight.MaterialIndex);
+        if (RenderableIsIndexed)
+        {
+            //debugPrintfEXT("Renderable is indexed\n");
+        }
+        else
+        {
+            //debugPrintfEXT("Renderable is not indexed\n");
+        }
+        //debugPrintfEXT("%u RenderableIndex\n", RenderableIndex);
+    }
+
+    FDeviceVertex DV0;
+    FDeviceVertex DV1;
+    FDeviceVertex DV2;
+
+    if (RenderableIsIndexed)
+    {
+        uint I0 = 0;
+        uint I1 = 1;
+        uint I2 = 2;
+
+        I0 = Inds.I[PrimitiveIndex * 3];
+        I1 = Inds.I[PrimitiveIndex * 3 + 1];
+        I2 = Inds.I[PrimitiveIndex * 3 + 2];
+
+        DV0 = Verts.V[I0];
+        DV1 = Verts.V[I1];
+        DV2 = Verts.V[I2];
+    }
+    else
+    {
+        uint Index = PrimitiveIndex * 3;
+        DV0 = Verts.V[Index];
+        DV1 = Verts.V[Index + 1];
+        DV2 = Verts.V[Index + 2];
+    }
+
+    /// Unpack data
+    FVertex V0 = UnpackDeviceVertex(DV0);
+    FVertex V1 = UnpackDeviceVertex(DV1);
+    FVertex V2 = UnpackDeviceVertex(DV2);
+
+    if (b)
+    {
+        //debugPrintfEXT("%1.2v3f V0.Position\n", V0.Position);
+        //debugPrintfEXT("%1.2v3f V1.Position\n", V1.Position);
+        //debugPrintfEXT("%1.2v3f V2.Position\n", V2.Position);
+    }
+
+    /// Sample random point on that triangle
+    vec2 RandomVec2 = Sample2DUnitQuad(SamplingState);
+
+    /// Without this, RandomPoint will be placed in parallelogram denoted by the triangle
+    if (RandomVec2.x + RandomVec2.y > 1.)
+    {
+        RandomVec2.x = 1. - RandomVec2.x;
+        RandomVec2.y = 1. - RandomVec2.y;
+    }
+
+    if (b)
+    {
+        //debugPrintfEXT("%f %f\n", RandomVec2.x, RandomVec2.y);
+    }
+
+    /// Here, RandomPoint is in local space
+    vec3 RandomPoint = V0.Position + (V1.Position - V0.Position) * RandomVec2.x + (V2.Position - V0.Position) * RandomVec2.y;
+
+    if (b)
+    {
+        //debugPrintfEXT("%f %f %f\n", RandomPoint.x, RandomPoint.y, RandomPoint.z);
+    }
+
+    /// Transform point into world-space
+    FDeviceTransform Transform = DeviceTransforms[AreaLight.TransformIndex];
+    RandomPoint = vec3(vec4(RandomPoint, 1.f) * Transform.ModelMatrix);
+    if (b)
+    {
+        //debugPrintfEXT("%1.2v3f RandomPoint World space\n", RandomPoint);
+    }
+    /// A direction to light
+    vec3 LightDirection = RandomPoint - WorldSpacePosition;
+    float Distance2 = dot(LightDirection, LightDirection);
+    LightDirection = normalize(LightDirection);
+
+    /// Check whether light is over the surface
+    float NDotI = dot(Normal, LightDirection);
+
+    if(NDotI <= 0)
+    {
+        return vec3(0);
+    }
+
+    /// Construct a ray that goes to the light
+    FRayData RayData;
+    RayData.RayFlags = 0;
+    RayData.Direction.xyz = LightDirection;
+    RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
+
+    /// Trace the ray
+    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
+
+    if (b)
+    {
+        //debugPrintfEXT("%u HitPayload.PrimitiveIndex\n", HitPayload.PrimitiveIndex);
+        //debugPrintfEXT("%u PrimitiveIndex\n", PrimitiveIndex);
+        //debugPrintfEXT("%u HitPayload.RenderableIndex\n", HitPayload.RenderableIndex);
+        //debugPrintfEXT("%u RenderableIndex\n", RenderableIndex);
+    }
+
+    /// And if we did hit a required triange, then we store light data
+    if (HitPayload.PrimitiveIndex == PrimitiveIndex && HitPayload.RenderableIndex == RenderableIndex)
+    {
+        vec3 Barycentrics = vec3(1.f - HitPayload.HitUV.x - HitPayload.HitUV.y, HitPayload.HitUV.x, HitPayload.HitUV.y);
+
+        /// Compute UV
+        vec2 UV = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
+
+        /// Get the material
+        FDeviceMaterial EmissiveMaterial = GetEmissiveMaterial(UV, AreaLight.MaterialIndex);
+        /// TODO: Is this a correct PDF formula?
+        float PDF = Distance2;
+        float Area = length(0.5f * cross((V1.Position - V0.Position), (V2.Position - V0.Position)));
+        PDF /= Area;
+        PDF /= NDotI;
+        if (b)
+        {
+            debugPrintfEXT("%f Distance2\n", Distance2);
+            debugPrintfEXT("%f Area\n", Area);
+            debugPrintfEXT("%f NDotI\n", NDotI);
+        }
+
+        return EmissiveMaterial.EmissionColor / PDF ;
+    }
+    else
+    {
+        return vec3(0);
+    }
+}
+
+vec3 ComputeIBLInput(inout FSamplingState SamplingState, vec3 Normal, vec3 WorldSpacePosition)
 {
     const vec2 SampleUV = Sample2DUnitQuad(SamplingState);
     const uvec2 IBLSize = textureSize(IBLTextureSampler, 0);
@@ -404,7 +568,7 @@ vec3 ComputeIBLInput(FSamplingState SamplingState, vec3 Normal, vec3 WorldSpaceP
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, FLOAT_EPSILON, RayData.Direction.xyz, 10000, 0);
 
     /// And if we didn't hit any geometry, then we sample the IBL
-    if (SimpleHitPayload.PayloadFlags == 0)
+    if (HitPayload.RenderableIndex == UINT_MAX)
     {
         /// TODO: We can multiply IBL and Weight on CPU
         float Weight = IBLWeightsBuffer[TexelIndex];
@@ -513,6 +677,18 @@ void main()
         SpotLightSamplingResult = ComputeSpotLightInput(SamplingState, SpotLightsCount, NormalInWorldSpace, WorldSpacePosition);
     }
 
+    vec3 AreaLightSamplingResult = vec3(0);
+    uint AreaLightsCount = UtilityData.ActiveAreaLightsCount;
+
+    if (AreaLightsCount != 0)
+    {
+        AreaLightSamplingResult = ComputeAreaLightInput(SamplingState, AreaLightsCount, NormalInWorldSpace, WorldSpacePosition);
+        if (b)
+        {
+            debugPrintfEXT("%1.3v3f\n", AreaLightSamplingResult);
+        }
+    }
+
     /// Sample IBL
     vec3 IBLSamplingResult = vec3(0);
 
@@ -550,7 +726,7 @@ void main()
     if (!CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER)
     &&!CheckFlag(RayData.RayFlags, SPECULAR_LAYER))
     {
-        TotalIncomingLight = IBLSamplingResult + PointLightSamplingResult + DirectionalLightSamplingResult + SpotLightSamplingResult;
+        TotalIncomingLight = IBLSamplingResult + PointLightSamplingResult + DirectionalLightSamplingResult + SpotLightSamplingResult + AreaLightSamplingResult;
         BounceInput = CumulativeMaterialColor * TotalIncomingLight;
     }
 
@@ -578,7 +754,7 @@ void main()
 
     if(PushConstants.BounceIndex == 0)
     {
-        DebugGlobal = bFrontFacing ? vec4(0.2f, 0.7f, 0.2f, 0.f) : vec4(0.7f, 0.2f, 0.2f, 0.f);
+        DebugGlobal = vec4(AreaLightSamplingResult, 0);
         SaveAOVs(PixelCoords, NormalInWorldSpace, NormalInWorldSpace, TextureCoords, WorldSpacePosition, 1., Depth,
         Material.BaseColor, TotalIncomingLight, Hit.RenderableIndex, Hit.PrimitiveIndex, PushConstants.MaterialIndex, DebugGlobal);
     }

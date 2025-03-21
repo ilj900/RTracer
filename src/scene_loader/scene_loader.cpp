@@ -148,6 +148,25 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->SetIBL("../resources/hdr_black_image.exr");
 	}
+	else if (Name == SCENE_AREA_LIGHTS_2)
+	{
+		auto Plane = Render->CreatePlane({32, 32});
+
+		auto Floor = Render->CreateInstance(Plane, {0, -2, 0}, {0, 1, 0}, {0, 0, -1});
+		auto Light = Render->CreateInstance(Plane, {0, 120, 0}, {0, -1, 0}, {0, 0, 1});
+
+		auto EmissiveMaterial = Render->CreateEmptyMaterial();
+		Render->MaterialSetEmissionWeight(EmissiveMaterial, 1.f);
+		Render->MaterialSetEmissionColor(EmissiveMaterial, {1, 1, 1});
+		auto FloorMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
+
+		Render->ShapeSetMaterial(Light, EmissiveMaterial);
+		Render->CreateAreaLight(Light);
+
+		Render->ShapeSetMaterial(Floor, FloorMaterial);
+
+		Render->SetIBL("../resources/hdr_black_image.exr");
+	}
 	else if (Name == SCENE_STANFORD_DRAGON)
 	{
 

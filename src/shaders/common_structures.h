@@ -24,11 +24,6 @@ struct FHitPayload
     uint32_t MaterialIndex;
 };
 
-struct FSimpleHitPayload
-{
-	uint32_t PayloadFlags;
-};
-
 struct FRayData
 {
     FVector4 Origin;
@@ -95,7 +90,7 @@ struct FSpotLight
 
 struct FAreaLight
 {
-	uint32_t MeshIndex;
+	uint32_t IsIndexedFlagAndRenderableIndex;
 	uint32_t NumberOfTriangles;
 	uint32_t TransformIndex;
 	uint32_t MaterialIndex;

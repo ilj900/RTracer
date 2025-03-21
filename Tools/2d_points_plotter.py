@@ -13,13 +13,24 @@ def read_points(file_path):
         list: A list of tuples representing points (x, y).
     """
     points = []
+    total = 0
+    greater = 0
+    same_half = 0
     with open(file_path, 'r') as file:
         for line in file:
             try:
                 x, y = map(float, line.split())
+                total += 1
+                if x > y:
+                    greater += 1
+                if x > 0.5 and y > 0.5:
+                    same_half += 1
+                if x <= 0.5 and y <= 0.5:
+                    same_half += 1
                 points.append((x, y))
             except ValueError:
                 print(f"Skipping invalid line: {line.strip()}")
+    print("Total: " + str(total) + " greater:" + str(greater) + " same_half: " + str(same_half))
     return points
 
 

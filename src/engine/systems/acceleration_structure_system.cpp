@@ -71,10 +71,6 @@ namespace ECS
             COORDINATOR().AddComponent<ECS::COMPONENTS::FDeviceTransformComponent>(NewMeshInstance, {});
             TRANSFORM_SYSTEM()->SyncTransform(NewMeshInstance);
 
-            COORDINATOR().AddComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(NewMeshInstance, {});
-            auto& DeviceRenderableComponent = RENDERABLE_SYSTEM()->GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(NewMeshInstance);
-            DeviceRenderableComponent.MeshIndex = Entity;
-
             auto& ModelMatrix = COORDINATOR().GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(NewMeshInstance).ModelMatrix.Data;
             auto& BLAS = GetComponent<ECS::COMPONENTS::FAccelerationStructureComponent>(Entity);
 
@@ -88,6 +84,11 @@ namespace ECS
             MeshInstanceComponent.mask = 0xFF;
             MeshInstanceComponent.accelerationStructureReference = VK_CONTEXT()->GetASDeviceAddressInfo(BLAS.AccelerationStructure);
             MeshInstanceComponent.instanceShaderBindingTableRecordOffset = 0;
+
+			COORDINATOR().AddComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(NewMeshInstance, {});
+			auto& DeviceRenderableComponent = RENDERABLE_SYSTEM()->GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(NewMeshInstance);
+			DeviceRenderableComponent.MeshIndex = Entity;
+			DeviceRenderableComponent.RenderableIndex = MeshInstanceComponent.instanceCustomIndex;
 
             MarkDirty(NewMeshInstance);
             bIsDirty = true;

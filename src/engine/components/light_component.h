@@ -71,7 +71,7 @@ namespace ECS
 		{
 			FAreaLightComponent()
 			{
-					MeshIndex = 0;
+					IsIndexedFlagAndRenderableIndex = 0;
 					NumberOfTriangles = 0;
 					TransformIndex = 0;
 					MaterialIndex = 0;
@@ -80,9 +80,8 @@ namespace ECS
 					IndexBufferAddress = 0;
 			};
 
-			FAreaLightComponent(uint32_t MeshIndexIn, uint32_t NumberOfTrianglesIn, uint32_t TransformIndexIn, uint32_t MaterialIndexIn, uint64_t VertexBufferAddressIn, uint64_t IndexBufferAddressIn)
+			FAreaLightComponent(uint32_t NumberOfTrianglesIn, uint32_t TransformIndexIn, uint32_t MaterialIndexIn, uint64_t VertexBufferAddressIn, uint64_t IndexBufferAddressIn)
 			{
-					MeshIndex = MeshIndexIn;
 					NumberOfTriangles = NumberOfTrianglesIn;
 					TransformIndex = TransformIndexIn;
 					MaterialIndex = MaterialIndexIn;

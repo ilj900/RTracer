@@ -21,6 +21,10 @@
 #define M_INV_PI 1 / M_PI
 #endif
 
+#ifndef UINT_MAX
+#define UINT_MAX 0xFFFFFFFF
+#endif
+
 #define MAX_TEXTURES 															512
 #define TOTAL_MATERIALS 														128 /// 126 Materials + IBL + material for inactive ray
 #define IBL_MATERIAL_INDEX														TOTAL_MATERIALS - 2

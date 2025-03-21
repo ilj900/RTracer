@@ -90,9 +90,13 @@ namespace ECS
 			AreaLightComponent.IndexBufferAddress = RenderableComponent.IndexBufferAddress;
 			AreaLightComponent.VertexBufferAddress = RenderableComponent.VertexBufferAddress;
 			AreaLightComponent.TransformIndex = RenderableComponent.TransformIndex;
-			AreaLightComponent.MeshIndex = RenderableComponent.MeshIndex;
 			AreaLightComponent.MaterialIndex = RenderableComponent.MaterialIndex;
-			AreaLightComponent.NumberOfTriangles = MeshComponent.Indices.size() / 3;
+
+			/// We pack renderable index and IsIndex flag in one field
+			uint32_t IsIndexedFlagAndRenderableIndex = MeshComponent.Indices.empty() ? 0 : 1u << 31;
+			IsIndexedFlagAndRenderableIndex |= RenderableComponent.RenderableIndex;
+			AreaLightComponent.IsIndexedFlagAndRenderableIndex = IsIndexedFlagAndRenderableIndex;
+			AreaLightComponent.NumberOfTriangles = MeshComponent.Indices.empty() ? (MeshComponent.Vertices.size() / 3) : (MeshComponent.Indices.size() / 3);
 
             MarkDirty(Light);
 
