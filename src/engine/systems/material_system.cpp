@@ -791,6 +791,11 @@ namespace ECS
 
 			if (EmissiveMaterials.empty())
 			{
+				Result += "FDeviceMaterial GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex)\r\n";
+				Result += "{\r\n";
+				Result += "    FDeviceMaterial Material;\r\n";
+				Result += "    return Material;\r\n";
+				Result += "};\r\n";
 				return Result;
 			}
 

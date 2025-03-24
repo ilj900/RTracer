@@ -1153,7 +1153,7 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
     Image->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     RESOURCE_ALLOCATOR()->LoadDataToImage(*Image, Width * Height * 4 * sizeof(float), Out);
 
-	auto [ImportanceBuffer, InversePDFWeights] = GenerateImportanceMap(Out, Width, Height);
+	auto [ImportanceBuffer, InversePDFWeights] = GenerateImportanceMap<FVector4>((void*)Out, Width, Height, Width, Height, [](FVector4 Val){return 0.2126 * Val.x+ 0.7152 * Val.y + 0.0722 * Val.z;});
 
 	FBuffer IBLImportanceBuffer;
 
