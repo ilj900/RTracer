@@ -462,6 +462,11 @@ vec3 ComputeAreaLightInput(inout FSamplingState SamplingState, uint AreaLightsCo
 
         /// Compute UV
         vec2 UV = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
+        /// Compute normal
+        vec3 AreaLightTriangleNormal = (V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z);
+        AreaLightTriangleNormal = AreaLightTriangleNormal * mat3(Transform.InverseModelMatrix);
+        AreaLightTriangleNormal = normalize(AreaLightTriangleNormal);
+        float NDotI = abs(dot(AreaLightTriangleNormal, LightDirection));
 
         /// Get the material
         FDeviceMaterial EmissiveMaterial = GetEmissiveMaterial(UV, AreaLight.MaterialIndex);
@@ -470,6 +475,8 @@ vec3 ComputeAreaLightInput(inout FSamplingState SamplingState, uint AreaLightsCo
         float Area = length(0.5f * cross((V1.Position - V0.Position), (V2.Position - V0.Position)));
         PDF /= Area;
         PDF /= AreaLight.NumberOfTriangles;
+        PDF /= AreaLightsCount;
+        PDF /= NDotI;
 
         return EmissiveMaterial.EmissionColor / PDF ;
     }
@@ -525,30 +532,6 @@ vec3 ComputeIBLInput(inout FSamplingState SamplingState, vec3 Normal, vec3 World
     {
         return vec3(0);
     }
-}
-
-float ComputeLightPdf(FRayData RayData, float NDotL)
-{
-    if (CheckFlag(RayData.RayFlags, DIFFUSE_LAYER))
-    {
-        return NDotL / M_PI;
-    } else if (CheckFlag(RayData.RayFlags, SPECULAR_LAYER))
-    {
-        return 0;
-    } else if (CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER))
-    {
-        return 0;
-    } else if (CheckFlag(RayData.RayFlags, SUBSURFACE_LAYER))
-    {
-        return 0;
-    } else if (CheckFlag(RayData.RayFlags, SHEEN_LAYER))
-    {
-        return 0;
-    } else if (CheckFlag(RayData.RayFlags, COAT_LAYER))
-    {
-        return 0;
-    }
-    return 0;
 }
 
 vec4 IndexToColor(uint Value)
@@ -661,8 +644,7 @@ void main()
     {
         float NDotL;
         AreaLightSamplingResult = ComputeAreaLightInput(SamplingState, AreaLightsCount, NormalInWorldSpace, WorldSpacePosition, NDotL);
-        float AreaLightPDF = ComputeLightPdf(RayData, NDotL);
-        AreaLightSamplingResult /= AreaLightPDF;
+
     }
 
     /// Sample IBL
