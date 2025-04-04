@@ -106,10 +106,10 @@ vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Norma
 #define OREN_NAYAR
 #ifdef OREN_NAYAR
 		BXDF.xyz = SampleOrenNayar(-TangentSpaceViewDirection, TangentSpaceReflectionDirection, Material.BaseColor, Material.DiffuseRoughness);
-		BXDF.w = PDFLambertian(TangentSpaceReflectionDirection);
+		BXDF.w = PDFOrenNayar(TangentSpaceReflectionDirection);
 #else
 		BXDF.xyz = SampleLambertian(Material.BaseColor);
-		BXDF.w = PDFOrenNayar(TangentSpaceReflectionDirection);
+		BXDF.w = PDFLambertian(TangentSpaceReflectionDirection);
 #endif
 		RayData.Direction.xyz = TangentSpaceReflectionDirection * transpose(TNBMatrix);
 		break;
