@@ -107,6 +107,13 @@ struct FUtilityData
 	uint32_t ActiveAreaLightsCount;
 };
 
+/// Should be aligned with FAliasTableEntry
+struct FDeviceAliasTableEntry
+{
+	float Threshold;
+	uint32_t Alias;
+};
+
 struct FDeviceMaterial
 {
     float BaseWeight;

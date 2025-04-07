@@ -81,7 +81,7 @@ layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_AREA_LIGHTS_BU
 
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_IMPORTANCE_BUFFER_INDEX) buffer IBLImportanceBufferObject
 {
-    uvec2 IBLImportanceBuffer[];
+    FDeviceAliasTableEntry IBLImportanceBuffer[];
 };
 
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_IMAGE_SAMPLER_INDEX) uniform sampler2D IBLTextureSampler;
@@ -492,9 +492,18 @@ vec3 ComputeIBLInput(inout FSamplingState SamplingState, vec3 Normal, vec3 World
     const uvec2 IBLSize = textureSize(IBLTextureSampler, 0);
     const uint SampleIndex = uint(IBLSize.x * IBLSize.y * SampleUV.y) + uint(IBLSize.x * SampleUV.x);
     /// Get the interval of pixels that we want to sample
-    uvec2 ImportanceSampleInterval = IBLImportanceBuffer[SampleIndex];
+    FDeviceAliasTableEntry ImportanceSampleInterval = IBLImportanceBuffer[SampleIndex];
     /// Get texel index
-    uint TexelIndex = ImportanceSampleInterval.x + uint(float((ImportanceSampleInterval.y - ImportanceSampleInterval.x)) * RandomFloat(SamplingState));
+    uint TexelIndex = 0;
+    if (RandomFloat(SamplingState) < ImportanceSampleInterval.Threshold)
+    {
+        TexelIndex = SampleIndex;
+    }
+    else
+    {
+        TexelIndex = ImportanceSampleInterval.Alias;
+    }
+
     /// Transform texel index into actual UV coordinates
     vec2 UVCoordinates = vec2((float(TexelIndex % IBLSize.x) + 0.5) / float(IBLSize.x), (float(TexelIndex / IBLSize.x) + 0.5) / float(IBLSize.y));
     /// Map them to spherical coordinates

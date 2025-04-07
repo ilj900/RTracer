@@ -12,6 +12,7 @@
 #include <optional>
 #include <set>
 #include <stdexcept>
+#include <queue>
 #include <vector>
 
 struct FVersion3
@@ -146,108 +147,130 @@ struct FVulkanContextOptions
     FDeviceOptions DeviceOptions;
 };
 
-struct FMargin
+struct FAliasTableEntry
 {
-	FMargin() {};
-	FMargin(uint32_t L, uint32_t R) : Left(L), Right(R) {};
-	uint32_t Left;
-	uint32_t Right;
+	FAliasTableEntry() {};
+	FAliasTableEntry(float T, uint32_t A): Threshold(T), Alias(A) {};
+	float Threshold;
+	uint32_t Alias;
 };
 
 /// @brief Generate importance sampling map and a weight map.
 /// WidthIn and HeightIn are dimensions of the incoming DataIn.
-/// WidthOut and HeightOut are the size of the outcoming image.
 /// Evaluator is a function that measures a value of a single T. For example in case of rbg color it can be luminosity of that color.
-/// The result is a pair of two vectors: Importance map of FMargin and a vector(map) of each value weight.
+/// The result is a pair of two vectors: Importance map of FAliasTableEntry and a vector(map) of each value weight.
 template <typename T>
-std::pair<std::vector<FMargin>, std::vector<float>> GenerateImportanceMap(void* DataIn, uint32_t WidthIn, uint32_t HeightIn, uint32_t WidthOut, uint32_t HeightOut, std::function<double(T)> Evaluator)
+std::pair<std::vector<FAliasTableEntry>, std::vector<float>> GenerateImportanceMapFast(void* DataIn, uint32_t Width, uint32_t Height, std::function<double(T)> Evaluator)
 {
 	/// Cast the pointer;
 	T* Data = static_cast<T*>(DataIn);
-	/// Total number of incoming values
-	uint32_t TotalValuesCountIn = WidthIn * HeightIn;
 	/// Total number of pixels in the output image
-	uint32_t PixelsCountOut = WidthOut * HeightOut;
+	uint32_t PixelsCount = Width * Height;
 
 	/// We have to use double, cause the precision of float might not be enough in some cases
-	std::vector<double> EachValueEvaluated(TotalValuesCountIn);
+	std::vector<double> PDF(PixelsCount);
 
 	/// Calculate measured value of each entry (For example if we have a FVector4 as T, we need a function that will return it's 'value' (like Luminosity)
-	for (int i = 0; i < TotalValuesCountIn; ++i)
+	for (int i = 0; i < PixelsCount; ++i)
 	{
-		EachValueEvaluated[i] = Evaluator(Data[i]);
+		PDF[i] = Evaluator(Data[i]);
 	}
 
 	/// Calculate 'total value' by copying sorting and adding all the values
-	auto Copy = EachValueEvaluated;
+	auto Copy = PDF;
 	std::sort(Copy.begin(), Copy.end());
 	double TotalValueSum = std::accumulate(Copy.begin(), Copy.end(), 0.);
 
-	if (TotalValueSum > 0.)
-	{
-		/// Compute probability for each value
-		std::vector<double> PDF(TotalValuesCountIn);
+	std::vector<FAliasTableEntry> IBLSamplingMap;
+	std::vector<float> InversePDFWeights;
 
-		for (int i = 0; i < TotalValuesCountIn; ++i)
-		{
-			PDF[i] = EachValueEvaluated[i] / TotalValueSum;
-		}
-
-		/// Calculate CDF
-		std::vector<double> CDF(TotalValuesCountIn + 1);
-		CDF[0] = 0;
-
-		for (int i = 1; i < CDF.size(); ++i)
-		{
-			CDF[i] = CDF[i - 1] + PDF[i - 1];
-		}
-		CDF.back() = 1.;
-
-		/// Map of margins that later will be use as a texture
-		std::vector<FMargin> SamplingMap(PixelsCountOut);
-		double				 Stride = 1. / double(PixelsCountOut);
-		uint32_t			 Slow = 0;
-		uint32_t			 Fast = 0;
-
-		for (int i = 0; i < SamplingMap.size(); ++i)
-		{
-			/// We get the left and right values of a uniform distribution margins
-			double Left = i * Stride;
-			double Right = (i + 1) * Stride;
-
-			/// Iterate Slow until it enters the margin
-			while (Slow < PixelsCountOut && CDF[Slow] <= Left)
-			{
-				Slow++;
-			}
-
-			/// Iterate Fast until it leaves the margin
-			while (Fast < PixelsCountOut && CDF[Fast] <= Right)
-			{
-				Fast++;
-			}
-
-			/// Record the margin. Slow - 1 is the index of texel that "enters" the margin and Fast - 1 is the index of pixel that leaves the margin
-			SamplingMap[i] = { Slow - 1, Fast - 1 };
-		}
-
-		std::vector<float> InversePDFWeights(TotalValuesCountIn);
-		const double	   UniformPDF = 1.f / static_cast<double>(TotalValuesCountIn);
-
-		for (int i = 0; i < TotalValuesCountIn; ++i)
-		{
-			InversePDFWeights[i] = static_cast<float>(UniformPDF / PDF[i]);
-		}
-
-		return {SamplingMap, InversePDFWeights};
-	}
-	else
+	if (TotalValueSum <= 0.)
 	{
 		/// For cases like totally black IBL
-		std::vector<FMargin> IBLSamplingMap(1, {0, 0});
-		std::vector<float> InversePDFWeights(1, 1.);
+		IBLSamplingMap.emplace_back(FAliasTableEntry{1.f, 0});
+		InversePDFWeights.emplace_back(1.f);
 		return {IBLSamplingMap, InversePDFWeights};
 	}
+
+	IBLSamplingMap.resize(PixelsCount);
+	InversePDFWeights.resize(PixelsCount);
+	double UniformPDF = 1. / PixelsCount;
+
+	for (uint32_t i = 0; i < PixelsCount; ++i)
+	{
+		PDF[i] /= TotalValueSum;
+		InversePDFWeights[i] = UniformPDF / PDF[i];
+	}
+
+	std::vector<double> NormalizedValues(PixelsCount);
+	std::queue<uint32_t> IndicesThatGreater;
+	std::queue<uint32_t> IndicesThatSmaller;
+
+	for (uint32_t i = 0; i < PixelsCount; ++i)
+	{
+		NormalizedValues[i] = {PDF[i] * PixelsCount};
+		if (NormalizedValues[i] < 1.)
+		{
+			IndicesThatSmaller.push(i);
+			continue;
+		}
+		if (NormalizedValues[i] > 1.)
+		{
+			IndicesThatGreater.push(i);
+		}
+	}
+
+	std::vector<double> Probabilities(PixelsCount);
+	std::vector<uint32_t> Alias(PixelsCount);
+
+	/// We run it until there's only one element left in each group
+	/// Because of floating point precision they wouldn't get to perfect 1.
+	while (!IndicesThatSmaller.empty() && !IndicesThatGreater.empty())
+	{
+		uint32_t SmallIndex = IndicesThatSmaller.front();
+		uint32_t LargeIndex = IndicesThatGreater.front();
+		IndicesThatSmaller.pop();
+		IndicesThatGreater.pop();
+
+		Probabilities[SmallIndex] = NormalizedValues[SmallIndex];
+		Alias[SmallIndex] = LargeIndex;
+
+		NormalizedValues[LargeIndex] = NormalizedValues[LargeIndex] - (1. - NormalizedValues[SmallIndex]);
+
+		if (NormalizedValues[LargeIndex] < 1.)
+		{
+			IndicesThatSmaller.push(LargeIndex);
+		}
+		else
+		{
+			IndicesThatGreater.push(LargeIndex);
+		}
+	}
+
+	while (!IndicesThatGreater.empty())
+	{
+		uint32_t L = IndicesThatGreater.back();
+		IndicesThatGreater.pop();
+		Probabilities[L] = 1.;
+		Alias[L] = L;
+	}
+
+	while (!IndicesThatSmaller.empty())
+	{
+		uint32_t S = IndicesThatSmaller.back();
+		IndicesThatSmaller.pop();
+		Probabilities[S] = 1.;
+		Alias[S] = S;
+	}
+
+	std::vector<FAliasTableEntry> Result(PixelsCount);
+	for (uint32_t i = 0; i < PixelsCount; ++i)
+	{
+		Result[i].Threshold = Probabilities[i];
+		Result[i].Alias = Alias[i];
+	}
+
+	return {Result, InversePDFWeights};
 }
 
 std::string ReadFileToString(const std::string& FileName);

@@ -46,7 +46,7 @@ int FApplication::Run()
 {
 	uint32_t ImageIndex = UINT32_MAX;
 	//LoadCamera(Controller->Camera, Render, "../data/cameras/Test");
-	SceneLoader->LoadScene(SCENE_AREA_LIGHTS);
+	SceneLoader->LoadScene(SCENE_CORNELL_BOX);
 
 	FSynchronizationPoint RenderingFinished;
 
