@@ -89,6 +89,8 @@ float PDFLambertian(vec3 OutgoingTangentSpaceDirection)
 	return OutgoingTangentSpaceDirection.y * M_INV_PI;
 }
 
+/// Generates a scattered ray, compute BxDF and a PDF of such ray scattering
+/// Returned result BxDF in 'xyz' part and PDF inv 'w'
 vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 NormalInWorldSpace, inout FSamplingState SamplingState, bool bFrontFacing)
 {
 	float LayerSample = RandomFloat(SamplingState);

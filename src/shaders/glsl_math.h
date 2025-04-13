@@ -34,4 +34,12 @@ float CosPhi(vec3 Vector)
 	return SinTheta == 0.f ? 1.f : clamp(Vector.x / SinTheta, -1.f, 1.f);
 }
 
+float PowerHeuristic(int NF, float FPDF, int NG, float GPDF)
+{
+	float F = NF * FPDF;
+	float G = NG * GPDF;
+
+	return (F * F) / (F * F + G * G);
+}
+
 #endif //GLSL_MATH_H

@@ -802,6 +802,8 @@ namespace ECS
 			Result += "FDeviceMaterial GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex)\r\n";
 			Result += "{\r\n";
 			Result += "    FDeviceMaterial Material;\r\n";
+			/// We need to initialize it to 0, so that it would work as a mark whether material is emissive or not
+			Result += "    Material.EmissionWeight = 0;\r\n";
 			Result += "    switch(MaterialIndex)\r\n";
 			Result += "    {\r\n";
 			for (auto& Entry : EmissiveMaterials)
@@ -811,6 +813,7 @@ namespace ECS
 				Result += "    {\r\n";
 				Result += "    " + GenerateGetFunctionVector3("Material.EmissionColor", MaterialComponent.EmissionColorTexture, MaterialComponent.EmissionColor);
 				Result += "    " + GenerateGetFunctionFloat("Material.EmissionWeight", MaterialComponent.EmissionWeightTexture, MaterialComponent.EmissionWeight);
+				Result += "    break;\r\n";
 				Result += "    }\r\n";
 			}
 			Result += "    };\r\n";

@@ -182,24 +182,23 @@ std::pair<std::vector<FAliasTableEntry>, std::vector<float>> GenerateImportanceM
 	double TotalValueSum = std::accumulate(Copy.begin(), Copy.end(), 0.);
 
 	std::vector<FAliasTableEntry> IBLSamplingMap;
-	std::vector<float> InversePDFWeights;
+	std::vector<float> PDFResult;
 
 	if (TotalValueSum <= 0.)
 	{
 		/// For cases like totally black IBL
 		IBLSamplingMap.emplace_back(FAliasTableEntry{1.f, 0});
-		InversePDFWeights.emplace_back(1.f);
-		return {IBLSamplingMap, InversePDFWeights};
+		PDFResult.emplace_back(1.f);
+		return {IBLSamplingMap, PDFResult};
 	}
 
 	IBLSamplingMap.resize(PixelsCount);
-	InversePDFWeights.resize(PixelsCount);
-	double UniformPDF = 1. / PixelsCount;
+	PDFResult.resize(PixelsCount);
 
 	for (uint32_t i = 0; i < PixelsCount; ++i)
 	{
 		PDF[i] /= TotalValueSum;
-		InversePDFWeights[i] = UniformPDF / PDF[i];
+		PDFResult[i] = PDF[i];
 	}
 
 	std::vector<double> NormalizedValues(PixelsCount);
@@ -270,7 +269,7 @@ std::pair<std::vector<FAliasTableEntry>, std::vector<float>> GenerateImportanceM
 		Result[i].Alias = Alias[i];
 	}
 
-	return {Result, InversePDFWeights};
+	return {Result, PDFResult};
 }
 
 std::string ReadFileToString(const std::string& FileName);

@@ -86,9 +86,10 @@ layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_IMPORTANCE
 
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_IMAGE_SAMPLER_INDEX) uniform sampler2D IBLTextureSampler;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_WEIGHTS_BUFFER_INDEX) buffer IBLWeightsBufferObject
+/// TODO: Remove it
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_PDF_BUFFER_INDEX) buffer IBLPDFBufferObject
 {
-    float IBLWeightsBuffer[];
+    float IBLPDFBuffer[];
 };
 
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_UTILITY_BUFFER_INDEX) uniform UtilityDataUniformBufferObject
@@ -244,7 +245,9 @@ out vec3 NormalInWorldSpace, out vec3 PointOfIntersectionInWorldSpace, out vec2 
     TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
 }
 
-vec3 ComputeDirectionalLightInput(inout FSamplingState SamplingState, uint DirectionalLightsCount, vec3 Normal, vec3 WorldSpacePosition)
+/// Sample a directional light and return:
+/// Sampled light color int 'xyz' and pdf of sampling it in 'w'
+vec4 ComputeDirectionalLightInput(inout FSamplingState SamplingState, uint DirectionalLightsCount, vec3 Normal, vec3 WorldSpacePosition)
 {
     /// Get light index
     const uint LightIndex = uint(RandomFloat(SamplingState) * DirectionalLightsCount);
@@ -255,7 +258,7 @@ vec3 ComputeDirectionalLightInput(inout FSamplingState SamplingState, uint Direc
 
     if(NDotI <= 0)
     {
-        return vec3(0);
+        return vec4(0);
     }
 
     /// Construct a ray that goes to the light
@@ -270,15 +273,17 @@ vec3 ComputeDirectionalLightInput(inout FSamplingState SamplingState, uint Direc
     /// And if we didn't hit any geometry, then we store light data
     if (HitPayload.RenderableIndex == UINT_MAX)
     {
-        return DirectionalLight.Color * DirectionalLight.Intensity * NDotI;
+        /// Here, the probability of sampling a particular directional light is one to the number of directional lights
+        /// Should the probablity depend on the total power of all directional lights?
+        return vec4(DirectionalLight.Color * DirectionalLight.Intensity * NDotI, 1.f / DirectionalLightsCount);
     }
     else
     {
-        return vec3(0);
+        return vec4(0);
     }
 }
 
-vec3 ComputePointLightInput(inout FSamplingState SamplingState, uint PointLightsCount, vec3 Normal, vec3 WorldSpacePosition)
+vec4 ComputePointLightInput(inout FSamplingState SamplingState, uint PointLightsCount, vec3 Normal, vec3 WorldSpacePosition)
 {
     /// Get light index
     const uint LightIndex = uint(RandomFloat(SamplingState) * PointLightsCount);
@@ -292,7 +297,7 @@ vec3 ComputePointLightInput(inout FSamplingState SamplingState, uint PointLights
 
     if(NDotI <= 0)
     {
-        return vec3(0);
+        return vec4(0);
     }
 
     /// Construct a ray that goes to the light
@@ -309,15 +314,17 @@ vec3 ComputePointLightInput(inout FSamplingState SamplingState, uint PointLights
     {
         float Attenuation = 1.f / LightDistance;
         Attenuation *= Attenuation;
-        return PointLight.Color * PointLight.Intensity * Attenuation * NDotI;
+        /// Here, the probability of sampling a particular point light is one to the number of point lights
+        /// Should the probablity depend on the total power of all point lights?
+        return vec4(PointLight.Color * PointLight.Intensity * Attenuation * NDotI, 1.f / PointLightsCount);
     }
     else
     {
-        return vec3(0);
+        return vec4(0);
     }
 }
 
-vec3 ComputeSpotLightInput(inout FSamplingState SamplingState, uint SpotLightsCount, vec3 Normal, vec3 WorldSpacePosition)
+vec4 ComputeSpotLightInput(inout FSamplingState SamplingState, uint SpotLightsCount, vec3 Normal, vec3 WorldSpacePosition)
 {
     /// Get light index
     const uint LightIndex = uint(RandomFloat(SamplingState) * SpotLightsCount);
@@ -331,14 +338,14 @@ vec3 ComputeSpotLightInput(inout FSamplingState SamplingState, uint SpotLightsCo
 
     if(NDotI <= 0)
     {
-        return vec3(0);
+        return vec4(0);
     }
 
     float LightAngle = acos(dot(SpotLight.Direction, -LightDirection));
     /// If point is outside out outer angle, it is also not illuminated
     if (LightAngle > SpotLight.OuterAngle)
     {
-        return vec3(0);
+        return vec4(0);
     }
 
     /// Construct a ray that goes to the light
@@ -365,15 +372,17 @@ vec3 ComputeSpotLightInput(inout FSamplingState SamplingState, uint SpotLightsCo
             Attenuation *= pow((1. - Fraction), 2.4);
         }
 
-        return SpotLight.Color * SpotLight.Intensity * Attenuation * NDotI;
+        /// Here, the probability of sampling a particular spot light is one to the number of spot lights
+        /// Should the probablity depend on the total power of all spot lights?
+        return vec4(SpotLight.Color * SpotLight.Intensity * Attenuation * NDotI, 1.f / SpotLightsCount);
     }
     else
     {
-        return vec3(0);
+        return vec4(0);
     }
 }
 
-vec3 ComputeAreaLightInput(inout FSamplingState SamplingState, uint AreaLightsCount, vec3 Normal, vec3 WorldSpacePosition, out float NDotL)
+vec4 SampleDirectAreaLight(inout FSamplingState SamplingState, uint AreaLightsCount, vec3 Normal, vec3 WorldSpacePosition, out float NDotL)
 {
     /// Get light index
     const uint LightIndex = uint(RandomFloat(SamplingState) * AreaLightsCount);
@@ -443,7 +452,8 @@ vec3 ComputeAreaLightInput(inout FSamplingState SamplingState, uint AreaLightsCo
 
     if(NDotL <= 0)
     {
-        return vec3(0);
+        /// Light is on the other side
+        return vec4(0);
     }
 
     /// Construct a ray that goes to the light
@@ -478,15 +488,96 @@ vec3 ComputeAreaLightInput(inout FSamplingState SamplingState, uint AreaLightsCo
         PDF /= AreaLightsCount;
         PDF /= NDotI;
 
-        return EmissiveMaterial.EmissionColor / PDF ;
+        return vec4(EmissiveMaterial.EmissionColor, PDF);
     }
     else
     {
-        return vec3(0);
+        /// Something ocludded the light
+        return vec4(0);
     }
 }
 
-vec3 ComputeIBLInput(inout FSamplingState SamplingState, vec3 Normal, vec3 WorldSpacePosition)
+vec4 SampleBxDFAreaLight(inout FSamplingState SamplingState, vec3 Normal, vec3 WorldSpacePosition, vec3 Outgoing, out float NDotL, float MaterialPDF)
+{
+    /// Construct a shadow ray
+    FRayData RayData;
+    RayData.RayFlags = 0;
+    RayData.Direction.xyz = Outgoing;
+    RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
+
+    /// Trace the ray
+    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
+
+    /// If we hit any geometry, let's check whether it's an emissive
+    if (HitPayload.RenderableIndex != UINT_MAX)
+    {
+        FRenderable Renderable = Renderables[HitPayload.RenderableIndex];
+        Vertices Verts = Vertices(Renderable.VertexBufferAddress);
+        Indices Inds = Indices(Renderable.IndexBufferAddress);
+
+        FDeviceVertex DV0;
+        FDeviceVertex DV1;
+        FDeviceVertex DV2;
+
+        if (IsIndexed(Renderable))
+        {
+            uint I0 = 0;
+            uint I1 = 1;
+            uint I2 = 2;
+
+            I0 = Inds.I[Hit.PrimitiveIndex * 3];
+            I1 = Inds.I[Hit.PrimitiveIndex * 3 + 1];
+            I2 = Inds.I[Hit.PrimitiveIndex * 3 + 2];
+
+            DV0 = Verts.V[I0];
+            DV1 = Verts.V[I1];
+            DV2 = Verts.V[I2];
+        }
+        else
+        {
+            uint Index = Hit.PrimitiveIndex * 3;
+            DV0 = Verts.V[Index];
+            DV1 = Verts.V[Index + 1];
+            DV2 = Verts.V[Index + 2];
+        }
+
+        /// Unpack data
+        FVertex V0 = UnpackDeviceVertex(DV0);
+        FVertex V1 = UnpackDeviceVertex(DV1);
+        FVertex V2 = UnpackDeviceVertex(DV2);
+
+        vec3 Barycentrics = vec3(1.0 - Hit.HitUV.x - Hit.HitUV.y, Hit.HitUV.x, Hit.HitUV.y);
+        TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
+
+        FDeviceMaterial EmissiveMaterial = GetEmissiveMaterial(TextureCoords, Renderable.MaterialIndex);
+
+        if (EmissiveMaterial.EmissionWeight != 0)
+        {
+            FDeviceTransform Transform = DeviceTransforms[Renderable.TransformIndex];
+
+            EmissiveNormalInWorldSpace = (V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z);
+            /// Pay more attention to why vector * matrix, and not vice versa
+            EmissiveNormalInWorldSpace = EmissiveNormalInWorldSpace * mat3(Transform.InverseModelMatrix);
+            EmissiveNormalInWorldSpace = normalize(EmissiveNormalInWorldSpace);
+
+            /// This is the cosine of the angle betweeen the emissive triangle's normal and a shaddow ray direction
+            /// Why do we take the abs? Because the shadow ray is guaranted to be on the correct side of the hemisphere and
+            /// we don't have two sided materials, so emissive emmit on both sides
+            float NDotI = abs(dot(EmissiveNormalInWorldSpace, RayData.Direction.xyz));
+
+            vec4 Result = vec4(0);
+            Result.xyz = EmissiveMaterial.EmissionColor * NDotL * NDotI * EmissiveMaterial.EmissionWeight;
+            /// PDF is alreaddy known due to material evaluation
+            Result.w = MaterialPDF;
+
+            return Result;
+        }
+    }
+
+    return vec4(0);
+}
+
+vec4 ComputeIBLInput(inout FSamplingState SamplingState, vec3 Normal, vec3 WorldSpacePosition)
 {
     const vec2 SampleUV = Sample2DUnitQuad(SamplingState);
     const uvec2 IBLSize = textureSize(IBLTextureSampler, 0);
@@ -518,8 +609,7 @@ vec3 ComputeIBLInput(inout FSamplingState SamplingState, vec3 Normal, vec3 World
 
     if(NDotI <= 0)
     {
-        /// TODO: Doublecheck logic
-        return vec3(0);
+        return vec4(0);
     }
 
     FRayData RayData;
@@ -533,13 +623,12 @@ vec3 ComputeIBLInput(inout FSamplingState SamplingState, vec3 Normal, vec3 World
     /// And if we didn't hit any geometry, then we sample the IBL
     if (HitPayload.RenderableIndex == UINT_MAX)
     {
-        /// TODO: We can multiply IBL and Weight on CPU
-        float Weight = IBLWeightsBuffer[TexelIndex];
-        return texture(IBLTextureSampler, UVCoordinates).xyz * Weight * NDotI;
+        float PDF = IBLPDFBuffer[TexelIndex];
+        return vec4(texture(IBLTextureSampler, UVCoordinates).xyz * NDotI, PDF);
     }
     else
     {
-        return vec3(0);
+        return vec4(0);
     }
 }
 
@@ -618,8 +707,17 @@ void main()
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
     vec4 MaterialSamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace, SamplingState, bFrontFacing);
 
+    /// If we hit emissive material we add it's input and terminate the ray
+    if (CheckFlag(RayData.RayFlags, EMISSION_LAYER))
+    {
+        vec3 FinalValue = PushConstants.BounceIndex == 0 ? MaterialSamplingResult.xyz : (CumulativeMaterialColorBuffer[PixelIndex].xyz * MaterialSamplingResult.xyz);
+        RayDataBuffer[PixelIndex].RayFlags = RAY_DATA_RAY_MISSED;
+        imageStore(OutcomingImage, ivec2(PixelCoords), vec4(FinalValue , 1));
+        return;
+    }
+
     /// Sample directional light
-    vec3 DirectionalLightSamplingResult = vec3(0);
+    vec4 DirectionalLightSamplingResult = vec4(0);
     uint DirectionalLightsCount = UtilityData.ActiveDirectionalLightsCount;
     SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_LIGHT);
 
@@ -629,7 +727,7 @@ void main()
     }
 
     /// Sample point light
-    vec3 PointLightSamplingResult = vec3(0);
+    vec4 PointLightSamplingResult = vec4(0);
     uint PointLightsCount = UtilityData.ActivePointLightsCount;
 
     if (PointLightsCount != 0)
@@ -638,7 +736,7 @@ void main()
     }
 
     /// Sample spot light
-    vec3 SpotLightSamplingResult = vec3(0);
+    vec4 SpotLightSamplingResult = vec4(0);
     uint SpotLightsCount = UtilityData.ActiveSpotLightsCount;
 
     if (SpotLightsCount != 0)
@@ -646,32 +744,31 @@ void main()
         SpotLightSamplingResult = ComputeSpotLightInput(SamplingState, SpotLightsCount, NormalInWorldSpace, WorldSpacePosition);
     }
 
-    vec3 AreaLightSamplingResult = vec3(0);
+    vec4 AreaLightInput = vec4(0);
     uint AreaLightsCount = UtilityData.ActiveAreaLightsCount;
 
     if (AreaLightsCount != 0)
     {
         float NDotL;
-        AreaLightSamplingResult = ComputeAreaLightInput(SamplingState, AreaLightsCount, NormalInWorldSpace, WorldSpacePosition, NDotL);
+        vec4 DirectAreaLightSamplingResult = SampleDirectAreaLight(SamplingState, AreaLightsCount, NormalInWorldSpace, WorldSpacePosition, NDotL);
+        vec4 BxDFAreaLightSamplingResult = SampleBxDFAreaLight(SamplingState, NormalInWorldSpace, WorldSpacePosition, RayData.Direction.xyz, NDotL, MaterialSamplingResult.w);
 
+        /// Apply balance heuristics
+        float WSum = DirectAreaLightSamplingResult.w + BxDFAreaLightSamplingResult.w;
+        float W1 = DirectAreaLightSamplingResult.w / WSum;
+        float W2 = BxDFAreaLightSamplingResult.w / WSum;
+        AreaLightInput = W1 * DirectAreaLightSamplingResult.xyz + W2 * BxDFAreaLightSamplingResult.xyz;
+        /// A dirty hack to accound for division by PDF later, though it's not
+        AreaLightInput.w = 1;
     }
 
     /// Sample IBL
-    vec3 IBLSamplingResult = vec3(0);
+    vec4 IBLSamplingResult = vec4(0);
 
     /// TODO:
     if (true/*UtilityData.IBLIsActive*/)
     {
         IBLSamplingResult = ComputeIBLInput(SamplingState, NormalInWorldSpace, WorldSpacePosition);
-    }
-
-    /// If we hit emissive material we add it's input and terminate the ray
-    if (CheckFlag(RayData.RayFlags, EMISSION_LAYER))
-    {
-        vec3 FinalValue = PushConstants.BounceIndex == 0 ? MaterialSamplingResult.xyz : (CumulativeMaterialColorBuffer[PixelIndex].xyz * MaterialSamplingResult.xyz);
-        RayDataBuffer[PixelIndex].RayFlags = RAY_DATA_RAY_MISSED;
-        imageStore(OutcomingImage, ivec2(PixelCoords), vec4(FinalValue , 1));
-        return;
     }
 
     MaterialSamplingResult.xyz /= MaterialSamplingResult.w;
@@ -687,7 +784,11 @@ void main()
     if (!CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER)
     &&!CheckFlag(RayData.RayFlags, SPECULAR_LAYER))
     {
-        TotalIncomingLight = IBLSamplingResult + PointLightSamplingResult + DirectionalLightSamplingResult + SpotLightSamplingResult + AreaLightSamplingResult;
+        TotalIncomingLight += IBLSamplingResult.w == 0.f ? vec3(0) : IBLSamplingResult.xyz / IBLSamplingResult.w;
+        TotalIncomingLight += PointLightSamplingResult.w == 0.f ? vec3(0) : PointLightSamplingResult.xyz / PointLightSamplingResult.w;
+        TotalIncomingLight += DirectionalLightSamplingResult.w == 0.f ? vec3(0) : DirectionalLightSamplingResult.xyz / DirectionalLightSamplingResult.w;
+        TotalIncomingLight += SpotLightSamplingResult.w == 0.f ? vec3(0) : SpotLightSamplingResult.xyz / SpotLightSamplingResult.w;
+        TotalIncomingLight += AreaLightSamplingResult.w == 0.f ? vec3(0) : AreaLightSamplingResult.xyz / AreaLightSamplingResult.w;
         BounceInput = CumulativeMaterialColor * TotalIncomingLight;
     }
 
@@ -715,7 +816,7 @@ void main()
 
     if(PushConstants.BounceIndex == 0)
     {
-        DebugGlobal = vec4(AreaLightSamplingResult, 0);
+        DebugGlobal = vec4(AreaLightSamplingResult.xyz, 0);
         SaveAOVs(PixelCoords, NormalInWorldSpace, NormalInWorldSpace, TextureCoords, WorldSpacePosition, 1., Depth,
         Material.BaseColor, TotalIncomingLight, Hit.RenderableIndex, Hit.PrimitiveIndex, PushConstants.MaterialIndex, DebugGlobal);
     }
