@@ -24,7 +24,9 @@ namespace ECS
 			const std::unordered_map<uint32_t, uint32_t>& GetEmissiveMaterials();
 
 			uint32_t LoadedAreaLightsCount = 0;
+			float LoadedAreaLightArea = 0.f;
 			uint32_t CurrentAreaLightsCount = 0;
+			float CurrentAreaLightArea = 0.f;
             const uint32_t MAX_AREA_LIGHTS = 512;
 			const uint32_t MAX_EMISSIVE_MATERIALS = 8;
 

@@ -149,6 +149,15 @@ namespace ECS
 
                     MeshComponent.Indices.push_back(static_cast<uint32_t>(MeshComponent.Vertices.size()));
                     MeshComponent.Vertices.push_back(Vert);
+
+					/// Add to the mesh area
+					if ((MeshComponent.Indices.size() % 3) == 0)
+					{
+						auto V0 = MeshComponent.Vertices[MeshComponent.Indices[MeshComponent.Indices.size() - 3]].Position;
+						auto V1 = MeshComponent.Vertices[MeshComponent.Indices[MeshComponent.Indices.size() - 2]].Position;
+						auto V2 = MeshComponent.Vertices[MeshComponent.Indices[MeshComponent.Indices.size() - 1]].Position;
+						MeshComponent.Area += 0.5f * Cross(V1 - V0, V2 - V0).Length();
+					}
                 }
             }
 
@@ -179,7 +188,8 @@ namespace ECS
             {
                 auto V1 = Positions[Indices[i+1]] - Positions[Indices[i]];
                 auto V2 = Positions[Indices[i+2]] - Positions[Indices[i]];
-                auto Normal = Cross(V1, V2).GetNormalized();
+				auto CrossProductResult = Cross(V1, V2);
+                auto Normal = CrossProductResult.GetNormalized();
                 MeshComponent.Vertices.emplace_back(Positions[Indices[i]].X,    Positions[Indices[i]].Y,    Positions[Indices[i]].Z,
                                                 Normal.X,                   Normal.Y,                   Normal.Z,
                                                 0.f, 0.f);
@@ -189,6 +199,9 @@ namespace ECS
                 MeshComponent.Vertices.emplace_back(Positions[Indices[i+2]].X,    Positions[Indices[i+2]].Y,    Positions[Indices[i+2]].Z,
                                                 Normal.X,                   Normal.Y,                   Normal.Z,
                                                 0.f, 0.f);
+
+				/// Add to the mesh area
+				MeshComponent.Area += 0.5f * CrossProductResult.Length();
             }
         }
 
@@ -234,7 +247,8 @@ namespace ECS
 
                 auto V1 = Positions[Indices[i+1]] - Positions[Indices[i]];
                 auto V2 = Positions[Indices[i+2]] - Positions[Indices[i]];
-                auto Normal = Cross(V1, V2).GetNormalized();
+				auto CrossProductResult = Cross(V1, V2);
+                auto Normal = CrossProductResult.GetNormalized();
                 MeshComponent.Vertices.emplace_back(Positions[Indices[i]].X, Positions[Indices[i]].Y, Positions[Indices[i]].Z,
                                                     Normal.X, Normal.Y, Normal.Z,
                                                     TextureCoordinates[TextureIndices[i % 3]].X, TextureCoordinates[TextureIndices[i % 3]].Y);
@@ -244,6 +258,9 @@ namespace ECS
                 MeshComponent.Vertices.emplace_back(Positions[Indices[i+2]].X, Positions[Indices[i+2]].Y, Positions[Indices[i+2]].Z,
                                                     Normal.X, Normal.Y, Normal.Z,
                                                     TextureCoordinates[TextureIndices[(i + 2) % 3]].X, TextureCoordinates[TextureIndices[(i + 2) % 3]].Y);
+
+				/// Account thor the mesh area
+				MeshComponent.Area += 0.5f * CrossProductResult.Length();
             }
         }
 
@@ -355,6 +372,12 @@ namespace ECS
                 MeshComponent.Vertices.emplace_back(Positions[i+2].X,    Positions[i+2].Y,    Positions[i+2].Z,
                                                 Normal2.X,                   Normal2.Y,                   Normal2.Z,
                                                     TransformXZ(Positions[i+2].Y, Positions[i+2].Z), TransformY(Positions[i+2].X));
+
+				/// Add to mesh area
+				auto V1 = Positions[i+1] - Positions[i];
+				auto V2 = Positions[i+2] - Positions[i];
+				auto CrossProductResult = Cross(V1, V2);
+				MeshComponent.Area += 0.5f * CrossProductResult.Length();
             }
         }
 
@@ -480,6 +503,15 @@ namespace ECS
 				Indices[Index++] = Vertices.size() - 1;
 				Indices[Index++] = TopRight;
 			}
+
+			/// Calculate area of the mesh
+			for (uint32_t i = 0; i < MeshComponent.Indices.size(); i += 3)
+			{
+				auto V0 = MeshComponent.Vertices[MeshComponent.Indices[i]].Position;
+				auto V1 = MeshComponent.Vertices[MeshComponent.Indices[i+1]].Position;
+				auto V2 = MeshComponent.Vertices[MeshComponent.Indices[i+2]].Position;
+				MeshComponent.Area += 0.5f * Cross(V1 - V0, V2 - V0).Length();
+			}
 		}
 
         void FMeshSystem::CreatePlane(FEntity Entity, const FVector2& Size)
@@ -495,6 +527,8 @@ namespace ECS
             MeshComponent.Indexed = true;
             MeshComponent.Indices.resize(6);
             MeshComponent.Indices = {0, 2, 3, 0, 1, 2};
+
+			MeshComponent.Area = Size.X * Size.Y;
         }
     }
 }

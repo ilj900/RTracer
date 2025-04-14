@@ -212,6 +212,7 @@ struct FMatrix4
 
 	FMatrix4 GetInverse();
 	FMatrix4& Transpose();
+	float EstimateSurfaceScale();
 
     /// Data
     std::array<FVector4, 4> Data;

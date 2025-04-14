@@ -593,6 +593,15 @@ FMatrix4& FMatrix4::Transpose()
 	return *this;
 }
 
+float FMatrix4::EstimateSurfaceScale()
+{
+	float X = Data[0].X * Data[0].X + Data[1].Y * Data[1].Y + Data[2].Z * Data[2].Z;
+	float Y = Data[4].X * Data[4].X + Data[5].Y * Data[5].Y + Data[6].Z * Data[6].Z;
+	float Z = Data[8].X * Data[8].X + Data[9].Y * Data[9].Y + Data[10].Z * Data[10].Z;
+
+	return X * X + Y * Y + Z * Z;
+}
+
 FMatrix4 operator*(const FMatrix4& A, float Val)
 {
 	FMatrix4 Result = A;

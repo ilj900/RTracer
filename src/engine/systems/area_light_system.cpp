@@ -1,6 +1,7 @@
 #include "named_resources.h"
 #include "light_component.h"
 #include "device_renderable_component.h"
+#include "device_transform_component.h"
 #include "mesh_component.h"
 #include "area_light_system.h"
 
@@ -21,10 +22,14 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
-			if (LoadedAreaLightsCount != CurrentAreaLightsCount)
+			if (LoadedAreaLightsCount != CurrentAreaLightsCount ||
+				LoadedAreaLightArea != CurrentAreaLightArea)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t)}, { offsetof(FUtilityData, ActiveAreaLightsCount)}, {&CurrentAreaLightsCount});
-				CurrentAreaLightsCount = LoadedAreaLightsCount;
+				/// Load two entries even though only one can be dirty
+				/// Pay close attention to the order of member fields: CurrentAreaLightsCount should be followed by CurrentAreaLightArea
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t) * 2}, { offsetof(FUtilityData, ActiveAreaLightsCount)}, {&CurrentAreaLightsCount});
+				LoadedAreaLightsCount = CurrentAreaLightsCount;
+				LoadedAreaLightArea = CurrentAreaLightArea;
 			}
 
 			for (auto& Entry : EntitiesToUpdate)
@@ -44,10 +49,14 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
-			if (LoadedAreaLightsCount != CurrentAreaLightsCount)
+			if (LoadedAreaLightsCount != CurrentAreaLightsCount ||
+				LoadedAreaLightArea != CurrentAreaLightArea)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t)}, { offsetof(FUtilityData, ActivePointLightsCount)}, {&CurrentAreaLightsCount});
-				CurrentAreaLightsCount = LoadedAreaLightsCount;
+				/// Load two entries even though only one can be dirty
+				/// Pay close attention to the order of member fields: CurrentAreaLightsCount should be followed by CurrentAreaLightArea
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t) * 2}, { offsetof(FUtilityData, ActiveAreaLightsCount)}, {&CurrentAreaLightsCount});
+				LoadedAreaLightsCount = CurrentAreaLightsCount;
+				LoadedAreaLightArea = CurrentAreaLightArea;
 			}
 
 			for (auto& Entry : EntitiesToUpdate)
@@ -91,6 +100,10 @@ namespace ECS
 			AreaLightComponent.VertexBufferAddress = RenderableComponent.VertexBufferAddress;
 			AreaLightComponent.TransformIndex = RenderableComponent.TransformIndex;
 			AreaLightComponent.MaterialIndex = RenderableComponent.MaterialIndex;
+			/// We need to compute the area of the area light
+			/// It's the area of the mesh multiplied by scale of the model matrix of that mesh
+			auto Transform = GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(InstanceEntity);
+			AreaLightComponent.Area = MeshComponent.Area * Transform.ModelMatrix.EstimateSurfaceScale();
 
 			/// We pack renderable index and IsIndex flag in one field
 			uint32_t IsIndexedFlagAndRenderableIndex = MeshComponent.Indices.empty() ? 0 : 1u << 31;
@@ -101,6 +114,7 @@ namespace ECS
             MarkDirty(Light);
 
 			CurrentAreaLightsCount++;
+			CurrentAreaLightArea += AreaLightComponent.Area;
 
             return Light;
         }

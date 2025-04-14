@@ -245,9 +245,8 @@ out vec3 NormalInWorldSpace, out vec3 PointOfIntersectionInWorldSpace, out vec2 
     TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
 }
 
-/// Sample a directional light and return:
-/// Sampled light color int 'xyz' and pdf of sampling it in 'w'
-vec4 ComputeDirectionalLightInput(inout FSamplingState SamplingState, uint DirectionalLightsCount, vec3 Normal, vec3 WorldSpacePosition)
+/// Sample a directional light
+vec3 ComputeDirectionalLightInput(inout FSamplingState SamplingState, uint DirectionalLightsCount, vec3 Normal, vec3 WorldSpacePosition)
 {
     /// Get light index
     const uint LightIndex = uint(RandomFloat(SamplingState) * DirectionalLightsCount);
@@ -258,7 +257,7 @@ vec4 ComputeDirectionalLightInput(inout FSamplingState SamplingState, uint Direc
 
     if(NDotI <= 0)
     {
-        return vec4(0);
+        return vec3(0);
     }
 
     /// Construct a ray that goes to the light
@@ -275,11 +274,11 @@ vec4 ComputeDirectionalLightInput(inout FSamplingState SamplingState, uint Direc
     {
         /// Here, the probability of sampling a particular directional light is one to the number of directional lights
         /// Should the probablity depend on the total power of all directional lights?
-        return vec4(DirectionalLight.Color * DirectionalLight.Intensity * NDotI, 1.f / DirectionalLightsCount);
+        return vec4(DirectionalLight.Color * DirectionalLight.Intensity * NDotI * DirectionalLightsCount);
     }
     else
     {
-        return vec4(0);
+        return vec3(0);
     }
 }
 
@@ -717,7 +716,7 @@ void main()
     }
 
     /// Sample directional light
-    vec4 DirectionalLightSamplingResult = vec4(0);
+    vec3 DirectionalLightSamplingResult = vec3(0);
     uint DirectionalLightsCount = UtilityData.ActiveDirectionalLightsCount;
     SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_LIGHT);
 

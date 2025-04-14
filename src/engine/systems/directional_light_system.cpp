@@ -20,10 +20,14 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
-			if (LoadedDirectionalLightsCount != CurrentDirectionalLightsCount)
+			if (LoadedDirectionalLightsCount != CurrentDirectionalLightsCount ||
+				LoadedDirectionalLightPower != CurrentDirectionalLightPower)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t)}, { offsetof(FUtilityData, ActiveDirectionalLightsCount)}, {&CurrentDirectionalLightsCount});
-				CurrentDirectionalLightsCount = LoadedDirectionalLightsCount;
+				/// Load two entries even though only one can be dirty
+				/// Pay close attention to the order of member fields: CurrentDirectionalLightsCount should be followed by CurrentDirectionalLightPower
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t) * 2}, { offsetof(FUtilityData, ActiveDirectionalLightsCount)}, {&CurrentDirectionalLightsCount});
+				LoadedDirectionalLightsCount = CurrentDirectionalLightsCount;
+				LoadedDirectionalLightPower = CurrentDirectionalLightPower;
 			}
 
 			for (auto& Entry : EntitiesToUpdate)
@@ -43,10 +47,14 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
-			if (LoadedDirectionalLightsCount != CurrentDirectionalLightsCount)
+			if (LoadedDirectionalLightsCount != CurrentDirectionalLightsCount ||
+				LoadedDirectionalLightPower != CurrentDirectionalLightPower)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t)}, { offsetof(FUtilityData, ActiveDirectionalLightsCount)}, {&CurrentDirectionalLightsCount});
-				CurrentDirectionalLightsCount = LoadedDirectionalLightsCount;
+				/// Load two entries even though only one can be dirty
+				/// Pay close attention to the order of member fields: CurrentDirectionalLightsCount should be followed by CurrentDirectionalLightPower
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t) * 2}, { offsetof(FUtilityData, ActiveDirectionalLightsCount)}, {&CurrentDirectionalLightsCount});
+				LoadedDirectionalLightsCount = CurrentDirectionalLightsCount;
+				LoadedDirectionalLightPower = CurrentDirectionalLightPower;
 			}
 
 			for (auto& Entry : EntitiesToUpdate)
@@ -125,9 +133,11 @@ namespace ECS
             LightComponent.Direction = Direction.GetNormalized();
             LightComponent.Color = Color;
             LightComponent.Intensity = Intensity;
+			LightComponent.Power = (Color.x + Color.y + Color.z) * Intensity;
             MarkDirty(Light);
 
 			CurrentDirectionalLightsCount++;
+			CurrentDirectionalLightPower += LightComponent.Power;
 
             return Light;
         }

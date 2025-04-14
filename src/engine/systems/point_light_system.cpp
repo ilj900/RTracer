@@ -19,10 +19,14 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
-			if (LoadedPointLightsCount != CurrentPointLightsCount)
+			if (LoadedPointLightsCount != CurrentPointLightsCount ||
+				LoadedPointLightPower != CurrentPointLightPower)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t)}, { offsetof(FUtilityData, ActivePointLightsCount)}, {&CurrentPointLightsCount});
-				CurrentPointLightsCount = LoadedPointLightsCount;
+				/// Load two entries even though only one can be dirty
+				/// Pay close attention to the order of member fields: CurrentPointLightsCount should be followed by CurrentPointLightPower
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t) * 2}, { offsetof(FUtilityData, ActivePointLightsCount)}, {&CurrentPointLightsCount});
+				LoadedPointLightsCount = CurrentPointLightsCount;
+				LoadedPointLightPower = CurrentPointLightPower;
 			}
 
 			for (auto& Entry : EntitiesToUpdate)
@@ -42,10 +46,14 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
-			if (LoadedPointLightsCount != CurrentPointLightsCount)
+			if (LoadedPointLightsCount != CurrentPointLightsCount ||
+				LoadedPointLightPower != CurrentPointLightPower)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t)}, { offsetof(FUtilityData, ActivePointLightsCount)}, {&CurrentPointLightsCount});
-				CurrentPointLightsCount = LoadedPointLightsCount;
+				/// Load two entries even though only one can be dirty
+				/// Pay close attention to the order of member fields: CurrentPointLightsCount should be followed by CurrentPointLightPower
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t) * 2}, { offsetof(FUtilityData, ActivePointLightsCount)}, {&CurrentPointLightsCount});
+				LoadedPointLightsCount = CurrentPointLightsCount;
+				LoadedPointLightPower = CurrentPointLightPower;
 			}
 
 			for (auto& Entry : EntitiesToUpdate)
@@ -106,9 +114,11 @@ namespace ECS
             LightComponent.Position = Position;
             LightComponent.Color = Color;
             LightComponent.Intensity = Intensity;
+			LightComponent.Power = (Color.x + Color.y + Color.z) * Intensity;
             MarkDirty(Light);
 
 			CurrentPointLightsCount++;
+			CurrentPointLightPower += LightComponent.Power;
 
             return Light;
         }

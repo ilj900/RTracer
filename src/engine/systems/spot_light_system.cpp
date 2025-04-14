@@ -19,10 +19,14 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
-			if (LoadedSpotLightsCount != CurrentSpotLightsCount)
+			/// Load two entries even though only one can be dirty
+			/// Pay close attention to the order of member fields: CurrentSpotLightsCount should be followed by CurrentTotalSpotlightPower
+			if (LoadedSpotLightsCount != CurrentSpotLightsCount ||
+				LoadedTotalSpotlightPower != CurrentTotalSpotlightPower)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t)}, {offsetof(FUtilityData, ActiveSpotLightsCount)}, {&CurrentSpotLightsCount});
-				CurrentSpotLightsCount = LoadedSpotLightsCount;
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t) * 2}, {offsetof(FUtilityData, ActiveSpotLightsCount)}, {&CurrentSpotLightsCount});
+				LoadedSpotLightsCount = CurrentSpotLightsCount;
+				LoadedTotalSpotlightPower = CurrentTotalSpotlightPower;
 			}
 
 			for (auto& Entry : EntitiesToUpdate)
@@ -42,10 +46,14 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
-			if (LoadedSpotLightsCount != CurrentSpotLightsCount)
+			/// Load two entries even though only one can be dirty
+			/// Pay close attention to the order of member fields: CurrentSpotLightsCount should be followed by CurrentTotalSpotlightPower
+			if (LoadedSpotLightsCount != CurrentSpotLightsCount ||
+				LoadedTotalSpotlightPower != CurrentTotalSpotlightPower)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t)}, {offsetof(FUtilityData, ActiveSpotLightsCount)}, {&CurrentSpotLightsCount});
-				CurrentSpotLightsCount = LoadedSpotLightsCount;
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t) * 2}, {offsetof(FUtilityData, ActiveSpotLightsCount)}, {&CurrentSpotLightsCount});
+				LoadedSpotLightsCount = CurrentSpotLightsCount;
+				LoadedTotalSpotlightPower = CurrentTotalSpotlightPower;
 			}
 
 			for (auto& Entry : EntitiesToUpdate)
@@ -145,9 +153,11 @@ namespace ECS
             LightComponent.Intensity = Intensity;
             LightComponent.OuterAngle = OuterAngle * 0.5f;
             LightComponent.InnerAngle = InnerAngle * 0.5f;
+			LightComponent.Power = (Color.x + Color.y + Color.z) * Intensity * (2.f - cos(LightComponent.OuterAngle) - - cos(LightComponent.InnerAngle)) * 0.25f;
             MarkDirty(Light);
 
 			CurrentSpotLightsCount++;
+			CurrentTotalSpotlightPower += LightComponent.Power;
 
             return Light;
         }

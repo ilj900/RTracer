@@ -61,7 +61,7 @@ struct FPointLight
 	float Intensity;
 
 	FVector3 Color;
-	float Dummy;
+	float Power;
 };
 
 struct FDirectionalLight
@@ -70,7 +70,7 @@ struct FDirectionalLight
 	float Intensity;
 
 	FVector3 Color;
-	float Dummy1;
+	float Power;
 
 	FVector3 Direction;
 	float Dummy2;
@@ -86,6 +86,11 @@ struct FSpotLight
 
 	FVector3 Direction;
 	float OuterAngle;
+
+	float Power;
+	float Dummy1;
+	float Dummy2;
+	float Dummy3;
 };
 
 struct FAreaLight
@@ -97,14 +102,23 @@ struct FAreaLight
 
 	uint64_t VertexBufferAddress;
 	uint64_t IndexBufferAddress;
+
+	float Area;
+	float Dummy1;
+	float Dummy2;
+	float Dummy3;
 };
 
 struct FUtilityData
 {
 	uint32_t ActiveDirectionalLightsCount;
+	float TotalDirectionalLightPower;
 	uint32_t ActiveSpotLightsCount;
+	float TotalSpotLightPower;
 	uint32_t ActivePointLightsCount;
+	float TotalPointLightPower;
 	uint32_t ActiveAreaLightsCount;
+	float TotalAreaLightArea;
 };
 
 /// Should be aligned with FAliasTableEntry

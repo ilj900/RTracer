@@ -26,6 +26,7 @@ namespace ECS
         {
             std::vector<FVertexComponent> Vertices{};
             std::vector<uint32_t> Indices{};
+			float Area = 0.f;
             bool Indexed = false;
         };
     }
