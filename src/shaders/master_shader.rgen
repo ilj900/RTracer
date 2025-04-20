@@ -554,11 +554,7 @@ vec4 SampleImportanceAreaLight(inout FSamplingState SamplingState, uint AreaLigh
     uint ImportanceLightIndex = uint(RandomFloat(SamplingState) * AreaLightsCount);
     FDeviceAliasTableEntry ImportanceSampleTableEntry = AreaLightsImportanceBuffer[ImportanceLightIndex];
 
-    if (RandomFloat(SamplingState) < ImportanceSampleTableEntry.Threshold)
-    {
-        ImportanceLightIndex = SampleIndex;
-    }
-    else
+    if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
     {
         ImportanceLightIndex = ImportanceSampleTableEntry.Alias;
     }
@@ -571,25 +567,16 @@ vec4 SampleImportanceAreaLight(inout FSamplingState SamplingState, uint AreaLigh
 
     ImportanceSampleTableEntry = AreaLightAliasTable[ImportanceTriangleIndex];
 
-    if (RandomFloat(SamplingState) < ImportanceSampleTableEntry.Threshold)
+    if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
     {
-        ImportanceLightIndex = SampleIndex;
+        ImportanceTriangleIndex = ImportanceSampleTableEntry.Alias;
     }
-    else
-    {
-        ImportanceLightIndex = ImportanceSampleTableEntry.Alias;
-    }
-
-    /// Get light index
-    const uint LightIndex = uint(RandomFloat(SamplingState) * AreaLightsCount);
-    FAreaLight AreaLight = AreaLightsBuffer[LightIndex];
 
     /// Get random triangle from the mesh that is marked as area light
-    Vertices Verts = Vertices(AreaLight.VertexBufferAddress);
-    Indices Inds = Indices(AreaLight.IndexBufferAddress);
-    const uint PrimitiveIndex = uint(RandomFloat(SamplingState) * AreaLight.NumberOfTriangles);
-    bool RenderableIsIndexed = (AreaLight.IsIndexedFlagAndRenderableIndex & 0x80000000) == 0x80000000;
-    uint RenderableIndex = AreaLight.IsIndexedFlagAndRenderableIndex & 0x7FFFFFFF;
+    Vertices Verts = Vertices(ArealLightImportance.VertexBufferAddress);
+    Indices Inds = Indices(ArealLightImportance.IndexBufferAddress);
+    bool RenderableIsIndexed = (ArealLightImportance.IsIndexedFlagAndRenderableIndex & 0x80000000) == 0x80000000;
+    uint RenderableIndex = ArealLightImportance.IsIndexedFlagAndRenderableIndex & 0x7FFFFFFF;
 
     FDeviceVertex DV0;
     FDeviceVertex DV1;
@@ -601,9 +588,9 @@ vec4 SampleImportanceAreaLight(inout FSamplingState SamplingState, uint AreaLigh
         uint I1 = 1;
         uint I2 = 2;
 
-        I0 = Inds.I[PrimitiveIndex * 3];
-        I1 = Inds.I[PrimitiveIndex * 3 + 1];
-        I2 = Inds.I[PrimitiveIndex * 3 + 2];
+        I0 = Inds.I[ImportanceTriangleIndex * 3];
+        I1 = Inds.I[ImportanceTriangleIndex * 3 + 1];
+        I2 = Inds.I[ImportanceTriangleIndex * 3 + 2];
 
         DV0 = Verts.V[I0];
         DV1 = Verts.V[I1];
@@ -611,7 +598,7 @@ vec4 SampleImportanceAreaLight(inout FSamplingState SamplingState, uint AreaLigh
     }
     else
     {
-        uint Index = PrimitiveIndex * 3;
+        uint Index = ImportanceTriangleIndex * 3;
         DV0 = Verts.V[Index];
         DV1 = Verts.V[Index + 1];
         DV2 = Verts.V[Index + 2];
@@ -636,7 +623,7 @@ vec4 SampleImportanceAreaLight(inout FSamplingState SamplingState, uint AreaLigh
     vec3 RandomPoint = V0.Position + (V1.Position - V0.Position) * RandomVec2.x + (V2.Position - V0.Position) * RandomVec2.y;
 
     /// Transform point into world-space
-    FDeviceTransform Transform = DeviceTransforms[AreaLight.TransformIndex];
+    FDeviceTransform Transform = DeviceTransforms[ArealLightImportance.TransformIndex];
     RandomPoint = vec3(vec4(RandomPoint, 1.f) * Transform.ModelMatrix);
     /// A direction to light
     Direction = RandomPoint - WorldSpacePosition;
@@ -675,13 +662,10 @@ vec4 SampleImportanceAreaLight(inout FSamplingState SamplingState, uint AreaLigh
         float NDotI = abs(dot(AreaLightTriangleNormal, Direction));
 
         /// Get the material
-        FDeviceMaterial EmissiveMaterial = GetEmissiveMaterial(UV, AreaLight.MaterialIndex);
+        FDeviceMaterial EmissiveMaterial = GetEmissiveMaterial(UV, ArealLightImportance.MaterialIndex);
         /// TODO: Is this a correct PDF formula?
         float PDF = Distance2;
-        float Area = length(0.5f * cross((V1.Position - V0.Position), (V2.Position - V0.Position)));
-        PDF /= Area;
-        PDF /= AreaLight.NumberOfTriangles;
-        PDF /= AreaLightsCount;
+        PDF /= UtilityData.TotalAreaLightArea;
         PDF /= NDotI;
 
         return vec4(EmissiveMaterial.EmissionColor / PDF, PDF);
@@ -693,7 +677,7 @@ vec4 SampleImportanceAreaLight(inout FSamplingState SamplingState, uint AreaLigh
     }
 }
 
-vec4 SampleBxDFAreaLight(inout FSamplingState SamplingState, vec3 Normal, vec3 WorldSpacePosition, vec3 Outgoing, out float NDotL, float MaterialPDF)
+vec4 SampleBxDFAreaLight(inout FSamplingState SamplingState, vec3 Normal, vec3 WorldSpacePosition, vec3 Outgoing, out float NDotL, float BxDFPDF)
 {
     /// Construct a shadow ray
     FRayData RayData;
@@ -745,6 +729,7 @@ vec4 SampleBxDFAreaLight(inout FSamplingState SamplingState, vec3 Normal, vec3 W
         vec3 Barycentrics = vec3(1.0 - Hit.HitUV.x - Hit.HitUV.y, Hit.HitUV.x, Hit.HitUV.y);
         TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
 
+        /// TODO: Optimize
         FDeviceMaterial EmissiveMaterial = GetEmissiveMaterial(TextureCoords, Renderable.MaterialIndex);
 
         if (EmissiveMaterial.EmissionWeight != 0)
@@ -764,7 +749,7 @@ vec4 SampleBxDFAreaLight(inout FSamplingState SamplingState, vec3 Normal, vec3 W
             vec4 Result = vec4(0);
             Result.xyz = EmissiveMaterial.EmissionColor * NDotL * NDotI * EmissiveMaterial.EmissionWeight;
             /// PDF is alreaddy known due to material evaluation
-            Result.w = MaterialPDF;
+            Result.w = BxDFPDF;
 
             return Result;
         }
@@ -773,20 +758,50 @@ vec4 SampleBxDFAreaLight(inout FSamplingState SamplingState, vec3 Normal, vec3 W
     return vec4(0);
 }
 
-vec4 ComputeIBLInput(inout FSamplingState SamplingState, vec3 Normal, vec3 WorldSpacePosition)
+vec4 ComputeUniformIBLInput(inout FSamplingState SamplingState, vec3 Normal, vec3 WorldSpacePosition)
+{
+    /// TODO: Verify that sampling is uniform
+    /// Sample a random direction in the hemisphere and transform it into world-space cs
+    const vec3 LocalspaceRandomDirection = Sample3DUnitHemisphere(SamplingState);
+    vec3 WorldspaceRandomDirection =  Transform(Normal, LocalspaceRandomDirection);
+
+    float NDotI = dot(Normal, WorldspaceRandomDirection);
+
+    FRayData RayData;
+    RayData.RayFlags = 0;
+    RayData.Direction.xyz = CartesianCoordinates;
+    RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
+
+    /// Trace the ray
+    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, FLOAT_EPSILON, RayData.Direction.xyz, 10000, 0);
+
+    /// And if we didn't hit any geometry, then we sample the IBL
+    if (HitPayload.RenderableIndex == UINT_MAX)
+    {
+        float Phi = atan(RayData.Direction.z, RayData.Direction.x);
+        Phi += M_PI_2;
+        float Theta = acos(RayData.Direction.y);
+        Phi /= M_2_PI;
+        Theta /= M_PI;
+
+        float PDF = 0.5f * M_INV_PI;
+        return vec4(texture(IBLTextureSampler, vec2(Phi, Theta)).xyz * NDotI / PDF, PDF);
+    }
+    else
+    {
+        return vec4(0);
+    }
+}
+
+vec4 ComputeImportanceIBLInput(inout FSamplingState SamplingState, vec3 Normal, vec3 WorldSpacePosition)
 {
     const vec2 SampleUV = Sample2DUnitQuad(SamplingState);
     const uvec2 IBLSize = textureSize(IBLTextureSampler, 0);
-    const uint SampleIndex = uint(IBLSize.x * IBLSize.y * SampleUV.y) + uint(IBLSize.x * SampleUV.x);
+    const uint TexelIndex = uint(IBLSize.x * IBLSize.y * SampleUV.y) + uint(IBLSize.x * SampleUV.x);
 
-    FDeviceAliasTableEntry ImportanceSampleInterval = IBLImportanceBuffer[SampleIndex];
+    FDeviceAliasTableEntry ImportanceSampleInterval = IBLImportanceBuffer[TexelIndex];
     /// Get texel index
-    uint TexelIndex = 0;
-    if (RandomFloat(SamplingState) < ImportanceSampleInterval.Threshold)
-    {
-        TexelIndex = SampleIndex;
-    }
-    else
+    if (RandomFloat(SamplingState) > ImportanceSampleInterval.Threshold)
     {
         TexelIndex = ImportanceSampleInterval.Alias;
     }
