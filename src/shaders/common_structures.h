@@ -103,9 +103,8 @@ struct FAreaLight
 	uint64_t VertexBufferAddress;
 	uint64_t IndexBufferAddress;
 
+	uint64_t AliasTableBufferAddress;
 	float Area;
-	float Dummy1;
-	float Dummy2;
 	float Dummy3;
 };
 

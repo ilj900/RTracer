@@ -64,6 +64,11 @@ layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_DIRECTIONAL_LI
     FDirectionalLight DirectionalLightsBuffer[];
 };
 
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_DIRECTIONAL_LIGHTS_IMPORTANCE_BUFFER_INDEX) buffer DirectionalLightsImportanceBufferObject
+{
+    FDeviceAliasTableEntry DirectionalLightsImportanceBuffer[];
+};
+
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_SPOT_LIGHTS_BUFFER_INDEX) buffer SpotLightsBufferObject
 {
     FSpotLight SpotLightsBuffer[];
@@ -86,7 +91,6 @@ layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_IMPORTANCE
 
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_IMAGE_SAMPLER_INDEX) uniform sampler2D IBLTextureSampler;
 
-/// TODO: Remove it
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_PDF_BUFFER_INDEX) buffer IBLPDFBufferObject
 {
     float IBLPDFBuffer[];
@@ -151,6 +155,11 @@ layout (buffer_reference, scalar) buffer Vertices
 layout (buffer_reference, scalar) buffer Indices
 {
     int I[];
+};
+
+layout (buffer_reference, scalar) buffer ArealLightAliasTables
+{
+    FDeviceAliasTableEntry AliasTable[];
 };
 
 layout (push_constant) uniform PushConstantsBlock
@@ -245,54 +254,15 @@ out vec3 NormalInWorldSpace, out vec3 PointOfIntersectionInWorldSpace, out vec2 
     TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
 }
 
-/// Sample a directional light
-vec3 ComputeDirectionalLightInput(inout FSamplingState SamplingState, uint DirectionalLightsCount, vec3 Normal, vec3 WorldSpacePosition)
+vec4 ComputeUniformDirectionalLightInput(inout FSamplingState SamplingState, uint DirectionalLightsCount, vec3 Normal, vec3 WorldSpacePosition, out vec3 Direction)
 {
-    /// Get light index
-    const uint LightIndex = uint(RandomFloat(SamplingState) * DirectionalLightsCount);
-    FDirectionalLight DirectionalLight = DirectionalLightsBuffer[LightIndex];
+    /// Get light index by uniformly sampling it
+    const uint UniformLightIndex = uint(RandomFloat(SamplingState) * DirectionalLightsCount);
+    FDirectionalLight DirectionalLightUniform = DirectionalLightsBuffer[UniformLightIndex];
 
     /// Check whether light is over the surface
-    float NDotI = dot(Normal, -DirectionalLight.Direction);
-
-    if(NDotI <= 0)
-    {
-        return vec3(0);
-    }
-
-    /// Construct a ray that goes to the light
-    FRayData RayData;
-    RayData.RayFlags = 0;
-    RayData.Direction.xyz = -DirectionalLight.Direction;
-    RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
-
-    /// Trace the ray
-    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
-
-    /// And if we didn't hit any geometry, then we store light data
-    if (HitPayload.RenderableIndex == UINT_MAX)
-    {
-        /// Here, the probability of sampling a particular directional light is one to the number of directional lights
-        /// Should the probablity depend on the total power of all directional lights?
-        return vec4(DirectionalLight.Color * DirectionalLight.Intensity * NDotI * DirectionalLightsCount);
-    }
-    else
-    {
-        return vec3(0);
-    }
-}
-
-vec4 ComputePointLightInput(inout FSamplingState SamplingState, uint PointLightsCount, vec3 Normal, vec3 WorldSpacePosition)
-{
-    /// Get light index
-    const uint LightIndex = uint(RandomFloat(SamplingState) * PointLightsCount);
-    FPointLight PointLight = PointLightsBuffer[LightIndex];
-    vec3 LightDirection = PointLight.Position - WorldSpacePosition;
-    float LightDistance = length(LightDirection);
-    LightDirection = normalize(LightDirection);
-
-    /// Check whether light is over the surface
-    float NDotI = dot(Normal, LightDirection);
+    Direction = -DirectionalLightUniform.Direction;
+    float NDotI = dot(Normal, Direction);
 
     if(NDotI <= 0)
     {
@@ -302,7 +272,92 @@ vec4 ComputePointLightInput(inout FSamplingState SamplingState, uint PointLights
     /// Construct a ray that goes to the light
     FRayData RayData;
     RayData.RayFlags = 0;
-    RayData.Direction.xyz = LightDirection;
+    RayData.Direction.xyz = Direction;
+    RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
+
+    /// Trace the ray
+    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
+
+    /// And if we didn't hit any geometry, then we store light data
+    if (HitPayload.RenderableIndex == UINT_MAX)
+    {
+        /// Here, the probability of sampling a particular directional light is one to the number of directional lights
+        /// We multiply by the number of lights cause it's inverse of the PDF
+        return vec4(DirectionalLightUniform.Color * DirectionalLightUniform.Intensity * NDotI * DirectionalLightsCount, 1.f / DirectionalLightsCount);
+    }
+    else
+    {
+        return vec4(0);
+    }
+}
+
+/// Sample a directional light by it's power
+vec4 ComputeImportanceDirectionalLightInput(inout FSamplingState SamplingState, uint DirectionalLightsCount, vec3 Normal, vec3 WorldSpacePosition, out vec3 Direction)
+{
+    /// Get light index by importance sampling it
+    uint ImportanceLightIndex = uint(RandomFloat(SamplingState) * DirectionalLightsCount);
+    FDeviceAliasTableEntry ImportanceSampleTableEntry = DirectionalLightsImportanceBuffer[ImportanceLightIndex];
+
+    if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
+    {
+        ImportanceLightIndex = ImportanceSampleTableEntry.Alias;
+    }
+
+    FDirectionalLight DirectionalLightImportance = DirectionalLightsBuffer[ImportanceLightIndex];
+
+    Direction = -DirectionalLightImportance.Direction;
+
+    /// Check whether light is over the surface
+    float NDotI = dot(Normal, Direction);
+
+    if(NDotI <= 0)
+    {
+        return vec4(0);
+    }
+
+    /// Construct a ray that goes to the light
+    FRayData RayData;
+    RayData.RayFlags = 0;
+    RayData.Direction.xyz = Direction;
+    RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
+
+    /// Trace the ray
+    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
+
+    /// And if we didn't hit any geometry, then we store light data
+    if (HitPayload.RenderableIndex == UINT_MAX)
+    {
+        /// Here, the probability of sampling a particular directional light is it's power to the total power of all directional light
+        float PDF = DirectionalLightImportance.Power / UtilityData.TotalDirectionalLightPower;
+        return vec4(DirectionalLightImportance.Color * DirectionalLightImportance.Intensity * NDotI / PDF, PDF);
+    }
+    else
+    {
+        return vec4(0);
+    }
+}
+
+vec4 ComputeUniformPointLightInput(inout FSamplingState SamplingState, uint PointLightsCount, vec3 Normal, vec3 WorldSpacePosition, out vec3 Direction)
+{
+    /// Get light index
+    const uint LightIndex = uint(RandomFloat(SamplingState) * PointLightsCount);
+    FPointLight PointLightUniform = PointLightsBuffer[LightIndex];
+    Direction = PointLightUniform.Position - WorldSpacePosition;
+    float LightDistance = length(Direction);
+    Direction = normalize(Direction);
+
+    /// Check whether light is over the surface
+    float NDotI = dot(Normal, Direction);
+
+    if(NDotI <= 0)
+    {
+        return vec4(0);
+    }
+
+    /// Construct a ray that goes to the light
+    FRayData RayData;
+    RayData.RayFlags = 0;
+    RayData.Direction.xyz = Direction;
     RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
 
     /// Trace the ray
@@ -314,8 +369,7 @@ vec4 ComputePointLightInput(inout FSamplingState SamplingState, uint PointLights
         float Attenuation = 1.f / LightDistance;
         Attenuation *= Attenuation;
         /// Here, the probability of sampling a particular point light is one to the number of point lights
-        /// Should the probablity depend on the total power of all point lights?
-        return vec4(PointLight.Color * PointLight.Intensity * Attenuation * NDotI, 1.f / PointLightsCount);
+        return vec4(PointLightUniform.Color * PointLightUniform.Intensity * Attenuation * NDotI * PointLightsCount, 1.f / PointLightsCount);
     }
     else
     {
@@ -323,24 +377,73 @@ vec4 ComputePointLightInput(inout FSamplingState SamplingState, uint PointLights
     }
 }
 
-vec4 ComputeSpotLightInput(inout FSamplingState SamplingState, uint SpotLightsCount, vec3 Normal, vec3 WorldSpacePosition)
+vec4 ComputeImportancePointLightInput(inout FSamplingState SamplingState, uint PointLightsCount, vec3 Normal, vec3 WorldSpacePosition, out vec3 Direction)
 {
-    /// Get light index
-    const uint LightIndex = uint(RandomFloat(SamplingState) * SpotLightsCount);
-    FSpotLight SpotLight = SpotLightsBuffer[LightIndex];
-    vec3 LightDirection = SpotLight.Position - WorldSpacePosition;
-    float LightDistance = length(LightDirection);
-    LightDirection = normalize(LightDirection);
+    /// Get light index by importance sampling it
+    uint ImportanceLightIndex = uint(RandomFloat(SamplingState) * PointLightsCount);
+    FDeviceAliasTableEntry ImportanceSampleTableEntry = PointLightsImportanceBuffer[ImportanceLightIndex];
+
+    if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
+    {
+        ImportanceLightIndex = ImportanceSampleTableEntry.Alias;
+    }
+
+    FPointLight PointLightImportance = PointLightsBuffer[ImportanceLightIndex];
+
+    Direction = PointLightImportance.Position - WorldSpacePosition;
+    float LightDistance = length(Direction);
+    Direction = normalize(Direction);
 
     /// Check whether light is over the surface
-    float NDotI = dot(Normal, LightDirection);
+    float NDotI = dot(Normal, Direction);
 
     if(NDotI <= 0)
     {
         return vec4(0);
     }
 
-    float LightAngle = acos(dot(SpotLight.Direction, -LightDirection));
+    /// Construct a ray that goes to the light
+    FRayData RayData;
+    RayData.RayFlags = 0;
+    RayData.Direction.xyz = Direction;
+    RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
+
+    /// Trace the ray
+    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, LightDistance, 0);
+
+    /// And if we didn't hit any geometry, then we store light data
+    if (HitPayload.RenderableIndex == UINT_MAX)
+    {
+        float Attenuation = 1.f / LightDistance;
+        Attenuation *= Attenuation;
+        /// Here, the probability of sampling a particular point light depends on it's power and total power of all lights
+        float PDF = PointLightImportance.Power / UtilityData.TotalPointLightPower;
+        return vec4(PointLightImportance.Color * PointLightImportance.Intensity * Attenuation * NDotI / PDF, PDF);
+    }
+    else
+    {
+        return vec4(0);
+    }
+}
+
+vec4 ComputeUniformSpotLightInput(inout FSamplingState SamplingState, uint SpotLightsCount, vec3 Normal, vec3 WorldSpacePosition, out vec3 Direction)
+{
+    /// Get light index
+    const uint LightIndex = uint(RandomFloat(SamplingState) * SpotLightsCount);
+    FSpotLight SpotLight = SpotLightsBuffer[LightIndex];
+    Direction = SpotLight.Position - WorldSpacePosition;
+    float LightDistance = length(Direction);
+    Direction = normalize(Direction);
+
+    /// Check whether light is over the surface
+    float NDotI = dot(Normal, Direction);
+
+    if(NDotI <= 0)
+    {
+        return vec4(0);
+    }
+
+    float LightAngle = acos(dot(SpotLight.Direction, -Direction));
     /// If point is outside out outer angle, it is also not illuminated
     if (LightAngle > SpotLight.OuterAngle)
     {
@@ -350,7 +453,7 @@ vec4 ComputeSpotLightInput(inout FSamplingState SamplingState, uint SpotLightsCo
     /// Construct a ray that goes to the light
     FRayData RayData;
     RayData.RayFlags = 0;
-    RayData.Direction.xyz = LightDirection;
+    RayData.Direction.xyz = Direction;
     RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
 
     /// Trace the ray
@@ -372,8 +475,7 @@ vec4 ComputeSpotLightInput(inout FSamplingState SamplingState, uint SpotLightsCo
         }
 
         /// Here, the probability of sampling a particular spot light is one to the number of spot lights
-        /// Should the probablity depend on the total power of all spot lights?
-        return vec4(SpotLight.Color * SpotLight.Intensity * Attenuation * NDotI, 1.f / SpotLightsCount);
+        return vec4(SpotLight.Color * SpotLight.Intensity * Attenuation * NDotI * SpotLightsCount, 1.f / SpotLightsCount);
     }
     else
     {
@@ -381,8 +483,103 @@ vec4 ComputeSpotLightInput(inout FSamplingState SamplingState, uint SpotLightsCo
     }
 }
 
-vec4 SampleDirectAreaLight(inout FSamplingState SamplingState, uint AreaLightsCount, vec3 Normal, vec3 WorldSpacePosition, out float NDotL)
+vec4 ComputeImportanceSpotLightInput(inout FSamplingState SamplingState, uint SpotLightsCount, vec3 Normal, vec3 WorldSpacePosition, out vec3 Direction)
 {
+    uint ImportanceLightIndex = uint(RandomFloat(SamplingState) * SpotLightsCount);
+    FDeviceAliasTableEntry ImportanceSampleTableEntry = SpotLightsImportanceBuffer[ImportanceLightIndex];
+
+    if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
+    {
+        ImportanceLightIndex = ImportanceSampleTableEntry.Alias;
+    }
+
+    FSpotLight SpotLightImportance = SpotLightsBuffer[ImportanceLightIndex];
+
+    Direction = SpotLight.Position - WorldSpacePosition;
+    float LightDistance = length(Direction);
+    Direction = normalize(Direction);
+
+    /// Check whether light is over the surface
+    float NDotI = dot(Normal, Direction);
+
+    if(NDotI <= 0)
+    {
+        return vec4(0);
+    }
+
+    float LightAngle = acos(dot(SpotLight.Direction, -Direction));
+    /// If point is outside out outer angle, it is also not illuminated
+    if (LightAngle > SpotLight.OuterAngle)
+    {
+        return vec4(0);
+    }
+
+    /// Construct a ray that goes to the light
+    FRayData RayData;
+    RayData.RayFlags = 0;
+    RayData.Direction.xyz = Direction;
+    RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
+
+    /// Trace the ray
+    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
+
+    /// And if we didn't hit any geometry, then we store light data
+    if (HitPayload.RenderableIndex == UINT_MAX)
+    {
+        float Attenuation = 1.f / LightDistance;
+        Attenuation *= Attenuation;
+
+        /// If point between outer and inner angle - interpolate
+        if (LightAngle > SpotLight.InnerAngle)
+        {
+            float Fraction = LightAngle - SpotLight.InnerAngle;
+            float Delta = SpotLight.OuterAngle - SpotLight.InnerAngle;
+            Fraction = Fraction / Delta;
+            Attenuation *= pow((1. - Fraction), 2.4);
+        }
+
+        /// Here, the probability of sampling a particular spot light is dependent on the spot light's power and total spot lights power
+        float PDF = SpotLight.Power / UtilityData.TotalSpotLightPower;
+        return vec4(SpotLight.Color * SpotLight.Intensity * Attenuation * NDotI / PDF, PDF);
+    }
+    else
+    {
+        return vec4(0);
+    }
+}
+
+vec4 SampleImportanceAreaLight(inout FSamplingState SamplingState, uint AreaLightsCount, vec3 Normal, vec3 WorldSpacePosition, out float NDotL,  out vec3 Direction)
+{
+    /// First - select and area light based on it's area
+    uint ImportanceLightIndex = uint(RandomFloat(SamplingState) * AreaLightsCount);
+    FDeviceAliasTableEntry ImportanceSampleTableEntry = AreaLightsImportanceBuffer[ImportanceLightIndex];
+
+    if (RandomFloat(SamplingState) < ImportanceSampleTableEntry.Threshold)
+    {
+        ImportanceLightIndex = SampleIndex;
+    }
+    else
+    {
+        ImportanceLightIndex = ImportanceSampleTableEntry.Alias;
+    }
+
+    FAreaLight ArealLightImportance = AreaLightsBuffer[ImportanceLightIndex];
+
+    /// Second - select a triangle within area light based on it's area
+    uint ImportanceTriangleIndex = uint(RandomFloat(SamplingState) * ArealLightImportance.NumberOfTriangles);
+    FDeviceAliasTableEntry AreaLightAliasTable = ArealLightAliasTables(ArealLightImportance.VertexBufferAddress);
+
+    ImportanceSampleTableEntry = AreaLightAliasTable[ImportanceTriangleIndex];
+
+    if (RandomFloat(SamplingState) < ImportanceSampleTableEntry.Threshold)
+    {
+        ImportanceLightIndex = SampleIndex;
+    }
+    else
+    {
+        ImportanceLightIndex = ImportanceSampleTableEntry.Alias;
+    }
+
     /// Get light index
     const uint LightIndex = uint(RandomFloat(SamplingState) * AreaLightsCount);
     FAreaLight AreaLight = AreaLightsBuffer[LightIndex];
@@ -442,12 +639,12 @@ vec4 SampleDirectAreaLight(inout FSamplingState SamplingState, uint AreaLightsCo
     FDeviceTransform Transform = DeviceTransforms[AreaLight.TransformIndex];
     RandomPoint = vec3(vec4(RandomPoint, 1.f) * Transform.ModelMatrix);
     /// A direction to light
-    vec3 LightDirection = RandomPoint - WorldSpacePosition;
-    float Distance2 = dot(LightDirection, LightDirection);
-    LightDirection = normalize(LightDirection);
+    Direction = RandomPoint - WorldSpacePosition;
+    float Distance2 = dot(Direction, Direction);
+    Direction = normalize(Direction);
 
     /// Check whether light is over the surface
-    NDotL = dot(Normal, LightDirection);
+    NDotL = dot(Normal, Direction);
 
     if(NDotL <= 0)
     {
@@ -458,7 +655,7 @@ vec4 SampleDirectAreaLight(inout FSamplingState SamplingState, uint AreaLightsCo
     /// Construct a ray that goes to the light
     FRayData RayData;
     RayData.RayFlags = 0;
-    RayData.Direction.xyz = LightDirection;
+    RayData.Direction.xyz = Direction;
     RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
 
     /// Trace the ray
@@ -475,7 +672,7 @@ vec4 SampleDirectAreaLight(inout FSamplingState SamplingState, uint AreaLightsCo
         vec3 AreaLightTriangleNormal = (V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z);
         AreaLightTriangleNormal = AreaLightTriangleNormal * mat3(Transform.InverseModelMatrix);
         AreaLightTriangleNormal = normalize(AreaLightTriangleNormal);
-        float NDotI = abs(dot(AreaLightTriangleNormal, LightDirection));
+        float NDotI = abs(dot(AreaLightTriangleNormal, Direction));
 
         /// Get the material
         FDeviceMaterial EmissiveMaterial = GetEmissiveMaterial(UV, AreaLight.MaterialIndex);
@@ -487,7 +684,7 @@ vec4 SampleDirectAreaLight(inout FSamplingState SamplingState, uint AreaLightsCo
         PDF /= AreaLightsCount;
         PDF /= NDotI;
 
-        return vec4(EmissiveMaterial.EmissionColor, PDF);
+        return vec4(EmissiveMaterial.EmissionColor / PDF, PDF);
     }
     else
     {
@@ -581,7 +778,7 @@ vec4 ComputeIBLInput(inout FSamplingState SamplingState, vec3 Normal, vec3 World
     const vec2 SampleUV = Sample2DUnitQuad(SamplingState);
     const uvec2 IBLSize = textureSize(IBLTextureSampler, 0);
     const uint SampleIndex = uint(IBLSize.x * IBLSize.y * SampleUV.y) + uint(IBLSize.x * SampleUV.x);
-    /// Get the interval of pixels that we want to sample
+
     FDeviceAliasTableEntry ImportanceSampleInterval = IBLImportanceBuffer[SampleIndex];
     /// Get texel index
     uint TexelIndex = 0;
