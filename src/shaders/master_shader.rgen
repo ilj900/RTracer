@@ -548,7 +548,7 @@ vec4 ComputeImportanceSpotLightInput(inout FSamplingState SamplingState, uint Sp
     }
 }
 
-vec4 SampleImportanceAreaLight(inout FSamplingState SamplingState, uint AreaLightsCount, vec3 Normal, vec3 WorldSpacePosition, out float NDotL,  out vec3 Direction)
+vec4 ComputeImportanceAreaLightInput(inout FSamplingState SamplingState, uint AreaLightsCount, vec3 Normal, vec3 WorldSpacePosition, out float NDotL,  out vec3 Direction)
 {
     /// First - select and area light based on it's area
     uint ImportanceLightIndex = uint(RandomFloat(SamplingState) * AreaLightsCount);
@@ -667,6 +667,7 @@ vec4 SampleImportanceAreaLight(inout FSamplingState SamplingState, uint AreaLigh
         float PDF = Distance2;
         PDF /= UtilityData.TotalAreaLightArea;
         PDF /= NDotI;
+        /// TODO: divide by emission weight?
 
         return vec4(EmissiveMaterial.EmissionColor / PDF, PDF);
     }
@@ -677,7 +678,7 @@ vec4 SampleImportanceAreaLight(inout FSamplingState SamplingState, uint AreaLigh
     }
 }
 
-vec4 SampleBxDFAreaLight(inout FSamplingState SamplingState, vec3 Normal, vec3 WorldSpacePosition, vec3 Outgoing, out float NDotL, float BxDFPDF)
+vec4 ComputeBXDFAreaLightInput(inout FSamplingState SamplingState, vec3 Normal, vec3 WorldSpacePosition, vec3 Outgoing, float BxDFPDF)
 {
     /// Construct a shadow ray
     FRayData RayData;
@@ -747,7 +748,7 @@ vec4 SampleBxDFAreaLight(inout FSamplingState SamplingState, vec3 Normal, vec3 W
             float NDotI = abs(dot(EmissiveNormalInWorldSpace, RayData.Direction.xyz));
 
             vec4 Result = vec4(0);
-            Result.xyz = EmissiveMaterial.EmissionColor * NDotL * NDotI * EmissiveMaterial.EmissionWeight;
+            Result.xyz = EmissiveMaterial.EmissionColor * NDotI * EmissiveMaterial.EmissionWeight;
             /// PDF is alreaddy known due to material evaluation
             Result.w = BxDFPDF;
 
@@ -758,18 +759,18 @@ vec4 SampleBxDFAreaLight(inout FSamplingState SamplingState, vec3 Normal, vec3 W
     return vec4(0);
 }
 
-vec4 ComputeUniformIBLInput(inout FSamplingState SamplingState, vec3 Normal, vec3 WorldSpacePosition)
+vec4 ComputeUniformIBLInput(inout FSamplingState SamplingState, out vec3 LightDirection, vec3 Normal, vec3 WorldSpacePosition)
 {
     /// TODO: Verify that sampling is uniform
     /// Sample a random direction in the hemisphere and transform it into world-space cs
     const vec3 LocalspaceRandomDirection = Sample3DUnitHemisphere(SamplingState);
-    vec3 WorldspaceRandomDirection =  Transform(Normal, LocalspaceRandomDirection);
+    LightDirection = Transform(Normal, LocalspaceRandomDirection);
 
-    float NDotI = dot(Normal, WorldspaceRandomDirection);
+    float NDotL = dot(Normal, LightDirection);
 
     FRayData RayData;
     RayData.RayFlags = 0;
-    RayData.Direction.xyz = CartesianCoordinates;
+    RayData.Direction.xyz = LightDirection;
     RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
 
     /// Trace the ray
@@ -785,7 +786,7 @@ vec4 ComputeUniformIBLInput(inout FSamplingState SamplingState, vec3 Normal, vec
         Theta /= M_PI;
 
         float PDF = 0.5f * M_INV_PI;
-        return vec4(texture(IBLTextureSampler, vec2(Phi, Theta)).xyz * NDotI / PDF, PDF);
+        return vec4(texture(IBLTextureSampler, vec2(Phi, Theta)).xyz * NDotL / PDF, PDF);
     }
     else
     {
@@ -793,7 +794,7 @@ vec4 ComputeUniformIBLInput(inout FSamplingState SamplingState, vec3 Normal, vec
     }
 }
 
-vec4 ComputeImportanceIBLInput(inout FSamplingState SamplingState, vec3 Normal, vec3 WorldSpacePosition)
+vec4 ComputeImportanceIBLInput(inout FSamplingState SamplingState, out vec3 LightDirection, vec3 Normal, vec3 WorldSpacePosition)
 {
     const vec2 SampleUV = Sample2DUnitQuad(SamplingState);
     const uvec2 IBLSize = textureSize(IBLTextureSampler, 0);
@@ -811,21 +812,20 @@ vec4 ComputeImportanceIBLInput(inout FSamplingState SamplingState, vec3 Normal, 
     /// Map them to spherical coordinates
     vec2 SphericalCoordinates = UVCoordinates * vec2(M_2_PI, M_PI);
     SphericalCoordinates.x -= M_PI_2;
-    vec3 CartesianCoordinates;
-    CartesianCoordinates.x = sin(SphericalCoordinates.y) * cos(SphericalCoordinates.x);
-    CartesianCoordinates.y = cos(SphericalCoordinates.y);
-    CartesianCoordinates.z = sin(SphericalCoordinates.y) * sin(SphericalCoordinates.x);
+    LightDirection.x = sin(SphericalCoordinates.y) * cos(SphericalCoordinates.x);
+    LightDirection.y = cos(SphericalCoordinates.y);
+    LightDirection.z = sin(SphericalCoordinates.y) * sin(SphericalCoordinates.x);
 
-    float NDotI = dot(Normal, CartesianCoordinates);
+    float NDotL = dot(Normal, LightDirection);
 
-    if(NDotI <= 0)
+    if(NDotL <= 0)
     {
         return vec4(0);
     }
 
     FRayData RayData;
     RayData.RayFlags = 0;
-    RayData.Direction.xyz = CartesianCoordinates;
+    RayData.Direction.xyz = LightDirection;
     RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
 
     /// Trace the ray
@@ -835,12 +835,17 @@ vec4 ComputeImportanceIBLInput(inout FSamplingState SamplingState, vec3 Normal, 
     if (HitPayload.RenderableIndex == UINT_MAX)
     {
         float PDF = IBLPDFBuffer[TexelIndex];
-        return vec4(texture(IBLTextureSampler, UVCoordinates).xyz * NDotI, PDF);
+        return vec4(texture(IBLTextureSampler, UVCoordinates).xyz * NDotL, PDF);
     }
     else
     {
         return vec4(0);
     }
+}
+
+vec4 ComputeBXDFIBLInput(inout FSamplingState SamplingState, vec3 LightDirection, vec3 Normal, vec3 WorldSpacePosition)
+{
+    return vec4(1);
 }
 
 vec4 IndexToColor(uint Value)
@@ -915,79 +920,204 @@ void main()
     /// Fetch material data
     FDeviceMaterial Material = GetMaterial(TextureCoords);
     /// Process material interaction
+    vec3 Incoming = RayData.Direction.xyz;
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
-    vec4 MaterialSamplingResult = SampleMaterial(Material, RayData, NormalInWorldSpace, SamplingState, bFrontFacing);
+    float MaterialScatteringPDF = ScatterMaterial(Material, RayData, NormalInWorldSpace, SamplingState, bFrontFacing);
 
-    /// If we hit emissive material we add it's input and terminate the ray
-    if (CheckFlag(RayData.RayFlags, EMISSION_LAYER))
-    {
-        vec3 FinalValue = PushConstants.BounceIndex == 0 ? MaterialSamplingResult.xyz : (CumulativeMaterialColorBuffer[PixelIndex].xyz * MaterialSamplingResult.xyz);
-        RayDataBuffer[PixelIndex].RayFlags = RAY_DATA_RAY_MISSED;
-        imageStore(OutcomingImage, ivec2(PixelCoords), vec4(FinalValue , 1));
-        return;
-    }
+    /// Compute all possible lighting inputs
+    vec4 UniformDirectionalLightSamplingResult = vec4(0);
+    vec4 ImportanceDirectionalLightSamplingResult = vec4(0);
+    vec3 DirectionalLightResult = vec3(0);
+    vec4 UniformPointLightSamplingResult = vec4(0);
+    vec4 ImportancePointLightSamplingResult = vec4(0);
+    vec3 PointLightResult = vec3(0);
+    vec4 UniformSpotLightSamplingResult = vec4(0);
+    vec4 ImportanceSpotLightSamplingResult = vec4(0);
+    vec3 SpotLightResult = vec3(0);
+    vec4 ImportanceAreaLightSamplingResult = vec4(0);
+    vec4 BXDFAreaLightSamplingResult = vec4(0);
+    vec3 AreaLightResult = vec3(0);
+    vec4 UniformIBLSamplingResult = vec4(0);
+    vec4 ImportanceIBLSamplingResult = vec4(0);
+    vec4 BXDFIBLSamplingResult = vec4(0);
+    vec3 IBLResult = vec3(0);
 
-    /// Sample directional light
-    vec3 DirectionalLightSamplingResult = vec3(0);
-    uint DirectionalLightsCount = UtilityData.ActiveDirectionalLightsCount;
     SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_LIGHT);
 
-    if (DirectionalLightsCount != 0)
+    /// MIS directional lights
+    if (UtilityData.ActiveDirectionalLightsCount != 0)
     {
-        DirectionalLightSamplingResult = ComputeDirectionalLightInput(SamplingState, DirectionalLightsCount, NormalInWorldSpace, WorldSpacePosition);
+        vec3 UniformOutgoingDirection = vec3(0);
+        vec3 ImportanceOutgoingDirection = vec3(0);
+        UniformDirectionalLightSamplingResult = ComputeUniformDirectionalLightInput(SamplingState, UtilityData.ActiveDirectionalLightsCount, NormalInWorldSpace, WorldSpacePosition, UniformOutgoingDirection);
+        ImportanceDirectionalLightSamplingResult = ComputeImportanceDirectionalLightInput(SamplingState, UtilityData.ActiveDirectionalLightsCount, NormalInWorldSpace, WorldSpacePosition, ImportanceOutgoingDirection);
+        vec3 MaterialInteractionEvaluationResult1 = vec3(0); /// Interaction result of uniformly sampled directional light and the surface
+        vec3 MaterialInteractionEvaluationResult2 = vec3(0); /// Interaction result of importance sampled directional light and the surface
+
+        if (UniformDirectionalLightSamplingResult.w != 0)
+        {
+            MaterialInteractionEvaluationResult1 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, UniformOutgoingDirection, NormalInWorldSpace, SamplingState);
+            float NDotL = clamp(dot(UniformOutgoingDirection, NormalInWorldSpace), 0, 1);
+
+            MaterialInteractionEvaluationResult1 = NDotL * MaterialInteractionEvaluationResult1 * UniformDirectionalLightSamplingResult.xyz / UniformDirectionalLightSamplingResult.w;
+        }
+
+        if (ImportanceDirectionalLightSamplingResult.w != 0)
+        {
+            MaterialInteractionEvaluationResult2 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, ImportanceOutgoingDirection, NormalInWorldSpace, SamplingState);
+            float NDotL = clamp(dot(ImportanceOutgoingDirection, NormalInWorldSpace), 0, 1);
+
+            MaterialInteractionEvaluationResult2 = NDotL * MaterialInteractionEvaluationResult2 * ImportanceDirectionalLightSamplingResult.xyz / ImportanceDirectionalLightSamplingResult.w;
+        }
+
+        float PDFSUM = UniformDirectionalLightSamplingResult.w + ImportanceDirectionalLightSamplingResult.w;
+        float W1 = UniformDirectionalLightSamplingResult.w / PDFSUM;
+        float W2 = ImportanceDirectionalLightSamplingResult.w / PDFSUM;
+
+        DirectionalLightResult = W1 * MaterialInteractionEvaluationResult1 + W2 * MaterialInteractionEvaluationResult2;
     }
 
-    /// Sample point light
-    vec4 PointLightSamplingResult = vec4(0);
-    uint PointLightsCount = UtilityData.ActivePointLightsCount;
-
-    if (PointLightsCount != 0)
+    if (UtilityData.ActivePointLightsCount != 0)
     {
-        PointLightSamplingResult = ComputePointLightInput(SamplingState, PointLightsCount, NormalInWorldSpace, WorldSpacePosition);
+        vec3 UniformOutgoingDirection = vec3(0);
+        vec3 ImportanceOutgoingDirection = vec3(0);
+        UniformPointLightSamplingResult = ComputeUniformPointLightInput(SamplingState, UtilityData.ActivePointLightsCount, NormalInWorldSpace, WorldSpacePosition, UniformOutgoingDirection);
+        ImportancePointLightSamplingResult = ComputeImportancePointLightInput(SamplingState, UtilityData.ActivePointLightsCount, NormalInWorldSpace, WorldSpacePosition, ImportanceOutgoingDirection);
+        vec3 MaterialInteractionEvaluationResult1 = vec3(0); /// Interaction result of uniformly sampled point light and the surface
+        vec3 MaterialInteractionEvaluationResult2 = vec3(0); /// Interaction result of importance sampled point light and the surface
+
+        if (UniformPointLightSamplingResult.w != 0)
+        {
+            MaterialInteractionEvaluationResult1 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, UniformOutgoingDirection, NormalInWorldSpace, SamplingState);
+            float NDotL = clamp(dot(UniformOutgoingDirection, NormalInWorldSpace), 0, 1);
+
+            MaterialInteractionEvaluationResult1 = NDotL * MaterialInteractionEvaluationResult1 * UniformPointLightSamplingResult.xyz / UniformPointLightSamplingResult.w;
+        }
+
+        if (ImportancePointLightSamplingResult.w != 0)
+        {
+            MaterialInteractionEvaluationResult2 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, ImportanceOutgoingDirection, NormalInWorldSpace, SamplingState);
+            float NDotL = clamp(dot(ImportanceOutgoingDirection, NormalInWorldSpace), 0, 1);
+
+            MaterialInteractionEvaluationResult2 = NDotL * MaterialInteractionEvaluationResult2 * ImportancePointLightSamplingResult.xyz / ImportancePointLightSamplingResult.w;
+        }
+
+        float PDFSUM = UniformPointLightSamplingResult.w + ImportancePointLightSamplingResult.w;
+        float W1 = UniformPointLightSamplingResult.w / PDFSUM;
+        float W2 = ImportancePointLightSamplingResult.w / PDFSUM;
+
+        PointLightResult = W1 * MaterialInteractionEvaluationResult1 + W2 * MaterialInteractionEvaluationResult2;
     }
 
-    /// Sample spot light
-    vec4 SpotLightSamplingResult = vec4(0);
-    uint SpotLightsCount = UtilityData.ActiveSpotLightsCount;
-
-    if (SpotLightsCount != 0)
+    if (UtilityData.ActiveSpotLightsCount != 0)
     {
-        SpotLightSamplingResult = ComputeSpotLightInput(SamplingState, SpotLightsCount, NormalInWorldSpace, WorldSpacePosition);
+        vec3 UniformOutgoingDirection = vec3(0);
+        vec3 ImportanceOutgoingDirection = vec3(0);
+        UniformSpotLightSamplingResult = ComputeUniformSpotLightInput(SamplingState, UtilityData.ActiveSpotLightsCount, NormalInWorldSpace, WorldSpacePosition, UniformOutgoingDirection);
+        ImportanceSpotLightSamplingResult = ComputeImportanceSpotLightInput(SamplingState, UtilityData.ActiveSpotLightsCount, NormalInWorldSpace, WorldSpacePosition, ImportanceOutgoingDirection);
+        vec3 MaterialInteractionEvaluationResult1 = vec3(0); /// Interaction result of uniformly sampled spot light and the surface
+        vec3 MaterialInteractionEvaluationResult2 = vec3(0); /// Interaction result of importance sampled spot light and the surface
+
+        if (UniformSpotLightSamplingResult.w != 0)
+        {
+            MaterialInteractionEvaluationResult1 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, UniformOutgoingDirection, NormalInWorldSpace, SamplingState);
+            float NDotL = clamp(dot(UniformOutgoingDirection, NormalInWorldSpace), 0, 1);
+
+            MaterialInteractionEvaluationResult1 = NDotL * MaterialInteractionEvaluationResult1 * UniformSpotLightSamplingResult.xyz / UniformSpotLightSamplingResult.w;
+        }
+
+        if (ImportanceSpotLightSamplingResult.w != 0)
+        {
+            MaterialInteractionEvaluationResult2 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, ImportanceOutgoingDirection, NormalInWorldSpace, SamplingState);
+            float NDotL = clamp(dot(ImportanceOutgoingDirection, NormalInWorldSpace), 0, 1);
+
+            MaterialInteractionEvaluationResult2 = NDotL * MaterialInteractionEvaluationResult2 * ImportanceSpotLightSamplingResult.xyz / ImportanceSpotLightSamplingResult.w;
+        }
+
+        float PDFSUM = UniformSpotLightSamplingResult.w + ImportanceSpotLightSamplingResult.w;
+        float W1 = UniformSpotLightSamplingResult.w / PDFSUM;
+        float W2 = ImportanceSpotLightSamplingResult.w / PDFSUM;
+
+        SpotLightResult = W1 * MaterialInteractionEvaluationResult1 + W2 * MaterialInteractionEvaluationResult2;
     }
 
-    vec4 AreaLightInput = vec4(0);
-    uint AreaLightsCount = UtilityData.ActiveAreaLightsCount;
-
-    if (AreaLightsCount != 0)
+    if (UtilityData.ActiveAreaLightsCount != 0)
     {
-        float NDotL;
-        vec4 DirectAreaLightSamplingResult = SampleDirectAreaLight(SamplingState, AreaLightsCount, NormalInWorldSpace, WorldSpacePosition, NDotL);
-        vec4 BxDFAreaLightSamplingResult = SampleBxDFAreaLight(SamplingState, NormalInWorldSpace, WorldSpacePosition, RayData.Direction.xyz, NDotL, MaterialSamplingResult.w);
+        vec3 ImportanceOutgoingDirection = vec3(0);
+        vec3 BXDFOutgoingDirection = RayData.Direction.xyz; ///We already have bxdf direction
+        float NDotL = 0;
+        ImportanceAreaLightSamplingResult = ComputeImportanceAreaLightInput(SamplingState, UtilityData.ActiveAreaLightsCount, NormalInWorldSpace, WorldSpacePosition, NDotL, ImportanceOutgoingDirection);
+        BXDFAreaLightSamplingResult = ComputeBXDFAreaLightInput(SamplingState, NormalInWorldSpace, WorldSpacePosition, BXDFOutgoingDirection, MaterialScatteringPDF);
+        vec3 MaterialInteractionEvaluationResult1 = vec3(0); /// Interaction result of importance sampled area light and the surface
+        vec3 MaterialInteractionEvaluationResult2 = vec3(0); /// Interaction result of bxdf sampled area light and the surface
 
-        /// Apply balance heuristics
-        float WSum = DirectAreaLightSamplingResult.w + BxDFAreaLightSamplingResult.w;
-        float W1 = DirectAreaLightSamplingResult.w / WSum;
-        float W2 = BxDFAreaLightSamplingResult.w / WSum;
-        AreaLightInput = W1 * DirectAreaLightSamplingResult.xyz + W2 * BxDFAreaLightSamplingResult.xyz;
-        /// A dirty hack to accound for division by PDF later, though it's not
-        AreaLightInput.w = 1;
+        if (ImportanceAreaLightSamplingResult.w != 0)
+        {
+            MaterialInteractionEvaluationResult1 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, ImportanceAreaLightSamplingResult, NormalInWorldSpace, SamplingState);
+            MaterialInteractionEvaluationResult1 = NDotL * MaterialInteractionEvaluationResult1 * ImportanceAreaLightSamplingResult.xyz / ImportanceAreaLightSamplingResult.w;
+        }
+
+        if (BXDFAreaLightSamplingResult.w != 0)
+        {
+            MaterialInteractionEvaluationResult2 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, BXDFAreaLightSamplingResult, NormalInWorldSpace, SamplingState);
+            NDotL = clamp(dot(ImportanceOutgoingDirection, NormalInWorldSpace), 0, 1);
+
+            MaterialInteractionEvaluationResult2 = NDotL * MaterialInteractionEvaluationResult2 * BXDFAreaLightSamplingResult.xyz / BXDFAreaLightSamplingResult.w;
+        }
+
+        float PDFSUM = ImportanceAreaLightSamplingResult.w + BXDFAreaLightSamplingResult.w;
+        float W1 = ImportanceAreaLightSamplingResult.w / PDFSUM;
+        float W2 = BXDFAreaLightSamplingResult.w / PDFSUM;
+
+        AreaLightResult = W1 * MaterialInteractionEvaluationResult1 + W2 * MaterialInteractionEvaluationResult2;
     }
 
-    /// Sample IBL
-    vec4 IBLSamplingResult = vec4(0);
-
-    /// TODO:
     if (true/*UtilityData.IBLIsActive*/)
     {
-        IBLSamplingResult = ComputeIBLInput(SamplingState, NormalInWorldSpace, WorldSpacePosition);
-    }
+        vec3 UniformOutgoingDirection = vec3(0);
+        vec3 ImportanceOutgoingDirection = vec3(0);
+        vec3 BXDFOutgoingDirection = RayData.Direction.xyz; ///We already have bxdf direction
+        UniformIBLSamplingResult = ComputeUniformIBLInput(SamplingState, UniformOutgoingDirection, NormalInWorldSpace, WorldSpacePosition);
+        ImportanceIBLSamplingResult = ComputeImportanceIBLInput(SamplingState, ImportanceOutgoingDirection, NormalInWorldSpace, WorldSpacePosition);
+        BXDFIBLSamplingResult = ComputeBXDFIBLInput(SamplingState, BXDFOutgoingDirection, NormalInWorldSpace, WorldSpacePosition);
+        vec3 MaterialInteractionEvaluationResult1 = vec3(0); /// Interaction result of uniform sampled IBL and the surface
+        vec3 MaterialInteractionEvaluationResult2 = vec3(0); /// Interaction result of importance sampled IBL and the surface
+        vec3 MaterialInteractionEvaluationResult3 = vec3(0); /// Interaction result of bxdf sampled IBL and the surface
 
-    MaterialSamplingResult.xyz /= MaterialSamplingResult.w;
+        if (UniformIBLSamplingResult.w != 0)
+        {
+            MaterialInteractionEvaluationResult1 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, UniformIBLSamplingResult, NormalInWorldSpace, SamplingState);
+            MaterialInteractionEvaluationResult1 = MaterialInteractionEvaluationResult1 * UniformIBLSamplingResult.xyz / UniformIBLSamplingResult.w;
+        }
+
+        if (ImportanceIBLSamplingResult.w != 0)
+        {
+            MaterialInteractionEvaluationResult2 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, ImportanceIBLSamplingResult, NormalInWorldSpace, SamplingState);
+            MaterialInteractionEvaluationResult2 = MaterialInteractionEvaluationResult2 * ImportanceIBLSamplingResult.xyz / ImportanceIBLSamplingResult.w;
+        }
+
+        if (BXDFIBLSamplingResult.w != 0)
+        {
+            MaterialInteractionEvaluationResult3 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, BXDFIBLSamplingResult, NormalInWorldSpace, SamplingState);
+            MaterialInteractionEvaluationResult3 = MaterialInteractionEvaluationResult3 * BXDFIBLSamplingResult.xyz / BXDFIBLSamplingResult.w;
+        }
+
+        float PDFSUM = UniformIBLSamplingResult.w + ImportanceIBLSamplingResult.w + BXDFIBLSamplingResult.w;
+        float W1 = UniformIBLSamplingResult.w / PDFSUM;
+        float W2 = ImportanceIBLSamplingResult.w / PDFSUM;
+        float W3 = BXDFIBLSamplingResult.w / PDFSUM;
+
+        AreaLightResult = W1 * MaterialInteractionEvaluationResult1 + W2 * MaterialInteractionEvaluationResult2 + W3 * MaterialInteractionEvaluationResult3;
+    }
 
     RayData.Origin.xyz = WorldSpacePosition;
 
+    vec3 MaterialSamplingResult = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, RayData.Direction.xyz, NormalInWorldSpace, SamplingState);
+    NDotI = clamp(dot(-Incoming, NormalInWorldSpace), 0, 1);
+    MaterialSamplingResult = MaterialSamplingResult * NDotI / MaterialScatteringPDF;
+
     vec3 CumulativeMaterialColor = CumulativeMaterialColorBuffer[PixelIndex].xyz;
-    CumulativeMaterialColor *= MaterialSamplingResult.xyz;
+    CumulativeMaterialColor *= MaterialSamplingResult;
     CumulativeMaterialColorBuffer[PixelIndex] = vec4(CumulativeMaterialColor, 1);
 
     vec3 TotalIncomingLight = vec3(0);
@@ -995,11 +1125,11 @@ void main()
     if (!CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER)
     &&!CheckFlag(RayData.RayFlags, SPECULAR_LAYER))
     {
-        TotalIncomingLight += IBLSamplingResult.w == 0.f ? vec3(0) : IBLSamplingResult.xyz / IBLSamplingResult.w;
-        TotalIncomingLight += PointLightSamplingResult.w == 0.f ? vec3(0) : PointLightSamplingResult.xyz / PointLightSamplingResult.w;
-        TotalIncomingLight += DirectionalLightSamplingResult.w == 0.f ? vec3(0) : DirectionalLightSamplingResult.xyz / DirectionalLightSamplingResult.w;
-        TotalIncomingLight += SpotLightSamplingResult.w == 0.f ? vec3(0) : SpotLightSamplingResult.xyz / SpotLightSamplingResult.w;
-        TotalIncomingLight += AreaLightSamplingResult.w == 0.f ? vec3(0) : AreaLightSamplingResult.xyz / AreaLightSamplingResult.w;
+        TotalIncomingLight += DirectionalLightResult;
+        TotalIncomingLight += PointLightResult;
+        TotalIncomingLight += SpotLightResult;
+        TotalIncomingLight += AreaLightResult;
+        TotalIncomingLight += IBLResult;
         BounceInput = CumulativeMaterialColor * TotalIncomingLight;
     }
 
