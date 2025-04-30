@@ -923,6 +923,7 @@ void main()
     vec3 Incoming = RayData.Direction.xyz;
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
     float MaterialScatteringPDF = ScatterMaterial(Material, RayData, NormalInWorldSpace, SamplingState, bFrontFacing);
+    bool isSomething = !CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER) &&!CheckFlag(RayData.RayFlags, SPECULAR_LAYER);
 
     /// Compute all possible lighting inputs
     vec4 UniformDirectionalLightSamplingResult = vec4(0);
@@ -1120,19 +1121,12 @@ void main()
     CumulativeMaterialColor *= MaterialSamplingResult;
     CumulativeMaterialColorBuffer[PixelIndex] = vec4(CumulativeMaterialColor, 1);
 
-    vec3 TotalIncomingLight = vec3(0);
     vec3 BounceInput = vec3(0);
-    if (!CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER)
-    &&!CheckFlag(RayData.RayFlags, SPECULAR_LAYER))
-    {
-        TotalIncomingLight += DirectionalLightResult;
-        TotalIncomingLight += PointLightResult;
-        TotalIncomingLight += SpotLightResult;
-        TotalIncomingLight += AreaLightResult;
-        TotalIncomingLight += IBLResult;
-        BounceInput = CumulativeMaterialColor * TotalIncomingLight;
-    }
-
+    BounceInput += DirectionalLightResult;
+    BounceInput += PointLightResult;
+    BounceInput += SpotLightResult;
+    BounceInput += AreaLightResult;
+    BounceInput += IBLResult;
     ThroughputBuffer[PixelIndex].xyz = ThroughputBuffer[PixelIndex].xyz + BounceInput;
 
     if ((PushConstants.BounceIndex == LAST_DIFFUSE_BOUNCE && CheckFlag(RayData.RayFlags, DIFFUSE_LAYER))
