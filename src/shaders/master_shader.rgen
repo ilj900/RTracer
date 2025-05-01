@@ -59,6 +59,8 @@ layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_PIXEL_INDEX_BU
     uint PixelIndexIndexMap[];
 };
 
+#define MASTER_SHADER_AREA_LIGHTS_ALIAS_TABLE_BUFFER_REFERENCE_INDEX			17u
+
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_DIRECTIONAL_LIGHTS_BUFFER_INDEX) buffer DirectionalLightsBufferObject
 {
     FDirectionalLight DirectionalLightsBuffer[];
@@ -74,14 +76,34 @@ layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_SPOT_LIGHTS_BU
     FSpotLight SpotLightsBuffer[];
 };
 
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_SPOT_LIGHTS_IMPORTANCE_BUFFER_INDEX) buffer SpotLightsImportanceBufferObject
+{
+    FDeviceAliasTableEntry SpotLightsImportanceBuffer[];
+};
+
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_POINT_LIGHTS_BUFFER_INDEX) buffer PointLightsBufferObject
 {
     FPointLight PointLightsBuffer[];
 };
 
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_POINT_LIGHTS_IMPORTANCE_BUFFER_INDEX) buffer PointLightsImportanceBufferObject
+{
+    FDeviceAliasTableEntry PointLightsImportanceBuffer[];
+};
+
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_AREA_LIGHTS_BUFFER_INDEX) buffer AreaLightsBufferObject
 {
     FAreaLight AreaLightsBuffer[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_AREA_LIGHTS_IMPORTANCE_BUFFER_INDEX) buffer AreaLightsImportanceBufferObject
+{
+    FDeviceAliasTableEntry AreaLightsImportanceBuffer[];
+};
+
+layout (buffer_reference, scalar) buffer AreaLightsAliasTableReference
+{
+    FDeviceAliasTableEntry AreaLightsAliasTable[];
 };
 
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_IMPORTANCE_BUFFER_INDEX) buffer IBLImportanceBufferObject
@@ -155,11 +177,6 @@ layout (buffer_reference, scalar) buffer Vertices
 layout (buffer_reference, scalar) buffer Indices
 {
     int I[];
-};
-
-layout (buffer_reference, scalar) buffer ArealLightAliasTables
-{
-    FDeviceAliasTableEntry AliasTable[];
 };
 
 layout (push_constant) uniform PushConstantsBlock
@@ -563,7 +580,7 @@ vec4 ComputeImportanceAreaLightInput(inout FSamplingState SamplingState, uint Ar
 
     /// Second - select a triangle within area light based on it's area
     uint ImportanceTriangleIndex = uint(RandomFloat(SamplingState) * ArealLightImportance.NumberOfTriangles);
-    FDeviceAliasTableEntry AreaLightAliasTable = ArealLightAliasTables(ArealLightImportance.VertexBufferAddress);
+    FDeviceAliasTableEntry AreaLightAliasTable = AreaLightsAliasTableReference(ArealLightImportance.AliasTableBufferAddress);
 
     ImportanceSampleTableEntry = AreaLightAliasTable[ImportanceTriangleIndex];
 

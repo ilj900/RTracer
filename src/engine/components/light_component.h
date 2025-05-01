@@ -78,6 +78,9 @@ namespace ECS
 
 					VertexBufferAddress = 0;
 					IndexBufferAddress = 0;
+
+					AliasTableBufferAddress = 0;
+					Area = 0.f;
 			};
 
 			FAreaLightComponent(uint32_t NumberOfTrianglesIn, uint32_t TransformIndexIn, uint32_t MaterialIndexIn, uint64_t VertexBufferAddressIn, uint64_t IndexBufferAddressIn)
