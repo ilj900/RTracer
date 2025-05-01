@@ -19,12 +19,22 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
+			if (bAliasTableShouldBeUpdated)
+			{
+				auto [UpdatedAliasTable, _] = GenerateImportanceMapFast<ECS::COMPONENTS::FPointLightComponent>(COORDINATOR().Data<ECS::COMPONENTS::FPointLightComponent>(),
+					CurrentPointLightsCount, 1, [](ECS::COMPONENTS::FPointLightComponent Component){return double(Component.Power);});
+
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(POINT_LIGHTS_IMPORTANCE_BUFFER, UpdatedAliasTable.size() * sizeof(FAliasTableEntry), 0, UpdatedAliasTable.data());
+
+				bAliasTableShouldBeUpdated = false;
+			}
+
 			if (LoadedPointLightsCount != CurrentPointLightsCount ||
 				LoadedPointLightPower != CurrentPointLightPower)
 			{
 				/// Load two entries even though only one can be dirty
 				/// Pay close attention to the order of member fields: CurrentPointLightsCount should be followed by CurrentPointLightPower
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t) * 2}, { offsetof(FUtilityData, ActivePointLightsCount)}, {&CurrentPointLightsCount});
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t) * 2,  offsetof(FUtilityData, ActivePointLightsCount), &CurrentPointLightsCount);
 				LoadedPointLightsCount = CurrentPointLightsCount;
 				LoadedPointLightPower = CurrentPointLightPower;
 			}
@@ -46,12 +56,22 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
+			if (bAliasTableShouldBeUpdated)
+			{
+				auto [UpdatedAliasTable, _] = GenerateImportanceMapFast<ECS::COMPONENTS::FPointLightComponent>(COORDINATOR().Data<ECS::COMPONENTS::FPointLightComponent>(),
+					CurrentPointLightsCount, 1, [](ECS::COMPONENTS::FPointLightComponent Component){return double(Component.Power);});
+
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(POINT_LIGHTS_IMPORTANCE_BUFFER, UpdatedAliasTable.size() * sizeof(FAliasTableEntry), 0, UpdatedAliasTable.data());
+
+				bAliasTableShouldBeUpdated = false;
+			}
+
 			if (LoadedPointLightsCount != CurrentPointLightsCount ||
 				LoadedPointLightPower != CurrentPointLightPower)
 			{
 				/// Load two entries even though only one can be dirty
 				/// Pay close attention to the order of member fields: CurrentPointLightsCount should be followed by CurrentPointLightPower
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t) * 2}, { offsetof(FUtilityData, ActivePointLightsCount)}, {&CurrentPointLightsCount});
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t) * 2,  offsetof(FUtilityData, ActivePointLightsCount), &CurrentPointLightsCount);
 				LoadedPointLightsCount = CurrentPointLightsCount;
 				LoadedPointLightPower = CurrentPointLightPower;
 			}
@@ -119,6 +139,7 @@ namespace ECS
 
 			CurrentPointLightsCount++;
 			CurrentPointLightPower += LightComponent.Power;
+			bAliasTableShouldBeUpdated = true;
 
             return Light;
         }

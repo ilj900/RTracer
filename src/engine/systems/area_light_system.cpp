@@ -22,12 +22,22 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
+			if (bAreaLightAddressTableShouldBeUpdated)
+			{
+				auto [UpdatedAliasTable, _] = GenerateImportanceMapFast<ECS::COMPONENTS::FAreaLightComponent>(COORDINATOR().Data<ECS::COMPONENTS::FAreaLightComponent>(),
+					CurrentAreaLightsCount, 1, [](ECS::COMPONENTS::FAreaLightComponent Component){return double(Component.Area);});
+
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(AREA_LIGHTS_IMPORTANCE_BUFFER, UpdatedAliasTable.size() * sizeof(FAliasTableEntry), 0, UpdatedAliasTable.data());
+
+				bAreaLightAddressTableShouldBeUpdated = false;
+			}
+
 			if (LoadedAreaLightsCount != CurrentAreaLightsCount ||
 				LoadedAreaLightArea != CurrentAreaLightArea)
 			{
 				/// Load two entries even though only one can be dirty
 				/// Pay close attention to the order of member fields: CurrentAreaLightsCount should be followed by CurrentAreaLightArea
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t) * 2}, { offsetof(FUtilityData, ActiveAreaLightsCount)}, {&CurrentAreaLightsCount});
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t) * 2,  offsetof(FUtilityData, ActiveAreaLightsCount), &CurrentAreaLightsCount);
 				LoadedAreaLightsCount = CurrentAreaLightsCount;
 				LoadedAreaLightArea = CurrentAreaLightArea;
 			}
@@ -49,12 +59,22 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
+			if (bAreaLightAddressTableShouldBeUpdated)
+			{
+				auto [UpdatedAliasTable, _] = GenerateImportanceMapFast<ECS::COMPONENTS::FAreaLightComponent>(COORDINATOR().Data<ECS::COMPONENTS::FAreaLightComponent>(),
+					CurrentAreaLightsCount, 1, [](ECS::COMPONENTS::FAreaLightComponent Component){return double(Component.Area);});
+
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(AREA_LIGHTS_IMPORTANCE_BUFFER, UpdatedAliasTable.size() * sizeof(FAliasTableEntry), 0, UpdatedAliasTable.data());
+
+				bAreaLightAddressTableShouldBeUpdated = false;
+			}
+
 			if (LoadedAreaLightsCount != CurrentAreaLightsCount ||
 				LoadedAreaLightArea != CurrentAreaLightArea)
 			{
 				/// Load two entries even though only one can be dirty
 				/// Pay close attention to the order of member fields: CurrentAreaLightsCount should be followed by CurrentAreaLightArea
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t) * 2}, { offsetof(FUtilityData, ActiveAreaLightsCount)}, {&CurrentAreaLightsCount});
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t) * 2,  offsetof(FUtilityData, ActiveAreaLightsCount), &CurrentAreaLightsCount);
 				LoadedAreaLightsCount = CurrentAreaLightsCount;
 				LoadedAreaLightArea = CurrentAreaLightArea;
 			}
@@ -111,10 +131,43 @@ namespace ECS
 			AreaLightComponent.IsIndexedFlagAndRenderableIndex = IsIndexedFlagAndRenderableIndex;
 			AreaLightComponent.NumberOfTriangles = MeshComponent.Indices.empty() ? (MeshComponent.Vertices.size() / 3) : (MeshComponent.Indices.size() / 3);
 
+			std::vector<float> Areas(AreaLightComponent.NumberOfTriangles, 0);
+
+			if (MeshComponent.Indices.empty())
+			{
+				for (int i = 0; i < MeshComponent.Vertices.size(); i += 3)
+				{
+					Areas[i / 3] = 0.5f * Cross(MeshComponent.Vertices[i+1].Position - MeshComponent.Vertices[i].Position, MeshComponent.Vertices[i+2].Position - MeshComponent.Vertices[i].Position).Length();
+				}
+			}
+			else
+			{
+				for (int i = 0; i < MeshComponent.Indices.size(); i += 3)
+				{
+					uint32_t I0 = MeshComponent.Indices[i];
+					uint32_t I1 = MeshComponent.Indices[i + 1];
+					uint32_t I2 = MeshComponent.Indices[i + 2];
+					Areas[i / 3] = 0.5f * Cross(MeshComponent.Vertices[I1].Position - MeshComponent.Vertices[I0].Position, MeshComponent.Vertices[I2].Position - MeshComponent.Vertices[I0].Position).Length();
+				}
+			}
+
+			auto [AreaLightAliasTable, _] = GenerateImportanceMapFast<float>(Areas.data(),
+				AreaLightComponent.NumberOfTriangles, 1, [](float Component){return double(Component);});
+
+			std::string BufferName = "AreaLight_" + std::to_string(Light) + "_AliasTableBuffer";
+			FBuffer AreaLightAliasTableBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(AreaLightAliasTable.size() * sizeof(FAliasTableEntry),
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, BufferName);
+			RESOURCE_ALLOCATOR()->RegisterBuffer(AreaLightAliasTableBuffer, BufferName);
+
+			RESOURCE_ALLOCATOR()->LoadDataToBuffer(BufferName, AreaLightAliasTable.size() * sizeof(FAliasTableEntry), 0, AreaLightAliasTable.data());
+
+			AreaLightComponent.AliasTableBufferAddress = VK_CONTEXT()->GetBufferDeviceAddressInfo(RESOURCE_ALLOCATOR()->GetBuffer(BufferName));
+
             MarkDirty(Light);
 
 			CurrentAreaLightsCount++;
 			CurrentAreaLightArea += AreaLightComponent.Area;
+			bAreaLightAddressTableShouldBeUpdated = true;
 
             return Light;
         }

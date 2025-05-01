@@ -21,3 +21,7 @@ constexpr const char* COUNTED_MATERIALS_PER_CHUNK_BUFFER = "CountedMaterialsPerC
 constexpr const char* TOTAL_COUNTED_MATERIALS_BUFFER = "TotalCountedMaterialsBuffer";
 constexpr const char* MATERIALS_OFFSETS_PER_MATERIAL_BUFFER = "MaterialsOffsetsPerMaterialBuffer";
 constexpr const char* UTILITY_INFO_BUFFER = "UtilityInfoBuffer";
+constexpr const char* DIRECTIONAL_LIGHTS_IMPORTANCE_BUFFER = "DirectionalLightsImportanceBuffer";
+constexpr const char* POINT_LIGHTS_IMPORTANCE_BUFFER = "PointLightsImportanceBuffer";
+constexpr const char* SPOT_LIGHTS_IMPORTANCE_BUFFER = "SpotLightsImportanceBuffer";
+constexpr const char* AREA_LIGHTS_IMPORTANCE_BUFFER = "AreaLightsImportanceBuffer";

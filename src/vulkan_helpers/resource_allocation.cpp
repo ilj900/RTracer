@@ -135,7 +135,7 @@ FBuffer FResourceAllocator::CreateBuffer(VkDeviceSize Size, VkBufferUsageFlags U
     return Buffer;
 }
 
-FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDeviceSize> SizesIn, std::vector<VkDeviceSize> OffsetsIn, std::vector<void*> DatasIn)
+FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDeviceSize> SizesIn, std::vector<VkDeviceSize> OffsetsIn, std::vector<void*> DataIn)
 {
     if (SizesIn.empty())
     {
@@ -236,11 +236,16 @@ FBuffer FResourceAllocator::LoadDataToBuffer(FBuffer& Buffer, std::vector<VkDevi
     return Buffer;
 }
 
-FBuffer FResourceAllocator::LoadDataToBuffer(const std::string& BufferName, std::vector<VkDeviceSize> SizesIn, std::vector<VkDeviceSize> OffsetsIn, std::vector<void*> DatasIn)
+FBuffer FResourceAllocator::LoadDataToBuffer(const std::string& BufferName, std::vector<VkDeviceSize> SizesIn, std::vector<VkDeviceSize> OffsetsIn, std::vector<void*> DataIn)
 {
 	auto Buffer = GetBuffer(BufferName);
 
-	return LoadDataToBuffer(Buffer, std::move(SizesIn), std::move(OffsetsIn), std::move(DatasIn));
+	return LoadDataToBuffer(Buffer, std::move(SizesIn), std::move(OffsetsIn), std::move(DataIn));
+}
+
+FBuffer FResourceAllocator::LoadDataToBuffer(const std::string& BufferName, VkDeviceSize SizesIn, VkDeviceSize OffsetsIn, void* DataIn)
+{
+	return LoadDataToBuffer(BufferName, std::vector<VkDeviceSize>{SizesIn}, std::vector<VkDeviceSize>{OffsetsIn}, std::vector<void*>{DataIn});
 }
 
 void FResourceAllocator::LoadDataFromBuffer(FBuffer& Buffer, VkDeviceSize Size, VkDeviceSize Offset, void* Data)

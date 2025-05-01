@@ -923,7 +923,6 @@ void main()
     vec3 Incoming = RayData.Direction.xyz;
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
     float MaterialScatteringPDF = ScatterMaterial(Material, RayData, NormalInWorldSpace, SamplingState, bFrontFacing);
-    bool isSomething = !CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER) &&!CheckFlag(RayData.RayFlags, SPECULAR_LAYER);
 
     /// Compute all possible lighting inputs
     vec4 UniformDirectionalLightSamplingResult = vec4(0);

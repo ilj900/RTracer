@@ -19,12 +19,22 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
+			if (bAliasTableShouldBeUpdated)
+			{
+				auto [UpdatedAliasTable, _] = GenerateImportanceMapFast<ECS::COMPONENTS::FSpotLightComponent>(COORDINATOR().Data<ECS::COMPONENTS::FSpotLightComponent>(),
+					CurrentSpotLightsCount, 1, [](ECS::COMPONENTS::FSpotLightComponent Component){return double(Component.Power);});
+
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(SPOT_LIGHTS_IMPORTANCE_BUFFER, UpdatedAliasTable.size() * sizeof(FAliasTableEntry), 0, UpdatedAliasTable.data());
+
+				bAliasTableShouldBeUpdated = false;
+			}
+
 			/// Load two entries even though only one can be dirty
 			/// Pay close attention to the order of member fields: CurrentSpotLightsCount should be followed by CurrentTotalSpotlightPower
 			if (LoadedSpotLightsCount != CurrentSpotLightsCount ||
 				LoadedTotalSpotlightPower != CurrentTotalSpotlightPower)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t) * 2}, {offsetof(FUtilityData, ActiveSpotLightsCount)}, {&CurrentSpotLightsCount});
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t) * 2, offsetof(FUtilityData, ActiveSpotLightsCount), &CurrentSpotLightsCount);
 				LoadedSpotLightsCount = CurrentSpotLightsCount;
 				LoadedTotalSpotlightPower = CurrentTotalSpotlightPower;
 			}
@@ -46,12 +56,22 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
+			if (bAliasTableShouldBeUpdated)
+			{
+				auto [UpdatedAliasTable, _] = GenerateImportanceMapFast<ECS::COMPONENTS::FSpotLightComponent>(COORDINATOR().Data<ECS::COMPONENTS::FSpotLightComponent>(),
+					CurrentSpotLightsCount, 1, [](ECS::COMPONENTS::FSpotLightComponent Component){return double(Component.Power);});
+
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(SPOT_LIGHTS_IMPORTANCE_BUFFER, UpdatedAliasTable.size() * sizeof(FAliasTableEntry), 0, UpdatedAliasTable.data());
+
+				bAliasTableShouldBeUpdated = false;
+			}
+
 			/// Load two entries even though only one can be dirty
 			/// Pay close attention to the order of member fields: CurrentSpotLightsCount should be followed by CurrentTotalSpotlightPower
 			if (LoadedSpotLightsCount != CurrentSpotLightsCount ||
 				LoadedTotalSpotlightPower != CurrentTotalSpotlightPower)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t) * 2}, {offsetof(FUtilityData, ActiveSpotLightsCount)}, {&CurrentSpotLightsCount});
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t) * 2, offsetof(FUtilityData, ActiveSpotLightsCount), &CurrentSpotLightsCount);
 				LoadedSpotLightsCount = CurrentSpotLightsCount;
 				LoadedTotalSpotlightPower = CurrentTotalSpotlightPower;
 			}
@@ -158,6 +178,7 @@ namespace ECS
 
 			CurrentSpotLightsCount++;
 			CurrentTotalSpotlightPower += LightComponent.Power;
+			bAliasTableShouldBeUpdated = true;
 
             return Light;
         }

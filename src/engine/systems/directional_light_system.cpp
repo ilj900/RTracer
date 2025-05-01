@@ -20,12 +20,22 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
+			if (bAliasTableShouldBeUpdated)
+			{
+				auto [UpdatedAliasTable, _] = GenerateImportanceMapFast<ECS::COMPONENTS::FDirectionalLightComponent>(COORDINATOR().Data<ECS::COMPONENTS::FDirectionalLightComponent>(),
+					CurrentDirectionalLightsCount, 1, [](ECS::COMPONENTS::FDirectionalLightComponent Component){return double(Component.Power);});
+
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(DIRECTIONAL_LIGHTS_IMPORTANCE_BUFFER, UpdatedAliasTable.size() * sizeof(FAliasTableEntry), 0, UpdatedAliasTable.data());
+
+				bAliasTableShouldBeUpdated = false;
+			}
+
 			if (LoadedDirectionalLightsCount != CurrentDirectionalLightsCount ||
 				LoadedDirectionalLightPower != CurrentDirectionalLightPower)
 			{
 				/// Load two entries even though only one can be dirty
 				/// Pay close attention to the order of member fields: CurrentDirectionalLightsCount should be followed by CurrentDirectionalLightPower
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t) * 2}, { offsetof(FUtilityData, ActiveDirectionalLightsCount)}, {&CurrentDirectionalLightsCount});
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t) * 2,  offsetof(FUtilityData, ActiveDirectionalLightsCount), &CurrentDirectionalLightsCount);
 				LoadedDirectionalLightsCount = CurrentDirectionalLightsCount;
 				LoadedDirectionalLightPower = CurrentDirectionalLightPower;
 			}
@@ -46,6 +56,16 @@ namespace ECS
         bool FDirectionalLightSystem::Update(int Index)
         {
 			bool bAnyUpdate = false;
+
+			if (bAliasTableShouldBeUpdated)
+			{
+				auto [UpdatedAliasTable, _] = GenerateImportanceMapFast<ECS::COMPONENTS::FDirectionalLightComponent>(COORDINATOR().Data<ECS::COMPONENTS::FDirectionalLightComponent>(),
+					CurrentDirectionalLightsCount, 1, [](ECS::COMPONENTS::FDirectionalLightComponent Component){return double(Component.Power);});
+
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(DIRECTIONAL_LIGHTS_IMPORTANCE_BUFFER, UpdatedAliasTable.size() * sizeof(FAliasTableEntry), 0, UpdatedAliasTable.data());
+
+				bAliasTableShouldBeUpdated = false;
+			}
 
 			if (LoadedDirectionalLightsCount != CurrentDirectionalLightsCount ||
 				LoadedDirectionalLightPower != CurrentDirectionalLightPower)
@@ -138,6 +158,7 @@ namespace ECS
 
 			CurrentDirectionalLightsCount++;
 			CurrentDirectionalLightPower += LightComponent.Power;
+			bAliasTableShouldBeUpdated = true;
 
             return Light;
         }

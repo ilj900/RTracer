@@ -27,11 +27,12 @@ namespace ECS
 
             FEntity CreatePointLight(const FVector3& Position, const FVector3& Color, float Intensity);
 
+            static const uint32_t MAX_POINT_LIGHTS = 512;
 			uint32_t LoadedPointLightsCount = 0;
 			float LoadedPointLightPower = 0.f;
 			uint32_t CurrentPointLightsCount = 0;
 			float CurrentPointLightPower = 0.f;
-            const uint32_t MAX_POINT_LIGHTS = 512;
+			bool bAliasTableShouldBeUpdated = false;
         };
     }
 }
