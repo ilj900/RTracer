@@ -123,7 +123,8 @@ namespace ECS
 			/// We need to compute the area of the area light
 			/// It's the area of the mesh multiplied by scale of the model matrix of that mesh
 			auto Transform = GetComponent<ECS::COMPONENTS::FDeviceTransformComponent>(InstanceEntity);
-			AreaLightComponent.Area = MeshComponent.Area * Transform.ModelMatrix.EstimateSurfaceScale();
+			/// We have to compute the new area og the mesh because it's transform changed it area;
+			AreaLightComponent.Area = MeshComponent.ComputeArea(Transform.ModelMatrix);
 
 			/// We pack renderable index and IsIndex flag in one field
 			uint32_t IsIndexedFlagAndRenderableIndex = MeshComponent.Indices.empty() ? 0 : 1u << 31;
@@ -156,7 +157,7 @@ namespace ECS
 
 			std::string BufferName = "AreaLight_" + std::to_string(Light) + "_AliasTableBuffer";
 			FBuffer AreaLightAliasTableBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(AreaLightAliasTable.size() * sizeof(FAliasTableEntry),
-				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, BufferName);
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, BufferName);
 			RESOURCE_ALLOCATOR()->RegisterBuffer(AreaLightAliasTableBuffer, BufferName);
 
 			RESOURCE_ALLOCATOR()->LoadDataToBuffer(BufferName, AreaLightAliasTable.size() * sizeof(FAliasTableEntry), 0, AreaLightAliasTable.data());

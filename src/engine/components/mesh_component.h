@@ -28,6 +28,9 @@ namespace ECS
             std::vector<uint32_t> Indices{};
 			float Area = 0.f;
             bool Indexed = false;
+
+			/// Compute the area of the mesh given the passed transformation matrix.
+			float ComputeArea(const FMatrix4& ModelMatrix = FMatrix4());
         };
     }
 }

@@ -46,5 +46,34 @@ namespace ECS
             TexCoord.Y = Other.TexCoord.Y;
             return *this;
         }
+
+		float FMeshComponent::ComputeArea(const FMatrix4& ModelMatrix)
+		{
+			double TransformedArea = 0;
+			if (Indexed)
+			{
+				for (int i = 0; i < Indices.size(); i += 3)
+				{
+					auto V1 = Vertices[Indices[i]].Position * ModelMatrix;
+					auto V2 = Vertices[Indices[i + 1]].Position * ModelMatrix;
+					auto V3 = Vertices[Indices[i + 2]].Position * ModelMatrix;
+
+					TransformedArea += double(0.5f * Cross(V2 - V1, V3 - V1).Length());
+				}
+			}
+			else
+			{
+				for (int i = 0; i < Vertices.size(); i += 3)
+				{
+					auto V1 = Vertices[i].Position * ModelMatrix;
+					auto V2 = Vertices[i + 1].Position * ModelMatrix;
+					auto V3 = Vertices[i + 2].Position * ModelMatrix;
+
+					TransformedArea += double(0.5f * Cross(V2 - V1, V3 - V1).Length());
+				}
+			}
+
+			return TransformedArea;
+		}
     }
 }

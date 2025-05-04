@@ -59,8 +59,6 @@ layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_PIXEL_INDEX_BU
     uint PixelIndexIndexMap[];
 };
 
-#define MASTER_SHADER_AREA_LIGHTS_ALIAS_TABLE_BUFFER_REFERENCE_INDEX			17u
-
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_DIRECTIONAL_LIGHTS_BUFFER_INDEX) buffer DirectionalLightsBufferObject
 {
     FDirectionalLight DirectionalLightsBuffer[];
@@ -512,7 +510,7 @@ vec4 ComputeImportanceSpotLightInput(inout FSamplingState SamplingState, uint Sp
 
     FSpotLight SpotLightImportance = SpotLightsBuffer[ImportanceLightIndex];
 
-    Direction = SpotLight.Position - WorldSpacePosition;
+    Direction = SpotLightImportance.Position - WorldSpacePosition;
     float LightDistance = length(Direction);
     Direction = normalize(Direction);
 
@@ -524,9 +522,9 @@ vec4 ComputeImportanceSpotLightInput(inout FSamplingState SamplingState, uint Sp
         return vec4(0);
     }
 
-    float LightAngle = acos(dot(SpotLight.Direction, -Direction));
+    float LightAngle = acos(dot(SpotLightImportance.Direction, -Direction));
     /// If point is outside out outer angle, it is also not illuminated
-    if (LightAngle > SpotLight.OuterAngle)
+    if (LightAngle > SpotLightImportance.OuterAngle)
     {
         return vec4(0);
     }
@@ -547,17 +545,17 @@ vec4 ComputeImportanceSpotLightInput(inout FSamplingState SamplingState, uint Sp
         Attenuation *= Attenuation;
 
         /// If point between outer and inner angle - interpolate
-        if (LightAngle > SpotLight.InnerAngle)
+        if (LightAngle > SpotLightImportance.InnerAngle)
         {
-            float Fraction = LightAngle - SpotLight.InnerAngle;
-            float Delta = SpotLight.OuterAngle - SpotLight.InnerAngle;
+            float Fraction = LightAngle - SpotLightImportance.InnerAngle;
+            float Delta = SpotLightImportance.OuterAngle - SpotLightImportance.InnerAngle;
             Fraction = Fraction / Delta;
             Attenuation *= pow((1. - Fraction), 2.4);
         }
 
         /// Here, the probability of sampling a particular spot light is dependent on the spot light's power and total spot lights power
-        float PDF = SpotLight.Power / UtilityData.TotalSpotLightPower;
-        return vec4(SpotLight.Color * SpotLight.Intensity * Attenuation * NDotI / PDF, PDF);
+        float PDF = SpotLightImportance.Power / UtilityData.TotalSpotLightPower;
+        return vec4(SpotLightImportance.Color * SpotLightImportance.Intensity * Attenuation * NDotI / PDF, PDF);
     }
     else
     {
@@ -580,7 +578,7 @@ vec4 ComputeImportanceAreaLightInput(inout FSamplingState SamplingState, uint Ar
 
     /// Second - select a triangle within area light based on it's area
     uint ImportanceTriangleIndex = uint(RandomFloat(SamplingState) * ArealLightImportance.NumberOfTriangles);
-    FDeviceAliasTableEntry AreaLightAliasTable = AreaLightsAliasTableReference(ArealLightImportance.AliasTableBufferAddress);
+    AreaLightsAliasTableReference AreaLightAliasTable = AreaLightsAliasTableReference(ArealLightImportance.AliasTableBufferAddress);
 
     ImportanceSampleTableEntry = AreaLightAliasTable[ImportanceTriangleIndex];
 
@@ -666,7 +664,7 @@ vec4 ComputeImportanceAreaLightInput(inout FSamplingState SamplingState, uint Ar
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
 
     /// And if we did hit a required triange, then we store light data
-    if (HitPayload.PrimitiveIndex == PrimitiveIndex && HitPayload.RenderableIndex == RenderableIndex)
+    if (HitPayload.PrimitiveIndex == ImportanceTriangleIndex && HitPayload.RenderableIndex == RenderableIndex)
     {
         vec3 Barycentrics = vec3(1.f - HitPayload.HitUV.x - HitPayload.HitUV.y, HitPayload.HitUV.x, HitPayload.HitUV.y);
 
@@ -723,9 +721,9 @@ vec4 ComputeBXDFAreaLightInput(inout FSamplingState SamplingState, vec3 Normal, 
             uint I1 = 1;
             uint I2 = 2;
 
-            I0 = Inds.I[Hit.PrimitiveIndex * 3];
-            I1 = Inds.I[Hit.PrimitiveIndex * 3 + 1];
-            I2 = Inds.I[Hit.PrimitiveIndex * 3 + 2];
+            I0 = Inds.I[HitPayload.PrimitiveIndex * 3];
+            I1 = Inds.I[HitPayload.PrimitiveIndex * 3 + 1];
+            I2 = Inds.I[HitPayload.PrimitiveIndex * 3 + 2];
 
             DV0 = Verts.V[I0];
             DV1 = Verts.V[I1];
@@ -733,7 +731,7 @@ vec4 ComputeBXDFAreaLightInput(inout FSamplingState SamplingState, vec3 Normal, 
         }
         else
         {
-            uint Index = Hit.PrimitiveIndex * 3;
+            uint Index = HitPayload.PrimitiveIndex * 3;
             DV0 = Verts.V[Index];
             DV1 = Verts.V[Index + 1];
             DV2 = Verts.V[Index + 2];
@@ -744,8 +742,8 @@ vec4 ComputeBXDFAreaLightInput(inout FSamplingState SamplingState, vec3 Normal, 
         FVertex V1 = UnpackDeviceVertex(DV1);
         FVertex V2 = UnpackDeviceVertex(DV2);
 
-        vec3 Barycentrics = vec3(1.0 - Hit.HitUV.x - Hit.HitUV.y, Hit.HitUV.x, Hit.HitUV.y);
-        TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
+        vec3 Barycentrics = vec3(1.0 - HitPayload.HitUV.x - HitPayload.HitUV.y, HitPayload.HitUV.x, HitPayload.HitUV.y);
+        vec2 TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
 
         /// TODO: Optimize
         FDeviceMaterial EmissiveMaterial = GetEmissiveMaterial(TextureCoords, Renderable.MaterialIndex);
@@ -754,7 +752,7 @@ vec4 ComputeBXDFAreaLightInput(inout FSamplingState SamplingState, vec3 Normal, 
         {
             FDeviceTransform Transform = DeviceTransforms[Renderable.TransformIndex];
 
-            EmissiveNormalInWorldSpace = (V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z);
+            vec3 EmissiveNormalInWorldSpace = (V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z);
             /// Pay more attention to why vector * matrix, and not vice versa
             EmissiveNormalInWorldSpace = EmissiveNormalInWorldSpace * mat3(Transform.InverseModelMatrix);
             EmissiveNormalInWorldSpace = normalize(EmissiveNormalInWorldSpace);
@@ -815,7 +813,7 @@ vec4 ComputeImportanceIBLInput(inout FSamplingState SamplingState, out vec3 Ligh
 {
     const vec2 SampleUV = Sample2DUnitQuad(SamplingState);
     const uvec2 IBLSize = textureSize(IBLTextureSampler, 0);
-    const uint TexelIndex = uint(IBLSize.x * IBLSize.y * SampleUV.y) + uint(IBLSize.x * SampleUV.x);
+    uint TexelIndex = uint(IBLSize.x * IBLSize.y * SampleUV.y) + uint(IBLSize.x * SampleUV.x);
 
     FDeviceAliasTableEntry ImportanceSampleInterval = IBLImportanceBuffer[TexelIndex];
     /// Get texel index
@@ -958,6 +956,7 @@ void main()
     vec4 ImportanceIBLSamplingResult = vec4(0);
     vec4 BXDFIBLSamplingResult = vec4(0);
     vec3 IBLResult = vec3(0);
+    vec3 TotalIncomingLight = vec3(0);
 
     SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_LIGHT);
 
@@ -992,6 +991,7 @@ void main()
         float W2 = ImportanceDirectionalLightSamplingResult.w / PDFSUM;
 
         DirectionalLightResult = W1 * MaterialInteractionEvaluationResult1 + W2 * MaterialInteractionEvaluationResult2;
+        TotalIncomingLight += W1 * UniformDirectionalLightSamplingResult.xyz + W2 * ImportanceDirectionalLightSamplingResult.xyz;
     }
 
     if (UtilityData.ActivePointLightsCount != 0)
@@ -1024,6 +1024,7 @@ void main()
         float W2 = ImportancePointLightSamplingResult.w / PDFSUM;
 
         PointLightResult = W1 * MaterialInteractionEvaluationResult1 + W2 * MaterialInteractionEvaluationResult2;
+        TotalIncomingLight += W1 * UniformPointLightSamplingResult.xyz + W2 * ImportancePointLightSamplingResult.xyz;
     }
 
     if (UtilityData.ActiveSpotLightsCount != 0)
@@ -1056,6 +1057,7 @@ void main()
         float W2 = ImportanceSpotLightSamplingResult.w / PDFSUM;
 
         SpotLightResult = W1 * MaterialInteractionEvaluationResult1 + W2 * MaterialInteractionEvaluationResult2;
+        TotalIncomingLight += W1 * UniformSpotLightSamplingResult.xyz + W2 * ImportanceSpotLightSamplingResult.xyz;
     }
 
     if (UtilityData.ActiveAreaLightsCount != 0)
@@ -1070,13 +1072,13 @@ void main()
 
         if (ImportanceAreaLightSamplingResult.w != 0)
         {
-            MaterialInteractionEvaluationResult1 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, ImportanceAreaLightSamplingResult, NormalInWorldSpace, SamplingState);
+            MaterialInteractionEvaluationResult1 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, ImportanceOutgoingDirection, NormalInWorldSpace, SamplingState);
             MaterialInteractionEvaluationResult1 = NDotL * MaterialInteractionEvaluationResult1 * ImportanceAreaLightSamplingResult.xyz / ImportanceAreaLightSamplingResult.w;
         }
 
         if (BXDFAreaLightSamplingResult.w != 0)
         {
-            MaterialInteractionEvaluationResult2 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, BXDFAreaLightSamplingResult, NormalInWorldSpace, SamplingState);
+            MaterialInteractionEvaluationResult2 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, BXDFOutgoingDirection, NormalInWorldSpace, SamplingState);
             NDotL = clamp(dot(ImportanceOutgoingDirection, NormalInWorldSpace), 0, 1);
 
             MaterialInteractionEvaluationResult2 = NDotL * MaterialInteractionEvaluationResult2 * BXDFAreaLightSamplingResult.xyz / BXDFAreaLightSamplingResult.w;
@@ -1087,6 +1089,7 @@ void main()
         float W2 = BXDFAreaLightSamplingResult.w / PDFSUM;
 
         AreaLightResult = W1 * MaterialInteractionEvaluationResult1 + W2 * MaterialInteractionEvaluationResult2;
+        TotalIncomingLight += W1 * ImportanceAreaLightSamplingResult.xyz + W2 * BXDFAreaLightSamplingResult.xyz;
     }
 
     if (true/*UtilityData.IBLIsActive*/)
@@ -1103,19 +1106,19 @@ void main()
 
         if (UniformIBLSamplingResult.w != 0)
         {
-            MaterialInteractionEvaluationResult1 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, UniformIBLSamplingResult, NormalInWorldSpace, SamplingState);
+            MaterialInteractionEvaluationResult1 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, UniformOutgoingDirection, NormalInWorldSpace, SamplingState);
             MaterialInteractionEvaluationResult1 = MaterialInteractionEvaluationResult1 * UniformIBLSamplingResult.xyz / UniformIBLSamplingResult.w;
         }
 
         if (ImportanceIBLSamplingResult.w != 0)
         {
-            MaterialInteractionEvaluationResult2 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, ImportanceIBLSamplingResult, NormalInWorldSpace, SamplingState);
+            MaterialInteractionEvaluationResult2 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, ImportanceOutgoingDirection, NormalInWorldSpace, SamplingState);
             MaterialInteractionEvaluationResult2 = MaterialInteractionEvaluationResult2 * ImportanceIBLSamplingResult.xyz / ImportanceIBLSamplingResult.w;
         }
 
         if (BXDFIBLSamplingResult.w != 0)
         {
-            MaterialInteractionEvaluationResult3 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, BXDFIBLSamplingResult, NormalInWorldSpace, SamplingState);
+            MaterialInteractionEvaluationResult3 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, BXDFOutgoingDirection, NormalInWorldSpace, SamplingState);
             MaterialInteractionEvaluationResult3 = MaterialInteractionEvaluationResult3 * BXDFIBLSamplingResult.xyz / BXDFIBLSamplingResult.w;
         }
 
@@ -1124,7 +1127,8 @@ void main()
         float W2 = ImportanceIBLSamplingResult.w / PDFSUM;
         float W3 = BXDFIBLSamplingResult.w / PDFSUM;
 
-        AreaLightResult = W1 * MaterialInteractionEvaluationResult1 + W2 * MaterialInteractionEvaluationResult2 + W3 * MaterialInteractionEvaluationResult3;
+        IBLResult = W1 * MaterialInteractionEvaluationResult1 + W2 * MaterialInteractionEvaluationResult2 + W3 * MaterialInteractionEvaluationResult3;
+        TotalIncomingLight += W1 * UniformIBLSamplingResult.xyz + W2 * ImportanceIBLSamplingResult.xyz + W3 * BXDFIBLSamplingResult.xyz;
     }
 
     RayData.Origin.xyz = WorldSpacePosition;
@@ -1149,7 +1153,7 @@ void main()
     || (PushConstants.BounceIndex == LAST_REFLECTION_BOUNCE && CheckFlag(RayData.RayFlags, SPECULAR_LAYER))
     || (PushConstants.BounceIndex == LAST_REFRACTION_BOUNCE && CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER))
     || CheckFlag(RayData.RayFlags, EMISSION_LAYER)
-    || MaterialSamplingResult.w < 0.)
+    || MaterialScatteringPDF < 0.)
     {
         RayDataBuffer[PixelIndex].RayFlags = RAY_DATA_RAY_MISSED;
         imageStore(OutcomingImage, ivec2(PixelCoords), vec4(ThroughputBuffer[PixelIndex].xyz , 1));
@@ -1167,7 +1171,7 @@ void main()
 
     if(PushConstants.BounceIndex == 0)
     {
-        DebugGlobal = vec4(AreaLightSamplingResult.xyz, 0);
+        DebugGlobal = vec4(AreaLightResult, 0);
         SaveAOVs(PixelCoords, NormalInWorldSpace, NormalInWorldSpace, TextureCoords, WorldSpacePosition, 1., Depth,
         Material.BaseColor, TotalIncomingLight, Hit.RenderableIndex, Hit.PrimitiveIndex, PushConstants.MaterialIndex, DebugGlobal);
     }

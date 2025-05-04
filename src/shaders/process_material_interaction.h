@@ -314,7 +314,7 @@ vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType, vec3 In
 
 				float D = DistributionGGX(NDotH, Material.SpecularRoughness);
 				float G = GeometrySmith(NDotV, NDotL, Material.SpecularRoughness);
-				vec3 F = SresnelSchlick(LDotH, F0);
+				vec3 F = FresnelSchlick(LDotH, F0);
 
 				BXDF = D * G * F / (4 * max (NDotV * NDotL, 0.001));
 
