@@ -99,11 +99,6 @@ layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_AREA_LIGHTS_IM
     FDeviceAliasTableEntry AreaLightsImportanceBuffer[];
 };
 
-layout (buffer_reference, scalar) buffer AreaLightsAliasTableReference
-{
-    FDeviceAliasTableEntry AreaLightsAliasTable[];
-};
-
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_IMPORTANCE_BUFFER_INDEX) buffer IBLImportanceBufferObject
 {
     FDeviceAliasTableEntry IBLImportanceBuffer[];
@@ -175,6 +170,11 @@ layout (buffer_reference, scalar) buffer Vertices
 layout (buffer_reference, scalar) buffer Indices
 {
     int I[];
+};
+
+layout (buffer_reference, scalar) buffer AreaLightsAliasTableReference
+{
+    FDeviceAliasTableEntry T[];
 };
 
 layout (push_constant) uniform PushConstantsBlock
@@ -580,7 +580,7 @@ vec4 ComputeImportanceAreaLightInput(inout FSamplingState SamplingState, uint Ar
     uint ImportanceTriangleIndex = uint(RandomFloat(SamplingState) * ArealLightImportance.NumberOfTriangles);
     AreaLightsAliasTableReference AreaLightAliasTable = AreaLightsAliasTableReference(ArealLightImportance.AliasTableBufferAddress);
 
-    ImportanceSampleTableEntry = AreaLightAliasTable[ImportanceTriangleIndex];
+    ImportanceSampleTableEntry = AreaLightAliasTable.T[ImportanceTriangleIndex];
 
     if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
     {
