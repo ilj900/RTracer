@@ -34,6 +34,40 @@ uint SelectLayer(FDeviceMaterial Material, float MaterialSample)
 	return EMISSION_LAYER;
 }
 
+/// Cook-Torrance GGX
+float DistributionGGX(float NDotH, float Roughness)
+{
+	float A = Roughness * Roughness;
+	float A2 = A * A;
+	float NDotH2 = NDotH * NDotH;
+	float Nominator = A2;
+	float Denominator = (NDotH2 * (A2 - 1.) + 1.);
+	Denominator = M_PI * Denominator * Denominator;
+
+	return Nominator / Denominator;
+}
+
+float GeometrySchlickGGX(float NDotV, float Roughness)
+{
+	float R = Roughness + 1.;
+	float K = (R * R) / 8.;
+	float Nominator = NDotV;
+	float Denominator = NDotV * (1. - K) + K;
+	return Nominator / Denominator;
+}
+
+float GeometrySmith(float NDotV, float NDotL, float Roughness)
+{
+	float GGX2 = GeometrySchlickGGX(NDotV, Roughness);
+	float GGX1 = GeometrySchlickGGX(NDotL, Roughness);
+	return GGX1 * GGX2;
+}
+
+vec3 FresnelSchlick(float CosTheta, vec3 F0)
+{
+	return F0 + (1. - F0) * pow(clamp(1.f - CosTheta, 0, 1), 5.0);
+}
+
 vec3 Transform(vec3 NormalInWorldSpace, vec3 VectorInLocalSpace)
 {
 	vec3 A = (abs(NormalInWorldSpace.x) > 0.0) ? vec3(0, 1, 0) : vec3(1, 0, 0);
@@ -54,7 +88,7 @@ vec3 ScatterDiffuse(vec3 NormalInWorldSpace, FSamplingState SamplingState)
 /// Generates a cosine weighted direction in tangent-space
 vec3 ScatterOrenNayar(FSamplingState SamplingState)
 {
-	return SampleCosineHemisphere(SamplingState);
+	return SampleCosineHemisphereMalleys(SamplingState);
 }
 
 vec3 SampleOrenNayar(vec3 IncomingTangentSpaceDirection, vec3 OutgoingTangentSpaceDirection, vec3 Albedo, float Sigma)
@@ -89,171 +123,254 @@ float PDFLambertian(vec3 OutgoingTangentSpaceDirection)
 	return OutgoingTangentSpaceDirection.y * M_INV_PI;
 }
 
-vec4 SampleMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 NormalInWorldSpace, inout FSamplingState SamplingState, bool bFrontFacing)
+/// Scatter ray based on material properties.
+/// Fill in FRayData and return PDF of such scattering
+float ScatterMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 NormalInWorldSpace, inout FSamplingState SamplingState, bool bFrontFacing)
 {
 	float LayerSample = RandomFloat(SamplingState);
 	uint RayType = SelectLayer(Material, LayerSample);
 	RayData.RayFlags = 0u;
-	vec4 BXDF = vec4(1.f);
+	float PDF = 0.f;
 
 	switch (RayType)
 	{
-	case DIFFUSE_LAYER:
-	{
-		vec3 TangentSpaceReflectionDirection = ScatterOrenNayar(SamplingState);
-		mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
-		vec3 TangentSpaceViewDirection = RayData.Direction.xyz * TNBMatrix;
+		case DIFFUSE_LAYER:
+		{
+			vec3 TangentSpaceReflectionDirection = ScatterOrenNayar(SamplingState);
+			mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
 #define OREN_NAYAR
 #ifdef OREN_NAYAR
-		BXDF.xyz = SampleOrenNayar(-TangentSpaceViewDirection, TangentSpaceReflectionDirection, Material.BaseColor, Material.DiffuseRoughness);
-		BXDF.w = PDFLambertian(TangentSpaceReflectionDirection);
+			PDF = PDFOrenNayar(TangentSpaceReflectionDirection);
 #else
-		BXDF.xyz = SampleLambertian(Material.BaseColor);
-		BXDF.w = PDFOrenNayar(TangentSpaceReflectionDirection);
+			PDF = PDFLambertian(TangentSpaceReflectionDirection);
 #endif
-		RayData.Direction.xyz = TangentSpaceReflectionDirection * transpose(TNBMatrix);
-		break;
-	}
-	case SPECULAR_LAYER:
-	{
-		/// We assume that by default that our attempt to scatter the ray fails, thus PDF would be 0.f
-		BXDF = vec4(Material.SpecularColor, 0.f);
-
-		/// Now lets try to scatter the ray
-		mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
-		vec3 TangentSpaceViewDirection = RayData.Direction.xyz * TNBMatrix;
-
-		/// Multi-scatter 16 times
-		for (int i = 0; i < 16; ++i)
-		{
-			vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
-			/// We invert the TangentSpaceViewDirection because if i == 0 then it's ray's direction that points to (under) the surface, it i != 0, the only way we get here is if ray is still pointing under the surface.
-			vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
-			TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
-
-			/// If ray's on the right side of the surface, then leave it
-			if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
-			{
-				BXDF.w = 1.f;
-				RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
-				break;
-			}
+			RayData.Direction.xyz = TangentSpaceReflectionDirection * transpose(TNBMatrix);
+			break;
 		}
-		/// If ray failed to leave the surface, then it's direction is not changed, and thus shouldn't be used later
-		break;
-	}
-	case TRANSMISSION_LAYER:
-	{
-		BXDF = vec4(Material.TransmissionColor, 0.f);
-
-		mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
-		vec3 TangentSpaceViewDirection = RayData.Direction.xyz * TNBMatrix;
-
-		float IOR1 = bFrontFacing ? RayData.Eta : Material.SpecularIOR;
-		float IOR2 = bFrontFacing ? Material.SpecularIOR : 1;
-		float EtaRatio = IOR1 / IOR2;
-
-		float R0 = (IOR1 - IOR2) / (IOR1 + IOR2);
-		R0 *= R0;
-
-		for (int i = 0; i < 16; ++i)
+		case SPECULAR_LAYER:
 		{
-			vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
-			/// We invert the TangentSpaceViewDirection because if i == 0 then it's ray's direction that points to (under) the surface, it i != 0, the only way we get here is if ray is still pointing under the surface.
-			vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, RandomSquare.x, RandomSquare.y).xzy;
+			/// Try to scatter the ray
+			mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
+			vec3 TangentSpaceViewDirection = RayData.Direction.xyz * TNBMatrix;
 
-			/// NDotI also equals to cos(angle)
-			float NDotI = dot(NewNormal, TangentSpaceViewDirection);
-			/// NDotI is negative cause TangentSpaceViewDirection was pointing "to" the surface, so we add it instead of subtracting
-			float RTheta = R0 + (1. - R0) * pow(1. + NDotI, 5.f);
-
-			/// Decide on whether the ray is reflected or refracted
-			float RF = RandomFloat(SamplingState);
-
-			if (RF < RTheta)
+			/// Multi-scatter 16 times
+			for (int i = 0; i < 16; ++i)
 			{
-				/// Reflected it be
+				vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
+				/// We invert the TangentSpaceViewDirection because if i == 0 then it's ray's direction that points to (under) the surface, it i != 0, the only way we get here is if ray is still pointing under the surface.
+				vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
 				TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
 
-				/// If reflected ray's on the correct side, then it's done.
+				/// If ray's on the right side of the surface, then leave it
 				if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
 				{
-					RayType = SPECULAR_LAYER;
-					BXDF.w = 1.f;
+					PDF = 1.f;
 					RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
 					break;
 				}
 			}
-			else
-			{
-				/// Refraction or TIR is happening
-				float k = 1. - (EtaRatio * EtaRatio * (1. - (NDotI * NDotI)));
+			/// If ray failed to leave the surface, then it's direction is not changed, and thus shouldn't be used later
+			break;
+		}
+		case TRANSMISSION_LAYER:
+		{
+			mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
+			vec3 TangentSpaceViewDirection = RayData.Direction.xyz * TNBMatrix;
 
-				if (k < 0.)
+			float IOR1 = bFrontFacing ? RayData.Eta : Material.SpecularIOR;
+			float IOR2 = bFrontFacing ? Material.SpecularIOR : 1;
+			float EtaRatio = IOR1 / IOR2;
+
+			float R0 = (IOR1 - IOR2) / (IOR1 + IOR2);
+			R0 *= R0;
+
+			for (int i = 0; i < 16; ++i)
+			{
+				vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
+				/// We invert the TangentSpaceViewDirection because if i == 0 then it's ray's direction that points to (under) the surface, it i != 0, the only way we get here is if ray is still pointing under the surface.
+				vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, RandomSquare.x, RandomSquare.y).xzy;
+
+				/// NDotI also equals to cos(angle)
+				float NDotI = dot(NewNormal, TangentSpaceViewDirection);
+				/// NDotI is negative cause TangentSpaceViewDirection was pointing "to" the surface, so we add it instead of subtracting
+				float RTheta = R0 + (1. - R0) * pow(1. + NDotI, 5.f);
+
+				/// Decide on whether the ray is reflected or refracted
+				float RF = RandomFloat(SamplingState);
+
+				if (RF < RTheta)
 				{
-					/// Total internal reflection is happening
+					/// Reflected it be
 					TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
 
 					/// If reflected ray's on the correct side, then it's done.
 					if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
 					{
 						RayType = SPECULAR_LAYER;
-						BXDF.w = 1.f;
+						PDF = 1.f;
 						RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
 						break;
 					}
 				}
 				else
 				{
-					/// Refraction
-					TangentSpaceViewDirection = normalize(EtaRatio * TangentSpaceViewDirection - (EtaRatio * NDotI + sqrt(k)) * NewNormal);
+					/// Refraction or TIR is happening
+					float k = 1. - (EtaRatio * EtaRatio * (1. - (NDotI * NDotI)));
 
-					/// If the ray is leaving the surface, then we don't account for transmission color.
-					if (bFrontFacing)
+					if (k < 0.)
 					{
-						BXDF.xyz *= EtaRatio * EtaRatio;
+						/// Total internal reflection is happening
+						TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
+
+						/// If reflected ray's on the correct side, then it's done.
+						if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
+						{
+							RayType = SPECULAR_LAYER;
+							PDF = 1.f;
+							RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
+							break;
+						}
 					}
 					else
 					{
-						BXDF.xyz = vec3(EtaRatio * EtaRatio);
-					}
+						/// Refraction
+						TangentSpaceViewDirection = normalize(EtaRatio * TangentSpaceViewDirection - (EtaRatio * NDotI + sqrt(k)) * NewNormal);
 
-					BXDF.w = 1.f;
-					/// Also, ray is now traveling in a new media
-					RayData.Eta = Material.SpecularIOR;
-					RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
-					DebugGlobal.xyz = RayData.Direction.xyz;
-					break;
+						PDF = 1.f;
+						PDF /= EtaRatio * EtaRatio;
+						/// Also, ray is now traveling in a new media
+						RayData.Eta = Material.SpecularIOR;
+						RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
+						break;
+					}
 				}
 			}
-		}
 
-		/// If we are here, it means that ray's failed to leave the surface, thus PDF remains 0
-		break;
-	}
-	case SUBSURFACE_LAYER:
-	{
-		BXDF.xyz = Material.SubsurfaceColor;
-		break;
-	}
-	case SHEEN_LAYER:
-	{
-		BXDF.xyz = Material.SheenColor;
-		break;
-	}
-	case COAT_LAYER:
-	{
-		BXDF.xyz = Material.CoatColor;
-		break;
-	}
-	case EMISSION_LAYER:
-	{
-		BXDF.xyz = Material.EmissionColor;
-		break;
-	}
+			/// If we are here, it means that ray's failed to leave the surface, thus PDF remains 0
+			break;
+		}
+		case SUBSURFACE_LAYER:
+		{
+			PDF = 1.f;
+			break;
+		}
+		case SHEEN_LAYER:
+		{
+			PDF = 1.f;
+			break;
+		}
+		case COAT_LAYER:
+		{
+			PDF = 1.f;
+			break;
+		}
+		case EMISSION_LAYER:
+		{
+			PDF = 1.f;
+			break;
+		}
 	}
 
 	RayData.RayFlags |= RayType;
+	return PDF;
+}
+
+/// RayData here already scattered, so, it contains an outgoing ray direction
+/// Incoming is the direction from the light to the shading point
+/// Outgoing is the direction from the shading point to the camera
+vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType, vec3 IncomingDirection, vec3 OutgoingDirection, vec3 NormalInWorldSpace)
+{
+	vec3 BXDF = vec3(0.f);
+
+	switch (RayType)
+	{
+		case DIFFUSE_LAYER:
+		{
+#define OREN_NAYAR
+#ifdef OREN_NAYAR
+			mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
+			vec3 TangentSpaceOutgoingDirection = OutgoingDirection * TNBMatrix;
+			vec3 TangentSpaceIncomingDirection = IncomingDirection * TNBMatrix;
+			BXDF = SampleOrenNayar(-TangentSpaceIncomingDirection, TangentSpaceOutgoingDirection, Material.BaseColor, Material.DiffuseRoughness);
+#else
+			BXDF = SampleLambertian(Material.BaseColor);
+#endif
+			break;
+		}
+		case SPECULAR_LAYER:
+		{
+			if (Material.SpecularRoughness != 0)
+			{
+				vec3 V = OutgoingDirection;
+				vec3 L = - IncomingDirection;
+				vec3 N = NormalInWorldSpace;
+				vec3 H = normalize(L + V);
+				vec3 F0 = mix(vec3(0.04), Material.BaseColor, Material.Metalness);
+
+				float NDotL = clamp(dot(N, L), 0, 1);
+				float NDotV = clamp(dot(N, V), 0, 1);
+				float NDotH = clamp(dot(N, H), 0, 1);
+				float LDotH = clamp(dot(L, H), 0, 1);
+
+				float D = DistributionGGX(NDotH, Material.SpecularRoughness);
+				float G = GeometrySmith(NDotV, NDotL, Material.SpecularRoughness);
+				vec3 F = FresnelSchlick(LDotH, F0);
+
+				BXDF = D * G * F / (4 * max (NDotV * NDotL, 0.001));
+
+				/// From https://learnopengl.com/PBR/Lighting
+				/// We still has to calculate diffuse BRDF...
+				vec3 SpecularRatio = F;
+				vec3 DiffuseRatio = vec3(1.f) - SpecularRatio;
+				DiffuseRatio *= 1.f - Material.Metalness;
+				vec3 DiffuseBRDF = vec3(0);
+
+#ifdef OREN_NAYAR
+				mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
+				vec3 TangentSpaceOutgoingDirection = OutgoingDirection * TNBMatrix;
+				vec3 TangentSpaceIncomingDirection = IncomingDirection * TNBMatrix;
+				DiffuseBRDF = SampleOrenNayar(-TangentSpaceIncomingDirection, TangentSpaceOutgoingDirection, Material.BaseColor, Material.DiffuseRoughness);
+#else
+				DiffuseBRDF = SampleLambertian(Material.BaseColor);
+#endif
+
+				BXDF *= Material.SpecularColor;
+				BXDF += DiffuseBRDF * DiffuseRatio;
+			}
+			else
+			{
+				BXDF = Material.SpecularColor;
+			}
+			break;
+		}
+		case TRANSMISSION_LAYER:
+		{
+			BXDF = Material.TransmissionColor;
+			break;
+		}
+		case SUBSURFACE_LAYER:
+		{
+			BXDF.xyz = Material.SubsurfaceColor;
+			break;
+		}
+		case SHEEN_LAYER:
+		{
+			BXDF.xyz = Material.SheenColor;
+			break;
+		}
+		case COAT_LAYER:
+		{
+			BXDF.xyz = Material.CoatColor;
+			break;
+		}
+		case EMISSION_LAYER:
+		{
+			BXDF.xyz = Material.EmissionColor;
+			break;
+		}
+	}
+
 	return BXDF;
 }
+
 #endif // PROCESS_MATERIAL_INTERACTION_H

@@ -4,10 +4,15 @@
 
 #include "maths.h"
 
+#include <algorithm>
 #include <chrono>
 #include <fstream>
+#include <functional>
+#include <numeric>
+#include <optional>
 #include <set>
 #include <stdexcept>
+#include <queue>
 #include <vector>
 
 struct FVersion3
@@ -142,15 +147,130 @@ struct FVulkanContextOptions
     FDeviceOptions DeviceOptions;
 };
 
-struct FMargin
+struct FAliasTableEntry
 {
-	FMargin() {};
-	FMargin(uint32_t L, uint32_t R) : Left(L), Right(R) {};
-	uint32_t Left;
-	uint32_t Right;
+	FAliasTableEntry() {};
+	FAliasTableEntry(float T, uint32_t A): Threshold(T), Alias(A) {};
+	float Threshold;
+	uint32_t Alias;
 };
 
-std::pair<std::vector<FMargin>, std::vector<float>> GenerateImportanceMap(float* Data, uint32_t Width, uint32_t Height);
+/// @brief Generate importance sampling map and a weight map.
+/// WidthIn and HeightIn are dimensions of the incoming DataIn.
+/// Evaluator is a function that measures a value of a single T. For example in case of rbg color it can be luminosity of that color.
+/// The result is a pair of two vectors: Importance map of FAliasTableEntry and a vector(map) of each value weight.
+template <typename T>
+std::pair<std::vector<FAliasTableEntry>, std::vector<float>> GenerateImportanceMapFast(void* DataIn, uint32_t Width, uint32_t Height, std::function<double(T)> Evaluator)
+{
+	/// Cast the pointer;
+	T* Data = static_cast<T*>(DataIn);
+	/// Total number of pixels in the output image
+	uint32_t PixelsCount = Width * Height;
+
+	/// We have to use double, cause the precision of float might not be enough in some cases
+	std::vector<double> PDF(PixelsCount);
+
+	/// Calculate measured value of each entry (For example if we have a FVector4 as T, we need a function that will return it's 'value' (like Luminosity)
+	for (int i = 0; i < PixelsCount; ++i)
+	{
+		PDF[i] = Evaluator(Data[i]);
+	}
+
+	/// Calculate 'total value' by copying sorting and adding all the values
+	auto Copy = PDF;
+	std::sort(Copy.begin(), Copy.end());
+	double TotalValueSum = std::accumulate(Copy.begin(), Copy.end(), 0.);
+
+	std::vector<FAliasTableEntry> IBLSamplingMap;
+	std::vector<float> PDFResult;
+
+	if (TotalValueSum <= 0.)
+	{
+		/// For cases like totally black IBL
+		IBLSamplingMap.emplace_back(FAliasTableEntry{1.f, 0});
+		PDFResult.emplace_back(1.f);
+		return {IBLSamplingMap, PDFResult};
+	}
+
+	IBLSamplingMap.resize(PixelsCount);
+	PDFResult.resize(PixelsCount);
+
+	for (uint32_t i = 0; i < PixelsCount; ++i)
+	{
+		PDF[i] /= TotalValueSum;
+		PDFResult[i] = PDF[i];
+	}
+
+	std::vector<double> NormalizedValues(PixelsCount);
+	std::queue<uint32_t> IndicesThatGreater;
+	std::queue<uint32_t> IndicesThatSmaller;
+
+	for (uint32_t i = 0; i < PixelsCount; ++i)
+	{
+		NormalizedValues[i] = {PDF[i] * PixelsCount};
+		if (NormalizedValues[i] < 1.)
+		{
+			IndicesThatSmaller.push(i);
+			continue;
+		}
+		if (NormalizedValues[i] > 1.)
+		{
+			IndicesThatGreater.push(i);
+		}
+	}
+
+	std::vector<double> Probabilities(PixelsCount);
+	std::vector<uint32_t> Alias(PixelsCount);
+
+	/// We run it until there's only one element left in each group
+	/// Because of floating point precision they wouldn't get to perfect 1.
+	while (!IndicesThatSmaller.empty() && !IndicesThatGreater.empty())
+	{
+		uint32_t SmallIndex = IndicesThatSmaller.front();
+		uint32_t LargeIndex = IndicesThatGreater.front();
+		IndicesThatSmaller.pop();
+		IndicesThatGreater.pop();
+
+		Probabilities[SmallIndex] = NormalizedValues[SmallIndex];
+		Alias[SmallIndex] = LargeIndex;
+
+		NormalizedValues[LargeIndex] = NormalizedValues[LargeIndex] - (1. - NormalizedValues[SmallIndex]);
+
+		if (NormalizedValues[LargeIndex] < 1.)
+		{
+			IndicesThatSmaller.push(LargeIndex);
+		}
+		else
+		{
+			IndicesThatGreater.push(LargeIndex);
+		}
+	}
+
+	while (!IndicesThatGreater.empty())
+	{
+		uint32_t L = IndicesThatGreater.back();
+		IndicesThatGreater.pop();
+		Probabilities[L] = 1.;
+		Alias[L] = L;
+	}
+
+	while (!IndicesThatSmaller.empty())
+	{
+		uint32_t S = IndicesThatSmaller.back();
+		IndicesThatSmaller.pop();
+		Probabilities[S] = 1.;
+		Alias[S] = S;
+	}
+
+	std::vector<FAliasTableEntry> Result(PixelsCount);
+	for (uint32_t i = 0; i < PixelsCount; ++i)
+	{
+		Result[i].Threshold = Probabilities[i];
+		Result[i].Alias = Alias[i];
+	}
+
+	return {Result, PDFResult};
+}
 
 std::string ReadFileToString(const std::string& FileName);
 

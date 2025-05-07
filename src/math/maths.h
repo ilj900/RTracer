@@ -175,6 +175,8 @@ public:
 
 bool operator==(const FVector2& A, const FVector2& B);
 FVector2 operator+(const FVector2& A, const FVector2& B);
+FVector2 operator-(const FVector2& A, const FVector2& B);
+FVector2 operator*(const FVector2& A, float Val);
 
 struct FMatrix3
 {

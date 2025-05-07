@@ -1153,7 +1153,7 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
     Image->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     RESOURCE_ALLOCATOR()->LoadDataToImage(*Image, Width * Height * 4 * sizeof(float), Out);
 
-	auto [ImportanceBuffer, InversePDFWeights] = GenerateImportanceMap(Out, Width, Height);
+	auto [ImportanceBuffer, IBLPDF] = GenerateImportanceMapFast<FVector4>((void*)Out, Width, Height, [](FVector4 Val){return 0.2126 * Val.x+ 0.7152 * Val.y + 0.0722 * Val.z;});
 
 	FBuffer IBLImportanceBuffer;
 
@@ -1163,39 +1163,39 @@ ImagePtr FVulkanContext::CreateEXRImageFromFile(const std::string& Path, const s
 	}
 	else
 	{
-		IBLImportanceBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FMargin) * ImportanceBuffer.size(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "IBLImportanceBuffer");
+		IBLImportanceBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FAliasTableEntry) * ImportanceBuffer.size(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "IBLImportanceBuffer");
 		RESOURCE_ALLOCATOR()->RegisterBuffer(IBLImportanceBuffer, "IBLImportanceBuffer");
 	}
 
-	if (IBLImportanceBuffer.BufferSize != ImportanceBuffer.size() * sizeof(FMargin))
+	if (IBLImportanceBuffer.BufferSize != ImportanceBuffer.size() * sizeof(FAliasTableEntry))
 	{
 		RESOURCE_ALLOCATOR()->DestroyBuffer(IBLImportanceBuffer);
-		IBLImportanceBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FMargin) * ImportanceBuffer.size(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "IBLImportanceBuffer");
+		IBLImportanceBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FAliasTableEntry) * ImportanceBuffer.size(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "IBLImportanceBuffer");
 	}
 
-	RESOURCE_ALLOCATOR()->LoadDataToBuffer(IBLImportanceBuffer, {sizeof(FMargin) * ImportanceBuffer.size()}, {0}, {ImportanceBuffer.data()});
+	RESOURCE_ALLOCATOR()->LoadDataToBuffer(IBLImportanceBuffer, {sizeof(FAliasTableEntry) * ImportanceBuffer.size()}, {0}, {ImportanceBuffer.data()});
 
-	FBuffer InversePDFWeightBuffer;
+	FBuffer IBLPDFBuffer;
 
-	if (RESOURCE_ALLOCATOR()->BufferExists("InversePDFWeightBuffer"))
+	if (RESOURCE_ALLOCATOR()->BufferExists("IBLPDFBuffer"))
 	{
-		InversePDFWeightBuffer = RESOURCE_ALLOCATOR()->GetBuffer("InversePDFWeightBuffer");
+		IBLPDFBuffer = RESOURCE_ALLOCATOR()->GetBuffer("IBLPDFBuffer");
 	}
 	else
 	{
-		InversePDFWeightBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(float) * InversePDFWeights.size(),
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "InversePDFWeightBuffer");
-		RESOURCE_ALLOCATOR()->RegisterBuffer(InversePDFWeightBuffer, "InversePDFWeightBuffer");
+		IBLPDFBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(float) * IBLPDF.size(),
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "IBLPDFBuffer");
+		RESOURCE_ALLOCATOR()->RegisterBuffer(IBLPDFBuffer, "IBLPDFBuffer");
 	}
 
-	if (InversePDFWeightBuffer.BufferSize != InversePDFWeights.size() * sizeof(float))
+	if (IBLPDFBuffer.BufferSize != IBLPDF.size() * sizeof(float))
 	{
-		RESOURCE_ALLOCATOR()->DestroyBuffer(InversePDFWeightBuffer);
-		InversePDFWeightBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(float) * InversePDFWeights.size(),
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "InversePDFWeightBuffer");
+		RESOURCE_ALLOCATOR()->DestroyBuffer(IBLPDFBuffer);
+		IBLPDFBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(float) * IBLPDF.size(),
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "IBLPDFBuffer");
 	}
 
-	RESOURCE_ALLOCATOR()->LoadDataToBuffer(InversePDFWeightBuffer, {sizeof(float) * InversePDFWeights.size()}, {0}, {InversePDFWeights.data()});
+	RESOURCE_ALLOCATOR()->LoadDataToBuffer(IBLPDFBuffer, {sizeof(float) * IBLPDF.size()}, {0}, {IBLPDF.data()});
 
     return Image;
 }

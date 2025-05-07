@@ -257,7 +257,7 @@ FVector3 operator-(const FVector3& A, const FVector3& B)
 
 FVector3 operator*(const FVector3& A, float Val)
 {
-    return FVector3(A.X * Val, A.Y * Val, A.Z * Val);
+    return {A.X * Val, A.Y * Val, A.Z * Val};
 }
 
 FVector3 operator/(const FVector3& A, float Val)
@@ -312,12 +312,12 @@ FVector3& operator/=(FVector3& A, float Val)
 
 FVector3 operator-(const FVector3& A)
 {
-    return FVector3(-A.X, -A.Y, -A.Z);
+    return {-A.X, -A.Y, -A.Z};
 }
 
 FVector3 operator*(const FVector3& A, const FMatrix3& B)
 {
-    FVector3 Result;
+    FVector3 Result{};
     Result.X = A.X * B.Data[0].X + A.Y * B.Data[1].X + A.Z * B.Data[2].X;
     Result.Y = A.X * B.Data[0].Y + A.Y * B.Data[1].Y + A.Z * B.Data[2].Y;
     Result.Z = A.X * B.Data[0].Z + A.Y * B.Data[1].Z + A.Z * B.Data[2].Z;
@@ -336,7 +336,17 @@ bool operator==(const FVector2& A, const FVector2& B)
 
 FVector2 operator+(const FVector2& A, const FVector2& B)
 {
-    return FVector2(A.X + B.X, A.Y + B.Y);
+    return {A.X + B.X, A.Y + B.Y};
+}
+
+FVector2 operator-(const FVector2& A, const FVector2& B)
+{
+	return {A.X - B.X, A.Y - B.Y};
+}
+
+FVector2 operator*(const FVector2& A, float Val)
+{
+	return {A.X * Val, A.Y * Val};
 }
 
 ///****************************************************************

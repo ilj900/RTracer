@@ -19,10 +19,24 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
-			if (LoadedPointLightsCount != CurrentPointLightsCount)
+			if (bAliasTableShouldBeUpdated)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t)}, { offsetof(FUtilityData, ActivePointLightsCount)}, {&CurrentPointLightsCount});
-				CurrentPointLightsCount = LoadedPointLightsCount;
+				auto [UpdatedAliasTable, _] = GenerateImportanceMapFast<ECS::COMPONENTS::FPointLightComponent>(COORDINATOR().Data<ECS::COMPONENTS::FPointLightComponent>(),
+					CurrentPointLightsCount, 1, [](ECS::COMPONENTS::FPointLightComponent Component){return double(Component.Power);});
+
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(POINT_LIGHTS_IMPORTANCE_BUFFER, UpdatedAliasTable.size() * sizeof(FAliasTableEntry), 0, UpdatedAliasTable.data());
+
+				bAliasTableShouldBeUpdated = false;
+			}
+
+			if (LoadedPointLightsCount != CurrentPointLightsCount ||
+				LoadedPointLightPower != CurrentPointLightPower)
+			{
+				/// Load two entries even though only one can be dirty
+				/// Pay close attention to the order of member fields: CurrentPointLightsCount should be followed by CurrentPointLightPower
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t) * 2,  offsetof(FUtilityData, ActivePointLightsCount), &CurrentPointLightsCount);
+				LoadedPointLightsCount = CurrentPointLightsCount;
+				LoadedPointLightPower = CurrentPointLightPower;
 			}
 
 			for (auto& Entry : EntitiesToUpdate)
@@ -42,10 +56,24 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
-			if (LoadedPointLightsCount != CurrentPointLightsCount)
+			if (bAliasTableShouldBeUpdated)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t)}, { offsetof(FUtilityData, ActivePointLightsCount)}, {&CurrentPointLightsCount});
-				CurrentPointLightsCount = LoadedPointLightsCount;
+				auto [UpdatedAliasTable, _] = GenerateImportanceMapFast<ECS::COMPONENTS::FPointLightComponent>(COORDINATOR().Data<ECS::COMPONENTS::FPointLightComponent>(),
+					CurrentPointLightsCount, 1, [](ECS::COMPONENTS::FPointLightComponent Component){return double(Component.Power);});
+
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(POINT_LIGHTS_IMPORTANCE_BUFFER, UpdatedAliasTable.size() * sizeof(FAliasTableEntry), 0, UpdatedAliasTable.data());
+
+				bAliasTableShouldBeUpdated = false;
+			}
+
+			if (LoadedPointLightsCount != CurrentPointLightsCount ||
+				LoadedPointLightPower != CurrentPointLightPower)
+			{
+				/// Load two entries even though only one can be dirty
+				/// Pay close attention to the order of member fields: CurrentPointLightsCount should be followed by CurrentPointLightPower
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t) * 2,  offsetof(FUtilityData, ActivePointLightsCount), &CurrentPointLightsCount);
+				LoadedPointLightsCount = CurrentPointLightsCount;
+				LoadedPointLightPower = CurrentPointLightPower;
 			}
 
 			for (auto& Entry : EntitiesToUpdate)
@@ -106,9 +134,12 @@ namespace ECS
             LightComponent.Position = Position;
             LightComponent.Color = Color;
             LightComponent.Intensity = Intensity;
+			LightComponent.Power = (Color.x + Color.y + Color.z) * Intensity;
             MarkDirty(Light);
 
 			CurrentPointLightsCount++;
+			CurrentPointLightPower += LightComponent.Power;
+			bAliasTableShouldBeUpdated = true;
 
             return Light;
         }

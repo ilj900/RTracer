@@ -5,10 +5,13 @@
 
 #include "common_structures.h"
 
-layout (location = 0) rayPayloadInEXT FSimpleHitPayload SimpleHitPayload;
+layout (location = 0) rayPayloadInEXT FHitPayload HitPayload;
+hitAttributeEXT vec2 HitAttributes;
 
 void main()
 {
-    /// We only need to mark it that we hit some geometry
-    SimpleHitPayload.PayloadFlags = 1;
+    /// We need some data for the area lights
+    HitPayload.RenderableIndex = gl_InstanceCustomIndexEXT;
+    HitPayload.PrimitiveIndex = gl_PrimitiveID;
+    HitPayload.HitUV = HitAttributes;
 }

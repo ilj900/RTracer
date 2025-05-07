@@ -11,6 +11,7 @@
 #define FMatrix4 mat4
 #define uint32_t uint
 #else
+#include <algorithm>
 #define inout
 #endif
 
@@ -107,6 +108,19 @@ FVector2 Sample2DUnitDisk(inout FSamplingState SamplingState)
 	return Sample;
 }
 
+/// Disk centered at x = 0.f and y = 0.f with a radius of 1.f
+/// SampleUniformDiskConcentric from https://pbr-book.org/4ed/Sampling_Algorithms/Sampling_Multidimensional_Functions#SampleUniformDiskConcentric
+FVector2 Sample2DUnitDisk2(inout FSamplingState SamplingState)
+{
+	FVector2 Sample = Sample2DUnitQuad(SamplingState);
+	Sample = Sample * 2.f - FVector2(1.f, 1.f);
+	float R = abs(Sample.x) > abs(Sample.y) ? Sample.x : Sample.y;
+	float Theta = abs(Sample.x) > abs(Sample.y) ? (M_PI_4 * (Sample.y / Sample.x)) : (M_PI_2 - M_PI_4 * (Sample.x / Sample.y));
+	Sample.x = R * cos(Theta);
+	Sample.y = R * sin(Theta);
+	return Sample;
+}
+
 FVector3 Sample3DUnitSphere(inout FSamplingState SamplingState)
 {
 	FVector2 Sample = Sample2DUnitQuad(SamplingState);
@@ -117,6 +131,17 @@ FVector3 Sample3DUnitSphere(inout FSamplingState SamplingState)
 	Result.x = Z2 * cos(Theta);
 	Result.y = Z2 * sin(Theta);
 	Result.z = Z;
+	return Result;
+}
+
+/// A.5.3 from https://pbr-book.org/4ed/Sampling_Algorithms/Sampling_Multidimensional_Functions
+FVector3 SampleCosineHemisphereMalleys(inout FSamplingState SamplingState)
+{
+	FVector2 Sample = Sample2DUnitDisk2(SamplingState);
+	FVector3 Result;
+	Result.x = Sample.x;
+	Result.z = Sample.y;
+	Result.y = sqrt(max(0.f, (1 - Sample.x * Sample.x - Sample.y * Sample.y)));
 	return Result;
 }
 

@@ -27,6 +27,13 @@ namespace ECS
                 return Component;
             };
 
+			template<typename T>
+			T& GetComponentByIndex(uint32_t ComponentIndex)
+			{
+				T& Component = GetComponentManager()->GetComponentByIndex<T>(ComponentIndex);
+				return Component;
+			};
+
         public:
             std::set<FEntity> Entities;
         };

@@ -98,12 +98,12 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
 	PointLightSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FPointLightComponent>());
     COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FPointLightSystem>(PointLightSignature);
 
-	/// Register Point Light system signature
+	/// Register Directional Light system signature
 	ECS::FSignature DirectionalLightSignature;
 	DirectionalLightSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FDirectionalLightComponent>());
 	COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FDirectionalLightSystem>(DirectionalLightSignature);
 
-	/// Register Point Light system signature
+	/// Register Spot Light system signature
 	ECS::FSignature SpotLightSignature;
 	SpotLightSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FSpotLightComponent>());
 	COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FSpotLightSystem>(SpotLightSignature);
@@ -1378,6 +1378,7 @@ void FRender::AllocateIndependentResources()
 		{TOTAL_COUNTED_MATERIALS_BUFFER,			sizeof(uint32_t) * TOTAL_MATERIALS * 3,	VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT},
 		{ACTIVE_RAY_COUNT_BUFFER, 				sizeof(uint32_t) * 3,						VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT},
 		{MATERIALS_OFFSETS_PER_MATERIAL_BUFFER,	sizeof(uint32_t) * TOTAL_MATERIALS,	0},
+		{POINT_LIGHTS_IMPORTANCE_BUFFER, 			sizeof(FAliasTableEntry) * POINT_LIGHT_SYSTEM()->MAX_POINT_LIGHTS, 0},
 	};
 
 	CreateAndRegisterBufferShortcut(BufferDescriptions);
@@ -1433,6 +1434,7 @@ void FRender::FreeIndependentResources()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(MATERIALS_OFFSETS_PER_MATERIAL_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(UTILITY_INFO_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(ACTIVE_RAY_COUNT_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(POINT_LIGHTS_IMPORTANCE_BUFFER);
 }
 
 void FRender::CreateAndRegisterBufferShortcut(const std::vector<FBufferDescription>& BufferDescriptions)

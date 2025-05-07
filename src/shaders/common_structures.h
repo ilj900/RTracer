@@ -66,7 +66,7 @@ struct FPointLight
 	float Intensity;
 
 	FVector3 Color;
-	float Dummy;
+	float Power;
 };
 
 struct FDirectionalLight
@@ -98,6 +98,14 @@ struct FUtilityData
 	uint32_t ActiveDirectionalLightsCount;
 	uint32_t ActiveSpotLightsCount;
 	uint32_t ActivePointLightsCount;
+	float TotalPointLightPower;
+};
+
+/// Should be aligned with FAliasTableEntry
+struct FDeviceAliasTableEntry
+{
+	float Threshold;
+	uint32_t Alias;
 };
 
 struct FDeviceMaterial

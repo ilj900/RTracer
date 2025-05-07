@@ -69,6 +69,12 @@ namespace ECS
             return ComponentManager->GetComponent<T>(Entity);
         }
 
+		template<typename T>
+		T& GetComponentByIndex(uint32_t ComponentIndex)
+		{
+			return ComponentManager->GetComponentByIndex<T>(ComponentIndex);
+		}
+
         template<typename T>
         uint32_t GetOffset(FEntity Entity)
         {
