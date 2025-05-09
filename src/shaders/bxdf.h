@@ -53,4 +53,15 @@ FVector3 SampleGGXVNDF(FVector3 ViewDirection, float AlphaX, float AlphaZ, float
 	return Ne;
 #endif
 }
+
+float VNDPDF(vec3 Normal, float AlphaX, float AlphaZ, vec3 ViewDirection)
+{
+	float VarA = Normal.x * Normal.x/ (AlphaX * AlphaX) + Normal.y * Normal.y + Normal.z * Normal.z / (AlphaZ * AlphaZ);
+	float DN = 1.f / (M_PI * AlphaX * AlphaZ * VarA * VarA);
+	float VarB = 1.f + (AlphaX * AlphaX * ViewDirection.x * ViewDirection.x + AlphaZ * AlphaZ * ViewDirection.z * ViewDirection.z) / (ViewDirection.y * ViewDirection.y);
+	float G1V = 1.f / (1.f + 0.5f * (-1 + sqrt(VarB)));
+	float DVN = G1V * clamp(dot(ViewDirection, Normal), 0, 1) * DN / dot(ViewDirection, vec3(0, 1, 0));
+	float Result = 0.25f * DVN * dot(ViewDirection, Normal);
+	return Result;
+}
 #endif // BXDF_H

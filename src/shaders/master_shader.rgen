@@ -404,8 +404,13 @@ void main()
     FDeviceMaterial Material = GetMaterial(TextureCoords);
     /// Process material interaction
     vec3 Incoming = RayData.Direction.xyz;
+    vec3 Outgoing = vec3(0);
+    uint RayType = 0u;
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
-    float MaterialScatteringPDF = ScatterMaterial(Material, RayData, NormalInWorldSpace, SamplingState, bFrontFacing);
+    float MaterialScatteringPDF = ScatterMaterial(Material, Incoming, Outgoing, RayType, RayData.Eta, NormalInWorldSpace, SamplingState, bFrontFacing);
+    RayData.Direction.xyz = Outgoing;
+    RayData.Origin.xyz = WorldSpacePosition;
+    RayData.RayFlags |= RayType & 0x0000FFFE;
 
     /// Sample point light
     vec4 UniformPointLightSamplingResult = vec4(0);
@@ -446,8 +451,6 @@ void main()
         PointLightResult = W1 * MaterialInteractionEvaluationResult1 + W2 * MaterialInteractionEvaluationResult2;
         TotalIncomingLight += W1 * UniformPointLightSamplingResult.xyz + W2 * ImportancePointLightSamplingResult.xyz;
     }
-
-    RayData.Origin.xyz = WorldSpacePosition;
 
     vec3 MaterialSamplingResult = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, RayData.Direction.xyz, NormalInWorldSpace);
     NDotI = clamp(dot(-Incoming, NormalInWorldSpace), 0, 1);

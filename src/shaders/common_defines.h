@@ -42,6 +42,7 @@
 #define SHEEN_LAYER 															1u << 5
 #define COAT_LAYER 																1u << 6
 #define EMISSION_LAYER															1u << 7
+#define RAY_TYPE_MASK															0x0000FFFE
 
 /// Task accumulate descriptor set layout defines
 #define ACCUMULATE_PER_FRAME_LAYOUT_INDEX 										0u

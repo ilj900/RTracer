@@ -124,12 +124,10 @@ float PDFLambertian(vec3 OutgoingTangentSpaceDirection)
 }
 
 /// Scatter ray based on material properties.
-/// Fill in FRayData and return PDF of such scattering
-float ScatterMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 NormalInWorldSpace, inout FSamplingState SamplingState, bool bFrontFacing)
+float ScatterMaterial(FDeviceMaterial Material, vec3 Incoming, out vec3 Outgoing, out uint RayType, inout float Eta, vec3 NormalInWorldSpace, inout FSamplingState SamplingState, bool bFrontFacing)
 {
 	float LayerSample = RandomFloat(SamplingState);
-	uint RayType = SelectLayer(Material, LayerSample);
-	RayData.RayFlags = 0u;
+	RayType = SelectLayer(Material, LayerSample);
 	float PDF = 0.f;
 
 	switch (RayType)
@@ -144,28 +142,29 @@ float ScatterMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Nor
 #else
 			PDF = PDFLambertian(TangentSpaceReflectionDirection);
 #endif
-			RayData.Direction.xyz = TangentSpaceReflectionDirection * transpose(TNBMatrix);
+			Outgoing = TangentSpaceReflectionDirection * transpose(TNBMatrix);
 			break;
 		}
 		case SPECULAR_LAYER:
 		{
 			/// Try to scatter the ray
 			mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
-			vec3 TangentSpaceViewDirection = RayData.Direction.xyz * TNBMatrix;
+			vec3 TangentSpaceViewDirection = Incoming * TNBMatrix;
 
 			/// Multi-scatter 16 times
 			for (int i = 0; i < 16; ++i)
 			{
 				vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
 				/// We invert the TangentSpaceViewDirection because if i == 0 then it's ray's direction that points to (under) the surface, it i != 0, the only way we get here is if ray is still pointing under the surface.
-				vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
+				vec3 NewNormal = SampleGGXVNDF(-Incoming, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
 				TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
 
 				/// If ray's on the right side of the surface, then leave it
 				if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
 				{
-					PDF = 1.f;
-					RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
+					Outgoing = TangentSpaceViewDirection * transpose(TNBMatrix);
+					vec3 ApproximatedNormal = normalize((-Incoming + Outgoing));
+					PDF = VNDPDF(ApproximatedNormal, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, -Incoming);
 					break;
 				}
 			}
@@ -175,9 +174,9 @@ float ScatterMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Nor
 		case TRANSMISSION_LAYER:
 		{
 			mat3 TNBMatrix = CreateTNBMatrix(NormalInWorldSpace);
-			vec3 TangentSpaceViewDirection = RayData.Direction.xyz * TNBMatrix;
+			vec3 TangentSpaceViewDirection = Incoming * TNBMatrix;
 
-			float IOR1 = bFrontFacing ? RayData.Eta : Material.SpecularIOR;
+			float IOR1 = bFrontFacing ? Eta : Material.SpecularIOR;
 			float IOR2 = bFrontFacing ? Material.SpecularIOR : 1;
 			float EtaRatio = IOR1 / IOR2;
 
@@ -207,8 +206,9 @@ float ScatterMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Nor
 					if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
 					{
 						RayType = SPECULAR_LAYER;
-						PDF = 1.f;
-						RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
+						Outgoing = TangentSpaceViewDirection * transpose(TNBMatrix);
+						vec3 ApproximatedNormal = normalize((-Incoming + Outgoing));
+						PDF = VNDPDF(ApproximatedNormal, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, -Incoming);
 						break;
 					}
 				}
@@ -226,8 +226,9 @@ float ScatterMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Nor
 						if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
 						{
 							RayType = SPECULAR_LAYER;
-							PDF = 1.f;
-							RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
+							Outgoing = TangentSpaceViewDirection * transpose(TNBMatrix);
+							vec3 ApproximatedNormal = normalize((-Incoming + Outgoing));
+							PDF = VNDPDF(ApproximatedNormal, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, -Incoming);
 							break;
 						}
 					}
@@ -236,11 +237,12 @@ float ScatterMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Nor
 						/// Refraction
 						TangentSpaceViewDirection = normalize(EtaRatio * TangentSpaceViewDirection - (EtaRatio * NDotI + sqrt(k)) * NewNormal);
 
-						PDF = 1.f;
+						vec3 ApproximatedNormal = normalize((-Incoming + Outgoing));
+						PDF = VNDPDF(ApproximatedNormal, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, -Incoming);
 						PDF /= EtaRatio * EtaRatio;
 						/// Also, ray is now traveling in a new media
-						RayData.Eta = Material.SpecularIOR;
-						RayData.Direction.xyz = TangentSpaceViewDirection * transpose(TNBMatrix);
+						Eta = Material.SpecularIOR;
+						Outgoing = TangentSpaceViewDirection * transpose(TNBMatrix);
 						break;
 					}
 				}
@@ -271,7 +273,6 @@ float ScatterMaterial(FDeviceMaterial Material, inout FRayData RayData, vec3 Nor
 		}
 	}
 
-	RayData.RayFlags |= RayType;
 	return PDF;
 }
 
