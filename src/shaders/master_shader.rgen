@@ -6,7 +6,7 @@
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_nonuniform_qualifier : enable // ?
 
-//#define DEBUG_PRINTF
+#define DEBUG_PRINTF
 #ifdef DEBUG_PRINTF
 #extension GL_EXT_debug_printf : enable
 bool b = false;
@@ -425,31 +425,34 @@ void main()
         vec3 ImportanceOutgoingDirection = vec3(0);
         UniformPointLightSamplingResult = ComputeUniformPointLightInput(SamplingState, UtilityData.ActivePointLightsCount, NormalInWorldSpace, WorldSpacePosition, UniformOutgoingDirection);
         ImportancePointLightSamplingResult = ComputeImportancePointLightInput(SamplingState, UtilityData.ActivePointLightsCount, NormalInWorldSpace, WorldSpacePosition, ImportanceOutgoingDirection);
-        vec3 MaterialInteractionEvaluationResult1 = vec3(0); /// Interaction result of uniformly sampled point light and the surface
-        vec3 MaterialInteractionEvaluationResult2 = vec3(0); /// Interaction result of importance sampled point light and the surface
+        vec3 MaterialInteractionEvaluationResultUniformSampling = vec3(0); /// Interaction result of uniformly sampled point light and the surface
+        vec3 MaterialInteractionEvaluationResultImportanceSampling = vec3(0); /// Interaction result of importance sampled point light and the surface
 
-        if (UniformPointLightSamplingResult.w != 0)
+        if (UniformPointLightSamplingResult.w > 0.)
         {
-            MaterialInteractionEvaluationResult1 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, UniformOutgoingDirection, NormalInWorldSpace);
-            float NDotL = clamp(dot(UniformOutgoingDirection, NormalInWorldSpace), 0, 1);
-
-            MaterialInteractionEvaluationResult1 = NDotL * MaterialInteractionEvaluationResult1 * UniformPointLightSamplingResult.xyz / UniformPointLightSamplingResult.w;
+            MaterialInteractionEvaluationResultUniformSampling = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, UniformOutgoingDirection, NormalInWorldSpace);
+            MaterialInteractionEvaluationResultUniformSampling = MaterialInteractionEvaluationResultUniformSampling * UniformPointLightSamplingResult.xyz;
         }
 
-        if (ImportancePointLightSamplingResult.w != 0)
+        if (ImportancePointLightSamplingResult.w > 0.)
         {
-            MaterialInteractionEvaluationResult2 = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, ImportanceOutgoingDirection, NormalInWorldSpace);
-            float NDotL = clamp(dot(ImportanceOutgoingDirection, NormalInWorldSpace), 0, 1);
-
-            MaterialInteractionEvaluationResult2 = NDotL * MaterialInteractionEvaluationResult2 * ImportancePointLightSamplingResult.xyz / ImportancePointLightSamplingResult.w;
+            MaterialInteractionEvaluationResultImportanceSampling = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, ImportanceOutgoingDirection, NormalInWorldSpace);
+            MaterialInteractionEvaluationResultImportanceSampling = MaterialInteractionEvaluationResultImportanceSampling * ImportancePointLightSamplingResult.xyz;
         }
 
-        float PDFSUM = UniformPointLightSamplingResult.w + ImportancePointLightSamplingResult.w;
-        float W1 = UniformPointLightSamplingResult.w / PDFSUM;
-        float W2 = ImportancePointLightSamplingResult.w / PDFSUM;
+        float PDF1Squared = UniformPointLightSamplingResult.w + UniformPointLightSamplingResult.w;
+        float PDF2Squared = ImportancePointLightSamplingResult.w + ImportancePointLightSamplingResult.w;
+        float PDFSUM2 = PDF1Squared + PDF2Squared;
 
-        PointLightResult = W1 * MaterialInteractionEvaluationResult1 + W2 * MaterialInteractionEvaluationResult2;
-        TotalIncomingLight += W1 * UniformPointLightSamplingResult.xyz + W2 * ImportancePointLightSamplingResult.xyz;
+        DebugGlobal = vec4(PDFSUM2, PDFSUM2, PDFSUM2, 0);
+
+        if (PDFSUM2 > 0.)
+        {
+            float W1 = PDF1Squared / PDFSUM2;
+            float W2 = PDF2Squared / PDFSUM2;
+
+            PointLightResult = W1 * MaterialInteractionEvaluationResultUniformSampling + W2 * MaterialInteractionEvaluationResultImportanceSampling;
+        }
     }
 
     vec3 MaterialSamplingResult = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, RayData.Direction.xyz, NormalInWorldSpace);
@@ -485,7 +488,7 @@ void main()
 
     if(PushConstants.BounceIndex == 0)
     {
-        DebugGlobal = bFrontFacing ? vec4(0.2f, 0.7f, 0.2f, 0.f) : vec4(0.7f, 0.2f, 0.2f, 0.f);
+        //DebugGlobal = bFrontFacing ? vec4(0.2f, 0.7f, 0.2f, 0.f) : vec4(0.7f, 0.2f, 0.2f, 0.f);
         SaveAOVs(PixelCoords, NormalInWorldSpace, NormalInWorldSpace, TextureCoords, WorldSpacePosition, 1., Depth,
         Material.BaseColor, TotalIncomingLight, Hit.RenderableIndex, Hit.PrimitiveIndex, PushConstants.MaterialIndex, DebugGlobal);
     }
