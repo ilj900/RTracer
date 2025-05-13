@@ -73,7 +73,10 @@ layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_PRIMITIVE_INDEX_
 
 layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_MATERIAL_INDEX_IMAGE_INDEX, rgba32f) uniform image2D MaterialindexAOVImage;
 
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_DEBUG_LAYER_IMAGE_INDEX, rgba32f) uniform image2D DebugLayerImage;
+layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_DEBUG_LAYER_IMAGE_0_INDEX, rgba32f) uniform image2D DebugLayerImage0;
+layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_DEBUG_LAYER_IMAGE_1_INDEX, rgba32f) uniform image2D DebugLayerImage1;
+layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_DEBUG_LAYER_IMAGE_2_INDEX, rgba32f) uniform image2D DebugLayerImage2;
+layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_DEBUG_LAYER_IMAGE_3_INDEX, rgba32f) uniform image2D DebugLayerImage3;
 
 FRayData FetchRayData(uint RayIndex)
 {
@@ -92,7 +95,7 @@ layout (push_constant) uniform PushConstantsBlock
 /// TODO: Is "local_size_x = BASIC_CHUNK_SIZE" correct?
 layout (local_size_x = BASIC_CHUNK_SIZE, local_size_y = 1, local_size_z = 1) in;
 
-void SaveAOVs(uvec2 PixelCoords, vec4 DebugData)
+void SaveAOVs(uvec2 PixelCoords, vec4 DebugData0, vec4 DebugData1, vec4 DebugData2, vec4 DebugData3)
 {
     imageStore(ShadingNormalAOVImage, ivec2(PixelCoords), vec4(0));
     imageStore(GeometricNormalAOVImage, ivec2(PixelCoords), vec4(0));
@@ -105,7 +108,10 @@ void SaveAOVs(uvec2 PixelCoords, vec4 DebugData)
     imageStore(RenderableIndexAOVImage, ivec2(PixelCoords), vec4(0));
     imageStore(PrimitiveIndexAOVImage, ivec2(PixelCoords), vec4(0));
     imageStore(MaterialindexAOVImage, ivec2(PixelCoords), vec4(0));
-    imageStore(DebugLayerImage, ivec2(PixelCoords), DebugData);
+    imageStore(DebugLayerImage0, ivec2(PixelCoords), DebugData0);
+    imageStore(DebugLayerImage1, ivec2(PixelCoords), DebugData1);
+    imageStore(DebugLayerImage2, ivec2(PixelCoords), DebugData2);
+    imageStore(DebugLayerImage3, ivec2(PixelCoords), DebugData3);
 }
 
 void main()
@@ -166,6 +172,6 @@ void main()
 
     if (PushConstants.BounceIndex == 0)
     {
-        SaveAOVs(NewPixelCoords, vec4(0));
+        SaveAOVs(NewPixelCoords, vec4(0), vec4(0), vec4(0), vec4(0));
     }
 }

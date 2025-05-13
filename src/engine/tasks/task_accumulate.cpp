@@ -67,7 +67,10 @@ void FAccumulateTask::UpdateDescriptorSets()
 		{EOutputType::MaterialID, 			"MaterialIDAOVImage"},
 		{EOutputType::RenderableID, 		"RenderableIDAOVImage"},
 		{EOutputType::PrimitiveID, 		"PrimitiveIDAOVImage"},
-		{EOutputType::DebugLayer, 		    "DebugLayerImage"},
+		{EOutputType::DebugLayer0, 	    "DebugLayerImage0"},
+		{EOutputType::DebugLayer1, 	    "DebugLayerImage1"},
+		{EOutputType::DebugLayer2, 	    "DebugLayerImage2"},
+		{EOutputType::DebugLayer3, 	    "DebugLayerImage3"},
 	};
 
     for (uint32_t i = 0; i < TotalSize; ++i)

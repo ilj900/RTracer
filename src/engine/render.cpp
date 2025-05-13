@@ -249,7 +249,10 @@ int FRender::Init()
 	OutputToFramebufferNameMap[EOutputType::MaterialID] 		= "MaterialIDAOVImage";
 	OutputToFramebufferNameMap[EOutputType::RenderableID]		= "RenderableIDAOVImage";
 	OutputToFramebufferNameMap[EOutputType::PrimitiveID] 		= "PrimitiveIDAOVImage";
-	OutputToFramebufferNameMap[EOutputType::DebugLayer] 		= "DebugLayerImage";
+	OutputToFramebufferNameMap[EOutputType::DebugLayer0] 		= "DebugLayerImage0";
+	OutputToFramebufferNameMap[EOutputType::DebugLayer1] 		= "DebugLayerImage1";
+	OutputToFramebufferNameMap[EOutputType::DebugLayer2] 		= "DebugLayerImage2";
+	OutputToFramebufferNameMap[EOutputType::DebugLayer3] 		= "DebugLayerImage3";
     return 0;
 }
 
@@ -1356,7 +1359,10 @@ void FRender::AllocateDependentResources()
 		{"MaterialIDAOVImage", 			Width, Height, 0},
 		{"RenderableIDAOVImage", 			Width, Height, 0},
 		{"PrimitiveIDAOVImage", 			Width, Height, 0},
-		{"DebugLayerImage", 				Width, Height, 0},
+		{"DebugLayerImage0", 				Width, Height, 0},
+		{"DebugLayerImage1", 				Width, Height, 0},
+		{"DebugLayerImage2", 				Width, Height, 0},
+		{"DebugLayerImage3", 				Width, Height, 0},
 	};
 
 	CreateRegisterAndTransitionImageShortcut(ImageDescriptions);
@@ -1423,7 +1429,10 @@ void FRender::FreeDependentResources()
 	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("PrimitiveIDAOVImage");
 	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("AccumulatorImage");
 	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("EstimatedImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("DebugLayerImage");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("DebugLayerImage0");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("DebugLayerImage1");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("DebugLayerImage2");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("DebugLayerImage3");
 }
 
 void FRender::FreeIndependentResources()

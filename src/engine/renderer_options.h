@@ -13,8 +13,11 @@ enum class EOutputType {
 	MaterialID 			= 9,
 	RenderableID		= 10,
 	PrimitiveID			= 11,
-	DebugLayer 			= 12,
-	Max 				= 13};
+	DebugLayer0			= 12,
+	DebugLayer1			= 13,
+	DebugLayer2			= 14,
+	DebugLayer3			= 15,
+	Max 				= 16};
 
 struct FRenderState
 {

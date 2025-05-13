@@ -12,7 +12,10 @@
 bool b = false;
 #endif
 
-vec4 DebugGlobal = vec4(0);
+vec4 DebugGlobal0 = vec4(0);
+vec4 DebugGlobal1 = vec4(0);
+vec4 DebugGlobal2 = vec4(0);
+vec4 DebugGlobal3 = vec4(0);
 
 #include "common_defines.h"
 #include "common_structures.h"
@@ -140,7 +143,13 @@ layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_PRIMITIVE_INDE
 
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_MATERIAL_INDEX_IMAGE_INDEX, rgba32f) uniform image2D MaterialindexAOVImage;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_DEBUG_LAYER_IMAGE_INDEX, rgba32f) uniform image2D DebugLayerImage;
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_DEBUG_LAYER_IMAGE_0_INDEX, rgba32f) uniform image2D DebugLayerImage0;
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_DEBUG_LAYER_IMAGE_1_INDEX, rgba32f) uniform image2D DebugLayerImage1;
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_DEBUG_LAYER_IMAGE_2_INDEX, rgba32f) uniform image2D DebugLayerImage2;
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_DEBUG_LAYER_IMAGE_3_INDEX, rgba32f) uniform image2D DebugLayerImage3;
 
 layout (buffer_reference, scalar) buffer Vertices
 {
@@ -342,7 +351,7 @@ vec4 IndexToColor(uint Value)
 }
 
 void SaveAOVs(uvec2 PixelCoords, vec3 ShadingNormal, vec3 GeometricNormal, vec2 UV, vec3 WorldSpacePosition, float Opacity, float Depth, vec3 Albedo,
-              vec3 Luminance, uint RenderableIndex, uint PrimitiveIndex, uint Materialindex, vec4 DebugData)
+              vec3 Luminance, uint RenderableIndex, uint PrimitiveIndex, uint Materialindex, vec4 DebugData0, vec4 DebugData1, vec4 DebugData2, vec4 DebugData3)
 {
     imageStore(ShadingNormalAOVImage, ivec2(PixelCoords), vec4((ShadingNormal + vec3(1)) * vec3(0.5), 0));
     imageStore(GeometricNormalAOVImage, ivec2(PixelCoords), vec4((GeometricNormal + vec3(1)) * vec3(0.5), 0));
@@ -362,7 +371,10 @@ void SaveAOVs(uvec2 PixelCoords, vec3 ShadingNormal, vec3 GeometricNormal, vec2 
     vec4 MaterialIdColor = IndexToColor(Materialindex);
     imageStore(MaterialindexAOVImage, ivec2(PixelCoords), MaterialIdColor);
 
-    imageStore(DebugLayerImage, ivec2(PixelCoords), DebugData);
+    imageStore(DebugLayerImage0, ivec2(PixelCoords), DebugData0);
+    imageStore(DebugLayerImage1, ivec2(PixelCoords), DebugData1);
+    imageStore(DebugLayerImage2, ivec2(PixelCoords), DebugData2);
+    imageStore(DebugLayerImage3, ivec2(PixelCoords), DebugData3);
 }
 
 void main()
@@ -373,7 +385,7 @@ void main()
     uvec2 PixelCoords = uvec2(PixelIndex % PushConstants.Width, PixelIndex / PushConstants.Width);
 
 #ifdef DEBUG_PRINTF
-    if (PixelCoords.x == PushConstants.Width / 2 && PixelCoords.y == PushConstants.Height / 2 /*&& PushConstants.BounceIndex == 0*/)
+    if (PixelCoords.x == PushConstants.Width / 2 && PixelCoords.y == PushConstants.Height / 2 && PushConstants.BounceIndex == 0)
     {
         b = true;
         //debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
@@ -408,9 +420,17 @@ void main()
     uint RayType = 0u;
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
     float MaterialScatteringPDF = ScatterMaterial(Material, Incoming, Outgoing, RayType, RayData.Eta, NormalInWorldSpace, SamplingState, bFrontFacing);
+    vec3 MaterialSamplingResult = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, RayData.Direction.xyz, NormalInWorldSpace);
+    NDotI = clamp(dot(-Incoming, NormalInWorldSpace), 0, 1);
+    MaterialSamplingResult = MaterialSamplingResult * NDotI / MaterialScatteringPDF;
+
+    vec3 CumulativeMaterialColor = CumulativeMaterialColorBuffer[PixelIndex].xyz;
+    CumulativeMaterialColor *= MaterialSamplingResult.xyz;
+    CumulativeMaterialColorBuffer[PixelIndex] = vec4(CumulativeMaterialColor, 1);
+
     RayData.Direction.xyz = Outgoing;
     RayData.Origin.xyz = WorldSpacePosition;
-    RayData.RayFlags |= RayType & 0x0000FFFE;
+    RayData.RayFlags = (RayType & 0x0000FFFE) | (RayData.RayFlags & ~0x0000FFFE);
 
     /// Sample point light
     vec4 UniformPointLightSamplingResult = vec4(0);
@@ -440,28 +460,23 @@ void main()
             MaterialInteractionEvaluationResultImportanceSampling = MaterialInteractionEvaluationResultImportanceSampling * ImportancePointLightSamplingResult.xyz;
         }
 
-        float PDF1Squared = UniformPointLightSamplingResult.w + UniformPointLightSamplingResult.w;
-        float PDF2Squared = ImportancePointLightSamplingResult.w + ImportancePointLightSamplingResult.w;
-        float PDFSUM2 = PDF1Squared + PDF2Squared;
+        float PDFU2 = UniformPointLightSamplingResult.w + UniformPointLightSamplingResult.w;
+        float PDFI2 = ImportancePointLightSamplingResult.w + ImportancePointLightSamplingResult.w;
+        float PDFSUM2 = PDFU2 + PDFI2;
 
-        DebugGlobal = vec4(PDFSUM2, PDFSUM2, PDFSUM2, 0);
 
         if (PDFSUM2 > 0.)
         {
-            float W1 = PDF1Squared / PDFSUM2;
-            float W2 = PDF2Squared / PDFSUM2;
+            float W1 = PDFU2 / PDFSUM2;
+            float W2 = PDFI2 / PDFSUM2;
 
             PointLightResult = W1 * MaterialInteractionEvaluationResultUniformSampling + W2 * MaterialInteractionEvaluationResultImportanceSampling;
+
+            DebugGlobal0 = vec4(MaterialInteractionEvaluationResultUniformSampling, 0.f);
+            DebugGlobal1 = vec4(MaterialInteractionEvaluationResultImportanceSampling, 0.f);
+            DebugGlobal2 = vec4(PointLightResult, 0.f);
         }
     }
-
-    vec3 MaterialSamplingResult = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, RayData.Direction.xyz, NormalInWorldSpace);
-    NDotI = clamp(dot(-Incoming, NormalInWorldSpace), 0, 1);
-    MaterialSamplingResult = MaterialSamplingResult * NDotI / MaterialScatteringPDF;
-
-    vec3 CumulativeMaterialColor = CumulativeMaterialColorBuffer[PixelIndex].xyz;
-    CumulativeMaterialColor *= MaterialSamplingResult.xyz;
-    CumulativeMaterialColorBuffer[PixelIndex] = vec4(CumulativeMaterialColor, 1);
 
     vec3 BounceInput = vec3(0);
     BounceInput += PointLightResult;
@@ -488,8 +503,9 @@ void main()
 
     if(PushConstants.BounceIndex == 0)
     {
-        //DebugGlobal = bFrontFacing ? vec4(0.2f, 0.7f, 0.2f, 0.f) : vec4(0.7f, 0.2f, 0.2f, 0.f);
+        //DebugGlobal0 = bFrontFacing ? vec4(0.2f, 0.7f, 0.2f, 0.f) : vec4(0.7f, 0.2f, 0.2f, 0.f);
         SaveAOVs(PixelCoords, NormalInWorldSpace, NormalInWorldSpace, TextureCoords, WorldSpacePosition, 1., Depth,
-        Material.BaseColor, TotalIncomingLight, Hit.RenderableIndex, Hit.PrimitiveIndex, PushConstants.MaterialIndex, DebugGlobal);
+        Material.BaseColor, TotalIncomingLight, Hit.RenderableIndex, Hit.PrimitiveIndex, PushConstants.MaterialIndex,
+        DebugGlobal0, DebugGlobal1, DebugGlobal2, DebugGlobal3);
     }
 }

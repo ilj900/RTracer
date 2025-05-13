@@ -195,7 +195,24 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 	}
 
 	{
-		std::vector<const char*> Names = {"Color", "ShadingNormal", "GeometricNormal", "UV", "World-space position", "Opacity", "Depth", "Albedo", "Luminance", "MaterialID", "RenderableID", "PrimitiveID", "DebugLayer"};
+		std::vector<const char*> Names = {
+			"Color",
+			"ShadingNormal",
+			"GeometricNormal",
+			"UV",
+			"World-space position",
+			"Opacity",
+			"Depth",
+			"Albedo",
+			"Luminance",
+			"MaterialID",
+			"RenderableID",
+			"PrimitiveID",
+			"DebugLayer0",
+			"DebugLayer1",
+			"DebugLayer2",
+			"DebugLayer3",
+		};
 		static EOutputType CurrentAOV = EOutputType::Color;
 
 		if (ImGui::BeginCombo("Select AOV", Names[int(CurrentAOV)]))
