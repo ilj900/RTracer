@@ -194,6 +194,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 		ImGui::End();
 	}
 
+	if (ImGui::Begin("AOV selector", nullptr))
 	{
 		static const std::vector<const char*> Names = {
 			"Color",
@@ -227,6 +228,8 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 			CurrentAOV = EOutputType(RadioButtonIndex);
 			Render->SetRenderTarget(CurrentAOV);
 		}
+
+		ImGui::End();
 	}
 
 	uint32_t SubmitIndex = Y * SubmitX + X;
