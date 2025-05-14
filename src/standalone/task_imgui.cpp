@@ -195,7 +195,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 	}
 
 	{
-		std::vector<const char*> Names = {
+		static std::array<const char*, 16> Names = {
 			"Color",
 			"ShadingNormal",
 			"GeometricNormal",
@@ -213,26 +213,19 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 			"DebugLayer2",
 			"DebugLayer3",
 		};
+		
 		static EOutputType CurrentAOV = EOutputType::Color;
+		static int RadioButtonIndex = int(CurrentAOV);
 
-		if (ImGui::BeginCombo("Select AOV", Names[int(CurrentAOV)]))
+		for (int i = 0; i < Names.size(); ++i)
 		{
-			for (int i = 0; i < Names.size(); ++i)
-			{
-				bool IsSelected = i == int(CurrentAOV);
-				if (ImGui::Selectable(Names[i], IsSelected))
-				{
-					CurrentAOV = EOutputType(i);
-					Render->SetRenderTarget(CurrentAOV);
-				}
+			ImGui::RadioButton(Names[i], &RadioButtonIndex, i);
+		}
 
-				if (IsSelected)
-				{
-					ImGui::SetItemDefaultFocus();
-				}
-			}
-
-			ImGui::EndCombo();
+		if (RadioButtonIndex != int(CurrentAOV))
+		{
+			CurrentAOV = EOutputType(RadioButtonIndex);
+			Render->SetRenderTarget(CurrentAOV);
 		}
 	}
 
