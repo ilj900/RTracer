@@ -195,7 +195,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 	}
 
 	{
-		static std::array<const char*, 16> Names = {
+		static const std::vector<const char*> Names = {
 			"Color",
 			"ShadingNormal",
 			"GeometricNormal",
@@ -213,7 +213,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 			"DebugLayer2",
 			"DebugLayer3",
 		};
-		
+
 		static EOutputType CurrentAOV = EOutputType::Color;
 		static int RadioButtonIndex = int(CurrentAOV);
 
