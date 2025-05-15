@@ -251,7 +251,7 @@ out vec3 NormalInWorldSpace, out vec3 PointOfIntersectionInWorldSpace, out vec2 
     TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
 }
 
-vec4 ComputeUniformPointLightInput(inout FSamplingState SamplingState, uint PointLightsCount, vec3 Normal, vec3 WorldSpacePosition, out vec3 Direction)
+vec4 ComputeUniformPointLightInput(inout FSamplingState SamplingState, uint PointLightsCount, vec3 Normal, vec3 WorldSpacePosition, out vec3 Direction, out float ImportanceSamplingPDF)
 {
     /// Get light index
     const uint LightIndex = uint(RandomFloat(SamplingState) * PointLightsCount);
@@ -283,6 +283,7 @@ vec4 ComputeUniformPointLightInput(inout FSamplingState SamplingState, uint Poin
         float Attenuation = 1.f / LightDistance;
         Attenuation *= Attenuation;
         /// Here, the probability of sampling a particular point light is one to the number of point lights
+        ImportanceSamplingPDF = PointLightUniform.Power / UtilityData.TotalPointLightPower;
         return vec4(PointLightUniform.Color * PointLightUniform.Intensity * Attenuation * NDotI * PointLightsCount, 1.f / PointLightsCount);
     }
     else
@@ -291,7 +292,7 @@ vec4 ComputeUniformPointLightInput(inout FSamplingState SamplingState, uint Poin
     }
 }
 
-vec4 ComputeImportancePointLightInput(inout FSamplingState SamplingState, uint PointLightsCount, vec3 Normal, vec3 WorldSpacePosition, out vec3 Direction)
+vec4 ComputeImportancePointLightInput(inout FSamplingState SamplingState, uint PointLightsCount, vec3 Normal, vec3 WorldSpacePosition, out vec3 Direction, out float UniformSamplingPDF)
 {
     /// Get light index by importance sampling it
     uint ImportanceLightIndex = uint(RandomFloat(SamplingState) * PointLightsCount);
@@ -332,6 +333,7 @@ vec4 ComputeImportancePointLightInput(inout FSamplingState SamplingState, uint P
         Attenuation *= Attenuation;
         /// Here, the probability of sampling a particular point light depends on it's power and total power of all lights
         float PDF = PointLightImportance.Power / UtilityData.TotalPointLightPower;
+        UniformSamplingPDF = 1.f / PointLightsCount;
         return vec4(PointLightImportance.Color * PointLightImportance.Intensity * Attenuation * NDotI / PDF, PDF);
     }
     else
@@ -443,39 +445,37 @@ void main()
     {
         vec3 UniformOutgoingDirection = vec3(0);
         vec3 ImportanceOutgoingDirection = vec3(0);
-        UniformPointLightSamplingResult = ComputeUniformPointLightInput(SamplingState, UtilityData.ActivePointLightsCount, NormalInWorldSpace, WorldSpacePosition, UniformOutgoingDirection);
-        ImportancePointLightSamplingResult = ComputeImportancePointLightInput(SamplingState, UtilityData.ActivePointLightsCount, NormalInWorldSpace, WorldSpacePosition, ImportanceOutgoingDirection);
+        float UniformSamplingImportanceSamplePDF = 0;
+        float ImportanceSamplingUniformSamplePDF = 0;
+        UniformPointLightSamplingResult = ComputeUniformPointLightInput(SamplingState, UtilityData.ActivePointLightsCount, NormalInWorldSpace, WorldSpacePosition, UniformOutgoingDirection, UniformSamplingImportanceSamplePDF);
+        ImportancePointLightSamplingResult = ComputeImportancePointLightInput(SamplingState, UtilityData.ActivePointLightsCount, NormalInWorldSpace, WorldSpacePosition, ImportanceOutgoingDirection, ImportanceSamplingUniformSamplePDF);
         vec3 MaterialInteractionEvaluationResultUniformSampling = vec3(0); /// Interaction result of uniformly sampled point light and the surface
         vec3 MaterialInteractionEvaluationResultImportanceSampling = vec3(0); /// Interaction result of importance sampled point light and the surface
+
+        float W1 = 0;
+        float W2 = 0;
 
         if (UniformPointLightSamplingResult.w > 0.)
         {
             MaterialInteractionEvaluationResultUniformSampling = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, UniformOutgoingDirection, NormalInWorldSpace);
             MaterialInteractionEvaluationResultUniformSampling = MaterialInteractionEvaluationResultUniformSampling * UniformPointLightSamplingResult.xyz;
+
+            W1 = UniformPointLightSamplingResult.w / (UniformPointLightSamplingResult.x + UniformSamplingImportanceSamplePDF);
         }
 
         if (ImportancePointLightSamplingResult.w > 0.)
         {
             MaterialInteractionEvaluationResultImportanceSampling = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, ImportanceOutgoingDirection, NormalInWorldSpace);
             MaterialInteractionEvaluationResultImportanceSampling = MaterialInteractionEvaluationResultImportanceSampling * ImportancePointLightSamplingResult.xyz;
+
+            W2 = ImportancePointLightSamplingResult.w / (ImportancePointLightSamplingResult.w + ImportanceSamplingUniformSamplePDF);
         }
 
-        float PDFU2 = UniformPointLightSamplingResult.w + UniformPointLightSamplingResult.w;
-        float PDFI2 = ImportancePointLightSamplingResult.w + ImportancePointLightSamplingResult.w;
-        float PDFSUM2 = PDFU2 + PDFI2;
+        PointLightResult = W1 * MaterialInteractionEvaluationResultUniformSampling + W2 * MaterialInteractionEvaluationResultImportanceSampling;
 
-
-        if (PDFSUM2 > 0.)
-        {
-            float W1 = PDFU2 / PDFSUM2;
-            float W2 = PDFI2 / PDFSUM2;
-
-            PointLightResult = W1 * MaterialInteractionEvaluationResultUniformSampling + W2 * MaterialInteractionEvaluationResultImportanceSampling;
-
-            DebugGlobal0 = vec4(MaterialInteractionEvaluationResultUniformSampling, 0.f);
-            DebugGlobal1 = vec4(MaterialInteractionEvaluationResultImportanceSampling, 0.f);
-            DebugGlobal2 = vec4(PointLightResult, 0.f);
-        }
+        DebugGlobal0 = vec4(MaterialInteractionEvaluationResultUniformSampling, 0.f);
+        DebugGlobal1 = vec4(MaterialInteractionEvaluationResultImportanceSampling, 0.f);
+        DebugGlobal2 = vec4(PointLightResult, 0.f);
     }
 
     vec3 BounceInput = vec3(0);
