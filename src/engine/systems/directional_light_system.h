@@ -29,9 +29,12 @@ namespace ECS
 
             FEntity CreateDirectionalLight(const FVector3& Direction, const FVector3& Color, float Intensity);
 
+            static const uint32_t MAX_DIRECTIONAL_LIGHTS = 32;
 			uint32_t LoadedDirectionalLightsCount = 0;
+			float LoadedDirectionalLightsPower = 0.f;
 			uint32_t CurrentDirectionalLightsCount = 0;
-            const uint32_t MAX_DIRECTIONAL_LIGHTS = 32;
+			float CurrentDirectionalLightsPower = 0.f;
+			bool bAliasTableShouldBeUpdated = false;
         };
     }
 }

@@ -75,7 +75,7 @@ struct FDirectionalLight
 	float Intensity;
 
 	FVector3 Color;
-	float Dummy1;
+	float Power;
 
 	FVector3 Direction;
 	float Dummy2;
@@ -96,6 +96,7 @@ struct FSpotLight
 struct FUtilityData
 {
 	uint32_t ActiveDirectionalLightsCount;
+	float TotalDirectionalLightPower;
 	uint32_t ActiveSpotLightsCount;
 	uint32_t ActivePointLightsCount;
 	float TotalPointLightPower;

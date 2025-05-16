@@ -210,7 +210,7 @@ int FRender::Init()
     ClearImageTask 						= std::make_shared<FClearImageTask>					("AccumulatorImage", 				Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ClearCumulativeMaterialColorBuffer	= std::make_shared<FClearBufferTask>				(CUMULATIVE_MATERIAL_COLOR_BUFFER, 		Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice, 0x3F800000);
 	ResetActiveRayCountTask 			= std::make_shared<FResetActiveRayCountTask>		(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	std::vector<std::string> BuffersToCleanEachFrame{NORMAL_AOV_BUFFER, UV_AOV_BUFFER, WORLD_SPACE_POSITION_AOV_BUFFER, TRANSFORM_INDEX_BUFFER, SAMPLED_IBL_BUFFER, SAMPLED_POINT_LIGHT_BUFFER, SAMPLED_DIRECTIONAL_LIGHT_BUFFER, SAMPLED_SPOT_LIGHT_BUFFER, DEBUG_LAYER_BUFFER};
+	std::vector<std::string> BuffersToCleanEachFrame{NORMAL_AOV_BUFFER, UV_AOV_BUFFER, WORLD_SPACE_POSITION_AOV_BUFFER, TRANSFORM_INDEX_BUFFER, DEBUG_LAYER_BUFFER};
 	ClearBuffersEachFrameTask 			= std::make_shared<FClearBufferTask>				(BuffersToCleanEachFrame , Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	std::vector<std::string> BuffersToCleanEachBounce{COUNTED_MATERIALS_PER_CHUNK_BUFFER};
 	ClearBuffersEachBounceTask 			= std::make_shared<FClearBufferTask>				(BuffersToCleanEachBounce , Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -1334,10 +1334,6 @@ void FRender::AllocateDependentResources()
 		{COUNTED_MATERIALS_PER_CHUNK_BUFFER,	sizeof(uint32_t) * TOTAL_MATERIALS * CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE),	VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 		{UV_AOV_BUFFER, 						sizeof(FVector2) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 		{WORLD_SPACE_POSITION_AOV_BUFFER, 	sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{SAMPLED_IBL_BUFFER, 					sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{SAMPLED_POINT_LIGHT_BUFFER, 			sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{SAMPLED_DIRECTIONAL_LIGHT_BUFFER, 	sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{SAMPLED_SPOT_LIGHT_BUFFER, 			sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 		{TRANSFORM_INDEX_BUFFER, 				sizeof(uint32_t) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 		{CUMULATIVE_MATERIAL_COLOR_BUFFER, 	sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 		{DEBUG_LAYER_BUFFER, 					sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
@@ -1385,6 +1381,7 @@ void FRender::AllocateIndependentResources()
 		{ACTIVE_RAY_COUNT_BUFFER, 				sizeof(uint32_t) * 3,						VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT},
 		{MATERIALS_OFFSETS_PER_MATERIAL_BUFFER,	sizeof(uint32_t) * TOTAL_MATERIALS,	0},
 		{POINT_LIGHTS_IMPORTANCE_BUFFER, 			sizeof(FAliasTableEntry) * POINT_LIGHT_SYSTEM()->MAX_POINT_LIGHTS, 0},
+		{DIRECTIONAL_LIGHTS_IMPORTANCE_BUFFER,	sizeof(FAliasTableEntry) * DIRECTIONAL_LIGHT_SYSTEM()->MAX_DIRECTIONAL_LIGHTS, 0},
 	};
 
 	CreateAndRegisterBufferShortcut(BufferDescriptions);
@@ -1405,10 +1402,6 @@ void FRender::FreeDependentResources()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(NORMAL_AOV_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(UV_AOV_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(WORLD_SPACE_POSITION_AOV_BUFFER);
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(SAMPLED_IBL_BUFFER);
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(SAMPLED_POINT_LIGHT_BUFFER);
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(SAMPLED_DIRECTIONAL_LIGHT_BUFFER);
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(SAMPLED_SPOT_LIGHT_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(TRANSFORM_INDEX_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(CUMULATIVE_MATERIAL_COLOR_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(COUNTED_MATERIALS_PER_CHUNK_BUFFER);
@@ -1444,6 +1437,7 @@ void FRender::FreeIndependentResources()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(UTILITY_INFO_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(ACTIVE_RAY_COUNT_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(POINT_LIGHTS_IMPORTANCE_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(DIRECTIONAL_LIGHTS_IMPORTANCE_BUFFER);
 }
 
 void FRender::CreateAndRegisterBufferShortcut(const std::vector<FBufferDescription>& BufferDescriptions)
