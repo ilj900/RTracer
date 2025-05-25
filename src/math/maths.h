@@ -234,7 +234,9 @@ FMatrix4 LookAt(const FVector3& Eye, const FVector3& Point, const FVector3& Up);
 FMatrix4 GetPerspective(float FOV, float AspectRatio, float NearDistance, float FarDistance);
 
 FVector3 normalize(FVector3 Vec);
+float dot(const FVector3& L, const FVector3& R);
 FVector3 cross(FVector3 A, FVector3 B);
+float clamp(float Val, float Min, float Max);
 float max(float A, float B);
 
 FQuaternion QuatFromVectors(const FVector3& Right, const FVector3& Up, const FVector3& Front);

@@ -771,9 +771,29 @@ FVector3 normalize(FVector3 Vec)
 	return Vec.GetNormalized();
 }
 
+float dot(const FVector3& L, const FVector3& R)
+{
+	return L.X * R.X + L.Y * R.Y + L.Z * R.Z;
+}
+
 FVector3 cross(FVector3 A, FVector3 B)
 {
 	return Cross(A, B);
+}
+
+float clamp(float Val, float Min, float Max)
+{
+	if (Val < Min)
+	{
+		return Min;
+	}
+
+	if (Val > Max)
+	{
+		return Max;
+	}
+
+	return Val;
 }
 
 float max(float A, float B)
