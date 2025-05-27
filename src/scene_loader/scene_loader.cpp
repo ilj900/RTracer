@@ -211,7 +211,9 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		Render->ShapeSetMaterial(Sphere3, MetalMaterial);
 		Render->ShapeSetMaterial(Sphere4, WhiteMaterial);
 
-		auto Light = Render->CreateDirectionalLight({-1, -1, -1}, {1, 1, 1}, 1);
+		auto Light1 = Render->CreateDirectionalLight({-1, -1, -1}, {1, 1, 1}, 1);
+		auto Light2 = Render->CreateDirectionalLight({1, -1, -1}, {1, 1, 1}, 1);
+		auto Light3 = Render->CreateDirectionalLight({-1, -1, 1}, {1, 1, 1}, 3);
 
 		Render->SetIBL("../resources/hdr_black_image.exr");
 	}
