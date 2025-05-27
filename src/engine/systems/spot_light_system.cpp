@@ -32,7 +32,7 @@ namespace ECS
 			if (LoadedSpotLightsCount != CurrentSpotLightsCount ||
 				LoadedSpotLightsPower != CurrentSpotLightsPower)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t), offsetof(FUtilityData, ActiveSpotLightsCount), &CurrentSpotLightsCount);
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t) * 2, offsetof(FUtilityData, ActiveSpotLightsCount), &CurrentSpotLightsCount);
 				LoadedSpotLightsCount = CurrentSpotLightsCount;
 				LoadedSpotLightsPower = CurrentSpotLightsPower;
 			}
@@ -67,7 +67,7 @@ namespace ECS
 			if (LoadedSpotLightsCount != CurrentSpotLightsCount ||
 				LoadedSpotLightsPower != CurrentSpotLightsPower)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t), offsetof(FUtilityData, ActiveSpotLightsCount), &CurrentSpotLightsCount);
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t) * 2, offsetof(FUtilityData, ActiveSpotLightsCount), &CurrentSpotLightsCount);
 				LoadedSpotLightsCount = CurrentSpotLightsCount;
 				LoadedSpotLightsPower = CurrentSpotLightsPower;
 			}
