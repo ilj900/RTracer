@@ -11,7 +11,7 @@ namespace ECS
 			LoadedSpotLightsCount = 0;
 			CurrentSpotLightsCount = 0;
 
-            FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(ECS::COMPONENTS::FSpotLightComponent) * MAX_LIGHTS,
+            FGPUBufferableSystem::Init(NumberOfSimultaneousSubmits, sizeof(ECS::COMPONENTS::FSpotLightComponent) * MAX_SPOT_LIGHTS,
                                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, "Device_Spot_Lights");
         }
 
@@ -19,10 +19,22 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
-			if (LoadedSpotLightsCount != CurrentSpotLightsCount)
+			if (bAliasTableShouldBeUpdated)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t)}, {offsetof(FUtilityData, ActiveSpotLightsCount)}, {&CurrentSpotLightsCount});
-				CurrentSpotLightsCount = LoadedSpotLightsCount;
+				auto [UpdatedAliasTable, _] = GenerateImportanceMapFast<ECS::COMPONENTS::FSpotLightComponent>(COORDINATOR().Data<ECS::COMPONENTS::FSpotLightComponent>(),
+					CurrentSpotLightsCount, 1, [](ECS::COMPONENTS::FSpotLightComponent Component){return double(Component.Power);});
+
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(SPOT_LIGHTS_IMPORTANCE_BUFFER, UpdatedAliasTable.size() * sizeof(FAliasTableEntry), 0, UpdatedAliasTable.data());
+
+				bAliasTableShouldBeUpdated = false;
+			}
+
+			if (LoadedSpotLightsCount != CurrentSpotLightsCount ||
+				LoadedSpotLightsPower != CurrentSpotLightsPower)
+			{
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t), offsetof(FUtilityData, ActiveSpotLightsCount), &CurrentSpotLightsCount);
+				LoadedSpotLightsCount = CurrentSpotLightsCount;
+				LoadedSpotLightsPower = CurrentSpotLightsPower;
 			}
 
 			for (auto& Entry : EntitiesToUpdate)
@@ -42,10 +54,22 @@ namespace ECS
         {
 			bool bAnyUpdate = false;
 
-			if (LoadedSpotLightsCount != CurrentSpotLightsCount)
+			if (bAliasTableShouldBeUpdated)
 			{
-				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, {sizeof(uint32_t)}, {offsetof(FUtilityData, ActiveSpotLightsCount)}, {&CurrentSpotLightsCount});
-				CurrentSpotLightsCount = LoadedSpotLightsCount;
+				auto [UpdatedAliasTable, _] = GenerateImportanceMapFast<ECS::COMPONENTS::FSpotLightComponent>(COORDINATOR().Data<ECS::COMPONENTS::FSpotLightComponent>(),
+					CurrentSpotLightsCount, 1, [](ECS::COMPONENTS::FSpotLightComponent Component){return double(Component.Power);});
+
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(SPOT_LIGHTS_IMPORTANCE_BUFFER, UpdatedAliasTable.size() * sizeof(FAliasTableEntry), 0, UpdatedAliasTable.data());
+
+				bAliasTableShouldBeUpdated = false;
+			}
+
+			if (LoadedSpotLightsCount != CurrentSpotLightsCount ||
+				LoadedSpotLightsPower != CurrentSpotLightsPower)
+			{
+				RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t), offsetof(FUtilityData, ActiveSpotLightsCount), &CurrentSpotLightsCount);
+				LoadedSpotLightsCount = CurrentSpotLightsCount;
+				LoadedSpotLightsPower = CurrentSpotLightsPower;
 			}
 
 			for (auto& Entry : EntitiesToUpdate)
@@ -145,9 +169,13 @@ namespace ECS
             LightComponent.Intensity = Intensity;
             LightComponent.OuterAngle = OuterAngle * 0.5f;
             LightComponent.InnerAngle = InnerAngle * 0.5f;
+			LightComponent.Power = (Color.x + Color.y + Color.z) * Intensity * (2.f - cos(LightComponent.OuterAngle) - - cos(LightComponent.InnerAngle)) * 0.25f;
             MarkDirty(Light);
 
 			CurrentSpotLightsCount++;
+			CurrentSpotLightsPower += LightComponent.Power;
+
+			bAliasTableShouldBeUpdated = true;
 
             return Light;
         }

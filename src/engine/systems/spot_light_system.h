@@ -31,9 +31,12 @@ namespace ECS
 
             FEntity CreateSpotLight(const FVector3& Position, const FVector3& Direction, const FVector3& Color, float Intensity, float OuterAngle, float InnerAngle);
 
+            static const uint32_t MAX_SPOT_LIGHTS = 32;
 			uint32_t LoadedSpotLightsCount = 0;
+			float LoadedSpotLightsPower = 0.f;
 			uint32_t CurrentSpotLightsCount = 0;
-            const uint32_t MAX_LIGHTS = 32;
+			float CurrentSpotLightsPower = 0.f;
+			bool bAliasTableShouldBeUpdated = false;
         };
     }
 }

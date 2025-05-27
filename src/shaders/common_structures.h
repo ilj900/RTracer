@@ -91,6 +91,11 @@ struct FSpotLight
 
 	FVector3 Direction;
 	float OuterAngle;
+
+	float Power;
+	float Dummy1;
+	float Dummy2;
+	float Dummy3;
 };
 
 struct FUtilityData
@@ -98,6 +103,7 @@ struct FUtilityData
 	uint32_t ActiveDirectionalLightsCount;
 	float TotalDirectionalLightPower;
 	uint32_t ActiveSpotLightsCount;
+	float TotalSpotLightPower;
 	uint32_t ActivePointLightsCount;
 	float TotalPointLightPower;
 };

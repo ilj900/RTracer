@@ -175,7 +175,8 @@ FVector3 SampleCosineHemisphere(inout FSamplingState SamplingState)
 
 float RandomFloat(inout FSamplingState SamplingState)
 {
-	uint32_t StratumIndex = Permute((SamplingState.PixelIndex * 524287 + SamplingState.RenderIteration) % CMJ_TOTAL_GRID_SIZE, CMJ_TOTAL_GRID_SIZE, (SamplingState.PixelIndex * 524287 + SamplingState.RenderIteration) / CMJ_TOTAL_GRID_SIZE);
+	uint32_t PrimedState = SamplingState.PixelIndex * 33177601 + SamplingState.RenderIteration * 266932207 + SamplingState.Bounce * 4073 + SamplingState.Generation * 239;
+	uint32_t StratumIndex = Permute((PrimedState) % CMJ_TOTAL_GRID_SIZE, CMJ_TOTAL_GRID_SIZE, (PrimedState) / CMJ_TOTAL_GRID_SIZE);
 	uint32_t PermutationIndex = SamplingState.Type + SamplingState.RenderIteration * 256 + SamplingState.Bounce * 16 + SamplingState.Generation;
 	SamplingState.Generation += 1;
 	return RandomFloat(StratumIndex, PermutationIndex);

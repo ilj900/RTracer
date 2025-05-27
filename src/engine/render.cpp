@@ -504,9 +504,9 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	PassthroughTask->Reload();
 	AdvanceRenderCountTask->Reload();
 
-	for (int i = 0; i < ExternalTasks.size(); ++i)
+	for (const auto & ExternalTask : ExternalTasks)
 	{
-		ExternalTasks[i]->Reload();
+		ExternalTask->Reload();
 	}
 
 
@@ -1376,12 +1376,13 @@ void FRender::AllocateIndependentResources()
 {
 	/// Allocate buffers that doesn't require recreation
 	std::vector<FBufferDescription> BufferDescriptions = {
-		{RENDER_ITERATION_BUFFER,					sizeof(uint32_t),							VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+		{RENDER_ITERATION_BUFFER,				sizeof(uint32_t),							VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 		{TOTAL_COUNTED_MATERIALS_BUFFER,			sizeof(uint32_t) * TOTAL_MATERIALS * 3,	VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT},
 		{ACTIVE_RAY_COUNT_BUFFER, 				sizeof(uint32_t) * 3,						VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT},
 		{MATERIALS_OFFSETS_PER_MATERIAL_BUFFER,	sizeof(uint32_t) * TOTAL_MATERIALS,	0},
-		{POINT_LIGHTS_IMPORTANCE_BUFFER, 			sizeof(FAliasTableEntry) * POINT_LIGHT_SYSTEM()->MAX_POINT_LIGHTS, 0},
+		{POINT_LIGHTS_IMPORTANCE_BUFFER, 		sizeof(FAliasTableEntry) * POINT_LIGHT_SYSTEM()->MAX_POINT_LIGHTS, 0},
 		{DIRECTIONAL_LIGHTS_IMPORTANCE_BUFFER,	sizeof(FAliasTableEntry) * DIRECTIONAL_LIGHT_SYSTEM()->MAX_DIRECTIONAL_LIGHTS, 0},
+		{SPOT_LIGHTS_IMPORTANCE_BUFFER,			sizeof(FAliasTableEntry) * SPOT_LIGHT_SYSTEM()->MAX_SPOT_LIGHTS, 0},
 	};
 
 	CreateAndRegisterBufferShortcut(BufferDescriptions);
@@ -1438,6 +1439,7 @@ void FRender::FreeIndependentResources()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(ACTIVE_RAY_COUNT_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(POINT_LIGHTS_IMPORTANCE_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(DIRECTIONAL_LIGHTS_IMPORTANCE_BUFFER);
+	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(SPOT_LIGHTS_IMPORTANCE_BUFFER);
 }
 
 void FRender::CreateAndRegisterBufferShortcut(const std::vector<FBufferDescription>& BufferDescriptions)
