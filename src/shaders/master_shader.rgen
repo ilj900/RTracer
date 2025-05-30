@@ -17,6 +17,24 @@ vec4 DebugGlobal1 = vec4(0);
 vec4 DebugGlobal2 = vec4(0);
 vec4 DebugGlobal3 = vec4(0);
 
+struct FShadingData
+{
+    /// Direction from the camera to the intersection point
+    vec3 WorldSpaceIncomingDirection;
+    /// Direction from the surface
+    vec3 WorldSpaceOutgoingDirection;
+    vec3 TangentSpaceIncomingDirection;
+    vec3 TangentSpaceOutgoingDirection;
+    vec3 NormalInWorldSpace;
+    vec3 NormalInTangentSpace;
+    vec3 IntersectionCoordinatesInWorldSpace;
+    vec2 UVCoordinates;
+    mat3 TNBMatrix;
+    mat3 TransposedTNBMatrix;
+};
+
+FShadingData ShadingData;
+
 #include "common_defines.h"
 #include "common_structures.h"
 #include "random.h"
@@ -212,8 +230,7 @@ float SampleFloat(uint TextureIndex, vec2 TextureCoords)
 
 FDeviceMaterial GetMaterial(vec2 TextureCoords);
 
-void ComputeShadingData(FRenderable Renderable, FHit Hit, FDeviceTransform Transform,
-out vec3 NormalInWorldSpace, out vec3 PointOfIntersectionInWorldSpace, out vec2 TextureCoords)
+void ComputeShadingData(FRenderable Renderable, FHit Hit, FDeviceTransform Transform, FRayData RayData)
 {
     Vertices Verts = Vertices(Renderable.VertexBufferAddress);
     Indices Inds = Indices(Renderable.IndexBufferAddress);
@@ -249,29 +266,35 @@ out vec3 NormalInWorldSpace, out vec3 PointOfIntersectionInWorldSpace, out vec2 
     FVertex V1 = UnpackDeviceVertex(DV1);
     FVertex V2 = UnpackDeviceVertex(DV2);
 
-    NormalInWorldSpace = (V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z);
+    ShadingData.NormalInWorldSpace = (V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z);
     /// Pay more attention to why vector * matrix, and not vice versa
-    NormalInWorldSpace = NormalInWorldSpace * mat3(Transform.InverseModelMatrix);
-    NormalInWorldSpace = normalize(NormalInWorldSpace);
+    ShadingData.NormalInWorldSpace = ShadingData.NormalInWorldSpace * mat3(Transform.InverseModelMatrix);
+    ShadingData.NormalInWorldSpace = normalize(ShadingData.NormalInWorldSpace);
 
-    PointOfIntersectionInWorldSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
-    PointOfIntersectionInWorldSpace = vec3(vec4(PointOfIntersectionInWorldSpace, 1.f) * Transform.ModelMatrix);
+    ShadingData.TNBMatrix = CreateTNBMatrix(ShadingData.NormalInWorldSpace);
+    ShadingData.TransposedTNBMatrix = transpose(ShadingData.TNBMatrix);
+
+    ShadingData.WorldSpaceIncomingDirection = RayData.Direction.xyz;
+    ShadingData.TangentSpaceIncomingDirection = ShadingData.WorldSpaceIncomingDirection * ShadingData.TNBMatrix;
+
+    ShadingData.IntersectionCoordinatesInWorldSpace = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
+    ShadingData.IntersectionCoordinatesInWorldSpace = vec3(vec4(ShadingData.IntersectionCoordinatesInWorldSpace, 1.f) * Transform.ModelMatrix);
 
     /// TODO: Can Hit.HitUV just be used?
-    TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
+    ShadingData.UVCoordinates = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
 }
 
-vec4 ComputeUniformPointLightInput(inout FSamplingState SamplingState, uint PointLightsCount, vec3 Normal, vec3 WorldSpacePosition, out vec3 Direction, out float ImportanceSamplingPDF)
+vec4 ComputeUniformPointLightInput(inout FSamplingState SamplingState, uint PointLightsCount, out vec3 Direction, out float ImportanceSamplingPDF)
 {
     /// Get light index
     const uint LightIndex = uint(RandomFloat(SamplingState) * PointLightsCount);
     FPointLight PointLightUniform = PointLightsBuffer[LightIndex];
-    Direction = PointLightUniform.Position - WorldSpacePosition;
+    Direction = PointLightUniform.Position - ShadingData.IntersectionCoordinatesInWorldSpace;
     float LightDistance = length(Direction);
     Direction = normalize(Direction);
 
     /// Check whether light is over the surface
-    float NDotI = dot(Normal, Direction);
+    float NDotI = dot(ShadingData.NormalInWorldSpace, Direction);
 
     if(NDotI <= 0)
     {
@@ -282,7 +305,7 @@ vec4 ComputeUniformPointLightInput(inout FSamplingState SamplingState, uint Poin
     FRayData RayData;
     RayData.RayFlags = 0;
     RayData.Direction.xyz = Direction;
-    RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
+    RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace + ShadingData.NormalInWorldSpace * FLOAT_EPSILON;
 
     /// Trace the ray
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, LightDistance, 0);
@@ -302,7 +325,7 @@ vec4 ComputeUniformPointLightInput(inout FSamplingState SamplingState, uint Poin
     }
 }
 
-vec4 ComputeImportancePointLightInput(inout FSamplingState SamplingState, uint PointLightsCount, vec3 Normal, vec3 WorldSpacePosition, out vec3 Direction, out float UniformSamplingPDF)
+vec4 ComputeImportancePointLightInput(inout FSamplingState SamplingState, uint PointLightsCount, out vec3 Direction, out float UniformSamplingPDF)
 {
     /// Get light index by importance sampling it
     uint ImportanceLightIndex = uint(RandomFloat(SamplingState) * PointLightsCount);
@@ -315,12 +338,12 @@ vec4 ComputeImportancePointLightInput(inout FSamplingState SamplingState, uint P
 
     FPointLight PointLightImportance = PointLightsBuffer[ImportanceLightIndex];
 
-    Direction = PointLightImportance.Position - WorldSpacePosition;
+    Direction = PointLightImportance.Position - ShadingData.IntersectionCoordinatesInWorldSpace;
     float LightDistance = length(Direction);
     Direction = normalize(Direction);
 
     /// Check whether light is over the surface
-    float NDotI = dot(Normal, Direction);
+    float NDotI = dot(ShadingData.NormalInWorldSpace, Direction);
 
     if(NDotI <= 0)
     {
@@ -331,7 +354,7 @@ vec4 ComputeImportancePointLightInput(inout FSamplingState SamplingState, uint P
     FRayData RayData;
     RayData.RayFlags = 0;
     RayData.Direction.xyz = Direction;
-    RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
+    RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace + ShadingData.NormalInWorldSpace * FLOAT_EPSILON;
 
     /// Trace the ray
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, LightDistance, 0);
@@ -352,7 +375,7 @@ vec4 ComputeImportancePointLightInput(inout FSamplingState SamplingState, uint P
     }
 }
 
-vec4 ComputeUniformDirectionalLightInput(inout FSamplingState SamplingState, uint DirectionalLightsCount, vec3 Normal, vec3 WorldSpacePosition, out vec3 Direction, out float ImportanceSamplingPDF)
+vec4 ComputeUniformDirectionalLightInput(inout FSamplingState SamplingState, uint DirectionalLightsCount, out vec3 Direction, out float ImportanceSamplingPDF)
 {
     /// Get light index by uniformly sampling it
     const uint LightIndex = uint(RandomFloat(SamplingState) * DirectionalLightsCount);
@@ -360,7 +383,7 @@ vec4 ComputeUniformDirectionalLightInput(inout FSamplingState SamplingState, uin
 
     /// Check whether light is over the surface
     Direction = -DirectionalLight.Direction;
-    float NDotI = dot(Normal, Direction);
+    float NDotI = dot(ShadingData.NormalInWorldSpace, Direction);
 
     if(NDotI <= 0)
     {
@@ -371,7 +394,7 @@ vec4 ComputeUniformDirectionalLightInput(inout FSamplingState SamplingState, uin
     FRayData RayData;
     RayData.RayFlags = 0;
     RayData.Direction.xyz = Direction;
-    RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
+    RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace + ShadingData.NormalInWorldSpace * FLOAT_EPSILON;
 
     /// Trace the ray
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
@@ -390,7 +413,7 @@ vec4 ComputeUniformDirectionalLightInput(inout FSamplingState SamplingState, uin
 }
 
 /// Sample a directional light by it's power
-vec4 ComputeImportanceDirectionalLightInput(inout FSamplingState SamplingState, uint DirectionalLightsCount, vec3 Normal, vec3 WorldSpacePosition, out vec3 Direction, out float UniformSamplingPDF)
+vec4 ComputeImportanceDirectionalLightInput(inout FSamplingState SamplingState, uint DirectionalLightsCount, out vec3 Direction, out float UniformSamplingPDF)
 {
     /// Get light index by importance sampling it
     uint LightIndex = uint(RandomFloat(SamplingState) * DirectionalLightsCount);
@@ -406,7 +429,7 @@ vec4 ComputeImportanceDirectionalLightInput(inout FSamplingState SamplingState, 
     Direction = -DirectionalLight.Direction;
 
     /// Check whether light is over the surface
-    float NDotI = dot(Normal, Direction);
+    float NDotI = dot(ShadingData.NormalInWorldSpace, Direction);
 
     if(NDotI <= 0)
     {
@@ -417,7 +440,7 @@ vec4 ComputeImportanceDirectionalLightInput(inout FSamplingState SamplingState, 
     FRayData RayData;
     RayData.RayFlags = 0;
     RayData.Direction.xyz = Direction;
-    RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
+    RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace + ShadingData.NormalInWorldSpace * FLOAT_EPSILON;
 
     /// Trace the ray
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
@@ -436,17 +459,17 @@ vec4 ComputeImportanceDirectionalLightInput(inout FSamplingState SamplingState, 
     }
 }
 
-vec4 ComputeUniformSpotLightInput(inout FSamplingState SamplingState, uint SpotLightsCount, vec3 Normal, vec3 WorldSpacePosition, out vec3 Direction, out float ImportanceSamplingPDF)
+vec4 ComputeUniformSpotLightInput(inout FSamplingState SamplingState, uint SpotLightsCount, out vec3 Direction, out float ImportanceSamplingPDF)
 {
     /// Get light index
     const uint LightIndex = uint(RandomFloat(SamplingState) * SpotLightsCount);
     FSpotLight SpotLight = SpotLightsBuffer[LightIndex];
-    Direction = SpotLight.Position - WorldSpacePosition;
+    Direction = SpotLight.Position - ShadingData.IntersectionCoordinatesInWorldSpace;
     float LightDistance = length(Direction);
     Direction = normalize(Direction);
 
     /// Check whether light is over the surface
-    float NDotI = dot(Normal, Direction);
+    float NDotI = dot(ShadingData.NormalInWorldSpace, Direction);
 
     if(NDotI <= 0)
     {
@@ -464,7 +487,7 @@ vec4 ComputeUniformSpotLightInput(inout FSamplingState SamplingState, uint SpotL
     FRayData RayData;
     RayData.RayFlags = 0;
     RayData.Direction.xyz = Direction;
-    RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
+    RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace + ShadingData.NormalInWorldSpace * FLOAT_EPSILON;
 
     /// Trace the ray
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, LightDistance, 0);
@@ -494,7 +517,7 @@ vec4 ComputeUniformSpotLightInput(inout FSamplingState SamplingState, uint SpotL
     }
 }
 
-vec4 ComputeImportanceSpotLightInput(inout FSamplingState SamplingState, uint SpotLightsCount, vec3 Normal, vec3 WorldSpacePosition, out vec3 Direction, out float UniformSamplingPDF)
+vec4 ComputeImportanceSpotLightInput(inout FSamplingState SamplingState, uint SpotLightsCount, out vec3 Direction, out float UniformSamplingPDF)
 {
     uint ImportanceLightIndex = uint(RandomFloat(SamplingState) * SpotLightsCount);
     FDeviceAliasTableEntry ImportanceSampleTableEntry = SpotLightsImportanceBuffer[ImportanceLightIndex];
@@ -506,12 +529,12 @@ vec4 ComputeImportanceSpotLightInput(inout FSamplingState SamplingState, uint Sp
 
     FSpotLight SpotLightImportance = SpotLightsBuffer[ImportanceLightIndex];
 
-    Direction = SpotLightImportance.Position - WorldSpacePosition;
+    Direction = SpotLightImportance.Position - ShadingData.IntersectionCoordinatesInWorldSpace;
     float LightDistance = length(Direction);
     Direction = normalize(Direction);
 
     /// Check whether light is over the surface
-    float NDotI = dot(Normal, Direction);
+    float NDotI = dot(ShadingData.NormalInWorldSpace, Direction);
 
     if(NDotI <= 0)
     {
@@ -529,7 +552,7 @@ vec4 ComputeImportanceSpotLightInput(inout FSamplingState SamplingState, uint Sp
     FRayData RayData;
     RayData.RayFlags = 0;
     RayData.Direction.xyz = Direction;
-    RayData.Origin.xyz = WorldSpacePosition + Normal * FLOAT_EPSILON;
+    RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace + ShadingData.NormalInWorldSpace * FLOAT_EPSILON;
 
     /// Trace the ray
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, LightDistance, 0);
@@ -618,38 +641,32 @@ void main()
     FRenderable Renderable = Renderables[Hit.RenderableIndex];
     FDeviceTransform Transform = DeviceTransforms[Renderable.TransformIndex];
 
-    vec3 NormalInWorldSpace = vec3(1);
-    vec3 WorldSpacePosition = vec3(1);
-    vec2 TextureCoords = vec2(1);
-    ComputeShadingData(Renderable, Hit, Transform, NormalInWorldSpace, WorldSpacePosition, TextureCoords);
-    float NDotI = dot(NormalInWorldSpace.xyz, RayData.Direction.xyz);
+    ComputeShadingData(Renderable, Hit, Transform, RayData);
+    float NDotI = dot(ShadingData.NormalInWorldSpace, -ShadingData.WorldSpaceIncomingDirection);
     bool bFrontFacing = true;
-    float Depth = length(WorldSpacePosition - RayData.Origin.xyz) * 0.0001f;
+    float Depth = length(ShadingData.IntersectionCoordinatesInWorldSpace - RayData.Origin.xyz) * 0.0001f;
 
-    if (NDotI > 0)
+    if (NDotI < 0)
     {
         bFrontFacing = false;
-        NormalInWorldSpace = -NormalInWorldSpace;
+        ShadingData.NormalInWorldSpace = -ShadingData.NormalInWorldSpace;
     }
 
     /// Fetch material data
-    FDeviceMaterial Material = GetMaterial(TextureCoords);
+    FDeviceMaterial Material = GetMaterial(ShadingData.UVCoordinates);
     /// Process material interaction
-    vec3 Incoming = RayData.Direction.xyz;
-    vec3 Outgoing = vec3(0);
     uint RayType = 0u;
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
-    float MaterialScatteringPDF = ScatterMaterial(Material, Incoming, Outgoing, RayType, RayData.Eta, NormalInWorldSpace, SamplingState, bFrontFacing);
-    vec3 MaterialSamplingResult = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, RayData.Direction.xyz, NormalInWorldSpace);
-    NDotI = clamp(dot(-Incoming, NormalInWorldSpace), 0, 1);
+    float MaterialScatteringPDF = ScatterMaterial(Material, RayType, RayData.Eta, SamplingState, bFrontFacing);
+    vec3 MaterialSamplingResult = EvaluateMaterialInteraction(Material, RayData.RayFlags);
     MaterialSamplingResult = MaterialSamplingResult * NDotI / MaterialScatteringPDF;
 
     vec3 CumulativeMaterialColor = CumulativeMaterialColorBuffer[PixelIndex].xyz;
     CumulativeMaterialColor *= MaterialSamplingResult.xyz;
     CumulativeMaterialColorBuffer[PixelIndex] = vec4(CumulativeMaterialColor, 1);
 
-    RayData.Direction.xyz = Outgoing;
-    RayData.Origin.xyz = WorldSpacePosition;
+    RayData.Direction.xyz = ShadingData.WorldSpaceOutgoingDirection;
+    RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace;
     RayData.RayFlags = (RayType & 0x0000FFFE) | (RayData.RayFlags & ~0x0000FFFE);
 
     /// Sample point light
@@ -668,8 +685,8 @@ void main()
         float UniformSamplingImportanceSamplePDF = 0;
         float ImportanceSamplingUniformSamplePDF = 0;
 
-        UniformPointLightSamplingResult = ComputeUniformPointLightInput(SamplingState, UtilityData.ActivePointLightsCount, NormalInWorldSpace, WorldSpacePosition, UniformOutgoingDirection, UniformSamplingImportanceSamplePDF);
-        ImportancePointLightSamplingResult = ComputeImportancePointLightInput(SamplingState, UtilityData.ActivePointLightsCount, NormalInWorldSpace, WorldSpacePosition, ImportanceOutgoingDirection, ImportanceSamplingUniformSamplePDF);
+        UniformPointLightSamplingResult = ComputeUniformPointLightInput(SamplingState, UtilityData.ActivePointLightsCount, UniformOutgoingDirection, UniformSamplingImportanceSamplePDF);
+        ImportancePointLightSamplingResult = ComputeImportancePointLightInput(SamplingState, UtilityData.ActivePointLightsCount, ImportanceOutgoingDirection, ImportanceSamplingUniformSamplePDF);
 
         vec3 MaterialInteractionEvaluationResultUniformSampling = vec3(0); /// Interaction result of uniformly sampled point light and the surface
         vec3 MaterialInteractionEvaluationResultImportanceSampling = vec3(0); /// Interaction result of importance sampled point light and the surface
@@ -679,14 +696,14 @@ void main()
 
         if (UniformPointLightSamplingResult.w > 0.)
         {
-            MaterialInteractionEvaluationResultUniformSampling = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, UniformOutgoingDirection, NormalInWorldSpace);
+            MaterialInteractionEvaluationResultUniformSampling = EvaluateMaterialInteractionFromDirection(Material, RayData.RayFlags, UniformOutgoingDirection);
             MaterialInteractionEvaluationResultUniformSampling = MaterialInteractionEvaluationResultUniformSampling * UniformPointLightSamplingResult.xyz;
             W1 = UniformPointLightSamplingResult.w / (UniformPointLightSamplingResult.x + UniformSamplingImportanceSamplePDF);
         }
 
         if (ImportancePointLightSamplingResult.w > 0.)
         {
-            MaterialInteractionEvaluationResultImportanceSampling = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, ImportanceOutgoingDirection, NormalInWorldSpace);
+            MaterialInteractionEvaluationResultImportanceSampling = EvaluateMaterialInteractionFromDirection(Material, RayData.RayFlags, ImportanceOutgoingDirection);
             MaterialInteractionEvaluationResultImportanceSampling = MaterialInteractionEvaluationResultImportanceSampling * ImportancePointLightSamplingResult.xyz;
             W2 = ImportancePointLightSamplingResult.w / (ImportancePointLightSamplingResult.w + ImportanceSamplingUniformSamplePDF);
         }
@@ -705,8 +722,8 @@ void main()
         float UniformSamplingImportanceSamplePDF = 0;
         float ImportanceSamplingUniformSamplePDF = 0;
 
-        UniformDirectionalLightSamplingResult = ComputeUniformDirectionalLightInput(SamplingState, UtilityData.ActiveDirectionalLightsCount, NormalInWorldSpace, WorldSpacePosition, UniformOutgoingDirection, UniformSamplingImportanceSamplePDF);
-        ImportanceDirectionalLightSamplingResult = ComputeImportanceDirectionalLightInput(SamplingState, UtilityData.ActiveDirectionalLightsCount, NormalInWorldSpace, WorldSpacePosition, ImportanceOutgoingDirection, ImportanceSamplingUniformSamplePDF);
+        UniformDirectionalLightSamplingResult = ComputeUniformDirectionalLightInput(SamplingState, UtilityData.ActiveDirectionalLightsCount, UniformOutgoingDirection, UniformSamplingImportanceSamplePDF);
+        ImportanceDirectionalLightSamplingResult = ComputeImportanceDirectionalLightInput(SamplingState, UtilityData.ActiveDirectionalLightsCount, ImportanceOutgoingDirection, ImportanceSamplingUniformSamplePDF);
 
         vec3 MaterialInteractionEvaluationResultUniformSampling = vec3(0); /// Interaction result of uniformly sampled directional light and the surface
         vec3 MaterialInteractionEvaluationResultImportanceSampling = vec3(0); /// Interaction result of importance sampled directional light and the surface
@@ -716,14 +733,14 @@ void main()
 
         if (UniformDirectionalLightSamplingResult.w != 0)
         {
-            MaterialInteractionEvaluationResultUniformSampling = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, UniformOutgoingDirection, NormalInWorldSpace);
+            MaterialInteractionEvaluationResultUniformSampling = EvaluateMaterialInteractionFromDirection(Material, RayData.RayFlags, UniformOutgoingDirection);
             MaterialInteractionEvaluationResultUniformSampling = MaterialInteractionEvaluationResultUniformSampling * UniformDirectionalLightSamplingResult.xyz;
             W1 = UniformDirectionalLightSamplingResult.w / (UniformDirectionalLightSamplingResult.x + UniformSamplingImportanceSamplePDF);
         }
 
         if (ImportanceDirectionalLightSamplingResult.w != 0)
         {
-            MaterialInteractionEvaluationResultImportanceSampling = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, ImportanceOutgoingDirection, NormalInWorldSpace);
+            MaterialInteractionEvaluationResultImportanceSampling = EvaluateMaterialInteractionFromDirection(Material, RayData.RayFlags, ImportanceOutgoingDirection);
             MaterialInteractionEvaluationResultImportanceSampling = MaterialInteractionEvaluationResultImportanceSampling * ImportanceDirectionalLightSamplingResult.xyz;
             W2 = ImportanceDirectionalLightSamplingResult.w / (ImportanceDirectionalLightSamplingResult.w + ImportanceSamplingUniformSamplePDF);
         }
@@ -741,8 +758,8 @@ void main()
         float UniformSamplingImportanceSamplePDF = 0;
         float ImportanceSamplingUniformSamplePDF = 0;
 
-        UniformSpotLightSamplingResult = ComputeUniformSpotLightInput(SamplingState, UtilityData.ActiveSpotLightsCount, NormalInWorldSpace, WorldSpacePosition, UniformOutgoingDirection, UniformSamplingImportanceSamplePDF);
-        ImportanceSpotLightSamplingResult = ComputeImportanceSpotLightInput(SamplingState, UtilityData.ActiveSpotLightsCount, NormalInWorldSpace, WorldSpacePosition, ImportanceOutgoingDirection, ImportanceSamplingUniformSamplePDF);
+        UniformSpotLightSamplingResult = ComputeUniformSpotLightInput(SamplingState, UtilityData.ActiveSpotLightsCount, UniformOutgoingDirection, UniformSamplingImportanceSamplePDF);
+        ImportanceSpotLightSamplingResult = ComputeImportanceSpotLightInput(SamplingState, UtilityData.ActiveSpotLightsCount, ImportanceOutgoingDirection, ImportanceSamplingUniformSamplePDF);
 
         vec3 MaterialInteractionEvaluationResultUniformSampling = vec3(0); /// Interaction result of uniformly sampled directional light and the surface
         vec3 MaterialInteractionEvaluationResultImportanceSampling = vec3(0); /// Interaction result of importance sampled directional light and the surface
@@ -752,14 +769,14 @@ void main()
 
         if (UniformSpotLightSamplingResult.w != 0)
         {
-            MaterialInteractionEvaluationResultUniformSampling = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, UniformOutgoingDirection, NormalInWorldSpace);
+            MaterialInteractionEvaluationResultUniformSampling = EvaluateMaterialInteractionFromDirection(Material, RayData.RayFlags, UniformOutgoingDirection);
             MaterialInteractionEvaluationResultUniformSampling = MaterialInteractionEvaluationResultUniformSampling * UniformSpotLightSamplingResult.xyz;
             W1 = UniformSpotLightSamplingResult.w / (UniformSpotLightSamplingResult.x + UniformSamplingImportanceSamplePDF);
         }
 
         if (ImportanceSpotLightSamplingResult.w != 0)
         {
-            MaterialInteractionEvaluationResultImportanceSampling = EvaluateMaterialInteraction(Material, RayData.RayFlags, Incoming, ImportanceOutgoingDirection, NormalInWorldSpace);
+            MaterialInteractionEvaluationResultImportanceSampling = EvaluateMaterialInteractionFromDirection(Material, RayData.RayFlags, ImportanceOutgoingDirection);
             MaterialInteractionEvaluationResultImportanceSampling = MaterialInteractionEvaluationResultImportanceSampling * ImportanceSpotLightSamplingResult.xyz;
             W2 = ImportanceSpotLightSamplingResult.w / (ImportanceSpotLightSamplingResult.w + ImportanceSamplingUniformSamplePDF);
         }
@@ -789,12 +806,12 @@ void main()
     }
 
     RayDataBuffer[PixelIndex] = RayData;
-    NormalBuffer[PixelIndex] = vec4(NormalInWorldSpace, 1);
+    NormalBuffer[PixelIndex] = vec4(ShadingData.NormalInWorldSpace, 1);
 
     if(PushConstants.BounceIndex == 0)
     {
         //DebugGlobal0 = bFrontFacing ? vec4(0.2f, 0.7f, 0.2f, 0.f) : vec4(0.7f, 0.2f, 0.2f, 0.f);
-        SaveAOVs(PixelCoords, NormalInWorldSpace, NormalInWorldSpace, TextureCoords, WorldSpacePosition, 1., Depth,
+        SaveAOVs(PixelCoords, ShadingData.NormalInWorldSpace, ShadingData.NormalInWorldSpace, ShadingData.UVCoordinates, ShadingData.IntersectionCoordinatesInWorldSpace, 1., Depth,
         Material.BaseColor, TotalIncomingLight, Hit.RenderableIndex, Hit.PrimitiveIndex, PushConstants.MaterialIndex,
         DebugGlobal0, DebugGlobal1, DebugGlobal2, DebugGlobal3);
     }
