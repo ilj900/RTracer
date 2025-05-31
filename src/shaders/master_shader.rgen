@@ -650,6 +650,7 @@ void main()
     {
         bFrontFacing = false;
         ShadingData.NormalInWorldSpace = -ShadingData.NormalInWorldSpace;
+        NDotI = abs(NDotI);
     }
 
     /// Fetch material data

@@ -148,23 +148,35 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout float Et
 		{
 			vec3 TangentSpaceViewDirection = ShadingData.TangentSpaceIncomingDirection;
 
-			/// try to multi-scatter the ray up to 16 times
-			for (int i = 0; i < 16; ++i)
+			if (Material.SpecularRoughness == 0.f)
 			{
-				vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
-				/// We invert the TangentSpaceViewDirection because if i == 0 then it's ray's direction that points to (under) the surface, if i != 0, the only way we get here is if ray is still pointing under the surface.
-				vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
-				TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
+				TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, vec3(0, 1, 0));
 
-				/// If ray's on the right side of the surface, then leave it
-				if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
+				ShadingData.TangentSpaceOutgoingDirection = TangentSpaceViewDirection;
+				ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
+
+				PDF = 1.f;
+			}
+			else
+			{
+				/// try to multi-scatter the ray up to 16 times
+				for (int i = 0; i < 16; ++i)
 				{
-					ShadingData.TangentSpaceOutgoingDirection = TangentSpaceViewDirection;
-					ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
+					vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
+					/// We invert the TangentSpaceViewDirection because if i == 0 then it's ray's direction that points to (under) the surface, if i != 0, the only way we get here is if ray is still pointing under the surface.
+					vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
+					TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
 
-					vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + ShadingData.TangentSpaceOutgoingDirection));
-					PDF = VNDPDF(ApproximatedNormal, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, -ShadingData.TangentSpaceIncomingDirection);
-					break;
+					/// If ray's on the right side of the surface, then leave it
+					if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
+					{
+						ShadingData.TangentSpaceOutgoingDirection = TangentSpaceViewDirection;
+						ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
+
+						vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + ShadingData.TangentSpaceOutgoingDirection));
+						PDF = VNDPDF(ApproximatedNormal, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, -ShadingData.TangentSpaceIncomingDirection);
+						break;
+					}
 				}
 			}
 			/// If ray failed to leave the surface, then it's direction is not changed, and thus shouldn't be used later
