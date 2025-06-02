@@ -480,4 +480,65 @@ vec3 EvaluateMaterialInteractionFromDirection(FDeviceMaterial Material, uint Ray
 	return BXDF;
 }
 
+/// Evaluate PDF of ray coming from that direction
+float EvaluateScatteringPDF(FDeviceMaterial Material, uint RayType, vec3 WorldSpaceLightDirection)
+{
+	vec3 TangentSpaceLightDirection = WorldSpaceLightDirection * ShadingData.TNBMatrix;
+
+	switch (RayType)
+	{
+		case DIFFUSE_LAYER:
+		{
+#define OREN_NAYAR
+#ifdef OREN_NAYAR
+			return PDFOrenNayar(TangentSpaceLightDirection);
+#else
+			return PDFLambertian(TangentSpaceLightDirection);
+#endif
+		}
+		case SPECULAR_LAYER:
+		{
+			if (Material.SpecularRoughness == 0.f)
+			{
+				if (ShadingData.WorldSpaceOutgoingDirection == WorldSpaceLightDirection)
+				{
+					return 1.f;
+				}
+				else
+				{
+					return 0.f;
+				}
+			}
+			else
+			{
+				vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + TangentSpaceLightDirection));
+				return VNDPDF(ApproximatedNormal, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, -ShadingData.TangentSpaceIncomingDirection);
+			}
+		}
+		case TRANSMISSION_LAYER:
+		{
+			/// If the ray is over the surface, then in case of transmissive it cannot be refracted.
+			return 0.f;
+		}
+		case SUBSURFACE_LAYER:
+		{
+			return 1.f;
+		}
+		case SHEEN_LAYER:
+		{
+			return 1.f;
+		}
+		case COAT_LAYER:
+		{
+			return 1.f;
+		}
+		case EMISSION_LAYER:
+		{
+			return 1.f;
+		}
+	}
+
+	return 0.f;
+}
+
 #endif // PROCESS_MATERIAL_INTERACTION_H
