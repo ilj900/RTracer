@@ -667,6 +667,7 @@ vec4 ComputeImportanceIBLInput(inout FSamplingState SamplingState, out vec3 Ligh
     /// And if we didn't hit any geometry, then we sample the IBL
     if (HitPayload.RenderableIndex == UINT_MAX)
     {
+        float PDF = IBLPDFBuffer[TexelIndex];
         ImportanceSamplingUniformPDF = 0.5f * M_INV_PI;
         ImportanceSamplingBXDFPDF = EvaluateScatteringPDF(Material, RayType, LightDirection);
         return vec4(texture(IBLTextureSampler, UVCoordinates).xyz * NDotL / PDF, PDF);
@@ -928,9 +929,9 @@ void main()
         float ImportanceSamplingBXDFPDF = 0.f;
         float BXDFSamplingUniformPDF = 0.f;
         float BXDFSamplingImportancePDF = 0.f;
-        float W1 = 0;
-        float W2 = 0;
-        float W3 = 0;
+        float W1 = 0.f;
+        float W2 = 0.f;
+        float W3 = 0.f;
 
         vec4 UniformIBLSamplingResult = ComputeUniformIBLInput(SamplingState, UniformOutgoingDirection, UniformSamplingImportancePDF, UniformSamplingBXDFPDF);
         vec4 ImportanceIBLSamplingResult = ComputeImportanceIBLInput(SamplingState, ImportanceOutgoingDirection, ImportanceSamplingUniformPDF, ImportanceSamplingBXDFPDF);
@@ -944,26 +945,22 @@ void main()
         {
             MaterialInteractionEvaluationResult1 = EvaluateMaterialInteractionFromDirection(Material, RayType, UniformOutgoingDirection);
             MaterialInteractionEvaluationResult1 = MaterialInteractionEvaluationResult1 * UniformIBLSamplingResult.xyz;
-            W1 = UniformIBLSamplingResult.w / (UniformIBLSamplingResult.x + UniformSamplingImportancePDF + UniformSamplingBXDFPDF);
+            W1 = UniformIBLSamplingResult.w / (UniformIBLSamplingResult.w + UniformSamplingImportancePDF + UniformSamplingBXDFPDF);
         }
 
         if (ImportanceIBLSamplingResult.w != 0)
         {
             MaterialInteractionEvaluationResult2 = EvaluateMaterialInteractionFromDirection(Material, RayType, ImportanceOutgoingDirection);
             MaterialInteractionEvaluationResult2 = MaterialInteractionEvaluationResult2 * ImportanceIBLSamplingResult.xyz;
-            W2 = ImportanceIBLSamplingResult.w / (ImportanceIBLSamplingResult.x + ImportanceSamplingUniformPDF + ImportanceSamplingBXDFPDF);
+            W2 = ImportanceIBLSamplingResult.w / (ImportanceIBLSamplingResult.w + ImportanceSamplingUniformPDF + ImportanceSamplingBXDFPDF);
         }
 
         if (BXDFIBLSamplingResult.w != 0)
         {
             MaterialInteractionEvaluationResult3 = EvaluateMaterialInteractionFromDirection(Material, RayType, BXDFOutgoingDirection);
             MaterialInteractionEvaluationResult3 = MaterialInteractionEvaluationResult3 * BXDFIBLSamplingResult.xyz;
-            W3 = BXDFIBLSamplingResult.w / (BXDFIBLSamplingResult.x + BXDFSamplingUniformPDF + BXDFSamplingImportancePDF);
+            W3 = BXDFIBLSamplingResult.w / (BXDFIBLSamplingResult.w + BXDFSamplingUniformPDF + BXDFSamplingImportancePDF);
         }
-
-        DebugGlobal0.xyz = vec3(ImportanceIBLSamplingResult.w);
-        DebugGlobal1.xyz = vec3(UniformSamplingImportancePDF);
-        DebugGlobal2.xyz = vec3(BXDFSamplingImportancePDF);
 
         IBLResult = W1 * MaterialInteractionEvaluationResult1 + W2 * MaterialInteractionEvaluationResult2 + W3 * MaterialInteractionEvaluationResult3;
         TotalIncomingLight += UniformIBLSamplingResult.xyz + ImportanceIBLSamplingResult.xyz + BXDFIBLSamplingResult.xyz;
