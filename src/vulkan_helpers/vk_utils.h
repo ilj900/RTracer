@@ -219,7 +219,7 @@ std::pair<std::vector<FAliasTableEntry>, std::vector<float>> GenerateImportanceM
 		}
 	}
 
-	std::vector<double> Probabilities(PixelsCount);
+	std::vector<double> Probabilities(PixelsCount, 1);
 	std::vector<uint32_t> Alias(PixelsCount);
 
 	/// We run it until there's only one element left in each group
