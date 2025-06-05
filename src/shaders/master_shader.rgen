@@ -135,6 +135,7 @@ layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_RENDER_ITERATI
     uint RenderIteration;
 };
 
+/// TODO: Rename this buffer
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_CUMULATIVE_MATERIAL_COLOR_BUFFER_INDEX) buffer CumulativeMaterialColorBufferObject
 {
     vec4 CumulativeMaterialColorBuffer[];
@@ -629,9 +630,9 @@ vec4 ComputeUniformIBLInput(inout FSamplingState SamplingState, out vec3 LightDi
 
 vec4 ComputeImportanceIBLInput(inout FSamplingState SamplingState, out vec3 LightDirection, inout float ImportanceSamplingUniformPDF, inout float ImportanceSamplingBXDFPDF)
 {
-    const vec2 SampleUV = Sample2DUnitQuad(SamplingState);
+    vec2 UVCoordinates = Sample2DUnitQuad(SamplingState);
     const uvec2 IBLSize = textureSize(IBLTextureSampler, 0);
-    uint TexelIndex = uint(IBLSize.x * IBLSize.y * SampleUV.y) + uint(IBLSize.x * SampleUV.x);
+    uint TexelIndex = uint(IBLSize.x * IBLSize.y * UVCoordinates.y) + uint(IBLSize.x * UVCoordinates.x);
 
     FDeviceAliasTableEntry AliasTableEntry = IBLImportanceBuffer[TexelIndex];
     /// Get texel index
@@ -640,9 +641,7 @@ vec4 ComputeImportanceIBLInput(inout FSamplingState SamplingState, out vec3 Ligh
         TexelIndex = AliasTableEntry.Alias;
     }
 
-    /// Transform texel index into actual UV coordinates
-    vec2 UVCoordinates = vec2((float(TexelIndex % IBLSize.x) + 0.5) / float(IBLSize.x), (float(TexelIndex / IBLSize.x) + 0.5) / float(IBLSize.y));
-    /// Map them to spherical coordinates
+    /// Map UV coordinates to spherical coordinates
     vec2 SphericalCoordinates = UVCoordinates * vec2(M_2_PI, M_PI);
     SphericalCoordinates.x -= M_PI_2;
     LightDirection.x = sin(SphericalCoordinates.y) * cos(SphericalCoordinates.x);
@@ -790,12 +789,11 @@ void main()
     RayType = 0u;
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
     float MaterialScatteringPDF = ScatterMaterial(Material, RayType, RayData.Eta, SamplingState, bFrontFacing);
-    vec3 MaterialSamplingResult = EvaluateMaterialInteraction(Material, RayData.RayFlags);
-    MaterialSamplingResult = MaterialSamplingResult * NDotI / MaterialScatteringPDF;
+    vec3 BxDF = EvaluateMaterialInteraction(Material, RayData.RayFlags);
+    vec3 ThroughputForThisBounce = BxDF * NDotI / MaterialScatteringPDF;
 
-    vec3 CumulativeMaterialColor = CumulativeMaterialColorBuffer[PixelIndex].xyz;
-    CumulativeMaterialColor *= MaterialSamplingResult.xyz;
-    CumulativeMaterialColorBuffer[PixelIndex] = vec4(CumulativeMaterialColor, 1);
+    vec3 ThroughputBeforeThisBounce = CumulativeMaterialColorBuffer[PixelIndex].xyz;
+    CumulativeMaterialColorBuffer[PixelIndex] = vec4(ThroughputBeforeThisBounce * ThroughputForThisBounce, 1);
 
     RayData.Direction.xyz = ShadingData.WorldSpaceOutgoingDirection;
     RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace;
@@ -830,14 +828,14 @@ void main()
         if (UniformPointLightSamplingResult.w > 0.)
         {
             MaterialInteractionEvaluationResultUniformSampling = EvaluateMaterialInteractionFromDirection(Material, RayType, UniformOutgoingDirection);
-            MaterialInteractionEvaluationResultUniformSampling = MaterialInteractionEvaluationResultUniformSampling * UniformPointLightSamplingResult.xyz;
+            MaterialInteractionEvaluationResultUniformSampling = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResultUniformSampling * UniformPointLightSamplingResult.xyz;
             W1 = UniformPointLightSamplingResult.w / (UniformPointLightSamplingResult.x + UniformSamplingImportanceSamplePDF);
         }
 
         if (ImportancePointLightSamplingResult.w > 0.)
         {
             MaterialInteractionEvaluationResultImportanceSampling = EvaluateMaterialInteractionFromDirection(Material, RayType, ImportanceOutgoingDirection);
-            MaterialInteractionEvaluationResultImportanceSampling = MaterialInteractionEvaluationResultImportanceSampling * ImportancePointLightSamplingResult.xyz;
+            MaterialInteractionEvaluationResultImportanceSampling = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResultImportanceSampling * ImportancePointLightSamplingResult.xyz;
             W2 = ImportancePointLightSamplingResult.w / (ImportancePointLightSamplingResult.w + ImportanceSamplingUniformSamplePDF);
         }
 
@@ -867,14 +865,14 @@ void main()
         if (UniformDirectionalLightSamplingResult.w != 0)
         {
             MaterialInteractionEvaluationResultUniformSampling = EvaluateMaterialInteractionFromDirection(Material, RayType, UniformOutgoingDirection);
-            MaterialInteractionEvaluationResultUniformSampling = MaterialInteractionEvaluationResultUniformSampling * UniformDirectionalLightSamplingResult.xyz;
+            MaterialInteractionEvaluationResultUniformSampling = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResultUniformSampling * UniformDirectionalLightSamplingResult.xyz;
             W1 = UniformDirectionalLightSamplingResult.w / (UniformDirectionalLightSamplingResult.x + UniformSamplingImportanceSamplePDF);
         }
 
         if (ImportanceDirectionalLightSamplingResult.w != 0)
         {
             MaterialInteractionEvaluationResultImportanceSampling = EvaluateMaterialInteractionFromDirection(Material, RayType, ImportanceOutgoingDirection);
-            MaterialInteractionEvaluationResultImportanceSampling = MaterialInteractionEvaluationResultImportanceSampling * ImportanceDirectionalLightSamplingResult.xyz;
+            MaterialInteractionEvaluationResultImportanceSampling = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResultImportanceSampling * ImportanceDirectionalLightSamplingResult.xyz;
             W2 = ImportanceDirectionalLightSamplingResult.w / (ImportanceDirectionalLightSamplingResult.w + ImportanceSamplingUniformSamplePDF);
         }
 
@@ -903,14 +901,14 @@ void main()
         if (UniformSpotLightSamplingResult.w != 0)
         {
             MaterialInteractionEvaluationResultUniformSampling = EvaluateMaterialInteractionFromDirection(Material, RayType, UniformOutgoingDirection);
-            MaterialInteractionEvaluationResultUniformSampling = MaterialInteractionEvaluationResultUniformSampling * UniformSpotLightSamplingResult.xyz;
+            MaterialInteractionEvaluationResultUniformSampling = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResultUniformSampling * UniformSpotLightSamplingResult.xyz;
             W1 = UniformSpotLightSamplingResult.w / (UniformSpotLightSamplingResult.x + UniformSamplingImportanceSamplePDF);
         }
 
         if (ImportanceSpotLightSamplingResult.w != 0)
         {
             MaterialInteractionEvaluationResultImportanceSampling = EvaluateMaterialInteractionFromDirection(Material, RayType, ImportanceOutgoingDirection);
-            MaterialInteractionEvaluationResultImportanceSampling = MaterialInteractionEvaluationResultImportanceSampling * ImportanceSpotLightSamplingResult.xyz;
+            MaterialInteractionEvaluationResultImportanceSampling = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResultImportanceSampling * ImportanceSpotLightSamplingResult.xyz;
             W2 = ImportanceSpotLightSamplingResult.w / (ImportanceSpotLightSamplingResult.w + ImportanceSamplingUniformSamplePDF);
         }
 
@@ -944,21 +942,21 @@ void main()
         if (UniformIBLSamplingResult.w != 0)
         {
             MaterialInteractionEvaluationResult1 = EvaluateMaterialInteractionFromDirection(Material, RayType, UniformOutgoingDirection);
-            MaterialInteractionEvaluationResult1 = MaterialInteractionEvaluationResult1 * UniformIBLSamplingResult.xyz;
+            MaterialInteractionEvaluationResult1 = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResult1 * UniformIBLSamplingResult.xyz;
             W1 = UniformIBLSamplingResult.w / (UniformIBLSamplingResult.w + UniformSamplingImportancePDF + UniformSamplingBXDFPDF);
         }
 
         if (ImportanceIBLSamplingResult.w != 0)
         {
             MaterialInteractionEvaluationResult2 = EvaluateMaterialInteractionFromDirection(Material, RayType, ImportanceOutgoingDirection);
-            MaterialInteractionEvaluationResult2 = MaterialInteractionEvaluationResult2 * ImportanceIBLSamplingResult.xyz;
+            MaterialInteractionEvaluationResult2 = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResult2 * ImportanceIBLSamplingResult.xyz;
             W2 = ImportanceIBLSamplingResult.w / (ImportanceIBLSamplingResult.w + ImportanceSamplingUniformPDF + ImportanceSamplingBXDFPDF);
         }
 
         if (BXDFIBLSamplingResult.w != 0)
         {
             MaterialInteractionEvaluationResult3 = EvaluateMaterialInteractionFromDirection(Material, RayType, BXDFOutgoingDirection);
-            MaterialInteractionEvaluationResult3 = MaterialInteractionEvaluationResult3 * BXDFIBLSamplingResult.xyz;
+            MaterialInteractionEvaluationResult3 = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResult3 * BXDFIBLSamplingResult.xyz;
             W3 = BXDFIBLSamplingResult.w / (BXDFIBLSamplingResult.w + BXDFSamplingUniformPDF + BXDFSamplingImportancePDF);
         }
 

@@ -34,6 +34,7 @@ layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_MATERIALS_OFFSET
     uint MaterialsOffsets[];
 };
 
+/// TODO: Not needed?
 layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_PREVIOUS_BOUNCE_NORMAL_AOV_DATA_BUFFER) buffer PreviousBounceNormalAOVDataBufferObject
 {
     vec4 PreviousBounceNormalAOVData[];
@@ -136,6 +137,7 @@ void main()
     FRayData RayData = FetchRayData(NewPixelIndex);
     float Phi = atan(RayData.Direction.z, RayData.Direction.x);
     Phi += M_PI_2;
+    Phi = mod(Phi, M_2_PI);
     float Theta = acos(RayData.Direction.y);
     Phi /= M_2_PI;
     Theta /= M_PI;
@@ -148,24 +150,16 @@ void main()
     }
 #endif
 
-    vec3 SampledColor = vec3(1, 0, 1);
-
     if (PushConstants.BounceIndex == 0)
     {
-        SampledColor = vec3(texture(IBLTextureSamplerNearest, vec2(Phi, Theta)));
+        vec3 SampledColor = vec3(texture(IBLTextureSamplerNearest, vec2(Phi, Theta)));
+        imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(SampledColor, 0.f));
     }
     else
     {
-        SampledColor = vec3(texture(IBLTextureSamplerNearest, vec2(Phi, Theta)));
-        float NDotI = dot(PreviousBounceNormalAOVData[NewPixelIndex].xyz, RayData.Direction.xyz);
-        SampledColor *= abs(NDotI);
+        vec3 ThroughputColor = ThroughputBuffer[NewPixelIndex].xyz;
+        imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(ThroughputColor, 1.f));
     }
-
-    vec3 CumulativeMaterialColor = CumulativeMaterialColorBuffer[NewPixelIndex].xyz;
-    vec3 ThroughputColor = ThroughputBuffer[NewPixelIndex].xyz;
-    vec3 Result = ThroughputColor + CumulativeMaterialColor * SampledColor;
-
-    imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(Result, PushConstants.BounceIndex == 0 ? 0.f : 1.f));
 
     MarkRayMissed(NewPixelIndex);
     MaterialsIndexAOV[NewPixelIndex] = INACTIVE_MATERIAL_INDEX;
