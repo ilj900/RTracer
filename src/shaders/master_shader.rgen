@@ -639,6 +639,8 @@ vec4 ComputeImportanceIBLInput(inout FSamplingState SamplingState, out vec3 Ligh
     if (RandomFloat(SamplingState) > AliasTableEntry.Threshold)
     {
         TexelIndex = AliasTableEntry.Alias;
+        /// Transform texel index into actual UV coordinates
+        UVCoordinates = vec2((float(TexelIndex % IBLSize.x) + 0.5) / float(IBLSize.x), (float(TexelIndex / IBLSize.x) + 0.5) / float(IBLSize.y));
     }
 
     /// Map UV coordinates to spherical coordinates
@@ -666,7 +668,7 @@ vec4 ComputeImportanceIBLInput(inout FSamplingState SamplingState, out vec3 Ligh
     /// And if we didn't hit any geometry, then we sample the IBL
     if (HitPayload.RenderableIndex == UINT_MAX)
     {
-        float PDF = IBLPDFBuffer[TexelIndex];
+        float PDF = IBLPDFBuffer[TexelIndex] * IBLSize.x * IBLSize.y;
         ImportanceSamplingUniformPDF = 0.5f * M_INV_PI;
         ImportanceSamplingBXDFPDF = EvaluateScatteringPDF(Material, RayType, LightDirection);
         return vec4(texture(IBLTextureSampler, UVCoordinates).xyz * NDotL / PDF, PDF);

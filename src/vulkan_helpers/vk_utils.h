@@ -159,7 +159,7 @@ struct FAliasTableEntry
 /// WidthIn and HeightIn are dimensions of the incoming DataIn.
 /// Evaluator is a function that measures a value of a single T. For example in case of rbg color it can be luminosity of that color.
 /// The result is a pair of two vectors: Importance map of FAliasTableEntry and a vector(map) of each value weight.
-template <typename T>
+template <typename T, bool bSineWeighted = false>
 std::pair<std::vector<FAliasTableEntry>, std::vector<float>> GenerateImportanceMapFast(void* DataIn, uint32_t Width, uint32_t Height, std::function<double(T)> Evaluator)
 {
 	/// Cast the pointer;
@@ -171,9 +171,20 @@ std::pair<std::vector<FAliasTableEntry>, std::vector<float>> GenerateImportanceM
 	std::vector<double> PDF(PixelsCount);
 
 	/// Calculate measured value of each entry (For example if we have a FVector4 as T, we need a function that will return it's 'value' (like Luminosity)
-	for (int i = 0; i < PixelsCount; ++i)
+	/// Also we need to account for cases whe we evaluate IBL image - it's not uniformely wraps the sphere
 	{
-		PDF[i] = Evaluator(Data[i]);
+		int i = 0;
+
+		for (int h = 0; h < Height; ++h)
+		{
+			double SinTheta = bSineWeighted ? 1 : sin((double(h) + 0.5) * M_PI / Height);
+
+			for (int w = 0; w < Width; ++w)
+			{
+				PDF[i] = Evaluator(Data[i]) * SinTheta;
+				i++;
+			}
+		}
 	}
 
 	/// Calculate 'total value' by copying sorting and adding all the values
