@@ -155,6 +155,7 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout float Et
 				ShadingData.TangentSpaceOutgoingDirection = TangentSpaceViewDirection;
 				ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
 
+				ShadingData.IsScatteredRaySingular = true;
 				PDF = 1.f;
 			}
 			else
@@ -164,7 +165,7 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout float Et
 				{
 					vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
 					/// We invert the TangentSpaceViewDirection because if i == 0 then it's ray's direction that points to (under) the surface, if i != 0, the only way we get here is if ray is still pointing under the surface.
-					vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
+					vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
 					TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
 
 					/// If ray's on the right side of the surface, then leave it
@@ -174,10 +175,12 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout float Et
 						ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
 
 						vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + ShadingData.TangentSpaceOutgoingDirection));
-						PDF = VNDPDF(ApproximatedNormal, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, -ShadingData.TangentSpaceIncomingDirection);
+						PDF = VNDPDF(ApproximatedNormal.xzy, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
 						break;
 					}
 				}
+
+				ShadingData.IsScatteredRaySingular = false;
 			}
 			/// If ray failed to leave the surface, then it's direction is not changed, and thus shouldn't be used later
 			break;
@@ -192,6 +195,11 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout float Et
 			R0 *= R0;
 
 			vec3 TangentSpaceViewDirection = ShadingData.TangentSpaceIncomingDirection;
+
+			if (Material.TransmissionRoughness == 0.f)
+			{
+				/// TODO
+			}
 
 			for (int i = 0; i < 16; ++i)
 			{
