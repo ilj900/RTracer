@@ -10,6 +10,7 @@ bool b = false;
 
 #include "common_defines.h"
 #include "common_structures.h"
+#include "glsl_math.h"
 
 layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_RAYS_BUFFER_INDEX) buffer RaysBufferObject
 {
@@ -134,25 +135,19 @@ void main()
 
     uvec2 NewPixelCoords = uvec2(NewPixelIndex % PushConstants.Width, NewPixelIndex / PushConstants.Width);
 
-    FRayData RayData = FetchRayData(NewPixelIndex);
-    float Phi = atan(RayData.Direction.z, RayData.Direction.x);
-    Phi += M_PI_2;
-    Phi = mod(Phi, M_2_PI);
-    float Theta = acos(RayData.Direction.y);
-    Phi /= M_2_PI;
-    Theta /= M_PI;
-
 #ifdef DEBUG_PRINTF
     if (NewPixelCoords.x == PushConstants.Width / 2 && NewPixelCoords.y == PushConstants.Height / 2)
     {
         b = true;
-        debugPrintfEXT("PushConstants.BounceIndex: %i\n", PushConstants.BounceIndex);
+        //debugPrintfEXT("PushConstants.BounceIndex: %i\n", PushConstants.BounceIndex);
     }
 #endif
 
     if (PushConstants.BounceIndex == 0)
     {
-        vec3 SampledColor = vec3(texture(IBLTextureSamplerNearest, vec2(Phi, Theta)));
+        FRayData RayData = FetchRayData(NewPixelIndex);
+        vec2 IBLUV = Vec3ToSphericalUV(RayData.Direction.xyz, M_PI_2);
+        vec3 SampledColor = vec3(texture(IBLTextureSamplerNearest, IBLUV));
         imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(SampledColor, 0.f));
     }
     else

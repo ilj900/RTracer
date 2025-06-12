@@ -607,21 +607,15 @@ vec4 ComputeUniformIBLInput(inout FSamplingState SamplingState, out vec3 LightDi
     /// And if we didn't hit any geometry, then we sample the IBL
     if (HitPayload.RenderableIndex == UINT_MAX)
     {
-        float Phi = atan(RayData.Direction.z, RayData.Direction.x);
-        Phi += M_PI_2;
-        Phi = mod(Phi, M_2_PI);
-        float Theta = asin(RayData.Direction.y);
-        Phi /= M_2_PI;
-        Theta /= M_PI;
-
         const uvec2 IBLSize = textureSize(IBLTextureSampler, 0);
-        uint TexelIndex = uint(Theta * IBLSize.x * IBLSize.y) + uint(Phi * IBLSize.x);
+        vec2 IBLUV = Vec3ToSphericalUV(ShadingData.WorldSpaceOutgoingDirection, M_PI_2);
+        uint TexelIndex = uint(IBLUV.y * IBLSize.x * IBLSize.y) + uint(IBLUV.x * IBLSize.x);
 
         float NDotL = dot(ShadingData.NormalInWorldSpace, LightDirection);
         float PDF = 0.5f * M_INV_PI;
         UniformSamplingImportancePDF = IBLPDFBuffer[TexelIndex];
         UniformSamplingBXDFPDF = EvaluateScatteringPDF(Material, RayType, LightDirection);
-        return vec4(texture(IBLTextureSampler, vec2(Phi, Theta)).xyz * NDotL / PDF, PDF);
+        return vec4(texture(IBLTextureSampler, IBLUV).xyz * NDotL / PDF, PDF);
     }
     else
     {
@@ -698,20 +692,14 @@ vec4 ComputeBXDFIBLInput(inout FSamplingState SamplingState, vec3 LightDirection
     /// And if we didn't hit any geometry, then we sample the IBL
     if (HitPayload.RenderableIndex == UINT_MAX)
     {
-        float Phi = atan(RayData.Direction.z, RayData.Direction.x);
-        Phi += M_PI_2;
-        Phi = mod(Phi, M_2_PI);
-        float Theta = asin(RayData.Direction.y);
-        Phi /= M_2_PI;
-        Theta /= M_PI;
-
         const uvec2 IBLSize = textureSize(IBLTextureSampler, 0);
-        uint TexelIndex = uint(Theta * IBLSize.x * IBLSize.y) + uint(Phi * IBLSize.x);
+        vec2 IBLUV = Vec3ToSphericalUV(ShadingData.WorldSpaceOutgoingDirection, M_PI_2);
+        uint TexelIndex = uint(IBLUV.y * IBLSize.x * IBLSize.y) + uint(IBLUV.x * IBLSize.x);
 
         float PDF = BXDFSamplingPDF;
         BXDFSamplingUniformPDF = 0.5f * M_INV_PI;
         BXDFSamplingImportancePDF = IBLPDFBuffer[TexelIndex];
-        return vec4(texture(IBLTextureSampler, vec2(Phi, Theta)).xyz * NDotL / PDF, PDF);
+        return vec4(texture(IBLTextureSampler, IBLUV).xyz * NDotL / PDF, PDF);
     }
     else
     {
@@ -801,17 +789,6 @@ void main()
     RayType = 0u;
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
     ShadingData.MaterialScatteringPDF = ScatterMaterial(Material, RayType, RayData.Eta, SamplingState, bFrontFacing);
-
-    if (b)
-    {
-        vec3 ViewStartPoint = ShadingData.IntersectionCoordinatesInWorldSpace - ShadingData.WorldSpaceIncomingDirection;
-        vec3 NormalEndPoint = ShadingData.IntersectionCoordinatesInWorldSpace + ShadingData.NormalInWorldSpace;
-        vec3 ScatteredEndPoint = ShadingData.IntersectionCoordinatesInWorldSpace + ShadingData.WorldSpaceOutgoingDirection;
-        //debugPrintfEXT("((%f, %f, %f), (%f, %f, %f), 'r'),\n", ViewStartPoint, ShadingData.IntersectionCoordinatesInWorldSpace);
-        //debugPrintfEXT("((%f, %f, %f), (%f, %f, %f), 'b'),\n", ShadingData.IntersectionCoordinatesInWorldSpace, NormalEndPoint);
-        //debugPrintfEXT("((%f, %f, %f), (%f, %f, %f), 'g'),\n", ShadingData.IntersectionCoordinatesInWorldSpace, ScatteredEndPoint);
-        debugPrintfEXT("%f, %f\n", dot(ShadingData.NormalInWorldSpace, -ShadingData.WorldSpaceIncomingDirection), dot(ShadingData.NormalInWorldSpace, ShadingData.WorldSpaceOutgoingDirection));
-    }
 
     vec3 BxDF = EvaluateMaterialInteraction(Material, RayData.RayFlags);
     vec3 ThroughputForThisBounce = BxDF * NDotI / ShadingData.MaterialScatteringPDF;

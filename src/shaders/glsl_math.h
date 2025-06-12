@@ -1,6 +1,8 @@
 #ifndef GLSL_MATH_H
 #define GLSL_MATH_H
 
+#include "common_defines.h"
+
 vec3 UnitSphericalToCartesian(float Phi, float Theta)
 {
 	vec3 Result;
@@ -32,6 +34,18 @@ float CosPhi(vec3 Vector)
 	float Cos2Theta = Vector.y * Vector.y;
 	float SinTheta = sqrt(max(0.f, 1.f - Cos2Theta));
 	return SinTheta == 0.f ? 1.f : clamp(Vector.x / SinTheta, -1.f, 1.f);
+}
+
+vec2 Vec3ToSphericalUV(vec3 Direction, float PhiRotation)
+{
+	float Phi = atan(Direction.z, Direction.x);
+	Phi += PhiRotation;
+	Phi = mod(Phi, M_2_PI);
+	float Theta = acos(Direction.y);
+	Phi /= M_2_PI;
+	Theta /= M_PI;
+
+	return vec2(Phi, Theta);
 }
 
 #endif //GLSL_MATH_H
