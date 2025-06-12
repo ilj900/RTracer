@@ -142,6 +142,7 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout float Et
 			PDF = PDFLambertian(ShadingData.TangentSpaceOutgoingDirection);
 #endif
 			ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
+			ShadingData.IsScatteredRaySingular = false;
 			break;
 		}
 		case SPECULAR_LAYER:

@@ -8,7 +8,7 @@
 
 #define DEBUG_PRINTF
 #ifdef DEBUG_PRINTF
-#define DEBUG_ONLY_FIRST_BOUNCE
+//#define DEBUG_ONLY_FIRST_BOUNCE
 #extension GL_EXT_debug_printf : enable
 bool b = false;
 #endif
@@ -755,7 +755,7 @@ void main()
     if (PixelCoords.x == PushConstants.Width / 2 && PixelCoords.y == PushConstants.Height / 2)
     {
         b = true;
-        //debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
+        debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
     }
 #endif
 
@@ -790,7 +790,7 @@ void main()
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
     ShadingData.MaterialScatteringPDF = ScatterMaterial(Material, RayType, RayData.Eta, SamplingState, bFrontFacing);
 
-    vec3 BxDF = EvaluateMaterialInteraction(Material, RayData.RayFlags);
+    vec3 BxDF = EvaluateMaterialInteraction(Material, RayType);
     vec3 ThroughputForThisBounce = BxDF * NDotI / ShadingData.MaterialScatteringPDF;
 
     vec3 ThroughputBeforeThisBounce = CumulativeMaterialColorBuffer[PixelIndex].xyz;
