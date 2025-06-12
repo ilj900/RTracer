@@ -6,7 +6,7 @@
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_nonuniform_qualifier : enable // ?
 
-#define DEBUG_PRINTF
+//#define DEBUG_PRINTF
 #ifdef DEBUG_PRINTF
 //#define DEBUG_ONLY_FIRST_BOUNCE
 #extension GL_EXT_debug_printf : enable
@@ -755,7 +755,7 @@ void main()
     if (PixelCoords.x == PushConstants.Width / 2 && PixelCoords.y == PushConstants.Height / 2)
     {
         b = true;
-        debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
+        //debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
     }
 #endif
 
