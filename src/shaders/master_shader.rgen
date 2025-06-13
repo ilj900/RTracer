@@ -6,7 +6,7 @@
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_nonuniform_qualifier : enable // ?
 
-//#define DEBUG_PRINTF
+#define DEBUG_PRINTF
 #ifdef DEBUG_PRINTF
 //#define DEBUG_ONLY_FIRST_BOUNCE
 #extension GL_EXT_debug_printf : enable
@@ -33,6 +33,9 @@ struct FShadingData
     mat3 TNBMatrix;
     mat3 TransposedTNBMatrix;
     float MaterialScatteringPDF;
+    /// cos(angle) between normal and view direction
+    float NDotI;
+    bool bFrontFacing;
     bool IsScatteredRaySingular;
 };
 
@@ -273,10 +276,27 @@ void ComputeShadingData(FRenderable Renderable, FHit Hit, FDeviceTransform Trans
     FVertex V1 = UnpackDeviceVertex(DV1);
     FVertex V2 = UnpackDeviceVertex(DV2);
 
+    ShadingData.WorldSpaceIncomingDirection = RayData.Direction.xyz;
+
     ShadingData.NormalInWorldSpace = (V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z);
     /// Pay more attention to why vector * matrix, and not vice versa
     ShadingData.NormalInWorldSpace = ShadingData.NormalInWorldSpace * mat3(Transform.InverseModelMatrix);
     ShadingData.NormalInWorldSpace = normalize(ShadingData.NormalInWorldSpace);
+
+    /// -ShadingData.WorldSpaceIncomingDirection Because we need a direction from the intersection point
+    ShadingData.NDotI = dot(ShadingData.NormalInWorldSpace, -ShadingData.WorldSpaceIncomingDirection);
+
+    /// Invert normal if it's facing backwards
+    if (ShadingData.NDotI < 0)
+    {
+        ShadingData.bFrontFacing = false;
+        ShadingData.NormalInWorldSpace = -ShadingData.NormalInWorldSpace;
+        ShadingData.NDotI = abs(ShadingData.NDotI);
+    }
+    else
+    {
+        ShadingData.bFrontFacing = true;
+    }
 
     ShadingData.TNBMatrix = CreateTNBMatrix(ShadingData.NormalInWorldSpace);
     ShadingData.TransposedTNBMatrix = transpose(ShadingData.TNBMatrix);
@@ -755,7 +775,7 @@ void main()
     if (PixelCoords.x == PushConstants.Width / 2 && PixelCoords.y == PushConstants.Height / 2)
     {
         b = true;
-        //debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
+        debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
     }
 #endif
 
@@ -772,26 +792,17 @@ void main()
     FRenderable Renderable = Renderables[Hit.RenderableIndex];
     FDeviceTransform Transform = DeviceTransforms[Renderable.TransformIndex];
     ComputeShadingData(Renderable, Hit, Transform, RayData);
-    float NDotI = dot(ShadingData.NormalInWorldSpace, -ShadingData.WorldSpaceIncomingDirection);
-    bool bFrontFacing = true;
     float Depth = length(ShadingData.IntersectionCoordinatesInWorldSpace - RayData.Origin.xyz) * 0.0001f;
-
-    if (NDotI < 0)
-    {
-        bFrontFacing = false;
-        ShadingData.NormalInWorldSpace = -ShadingData.NormalInWorldSpace;
-        NDotI = abs(NDotI);
-    }
 
     /// Fetch material data
     Material = GetMaterial(ShadingData.UVCoordinates);
     /// Process material interaction
     RayType = 0u;
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
-    ShadingData.MaterialScatteringPDF = ScatterMaterial(Material, RayType, RayData.Eta, SamplingState, bFrontFacing);
+    ShadingData.MaterialScatteringPDF = ScatterMaterial(Material, RayType, RayData.Eta, SamplingState, ShadingData.bFrontFacing);
 
     vec3 BxDF = EvaluateMaterialInteraction(Material, RayType);
-    vec3 ThroughputForThisBounce = BxDF * NDotI / ShadingData.MaterialScatteringPDF;
+    vec3 ThroughputForThisBounce = BxDF * ShadingData.NDotI / ShadingData.MaterialScatteringPDF;
 
     vec3 ThroughputBeforeThisBounce = CumulativeMaterialColorBuffer[PixelIndex].xyz;
     CumulativeMaterialColorBuffer[PixelIndex] = vec4(ThroughputBeforeThisBounce * ThroughputForThisBounce, 1);

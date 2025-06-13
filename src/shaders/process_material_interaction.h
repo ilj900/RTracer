@@ -199,38 +199,30 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout float Et
 
 			if (Material.TransmissionRoughness == 0.f)
 			{
-				/// TODO
-			}
-
-			for (int i = 0; i < 16; ++i)
-			{
-				vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
-				vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, RandomSquare.x, RandomSquare.y).xzy;
+				ShadingData.IsScatteredRaySingular = true;
+				PDF = 1.f;
 
 				/// NDotI also equals to cos(angle)
-				float NDotI = dot(NewNormal, TangentSpaceViewDirection);
-				/// NDotI is negative cause TangentSpaceViewDirection was pointing "to" the surface, so we add it instead of subtracting
-				float RTheta = R0 + (1. - R0) * pow(1. + NDotI, 5.f);
+				float NDotI = dot(vec3(0, 1, 0), -TangentSpaceViewDirection);
+				float RTheta = R0 + (1. - R0) * pow(1. - NDotI, 5.f);
 
 				/// Decide on whether the ray is reflected or refracted
 				float RF = RandomFloat(SamplingState);
 
+				//if (b)
+				//{
+				//	debugPrintfEXT("NDotI %f\n", NDotI);
+				//	debugPrintfEXT("TangentSpaceViewDirection Length %f\n", length(TangentSpaceViewDirection));
+				//	debugPrintfEXT("R0 %f\n", R0);
+				//	debugPrintfEXT("RTheta %f\n", RTheta);
+				//}
+
 				if (RF < RTheta)
 				{
+					RayType = SPECULAR_LAYER;
 					/// Reflected it be
-					TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
-
-					/// If reflected ray's on the correct side, then it's done.
-					if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
-					{
-						RayType = SPECULAR_LAYER;
-						ShadingData.TangentSpaceOutgoingDirection = TangentSpaceViewDirection;
-						ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
-
-						vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + ShadingData.TangentSpaceOutgoingDirection));
-						PDF = VNDPDF(ApproximatedNormal, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, -ShadingData.TangentSpaceIncomingDirection);
-						break;
-					}
+					ShadingData.TangentSpaceOutgoingDirection = reflect(TangentSpaceViewDirection, vec3(0, 1, 0));
+					ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
 				}
 				else
 				{
@@ -239,7 +231,42 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout float Et
 
 					if (k < 0.)
 					{
+						RayType = SPECULAR_LAYER;
+
 						/// Total internal reflection is happening
+						ShadingData.TangentSpaceOutgoingDirection = reflect(TangentSpaceViewDirection, vec3(0, 1, 0));
+						ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
+					}
+					else
+					{
+						/// Refraction
+						vec3 RefractedDirection = normalize(EtaRatio * TangentSpaceViewDirection - (EtaRatio * NDotI + sqrt(k)) * vec3(0, 1, 0));
+						ShadingData.TangentSpaceOutgoingDirection = RefractedDirection;
+						ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
+
+						/// Also, ray is now traveling in a new media
+						Eta = Material.SpecularIOR;
+					}
+				}
+			}
+			else
+			{
+				for (int i = 0; i < 16; ++i)
+				{
+					vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
+					vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, RandomSquare.x, RandomSquare.y).xzy;
+
+					/// NDotI also equals to cos(angle)
+					float NDotI = dot(NewNormal, TangentSpaceViewDirection);
+					/// NDotI is negative cause TangentSpaceViewDirection was pointing "to" the surface, so we add it instead of subtracting
+					float RTheta = R0 + (1. - R0) * pow(1. + NDotI, 5.f);
+
+					/// Decide on whether the ray is reflected or refracted
+					float RF = RandomFloat(SamplingState);
+
+					if (RF < RTheta)
+					{
+						/// Reflected it be
 						TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
 
 						/// If reflected ray's on the correct side, then it's done.
@@ -256,23 +283,46 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout float Et
 					}
 					else
 					{
-						/// Refraction
-						vec3 RefractedDirection = normalize(EtaRatio * TangentSpaceViewDirection - (EtaRatio * NDotI + sqrt(k)) * NewNormal);
+						/// Refraction or TIR is happening
+						float k = 1. - (EtaRatio * EtaRatio * (1. - (NDotI * NDotI)));
 
-						/// Find a normal that should be used to refract the ray this way
-						float CosThetaI = dot(-ShadingData.TangentSpaceIncomingDirection, RefractedDirection);
-						k = 1.f - EtaRatio * EtaRatio * (1.f - CosThetaI * CosThetaI);
-						vec3 ApproximatedNormal = normalize((ShadingData.TangentSpaceIncomingDirection * EtaRatio - RefractedDirection) / sqrt(k));
+						if (k < 0.)
+						{
+							/// Total internal reflection is happening
+							TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
 
-						/// Get PDF
-						PDF = VNDPDF(ApproximatedNormal, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, -ShadingData.TangentSpaceIncomingDirection);
-						PDF /= EtaRatio * EtaRatio;
-						/// Also, ray is now traveling in a new media
-						Eta = Material.SpecularIOR;
+							/// If reflected ray's on the correct side, then it's done.
+							if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
+							{
+								RayType = SPECULAR_LAYER;
+								ShadingData.TangentSpaceOutgoingDirection = TangentSpaceViewDirection;
+								ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
 
-						ShadingData.TangentSpaceOutgoingDirection = RefractedDirection;
-						ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
-						break;
+								vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + ShadingData.TangentSpaceOutgoingDirection));
+								PDF = VNDPDF(ApproximatedNormal, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, -ShadingData.TangentSpaceIncomingDirection);
+								break;
+							}
+						}
+						else
+						{
+							/// Refraction
+							vec3 RefractedDirection = normalize(EtaRatio * TangentSpaceViewDirection - (EtaRatio * NDotI + sqrt(k)) * NewNormal);
+
+							/// Find a normal that should be used to refract the ray this way
+							float CosThetaI = dot(-ShadingData.TangentSpaceIncomingDirection, RefractedDirection);
+							k = 1.f - EtaRatio * EtaRatio * (1.f - CosThetaI * CosThetaI);
+							vec3 ApproximatedNormal = normalize((ShadingData.TangentSpaceIncomingDirection * EtaRatio - RefractedDirection) / sqrt(k));
+
+							/// Get PDF
+							PDF = VNDPDF(ApproximatedNormal, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, -ShadingData.TangentSpaceIncomingDirection);
+							PDF /= EtaRatio * EtaRatio;
+							/// Also, ray is now traveling in a new media
+							Eta = Material.SpecularIOR;
+
+							ShadingData.TangentSpaceOutgoingDirection = RefractedDirection;
+							ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
+							break;
+						}
 					}
 				}
 			}
