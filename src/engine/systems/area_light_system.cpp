@@ -132,6 +132,15 @@ namespace ECS
 			AreaLightComponent.IsIndexedFlagAndRenderableIndex = IsIndexedFlagAndRenderableIndex;
 			AreaLightComponent.NumberOfTriangles = MeshComponent.Indices.empty() ? (MeshComponent.Vertices.size() / 3) : (MeshComponent.Indices.size() / 3);
 
+            /// We also need to store area light index in renderable for bxdf area light sampling
+            uint32_t AreaLightIndex = COORDINATOR().GetIndex<COMPONENTS::FAreaLightComponent>(Light);
+            if (AreaLightIndex >= MAX_AREA_LIGHTS)
+            {
+                throw std::runtime_error("The index of the area light is too big. Check for errors.");
+            }
+            RenderableComponent.RenderablePropertyMask &= ~RENDERABLE_AREA_LIGHT_INDEX_MASK;
+            RenderableComponent.RenderablePropertyMask |= RENDERABLE_AREA_LIGHT_INDEX_MASK & AreaLightIndex;
+
 			std::vector<float> Areas(AreaLightComponent.NumberOfTriangles, 0);
 
 			if (MeshComponent.Indices.empty())

@@ -185,9 +185,10 @@ struct FDeviceMaterial
     uint32_t ThinWalled;
 };
 
-const uint32_t RENDERABLE_SELECTED_BIT = 1 << 5;
-const uint32_t RENDERABLE_HAS_TEXTURE = 1 << 6;
-const uint32_t RENDERABLE_IS_INDEXED = 1 << 7;
+const uint32_t RENDERABLE_AREA_LIGHT_INDEX_MASK = 0x01FF; // It's related to maximum number of area lights (512) in Area lights system
+const uint32_t RENDERABLE_SELECTED_BIT = 1 << 9;
+const uint32_t RENDERABLE_HAS_TEXTURE = 1 << 10;
+const uint32_t RENDERABLE_IS_INDEXED = 1 << 11;
 
 struct FRenderable
 {

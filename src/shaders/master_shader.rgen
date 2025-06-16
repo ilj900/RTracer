@@ -629,7 +629,7 @@ vec4 ComputeImportanceSpotLightInput(inout FSamplingState SamplingState, uint Sp
 vec4 ComputeUniformAreaLightInput(inout FSamplingState SamplingState, out vec3 LightDirection, inout float UniformSamplingImportancePDF, inout float UniformSamplingBXDFPDF)
 {
     /// First - select an area light at random (uniformly)
-    uint UniformLightIndex = uint(RandomFloat(SamplingState) * UtilityData.AreaLightsCount);
+    uint UniformLightIndex = uint(RandomFloat(SamplingState) * UtilityData.ActiveAreaLightsCount);
 
     FAreaLight ArealLight = AreaLightsBuffer[UniformLightIndex];
 
@@ -637,10 +637,10 @@ vec4 ComputeUniformAreaLightInput(inout FSamplingState SamplingState, out vec3 L
     uint UniformTriangleIndex = uint(RandomFloat(SamplingState) * ArealLight.NumberOfTriangles);
 
     /// Get that random triangle from the mesh that is marked as area light
-    Vertices Verts = Vertices(ArealLightImportance.VertexBufferAddress);
-    Indices Inds = Indices(ArealLightImportance.IndexBufferAddress);
-    bool RenderableIsIndexed = (ArealLightImportance.IsIndexedFlagAndRenderableIndex & 0x80000000) == 0x80000000;
-    uint RenderableIndex = ArealLightImportance.IsIndexedFlagAndRenderableIndex & 0x7FFFFFFF;
+    Vertices Verts = Vertices(ArealLight.VertexBufferAddress);
+    Indices Inds = Indices(ArealLight.IndexBufferAddress);
+    bool RenderableIsIndexed = (ArealLight.IsIndexedFlagAndRenderableIndex & 0x80000000) == 0x80000000;
+    uint RenderableIndex = ArealLight.IsIndexedFlagAndRenderableIndex & 0x7FFFFFFF;
 
     FDeviceVertex DV0;
     FDeviceVertex DV1;
@@ -690,7 +690,7 @@ vec4 ComputeUniformAreaLightInput(inout FSamplingState SamplingState, out vec3 L
     vec3 RandomPoint = V0.Position + V0V1Direction * RandomVec2.x + V0V2Direction * RandomVec2.y;
 
     /// Transform point into world-space
-    FDeviceTransform Transform = DeviceTransforms[ArealLightImportance.TransformIndex];
+    FDeviceTransform Transform = DeviceTransforms[ArealLight.TransformIndex];
     RandomPoint = vec3(vec4(RandomPoint, 1.f) * Transform.ModelMatrix);
     /// A direction to light
     LightDirection = RandomPoint - ShadingData.IntersectionCoordinatesInWorldSpace;
@@ -698,7 +698,7 @@ vec4 ComputeUniformAreaLightInput(inout FSamplingState SamplingState, out vec3 L
     LightDirection = normalize(LightDirection);
 
     /// Check whether light is over the surface
-    NDotL = dot(Normal, LightDirection);
+    float NDotL = dot(ShadingData.NormalInWorldSpace, LightDirection);
 
     if(NDotL <= 0)
     {
@@ -729,9 +729,9 @@ vec4 ComputeUniformAreaLightInput(inout FSamplingState SamplingState, out vec3 L
         float NDotI = abs(dot(AreaLightTriangleNormal, LightDirection));
 
         /// Get the material
-        FDeviceMaterial EmissiveMaterial = GetEmissiveMaterial(UV, ArealLightImportance.MaterialIndex);
+        FDeviceMaterial EmissiveMaterial = GetEmissiveMaterial(UV, ArealLight.MaterialIndex);
         /// TODO: Is this a correct PDF formula?
-        float PDF = Distance2 / (UtilityData.ActiveAreaLightsCount * ArealLightImportance.NumberOfTriangles * TriangleArea * NDotI);
+        float PDF = Distance2 / (UtilityData.ActiveAreaLightsCount * ArealLight.NumberOfTriangles * TriangleArea * NDotI);
         UniformSamplingImportancePDF = Distance2 / (UtilityData.TotalAreaLightArea * NDotI);
         UniformSamplingBXDFPDF = EvaluateScatteringPDF(Material, RayType, LightDirection);
 
@@ -747,7 +747,7 @@ vec4 ComputeUniformAreaLightInput(inout FSamplingState SamplingState, out vec3 L
 vec4 ComputeImportanceAreaLightInput(inout FSamplingState SamplingState, out vec3 LightDirection, inout float ImportanceSamplingUniformPDF, inout float ImportanceSamplingBXDFPDF)
 {
     /// First - select and area light based on it's area
-    uint ImportanceLightIndex = uint(RandomFloat(SamplingState) * UtilityData.AreaLightsCount);
+    uint ImportanceLightIndex = uint(RandomFloat(SamplingState) * UtilityData.ActiveAreaLightsCount);
     FDeviceAliasTableEntry ImportanceSampleTableEntry = AreaLightsImportanceBuffer[ImportanceLightIndex];
 
     if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
@@ -830,7 +830,7 @@ vec4 ComputeImportanceAreaLightInput(inout FSamplingState SamplingState, out vec
     LightDirection = normalize(LightDirection);
 
     /// Check whether light is over the surface
-    NDotL = dot(Normal, LightDirection);
+    float NDotL = dot(ShadingData.NormalInWorldSpace, LightDirection);
 
     if(NDotL <= 0)
     {
@@ -885,6 +885,7 @@ vec4 ComputeBXDFAreaLightInput(inout FSamplingState SamplingState, vec3 LightDir
     RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace + ShadingData.NormalInWorldSpace * FLOAT_EPSILON;
 
     /// Trace the ray
+    /// TODO: Utilize gl_HitTEXT in hit shader
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
 
     /// If we hit any geometry, let's check whether it's an emissive
@@ -942,12 +943,23 @@ vec4 ComputeBXDFAreaLightInput(inout FSamplingState SamplingState, vec3 LightDir
             EmissiveNormalInWorldSpace = normalize(EmissiveNormalInWorldSpace);
 
             /// This is the cosine of the angle betweeen the emissive triangle's normal and a shadow ray direction
-            /// Why do we take the abs? Because the shadow ray is guaranted to be on the correct side of the hemisphere and
-            /// we don't have two sided materials, so emissive emmit on both sides
+            /// Why do we take the abs? Because the shadow ray is have to be on the correct side of the hemisphere and
+            /// we don't have two sided materials, so emissive emmits on both sides
             float NDotL = abs(dot(EmissiveNormalInWorldSpace, RayData.Direction.xyz));
 
+            uint AreaLightIndex = Renderable.RenderablePropertyMask & RENDERABLE_AREA_LIGHT_INDEX_MASK;
+            FAreaLight ArealLight = AreaLightsBuffer[AreaLightIndex];
+
+            vec3 WorldSpaceIntersectionCoordinates = V0.Position * Barycentrics.x + V1.Position * Barycentrics.y + V2.Position * Barycentrics.z;
+            WorldSpaceIntersectionCoordinates = vec3(vec4(WorldSpaceIntersectionCoordinates, 1.f) * Transform.ModelMatrix);
+            float Distance2 = dot(WorldSpaceIntersectionCoordinates - RayData.Origin.xyz, WorldSpaceIntersectionCoordinates - RayData.Origin.xyz);
+            vec3 P0 = vec3(vec4(V0.Position, 1.f) * Transform.ModelMatrix);
+            vec3 P1 = vec3(vec4(V1.Position, 1.f) * Transform.ModelMatrix);
+            vec3 P2 = vec3(vec4(V2.Position, 1.f) * Transform.ModelMatrix);
+            float TriangleArea = 0.5f * length(cross(P1 - P0, P2 - P0));
+
             float PDF = BXDFPDF;
-            BXDFSamplingUniformPDF = Distance2 / (UtilityData.ActiveAreaLightsCount * ArealLightImportance.NumberOfTriangles * TriangleArea * NDotL);
+            BXDFSamplingUniformPDF = Distance2 / (UtilityData.ActiveAreaLightsCount * ArealLight.NumberOfTriangles * TriangleArea * NDotL);
             BXDFSamplingImportancePDF = Distance2 / (UtilityData.TotalAreaLightArea * NDotL);
             return vec4(EmissiveMaterial.EmissionColor * ShadingData.NDotI / PDF, PDF);
         }
