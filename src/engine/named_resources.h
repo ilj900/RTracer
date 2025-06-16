@@ -20,3 +20,4 @@ constexpr const char* UTILITY_INFO_BUFFER = "UtilityInfoBuffer";
 constexpr const char* POINT_LIGHTS_IMPORTANCE_BUFFER = "PointLightsImportanceBuffer";
 constexpr const char* DIRECTIONAL_LIGHTS_IMPORTANCE_BUFFER = "DirectionalLightsImportanceBuffer";
 constexpr const char* SPOT_LIGHTS_IMPORTANCE_BUFFER = "SpotLightsImportanceBuffer";
+constexpr const char* AREA_LIGHTS_IMPORTANCE_BUFFER = "AreaLightsImportanceBuffer";

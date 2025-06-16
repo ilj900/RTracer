@@ -6,9 +6,9 @@
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_nonuniform_qualifier : enable // ?
 
-#define DEBUG_PRINTF
+//#define DEBUG_PRINTF
 #ifdef DEBUG_PRINTF
-//#define DEBUG_ONLY_FIRST_BOUNCE
+#define DEBUG_ONLY_FIRST_BOUNCE
 #extension GL_EXT_debug_printf : enable
 bool b = false;
 #endif
@@ -119,6 +119,16 @@ layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_POINT_LIGHTS_I
     FDeviceAliasTableEntry PointLightsImportanceBuffer[];
 };
 
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_AREA_LIGHTS_BUFFER_INDEX) buffer AreaLightsBufferObject
+{
+    FAreaLight AreaLightsBuffer[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_AREA_LIGHTS_IMPORTANCE_BUFFER_INDEX) buffer AreaLightsImportanceBufferObject
+{
+    FDeviceAliasTableEntry AreaLightsImportanceBuffer[];
+};
+
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_IMPORTANCE_BUFFER_INDEX) buffer IBLImportanceBufferObject
 {
     FDeviceAliasTableEntry IBLImportanceBuffer[];
@@ -199,6 +209,11 @@ layout (buffer_reference, scalar) buffer Indices
     int I[];
 };
 
+layout (buffer_reference, scalar) buffer AreaLightsAliasTableReference
+{
+    FDeviceAliasTableEntry T[];
+};
+
 layout (push_constant) uniform PushConstantsBlock
 {
     FPushConstants PushConstants;
@@ -239,6 +254,7 @@ float SampleFloat(uint TextureIndex, vec2 TextureCoords)
 }
 
 FDeviceMaterial GetMaterial(vec2 TextureCoords);
+FDeviceMaterial GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex);
 
 void ComputeShadingData(FRenderable Renderable, FHit Hit, FDeviceTransform Transform, FRayData RayData)
 {
@@ -610,6 +626,336 @@ vec4 ComputeImportanceSpotLightInput(inout FSamplingState SamplingState, uint Sp
     }
 }
 
+vec4 ComputeUniformAreaLightInput(inout FSamplingState SamplingState, out vec3 LightDirection, inout float UniformSamplingImportancePDF, inout float UniformSamplingBXDFPDF)
+{
+    /// First - select an area light at random (uniformly)
+    uint UniformLightIndex = uint(RandomFloat(SamplingState) * UtilityData.AreaLightsCount);
+
+    FAreaLight ArealLight = AreaLightsBuffer[UniformLightIndex];
+
+    /// Second - select a triangle within area light at random (also uniformly)
+    uint UniformTriangleIndex = uint(RandomFloat(SamplingState) * ArealLight.NumberOfTriangles);
+
+    /// Get that random triangle from the mesh that is marked as area light
+    Vertices Verts = Vertices(ArealLightImportance.VertexBufferAddress);
+    Indices Inds = Indices(ArealLightImportance.IndexBufferAddress);
+    bool RenderableIsIndexed = (ArealLightImportance.IsIndexedFlagAndRenderableIndex & 0x80000000) == 0x80000000;
+    uint RenderableIndex = ArealLightImportance.IsIndexedFlagAndRenderableIndex & 0x7FFFFFFF;
+
+    FDeviceVertex DV0;
+    FDeviceVertex DV1;
+    FDeviceVertex DV2;
+
+    if (RenderableIsIndexed)
+    {
+        uint I0 = 0;
+        uint I1 = 1;
+        uint I2 = 2;
+
+        I0 = Inds.I[UniformTriangleIndex * 3];
+        I1 = Inds.I[UniformTriangleIndex * 3 + 1];
+        I2 = Inds.I[UniformTriangleIndex * 3 + 2];
+
+        DV0 = Verts.V[I0];
+        DV1 = Verts.V[I1];
+        DV2 = Verts.V[I2];
+    }
+    else
+    {
+        uint Index = UniformTriangleIndex * 3;
+        DV0 = Verts.V[Index];
+        DV1 = Verts.V[Index + 1];
+        DV2 = Verts.V[Index + 2];
+    }
+
+    /// Unpack data
+    FVertex V0 = UnpackDeviceVertex(DV0);
+    FVertex V1 = UnpackDeviceVertex(DV1);
+    FVertex V2 = UnpackDeviceVertex(DV2);
+
+    /// Sample random point on that triangle
+    vec2 RandomVec2 = Sample2DUnitQuad(SamplingState);
+
+    /// Without this, RandomPoint will be placed in parallelogram denoted by the triangle
+    if (RandomVec2.x + RandomVec2.y > 1.)
+    {
+        RandomVec2.x = 1. - RandomVec2.x;
+        RandomVec2.y = 1. - RandomVec2.y;
+    }
+
+    vec3 V0V1Direction = V1.Position - V0.Position;
+    vec3 V0V2Direction = V2.Position - V0.Position;
+    float TriangleArea = 0.5f * length(cross(V0V1Direction, V0V2Direction));
+    /// Get RandomPoint in local space
+    vec3 RandomPoint = V0.Position + V0V1Direction * RandomVec2.x + V0V2Direction * RandomVec2.y;
+
+    /// Transform point into world-space
+    FDeviceTransform Transform = DeviceTransforms[ArealLightImportance.TransformIndex];
+    RandomPoint = vec3(vec4(RandomPoint, 1.f) * Transform.ModelMatrix);
+    /// A direction to light
+    LightDirection = RandomPoint - ShadingData.IntersectionCoordinatesInWorldSpace;
+    float Distance2 = dot(LightDirection, LightDirection);
+    LightDirection = normalize(LightDirection);
+
+    /// Check whether light is over the surface
+    NDotL = dot(Normal, LightDirection);
+
+    if(NDotL <= 0)
+    {
+        /// Light is on the other side
+        return vec4(0);
+    }
+
+    /// Construct a ray that goes to the light
+    FRayData RayData;
+    RayData.RayFlags = 0;
+    RayData.Direction.xyz = LightDirection;
+    RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace + ShadingData.NormalInWorldSpace * FLOAT_EPSILON;
+
+    /// Trace the ray
+    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
+
+    /// And if we did hit a required triange, then we store light data
+    if (HitPayload.PrimitiveIndex == UniformTriangleIndex && HitPayload.RenderableIndex == RenderableIndex)
+    {
+        vec3 Barycentrics = vec3(1.f - HitPayload.HitUV.x - HitPayload.HitUV.y, HitPayload.HitUV.x, HitPayload.HitUV.y);
+
+        /// Compute UV
+        vec2 UV = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
+        /// Compute normal
+        vec3 AreaLightTriangleNormal = (V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z);
+        AreaLightTriangleNormal = AreaLightTriangleNormal * mat3(Transform.InverseModelMatrix);
+        AreaLightTriangleNormal = normalize(AreaLightTriangleNormal);
+        float NDotI = abs(dot(AreaLightTriangleNormal, LightDirection));
+
+        /// Get the material
+        FDeviceMaterial EmissiveMaterial = GetEmissiveMaterial(UV, ArealLightImportance.MaterialIndex);
+        /// TODO: Is this a correct PDF formula?
+        float PDF = Distance2 / (UtilityData.ActiveAreaLightsCount * ArealLightImportance.NumberOfTriangles * TriangleArea * NDotI);
+        UniformSamplingImportancePDF = Distance2 / (UtilityData.TotalAreaLightArea * NDotI);
+        UniformSamplingBXDFPDF = EvaluateScatteringPDF(Material, RayType, LightDirection);
+
+        return vec4(EmissiveMaterial.EmissionColor * NDotL / PDF, PDF);
+    }
+    else
+    {
+        /// Something ocludded the light
+        return vec4(0);
+    }
+}
+
+vec4 ComputeImportanceAreaLightInput(inout FSamplingState SamplingState, out vec3 LightDirection, inout float ImportanceSamplingUniformPDF, inout float ImportanceSamplingBXDFPDF)
+{
+    /// First - select and area light based on it's area
+    uint ImportanceLightIndex = uint(RandomFloat(SamplingState) * UtilityData.AreaLightsCount);
+    FDeviceAliasTableEntry ImportanceSampleTableEntry = AreaLightsImportanceBuffer[ImportanceLightIndex];
+
+    if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
+    {
+        ImportanceLightIndex = ImportanceSampleTableEntry.Alias;
+    }
+
+    FAreaLight ArealLightImportance = AreaLightsBuffer[ImportanceLightIndex];
+
+    /// Second - select a triangle within area light based on it's area
+    uint ImportanceTriangleIndex = uint(RandomFloat(SamplingState) * ArealLightImportance.NumberOfTriangles);
+    AreaLightsAliasTableReference AreaLightAliasTable = AreaLightsAliasTableReference(ArealLightImportance.AliasTableBufferAddress);
+
+    ImportanceSampleTableEntry = AreaLightAliasTable.T[ImportanceTriangleIndex];
+
+    if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
+    {
+        ImportanceTriangleIndex = ImportanceSampleTableEntry.Alias;
+    }
+
+    /// Get that random triangle from the mesh that is marked as area light
+    Vertices Verts = Vertices(ArealLightImportance.VertexBufferAddress);
+    Indices Inds = Indices(ArealLightImportance.IndexBufferAddress);
+    bool RenderableIsIndexed = (ArealLightImportance.IsIndexedFlagAndRenderableIndex & 0x80000000) == 0x80000000;
+    uint RenderableIndex = ArealLightImportance.IsIndexedFlagAndRenderableIndex & 0x7FFFFFFF;
+
+    FDeviceVertex DV0;
+    FDeviceVertex DV1;
+    FDeviceVertex DV2;
+
+    if (RenderableIsIndexed)
+    {
+        uint I0 = 0;
+        uint I1 = 1;
+        uint I2 = 2;
+
+        I0 = Inds.I[ImportanceTriangleIndex * 3];
+        I1 = Inds.I[ImportanceTriangleIndex * 3 + 1];
+        I2 = Inds.I[ImportanceTriangleIndex * 3 + 2];
+
+        DV0 = Verts.V[I0];
+        DV1 = Verts.V[I1];
+        DV2 = Verts.V[I2];
+    }
+    else
+    {
+        uint Index = ImportanceTriangleIndex * 3;
+        DV0 = Verts.V[Index];
+        DV1 = Verts.V[Index + 1];
+        DV2 = Verts.V[Index + 2];
+    }
+
+    /// Unpack data
+    FVertex V0 = UnpackDeviceVertex(DV0);
+    FVertex V1 = UnpackDeviceVertex(DV1);
+    FVertex V2 = UnpackDeviceVertex(DV2);
+
+    /// Sample random point on that triangle
+    vec2 RandomVec2 = Sample2DUnitQuad(SamplingState);
+
+    /// Without this, RandomPoint will be placed in parallelogram denoted by the triangle
+    if (RandomVec2.x + RandomVec2.y > 1.)
+    {
+        RandomVec2.x = 1. - RandomVec2.x;
+        RandomVec2.y = 1. - RandomVec2.y;
+    }
+
+    vec3 V0V1Direction = V1.Position - V0.Position;
+    vec3 V0V2Direction = V2.Position - V0.Position;
+    float TriangleArea = 0.5f * length(cross(V0V1Direction, V0V2Direction));
+    /// Get RandomPoint in local space
+    vec3 RandomPoint = V0.Position + V0V1Direction * RandomVec2.x + V0V2Direction * RandomVec2.y;
+
+    /// Transform point into world-space
+    FDeviceTransform Transform = DeviceTransforms[ArealLightImportance.TransformIndex];
+    RandomPoint = vec3(vec4(RandomPoint, 1.f) * Transform.ModelMatrix);
+    /// A direction to light
+    LightDirection = RandomPoint - ShadingData.IntersectionCoordinatesInWorldSpace;
+    float Distance2 = dot(LightDirection, LightDirection);
+    LightDirection = normalize(LightDirection);
+
+    /// Check whether light is over the surface
+    NDotL = dot(Normal, LightDirection);
+
+    if(NDotL <= 0)
+    {
+        /// Light is on the other side
+        return vec4(0);
+    }
+
+    /// Construct a ray that goes to the light
+    FRayData RayData;
+    RayData.RayFlags = 0;
+    RayData.Direction.xyz = LightDirection;
+    RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace + ShadingData.NormalInWorldSpace * FLOAT_EPSILON;
+
+    /// Trace the ray
+    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
+
+    /// And if we did hit a required triange, then we store light data
+    if (HitPayload.PrimitiveIndex == ImportanceTriangleIndex && HitPayload.RenderableIndex == RenderableIndex)
+    {
+        vec3 Barycentrics = vec3(1.f - HitPayload.HitUV.x - HitPayload.HitUV.y, HitPayload.HitUV.x, HitPayload.HitUV.y);
+
+        /// Compute UV
+        vec2 UV = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
+        /// Compute normal
+        vec3 AreaLightTriangleNormal = (V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z);
+        AreaLightTriangleNormal = AreaLightTriangleNormal * mat3(Transform.InverseModelMatrix);
+        AreaLightTriangleNormal = normalize(AreaLightTriangleNormal);
+        float NDotI = abs(dot(AreaLightTriangleNormal, LightDirection));
+
+        /// Get the material
+        FDeviceMaterial EmissiveMaterial = GetEmissiveMaterial(UV, ArealLightImportance.MaterialIndex);
+        /// TODO: Is this a correct PDF formula?
+        float PDF = Distance2 / (UtilityData.TotalAreaLightArea * NDotI);
+        ImportanceSamplingUniformPDF = Distance2 / (UtilityData.ActiveAreaLightsCount * ArealLightImportance.NumberOfTriangles * TriangleArea * NDotI);
+        ImportanceSamplingBXDFPDF = EvaluateScatteringPDF(Material, RayType, LightDirection);
+
+        return vec4(EmissiveMaterial.EmissionColor * NDotL / PDF, PDF);
+    }
+    else
+    {
+        /// Something ocludded the light
+        return vec4(0);
+    }
+}
+
+vec4 ComputeBXDFAreaLightInput(inout FSamplingState SamplingState, vec3 LightDirection, float BXDFPDF, inout float BXDFSamplingUniformPDF, inout float BXDFSamplingImportancePDF)
+{
+    /// Construct a shadow ray
+    FRayData RayData;
+    RayData.RayFlags = 0;
+    RayData.Direction.xyz = LightDirection;
+    RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace + ShadingData.NormalInWorldSpace * FLOAT_EPSILON;
+
+    /// Trace the ray
+    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
+
+    /// If we hit any geometry, let's check whether it's an emissive
+    if (HitPayload.RenderableIndex != UINT_MAX)
+    {
+        FRenderable Renderable = Renderables[HitPayload.RenderableIndex];
+        /// TODO: Add a flag to renderable to skipp all those computations if renderable is not emissive
+        Vertices Verts = Vertices(Renderable.VertexBufferAddress);
+        Indices Inds = Indices(Renderable.IndexBufferAddress);
+
+        FDeviceVertex DV0;
+        FDeviceVertex DV1;
+        FDeviceVertex DV2;
+
+        if (IsIndexed(Renderable))
+        {
+            uint I0 = 0;
+            uint I1 = 1;
+            uint I2 = 2;
+
+            I0 = Inds.I[HitPayload.PrimitiveIndex * 3];
+            I1 = Inds.I[HitPayload.PrimitiveIndex * 3 + 1];
+            I2 = Inds.I[HitPayload.PrimitiveIndex * 3 + 2];
+
+            DV0 = Verts.V[I0];
+            DV1 = Verts.V[I1];
+            DV2 = Verts.V[I2];
+        }
+        else
+        {
+            uint Index = HitPayload.PrimitiveIndex * 3;
+            DV0 = Verts.V[Index];
+            DV1 = Verts.V[Index + 1];
+            DV2 = Verts.V[Index + 2];
+        }
+
+        /// Unpack data
+        FVertex V0 = UnpackDeviceVertex(DV0);
+        FVertex V1 = UnpackDeviceVertex(DV1);
+        FVertex V2 = UnpackDeviceVertex(DV2);
+
+        vec3 Barycentrics = vec3(1.0 - HitPayload.HitUV.x - HitPayload.HitUV.y, HitPayload.HitUV.x, HitPayload.HitUV.y);
+        vec2 TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
+
+        /// TODO: Optimize
+        FDeviceMaterial EmissiveMaterial = GetEmissiveMaterial(TextureCoords, Renderable.MaterialIndex);
+
+        if (EmissiveMaterial.EmissionWeight != 0)
+        {
+            FDeviceTransform Transform = DeviceTransforms[Renderable.TransformIndex];
+
+            vec3 EmissiveNormalInWorldSpace = (V0.Normal * Barycentrics.x + V1.Normal * Barycentrics.y + V2.Normal * Barycentrics.z);
+            /// Pay more attention to why vector * matrix, and not vice versa
+            EmissiveNormalInWorldSpace = EmissiveNormalInWorldSpace * mat3(Transform.InverseModelMatrix);
+            EmissiveNormalInWorldSpace = normalize(EmissiveNormalInWorldSpace);
+
+            /// This is the cosine of the angle betweeen the emissive triangle's normal and a shadow ray direction
+            /// Why do we take the abs? Because the shadow ray is guaranted to be on the correct side of the hemisphere and
+            /// we don't have two sided materials, so emissive emmit on both sides
+            float NDotL = abs(dot(EmissiveNormalInWorldSpace, RayData.Direction.xyz));
+
+            float PDF = BXDFPDF;
+            BXDFSamplingUniformPDF = Distance2 / (UtilityData.ActiveAreaLightsCount * ArealLightImportance.NumberOfTriangles * TriangleArea * NDotL);
+            BXDFSamplingImportancePDF = Distance2 / (UtilityData.TotalAreaLightArea * NDotL);
+            return vec4(EmissiveMaterial.EmissionColor * ShadingData.NDotI / PDF, PDF);
+        }
+    }
+
+    return vec4(0);
+}
+
 vec4 ComputeUniformIBLInput(inout FSamplingState SamplingState, out vec3 LightDirection, inout float UniformSamplingImportancePDF, inout float UniformSamplingBXDFPDF)
 {
     /// TODO: Verify that sampling is uniform
@@ -702,9 +1048,6 @@ vec4 ComputeBXDFIBLInput(inout FSamplingState SamplingState, vec3 LightDirection
     RayData.RayFlags = 0;
     RayData.Direction.xyz = LightDirection;
     RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace + ShadingData.NormalInWorldSpace * FLOAT_EPSILON;
-
-    DebugGlobal0.xyz = RayData.Origin.xyz;
-    DebugGlobal1.xyz = LightDirection;
 
     /// Trace the ray
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, FLOAT_EPSILON, RayData.Direction.xyz, 10000, 0);
@@ -815,6 +1158,7 @@ void main()
     vec3 PointLightResult = vec3(0);
     vec3 DirectionalLightResult = vec3(0);
     vec3 SpotLightResult = vec3(0);
+    vec3 AreaLightResult = vec3(0);
     vec3 IBLResult = vec3(0);
     vec3 TotalIncomingLight = vec3(0);
     SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_LIGHT);
@@ -928,6 +1272,54 @@ void main()
         TotalIncomingLight += UniformSpotLightSamplingResult.xyz + ImportanceSpotLightSamplingResult.xyz;
     }
 
+    if (UtilityData.ActiveAreaLightsCount != 0)
+    {
+        vec3 UniformOutgoingDirection = vec3(0);
+        vec3 ImportanceOutgoingDirection = vec3(0);
+        vec3 BXDFOutgoingDirection = ShadingData.WorldSpaceOutgoingDirection; ///We already have bxdf direction
+        float UniformSamplingImportancePDF = 0.f;
+        float UniformSamplingBXDFPDF = 0.f;
+        float ImportanceSamplingUniformPDF = 0.f;
+        float ImportanceSamplingBXDFPDF = 0.f;
+        float BXDFSamplingUniformPDF = 0.f;
+        float BXDFSamplingImportancePDF = 0.f;
+        float W1 = 0.f;
+        float W2 = 0.f;
+        float W3 = 0.f;
+
+        vec4 UniformAreaLightSamplingResult = ComputeUniformAreaLightInput(SamplingState, UniformOutgoingDirection, UniformSamplingImportancePDF, UniformSamplingBXDFPDF);
+        vec4 ImportanceAreaLightSamplingResult = ComputeImportanceAreaLightInput(SamplingState, ImportanceOutgoingDirection, ImportanceSamplingUniformPDF, ImportanceSamplingBXDFPDF);
+        vec4 BXDFAreaLightSamplingResult = ComputeBXDFAreaLightInput(SamplingState, BXDFOutgoingDirection, ShadingData.MaterialScatteringPDF, BXDFSamplingUniformPDF, BXDFSamplingImportancePDF);
+
+        vec3 MaterialInteractionEvaluationResult1 = vec3(0); /// Interaction result of uniform sampled area light and the surface
+        vec3 MaterialInteractionEvaluationResult2 = vec3(0); /// Interaction result of importance sampled area light and the surface
+        vec3 MaterialInteractionEvaluationResult3 = vec3(0); /// Interaction result of bxdf sampled area light and the surface
+
+        if (UniformAreaLightSamplingResult.w != 0)
+        {
+            MaterialInteractionEvaluationResult1 = EvaluateMaterialInteractionFromDirection(Material, RayType, UniformOutgoingDirection);
+            MaterialInteractionEvaluationResult1 = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResult1 * UniformAreaLightSamplingResult.xyz;
+            W1 = UniformAreaLightSamplingResult.w / (UniformAreaLightSamplingResult.w + UniformSamplingImportancePDF + UniformSamplingBXDFPDF);
+        }
+
+        if (ImportanceAreaLightSamplingResult.w != 0)
+        {
+            MaterialInteractionEvaluationResult2 = EvaluateMaterialInteractionFromDirection(Material, RayType, ImportanceOutgoingDirection);
+            MaterialInteractionEvaluationResult2 = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResult2 * ImportanceAreaLightSamplingResult.xyz;
+            W2 = ImportanceAreaLightSamplingResult.w / (ImportanceAreaLightSamplingResult.w + ImportanceSamplingUniformPDF + ImportanceSamplingBXDFPDF);
+        }
+
+        if (BXDFAreaLightSamplingResult.w != 0)
+        {
+            MaterialInteractionEvaluationResult3 = EvaluateMaterialInteractionFromDirection(Material, RayType, BXDFOutgoingDirection);
+            MaterialInteractionEvaluationResult3 = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResult3 * BXDFAreaLightSamplingResult.xyz;
+            W3 = BXDFAreaLightSamplingResult.w / (BXDFAreaLightSamplingResult.w + BXDFSamplingUniformPDF + BXDFSamplingImportancePDF);
+        }
+
+        AreaLightResult = W1 * MaterialInteractionEvaluationResult1 + W2 * MaterialInteractionEvaluationResult2 + W3 * MaterialInteractionEvaluationResult3;
+        TotalIncomingLight += UniformAreaLightSamplingResult.xyz + ImportanceAreaLightSamplingResult.xyz + BXDFAreaLightSamplingResult.xyz;
+    }
+
     if (true /*UtilityData.IBLIsActive*/)
     {
         vec3 UniformOutgoingDirection = vec3(0);
@@ -971,8 +1363,6 @@ void main()
             MaterialInteractionEvaluationResult3 = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResult3 * BXDFIBLSamplingResult.xyz;
             W3 = BXDFIBLSamplingResult.w / (BXDFIBLSamplingResult.w + BXDFSamplingUniformPDF + BXDFSamplingImportancePDF);
         }
-
-        DebugGlobal2.xyz = BXDFIBLSamplingResult.xyz;
 
         IBLResult = W1 * MaterialInteractionEvaluationResult1 + W2 * MaterialInteractionEvaluationResult2 + W3 * MaterialInteractionEvaluationResult3;
         TotalIncomingLight += UniformIBLSamplingResult.xyz + ImportanceIBLSamplingResult.xyz + BXDFIBLSamplingResult.xyz;

@@ -27,6 +27,9 @@ namespace ECS
             std::vector<FVertexComponent> Vertices{};
             std::vector<uint32_t> Indices{};
             bool Indexed = false;
+
+			/// Compute the area of the mesh given the passed transformation matrix.
+			float ComputeArea(const FMatrix4& ModelMatrix = FMatrix4());
         };
     }
 }

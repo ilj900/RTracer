@@ -16,6 +16,7 @@ set(ECS_INCLUDE
         components/transform_component.h
         components/texture_component.h
 
+        systems/area_light_system.h
         systems/acceleration_structure_system.h
         systems/camera_system.h
         systems/directional_light_system.h
@@ -31,6 +32,7 @@ set(ECS_INCLUDE
 set(ECS_SOURCE
         components/mesh_component.cpp
 
+        systems/area_light_system.cpp
         systems/acceleration_structure_system.cpp
         systems/camera_system.cpp
         systems/directional_light_system.cpp

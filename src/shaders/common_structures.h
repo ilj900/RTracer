@@ -98,6 +98,21 @@ struct FSpotLight
 	float Dummy3;
 };
 
+struct FAreaLight
+{
+	uint32_t IsIndexedFlagAndRenderableIndex;
+	uint32_t NumberOfTriangles;
+	uint32_t TransformIndex;
+	uint32_t MaterialIndex;
+
+	uint64_t VertexBufferAddress;
+	uint64_t IndexBufferAddress;
+
+	uint64_t AliasTableBufferAddress;
+	float Area;
+	float Dummy3;
+};
+
 struct FUtilityData
 {
 	uint32_t ActiveDirectionalLightsCount;
@@ -106,6 +121,8 @@ struct FUtilityData
 	float TotalSpotLightPower;
 	uint32_t ActivePointLightsCount;
 	float TotalPointLightPower;
+	uint32_t ActiveAreaLightsCount;
+	float TotalAreaLightArea;
 };
 
 /// Should be aligned with FAliasTableEntry

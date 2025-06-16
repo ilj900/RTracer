@@ -2,6 +2,7 @@
 #include "vk_debug.h"
 #include "vk_functions.h"
 
+#include "area_light_system.h"
 #include "material_component.h"
 #include "material_system.h"
 #include "renderable_system.h"
@@ -52,6 +53,10 @@ FMasterShader::FMasterShader(uint32_t WidthIn, uint32_t HeightIn, uint32_t Submi
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_POINT_LIGHTS_IMPORTANCE_BUFFER_INDEX,
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+    DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_AREA_LIGHTS_BUFFER_INDEX,
+        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+    DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_AREA_LIGHTS_IMPORTANCE_BUFFER_INDEX,
+        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_IBL_IMPORTANCE_BUFFER_INDEX,
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_IBL_IMAGE_SAMPLER_INDEX,
@@ -133,10 +138,15 @@ void FMasterShader::Init(FCompileDefinitions* CompileDefinitions)
 	RGenRegions.resize(MATERIAL_SYSTEM()->Entities.size());
 	SBTBuffers.resize(RGenRegions.size());
 
+    const auto EmissiveMaterials = AREA_LIGHT_SYSTEM()->GetEmissiveMaterials();
+    auto EmissiveMaterialCode = MATERIAL_SYSTEM()->GenerateEmissiveMaterialsCode(EmissiveMaterials);
+    FCompileDefinitions MasterShaderCompileDefinitions(*CompileDefinitions);
+    MasterShaderCompileDefinitions.Push("FDeviceMaterial GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex);", EmissiveMaterialCode);
+
 	for (auto& Material : *MATERIAL_SYSTEM())
 	{
 		auto MaterialCode = MATERIAL_SYSTEM()->GenerateMaterialCode(Material);
-		FCompileDefinitions CombinedCompileDefinitions(*CompileDefinitions);
+		FCompileDefinitions CombinedCompileDefinitions(MasterShaderCompileDefinitions);
 		CombinedCompileDefinitions.Push("FDeviceMaterial GetMaterial(vec2 TextureCoords);", MaterialCode);
 		auto RayGenerationShader = FShader("../src/shaders/master_shader.rgen", &CombinedCompileDefinitions);
 		uint32_t MaterialIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
@@ -176,6 +186,8 @@ void FMasterShader::UpdateDescriptorSets()
 		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_SPOT_LIGHTS_IMPORTANCE_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(DIRECTIONAL_LIGHTS_IMPORTANCE_BUFFER));
 		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_POINT_LIGHTS_BUFFER_INDEX, i, POINT_LIGHT_SYSTEM()->DeviceBuffer);
 		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_POINT_LIGHTS_IMPORTANCE_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(POINT_LIGHTS_IMPORTANCE_BUFFER));
+        UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_AREA_LIGHTS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(AREA_LIGHTS_IMPORTANCE_BUFFER));
+        UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_AREA_LIGHTS_IMPORTANCE_BUFFER_INDEX, i, AREA_LIGHT_SYSTEM()->DeviceBuffer);
 		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_IBL_IMPORTANCE_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer("IBLImportanceBuffer"));
 		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_IBL_IMAGE_SAMPLER_INDEX, i, TEXTURE_MANAGER()->GetTexture("IBL Image"), IBLSampler);
 		UpdateDescriptorSet(MASTER_SHADER_LAYOUT_INDEX, MASTER_SHADER_IBL_WEIGHTS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer("IBLPDFBuffer"));

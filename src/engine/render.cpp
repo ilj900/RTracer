@@ -1,6 +1,7 @@
 #include "coordinator.h"
 
 #include "acceleration_structure_system.h"
+#include "area_light_system.h"
 #include "mesh_system.h"
 #include "transform_system.h"
 #include "renderable_system.h"
@@ -39,6 +40,7 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
 
     /// Register components
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FAccelerationStructureComponent>();
+    COORDINATOR().RegisterComponent<ECS::COMPONENTS::FAreaLightComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FDeviceCameraComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FDeviceMeshComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FDeviceRenderableComponent>();
@@ -54,6 +56,7 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FFramebufferComponent>();
 
     /// Register systems
+    auto AreaLightSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FAreaLightSystem>();
     auto CameraSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FCameraSystem>();
     auto TransformSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FTransformSystem>();
     auto RenderableSystem = COORDINATOR().RegisterSystem<ECS::SYSTEMS::FRenderableSystem>();
@@ -108,6 +111,11 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
 	SpotLightSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FSpotLightComponent>());
 	COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FSpotLightSystem>(SpotLightSignature);
 
+    /// Register Area Light system signature
+    ECS::FSignature AreaLightSignature;
+    AreaLightSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FAreaLightComponent>());
+    COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FAreaLightSystem>(AreaLightSignature);
+
     /// Register Acceleration structure system signature
     ECS::FSignature AccelerationStructureSignature;
     AccelerationStructureSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FMeshInstanceComponent>());
@@ -124,6 +132,7 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
 	POINT_LIGHT_SYSTEM()->Init(MaxFramesInFlight);
 	DIRECTIONAL_LIGHT_SYSTEM()->Init(MaxFramesInFlight);
     SPOT_LIGHT_SYSTEM()->Init(MaxFramesInFlight);
+    AREA_LIGHT_SYSTEM()->Init(MaxFramesInFlight);
     TRANSFORM_SYSTEM()->Init(MaxFramesInFlight);
     ACCELERATION_STRUCTURE_SYSTEM()->Init(MaxFramesInFlight);
 
@@ -628,6 +637,7 @@ int FRender::Update()
 	bAnyUpdate |= SPOT_LIGHT_SYSTEM()->Update();
 	bAnyUpdate |= DIRECTIONAL_LIGHT_SYSTEM()->Update();
 	bAnyUpdate |= SPOT_LIGHT_SYSTEM()->Update();
+    bAnyUpdate |= AREA_LIGHT_SYSTEM()->Update();
 	bAnyUpdate |= ACCELERATION_STRUCTURE_SYSTEM()->Update();
 
 	Counter = bAnyUpdate ? 0 : Counter;
@@ -1302,6 +1312,11 @@ ECS::FEntity FRender::CreateSpotLight(const FVector3& Position, const FVector3& 
 	return SPOT_LIGHT_SYSTEM()->CreateSpotLight(Position, Direction, Color, Intensity, OuterAngle, InnerAngle);
 }
 
+ECS::FEntity FRender::CreateAreaLight(ECS::FEntity Renderable)
+{
+    return AREA_LIGHT_SYSTEM()->CreateAreaLightInstance(Renderable);
+}
+
 void FRender::SetLightPosition(ECS::FEntity Light, const FVector3& Position)
 {
 	POINT_LIGHT_SYSTEM()->SetLightPosition(Light, Position);
@@ -1383,6 +1398,7 @@ void FRender::AllocateIndependentResources()
 		{POINT_LIGHTS_IMPORTANCE_BUFFER, 		sizeof(FAliasTableEntry) * POINT_LIGHT_SYSTEM()->MAX_POINT_LIGHTS, 0},
 		{DIRECTIONAL_LIGHTS_IMPORTANCE_BUFFER,	sizeof(FAliasTableEntry) * DIRECTIONAL_LIGHT_SYSTEM()->MAX_DIRECTIONAL_LIGHTS, 0},
 		{SPOT_LIGHTS_IMPORTANCE_BUFFER,			sizeof(FAliasTableEntry) * SPOT_LIGHT_SYSTEM()->MAX_SPOT_LIGHTS, 0},
+        {AREA_LIGHTS_IMPORTANCE_BUFFER, 			sizeof(uint64_t) * AREA_LIGHT_SYSTEM()->MAX_AREA_LIGHTS, 0},
 	};
 
 	CreateAndRegisterBufferShortcut(BufferDescriptions);
@@ -1440,6 +1456,7 @@ void FRender::FreeIndependentResources()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(POINT_LIGHTS_IMPORTANCE_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(DIRECTIONAL_LIGHTS_IMPORTANCE_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(SPOT_LIGHTS_IMPORTANCE_BUFFER);
+    RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(AREA_LIGHTS_IMPORTANCE_BUFFER);
 }
 
 void FRender::CreateAndRegisterBufferShortcut(const std::vector<FBufferDescription>& BufferDescriptions)

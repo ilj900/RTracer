@@ -694,43 +694,43 @@ namespace ECS
 			return *this;
 		}
 
+		std::string GenerateGetFunctionFloat(const std::string& ParameterName, uint32_t TextureIndex, float FallbackValue)
+		{
+			std::string Result = "    " + ParameterName;
+
+			if (UINT32_MAX == TextureIndex)
+			{
+				Result += " = " + std::to_string(FallbackValue) + ";\r\n";
+			}
+			else
+			{
+				Result += " = SampleFloat(" + std::to_string(TextureIndex) + ", TextureCoords);\r\n";
+			}
+
+			return Result;
+		};
+
+		std::string GenerateGetFunctionVector3(const std::string& ParameterName, uint32_t TextureIndex, FVector3 FallbackValue)
+		{
+			std::string Result = "    " + ParameterName;
+
+			if (UINT32_MAX == TextureIndex)
+			{
+				Result += " = " + FallbackValue.ToString() + ";\r\n";
+			}
+			else
+			{
+				Result += " = SampleVec3(" + std::to_string(TextureIndex) + ", TextureCoords);\r\n";
+			}
+
+			return Result;
+		};
+
         std::string FMaterialSystem::GenerateMaterialCode(FEntity MaterialEntity)
         {
             std::string Result;
 
             auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
-
-            auto GenerateGetFunctionFloat = [](const std::string& ParameterName, uint32_t TextureIndex, float FallbackValue)
-            {
-                std::string Result = "    " + ParameterName;
-
-                if (UINT32_MAX == TextureIndex)
-                {
-                    Result += " = " + std::to_string(FallbackValue) + ";\r\n";
-                }
-                else
-                {
-                    Result += " = SampleFloat(" + std::to_string(TextureIndex) + ", TextureCoords);\r\n";
-                }
-
-                return Result;
-            };
-
-            auto GenerateGetFunctionVector3 = [](const std::string& ParameterName, uint32_t TextureIndex, FVector3 FallbackValue)
-            {
-                std::string Result = "    " + ParameterName;
-
-                if (UINT32_MAX == TextureIndex)
-                {
-                    Result += " = " + FallbackValue.ToString() + ";\r\n";
-                }
-                else
-                {
-                    Result += " = SampleVec3(" + std::to_string(TextureIndex) + ", TextureCoords);\r\n";
-                }
-
-                return Result;
-            };
 
             Result += "FDeviceMaterial GetMaterial(vec2 TextureCoords)\r\n";
             Result += "{\r\n";
@@ -784,5 +784,44 @@ namespace ECS
 
             return Result;
         }
+
+		std::string FMaterialSystem::GenerateEmissiveMaterialsCode(const std::unordered_map<uint32_t , uint32_t>& EmissiveMaterials)
+		{
+			std::string Result;
+
+			if (EmissiveMaterials.empty())
+			{
+				Result += "FDeviceMaterial GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex)\r\n";
+				Result += "{\r\n";
+				Result += "    FDeviceMaterial Material;\r\n";
+				Result += "    return Material;\r\n";
+				Result += "};\r\n";
+				return Result;
+			}
+
+			Result += "FDeviceMaterial GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex)\r\n";
+			Result += "{\r\n";
+			Result += "    FDeviceMaterial Material;\r\n";
+			/// We need to initialize it to 0, so that it would work as a mark whether material is emissive or not
+			Result += "    Material.EmissionWeight = 0;\r\n";
+			Result += "    switch(MaterialIndex)\r\n";
+			Result += "    {\r\n";
+			for (auto& Entry : EmissiveMaterials)
+			{
+				auto& MaterialComponent = GetComponentByIndex<ECS::COMPONENTS::FMaterialComponent>(Entry.first);
+				Result += "    case " + std::to_string(Entry.first) + ":\r\n";
+				Result += "    {\r\n";
+				Result += "    " + GenerateGetFunctionVector3("Material.EmissionColor", MaterialComponent.EmissionColorTexture, MaterialComponent.EmissionColor);
+				Result += "    " + GenerateGetFunctionFloat("Material.EmissionWeight", MaterialComponent.EmissionWeightTexture, MaterialComponent.EmissionWeight);
+				Result += "    break;\r\n";
+				Result += "    }\r\n";
+			}
+			Result += "    };\r\n";
+
+			Result += "    return Material;\r\n";
+			Result += "};\r\n";
+
+			return Result;
+		}
     }
 }
