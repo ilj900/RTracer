@@ -6,7 +6,7 @@
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_nonuniform_qualifier : enable // ?
 
-//#define DEBUG_PRINTF
+#define DEBUG_PRINTF
 #ifdef DEBUG_PRINTF
 #define DEBUG_ONLY_FIRST_BOUNCE
 #extension GL_EXT_debug_printf : enable
@@ -1156,6 +1156,14 @@ void main()
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
     ShadingData.MaterialScatteringPDF = ScatterMaterial(Material, RayType, RayData.Eta, SamplingState, ShadingData.bFrontFacing);
 
+    /// If we hit emissive material on the first hit, just output it, nothing else to do here
+    if (PushConstants.BounceIndex == 0 && RayType == EMISSION_LAYER)
+    {
+        RayDataBuffer[PixelIndex].RayFlags = RAY_DATA_RAY_MISSED;
+        imageStore(OutcomingImage, ivec2(PixelCoords), vec4(Material.EmissionColor , 1));
+        return;
+    }
+
     vec3 BxDF = EvaluateMaterialInteraction(Material, RayType);
     vec3 ThroughputForThisBounce = BxDF * ShadingData.NDotI / ShadingData.MaterialScatteringPDF;
 
@@ -1381,13 +1389,13 @@ void main()
     }
 
     vec3 BounceInput = vec3(0);
-    BounceInput += PointLightResult + DirectionalLightResult + SpotLightResult + IBLResult;
+    BounceInput += PointLightResult + DirectionalLightResult + SpotLightResult + AreaLightResult + IBLResult;
     ThroughputBuffer[PixelIndex].xyz = ThroughputBuffer[PixelIndex].xyz + BounceInput;
 
     if ((PushConstants.BounceIndex == LAST_DIFFUSE_BOUNCE && CheckFlag(RayData.RayFlags, DIFFUSE_LAYER))
     || (PushConstants.BounceIndex == LAST_REFLECTION_BOUNCE && CheckFlag(RayData.RayFlags, SPECULAR_LAYER))
     || (PushConstants.BounceIndex == LAST_REFRACTION_BOUNCE && CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER))
-    || ShadingData.MaterialScatteringPDF <= 0.)
+    || (ShadingData.MaterialScatteringPDF <= 0.f))
     {
         RayDataBuffer[PixelIndex].RayFlags = RAY_DATA_RAY_MISSED;
         imageStore(OutcomingImage, ivec2(PixelCoords), vec4(ThroughputBuffer[PixelIndex].xyz , 1));
