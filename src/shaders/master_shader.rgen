@@ -6,7 +6,7 @@
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_nonuniform_qualifier : enable // ?
 
-#define DEBUG_PRINTF
+//#define DEBUG_PRINTF
 #ifdef DEBUG_PRINTF
 #define DEBUG_ONLY_FIRST_BOUNCE
 #extension GL_EXT_debug_printf : enable
@@ -1130,7 +1130,7 @@ void main()
     if (PixelCoords.x == PushConstants.Width / 2 && PixelCoords.y == PushConstants.Height / 2)
     {
         b = true;
-        debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
+        //debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
     }
 #endif
 
@@ -1292,6 +1292,8 @@ void main()
         TotalIncomingLight += UniformSpotLightSamplingResult.xyz + ImportanceSpotLightSamplingResult.xyz;
     }
 
+    bool bBRDFAreaLightSamplingSuccessful = false;
+
     if (UtilityData.ActiveAreaLightsCount != 0)
     {
         vec3 UniformOutgoingDirection = vec3(0);
@@ -1334,6 +1336,7 @@ void main()
             MaterialInteractionEvaluationResult3 = EvaluateMaterialInteractionFromDirection(Material, RayType, BXDFOutgoingDirection);
             MaterialInteractionEvaluationResult3 = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResult3 * BXDFAreaLightSamplingResult.xyz;
             W3 = BXDFAreaLightSamplingResult.w / (BXDFAreaLightSamplingResult.w + BXDFSamplingUniformPDF + BXDFSamplingImportancePDF);
+            bBRDFAreaLightSamplingSuccessful = true;
         }
 
         AreaLightResult = W1 * MaterialInteractionEvaluationResult1 + W2 * MaterialInteractionEvaluationResult2 + W3 * MaterialInteractionEvaluationResult3;
@@ -1395,7 +1398,8 @@ void main()
     if ((PushConstants.BounceIndex == LAST_DIFFUSE_BOUNCE && CheckFlag(RayData.RayFlags, DIFFUSE_LAYER))
     || (PushConstants.BounceIndex == LAST_REFLECTION_BOUNCE && CheckFlag(RayData.RayFlags, SPECULAR_LAYER))
     || (PushConstants.BounceIndex == LAST_REFRACTION_BOUNCE && CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER))
-    || (ShadingData.MaterialScatteringPDF <= 0.f))
+    || (ShadingData.MaterialScatteringPDF <= 0.0001f)
+    || bBRDFAreaLightSamplingSuccessful) /// If we know that scattered ray hit some area light, no need to precess him
     {
         RayDataBuffer[PixelIndex].RayFlags = RAY_DATA_RAY_MISSED;
         imageStore(OutcomingImage, ivec2(PixelCoords), vec4(ThroughputBuffer[PixelIndex].xyz , 1));
