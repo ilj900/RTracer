@@ -9,9 +9,9 @@ using json = nlohmann::json;
 
 void SaveCamera(ECS::FEntity Camera, std::shared_ptr<FRender>& Render, const std::string& Name)
 {
-	FVector3 CameraPosition;
-	FVector3 CameraDirection;
-	FVector3 CameraUp;
+	FVector3 CameraPosition{};
+	FVector3 CameraDirection{};
+	FVector3 CameraUp{};
 	float SensorSizeX;
 	float SensorSizeY;
 	float FocalDistance;
@@ -34,6 +34,10 @@ void SaveCamera(ECS::FEntity Camera, std::shared_ptr<FRender>& Render, const std
 void LoadCamera(ECS::FEntity Camera, std::shared_ptr<FRender>& Render, const std::string& Name)
 {
 	std::ifstream File(Name + ".json");
+    if (!File)
+    {
+        throw std::runtime_error("Failed to load camera data from file.");
+    }
 	json Data = json::parse(File);
 	File.close();
 

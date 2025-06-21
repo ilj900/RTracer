@@ -6,6 +6,8 @@
 #include "random.h"
 #include "bxdf.h"
 
+#include "utility_functions.h"
+
 #include "stb_image_write.h"
 #include "tinyexr.h"
 
@@ -14,6 +16,125 @@
 #include <iostream>
 #include <fstream>
 #include <random>
+
+bool bGenerateReferences = true;
+
+bool CompareImagesPng(const std::string& ReferencePath, const std::string& SavedPath)
+{
+    return true;
+}
+
+bool TestScene(const std::string& SceneName)
+{
+    INIT_VK_CONTEXT({});
+    auto Render = std::make_shared<FRender>(1920, 1080);
+    Render->Init();
+    auto Camera = Render->CreateCamera();
+    Render->SetActiveCamera(Camera);
+    auto SceneLoader = std::make_shared<FSceneLoader>(Render);
+    SceneLoader->LoadScene(SceneName);
+    LoadCamera(Camera, Render, "../data/cameras/" + SceneName);
+
+    for (int i = 0; i < 256; ++i)
+    {
+        Render->Update();
+        Render->Render();
+    }
+
+    Render->WaitIdle();
+    std::string SavePath = std::string("../data/") + (bGenerateReferences ? "TestReferences/" : "TestResults/") + SceneName;
+    Render->PrintScreenPng(SavePath);
+
+    bool Result = true;
+    if (!bGenerateReferences)
+    {
+        std::string ReferencePath = std::string("../data/TestReferences/") + SceneName;
+        Result = CompareImagesPng(ReferencePath, SavePath);
+    }
+
+    Render = nullptr;
+    return Result;
+}
+
+TEST_CASE( SCENE_AREA_LIGHTS, "[Scenes]")
+{
+    CHECK(TestScene(Catch::getResultCapture().getCurrentTestName()));
+}
+
+TEST_CASE( SCENE_AREA_LIGHTS_2, "[Scenes]")
+{
+    CHECK(TestScene(Catch::getResultCapture().getCurrentTestName()));
+}
+
+TEST_CASE( SCENE_BIG_PLANES, "[Scenes]")
+{
+    CHECK(TestScene(Catch::getResultCapture().getCurrentTestName()));
+}
+
+TEST_CASE( SCENE_CORNELL_BOX, "[Scenes]")
+{
+    CHECK(TestScene(Catch::getResultCapture().getCurrentTestName()));
+}
+
+TEST_CASE( SCENE_CORNELL_BOX_2, "[Scenes]")
+{
+    CHECK(TestScene(Catch::getResultCapture().getCurrentTestName()));
+}
+
+TEST_CASE( SCENE_DIFFUSE_MATERIAL, "[Scenes]")
+{
+    CHECK(TestScene(Catch::getResultCapture().getCurrentTestName()));
+}
+
+TEST_CASE( SCENE_DIRECTIONAL_LIGHT, "[Scenes]")
+{
+    CHECK(TestScene(Catch::getResultCapture().getCurrentTestName()));
+}
+
+TEST_CASE( SCENE_GLASS_PLANES, "[Scenes]")
+{
+    CHECK(TestScene(Catch::getResultCapture().getCurrentTestName()));
+}
+
+TEST_CASE( SCENE_POINT_LIGHT, "[Scenes]")
+{
+    CHECK(TestScene(Catch::getResultCapture().getCurrentTestName()));
+}
+
+TEST_CASE( SCENE_ROUGH_GLASS, "[Scenes]")
+{
+    CHECK(TestScene(Catch::getResultCapture().getCurrentTestName()));
+}
+
+TEST_CASE( SCENE_SPECULAR_ROUGHNESS, "[Scenes]")
+{
+    CHECK(TestScene(Catch::getResultCapture().getCurrentTestName()));
+}
+
+TEST_CASE( SCENE_SPOT_LIGHT, "[Scenes]")
+{
+    CHECK(TestScene(Catch::getResultCapture().getCurrentTestName()));
+}
+
+TEST_CASE( SCENE_STANFORD_DRAGON, "[Scenes]")
+{
+    CHECK(TestScene(Catch::getResultCapture().getCurrentTestName()));
+}
+
+TEST_CASE( SCENE_THREE_SPHERES, "[Scenes]")
+{
+    CHECK(TestScene(Catch::getResultCapture().getCurrentTestName()));
+}
+
+TEST_CASE( SCENE_VIKINGS_ROOM, "[Scenes]")
+{
+    CHECK(TestScene(Catch::getResultCapture().getCurrentTestName()));
+}
+
+TEST_CASE( SCENE_WHITE_FURNACE, "[Scenes]")
+{
+    CHECK(TestScene(Catch::getResultCapture().getCurrentTestName()));
+}
 
 TEST_CASE( "Basic scene loading", "[Basic]" )
 {

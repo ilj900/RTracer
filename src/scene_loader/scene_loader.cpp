@@ -269,18 +269,6 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->SetIBL("../resources/hdr_black_image.exr");
 	}
-	else if (Name == SCENE_WORLD_COORDINATES_AOV)
-	{
-		auto Plane = Render->CreatePlane({4, 4});
-
-		auto PlaneInstance = Render->CreateInstance(Plane, {0, 0, 0}, {0, 0, 1}, {0, 1, 0});
-
-		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
-
-		Render->ShapeSetMaterial(PlaneInstance, WhiteMaterial);
-
-		Render->SetIBL("../resources/sun.exr");
-	}
 	else if (Name == SCENE_CORNELL_BOX_ANIMATED)
 	{
 		auto Wall = Render->CreatePlane({4, 4});
@@ -342,7 +330,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		Render->ShapeSetMaterial(Sphere2, DiffuseMaterial);
 		Render->ShapeSetMaterial(Sphere3, PlasticMaterial);
 
-		Render->SetIBL("../resources/hdr_image.exr");
+		Render->SetIBL("../resources/brown_photostudio_02_4k.exr");
 	}
 	else if (Name == SCENE_BIG_PLANES)
 	{
@@ -446,11 +434,12 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto Material_1 = Render->CreateDiffuseMaterial({0.8, 0.8, 0.8});
 		Render->ShapeSetMaterial(PlaneInstance, Material_1);
 
-		for (int i = 0; i < 20; ++i)
+        int SpheresCount = 5;
+		for (int i = 0; i < SpheresCount; ++i)
 		{
-			auto SphereInstance = Render->CreateInstance(Sphere, {float(-10 + i), -1.499, 1});
+			auto SphereInstance = Render->CreateInstance(Sphere, {float(-SpheresCount + i * 2), -1.499, 1});
 			auto Material = Render->CreateReflectiveMaterial({1, 0.8431f, 0});
-			Render->MaterialSetSpecularRoughness(Material, i * 0.05f);
+			Render->MaterialSetSpecularRoughness(Material, i * (1.f / float(SpheresCount - 1)));
 			Render->ShapeSetMaterial(SphereInstance, Material);
 		}
 

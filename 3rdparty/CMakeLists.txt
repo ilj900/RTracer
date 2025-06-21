@@ -14,3 +14,4 @@ target_link_libraries(imgui Vulkan::Vulkan glfw)
 target_include_directories(imgui PUBLIC imgui imgui/backends ImGuiLegitProfiler .)
 
 target_include_directories(RTracer PUBLIC .)
+target_include_directories(Renderer PUBLIC .)

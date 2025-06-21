@@ -69,6 +69,7 @@ set(INCLUDE
         tasks/task_accumulate.h
         tasks/task_passthrough.h
         tasks/task_advance_render_count.h
+        utility_functions.h
         ${ECS_INCLUDE})
 
 set(SOURCE
@@ -93,6 +94,7 @@ set(SOURCE
         tasks/task_accumulate.cpp
         tasks/task_passthrough.cpp
         tasks/task_advance_render_count.cpp
+        utility_functions.cpp
         ${ECS_SOURCE})
 
 add_library(Renderer ${SOURCE} ${INCLUDE})
