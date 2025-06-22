@@ -10,6 +10,7 @@
 #ifdef DEBUG_PRINTF
 #define DEBUG_ONLY_FIRST_BOUNCE
 #extension GL_EXT_debug_printf : enable
+#define DP debugPrintfEXT
 bool b = false;
 #endif
 
