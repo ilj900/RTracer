@@ -80,8 +80,14 @@ std::vector<uint32_t> CompileShaderToSpirVData(const std::string &Path,  const F
     {
         for (auto &Define: CompileDefinitions->Defines)
         {
-            auto StartingIndex = FindString(ShaderCode, Define.first);
-            if (StartingIndex != std::string::npos) {
+            while (true)
+            {
+                auto StartingIndex = FindString(ShaderCode, Define.first);
+
+                if (StartingIndex == std::string::npos)
+                {
+                    break;
+                }
                 ReplaceString(ShaderCode, Define.first, Define.second, StartingIndex);
             }
             /// TODO: What if Define was not found? looks like an error...

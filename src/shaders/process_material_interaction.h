@@ -209,18 +209,10 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout float Et
 				/// Decide on whether the ray is reflected or refracted
 				float RF = RandomFloat(SamplingState);
 
-				//if (b)
-				//{
-				//	debugPrintfEXT("NDotI %f\n", NDotI);
-				//	debugPrintfEXT("TangentSpaceViewDirection Length %f\n", length(TangentSpaceViewDirection));
-				//	debugPrintfEXT("R0 %f\n", R0);
-				//	debugPrintfEXT("RTheta %f\n", RTheta);
-				//}
-
 				if (RF < RTheta)
 				{
-					RayType = SPECULAR_LAYER;
 					/// Reflected it be
+					RayType = SPECULAR_LAYER;
 					ShadingData.TangentSpaceOutgoingDirection = reflect(TangentSpaceViewDirection, vec3(0, 1, 0));
 					ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
 				}
