@@ -29,8 +29,24 @@ bool b = false;
     if (b) { debugPrintfEXT(message, v1, v2, v3, v4, v5, v6, v7); }
 #define DP8(message, v1, v2, v3, v4, v5, v6, v7, v8) \
     if (b) { debugPrintfEXT(message, v1, v2, v3, v4, v5, v6, v7, v8); }
+#define DPF1(f1) \
+    if (b) { debugPrintfEXT("%f\n", f1); }
+#define DPF2(f1, f2) \
+    if (b) { debugPrintfEXT("%f, %f\n", f1, f2); }
+#define DPF3(f1, f2, f3) \
+    if (b) { debugPrintfEXT("%f, %f, %f\n", f1, f2, f3); }
+#define DPF4(f1, f2, f3, f4) \
+    if (b) { debugPrintfEXT("%f, %f, %f, %f\n", f1, f2, f3, f4); }
+#define DPV2(v) \
+    if (b) { debugPrintfEXT("%f, %f\n", v); }
+#define DPV3(v) \
+    if (b) { debugPrintfEXT("%f, %f, %f\n", v); }
+#define DPV4(v) \
+    if (b) { debugPrintfEXT("%f, %f, %f, %f\n", v); }
 #define MARK(I) \
     if (b) { debugPrintfEXT("Mark: %i\n", I); }
+#define BOOL(B, I) \
+    if (b && B) { debugPrintfEXT("Bool: %i\n", I); }
 #endif
 
 vec4 DebugGlobal0 = vec4(0);
@@ -1100,7 +1116,6 @@ vec4 ComputeBXDFIBLInput(inout FSamplingState SamplingState, vec3 LightDirection
     }
     else
     {
-        DP("AA\n");
         return vec4(0);
     }
 }
@@ -1385,7 +1400,6 @@ void main()
         vec4 UniformIBLSamplingResult = ShadingData.IsScatteredRaySingular ? vec4(0) : ComputeUniformIBLInput(SamplingState, UniformOutgoingDirection, UniformSamplingImportancePDF, UniformSamplingBXDFPDF);
         vec4 ImportanceIBLSamplingResult = ShadingData.IsScatteredRaySingular ? vec4(0) : ComputeImportanceIBLInput(SamplingState, ImportanceOutgoingDirection, ImportanceSamplingUniformPDF, ImportanceSamplingBXDFPDF);
         vec4 BXDFIBLSamplingResult = ComputeBXDFIBLInput(SamplingState, BXDFOutgoingDirection, ShadingData.MaterialScatteringPDF, BXDFSamplingUniformPDF, BXDFSamplingImportancePDF);
-        DP1("%f, %f, %f, %f\n", BXDFIBLSamplingResult);
 
         vec3 MaterialInteractionEvaluationResult1 = vec3(0); /// Interaction result of uniform sampled IBL and the surface
         vec3 MaterialInteractionEvaluationResult2 = vec3(0); /// Interaction result of importance sampled IBL and the surface
