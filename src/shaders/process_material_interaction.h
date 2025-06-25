@@ -271,7 +271,7 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout float Et
 							ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
 
 							vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + ShadingData.TangentSpaceOutgoingDirection));
-							PDF = VNDPDF(ApproximatedNormal, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, -ShadingData.TangentSpaceIncomingDirection);
+							PDF = VNDPDF(ApproximatedNormal.xzy, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
 							break;
 						}
 					}
@@ -293,7 +293,7 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout float Et
 								ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
 
 								vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + ShadingData.TangentSpaceOutgoingDirection));
-								PDF = VNDPDF(ApproximatedNormal, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, -ShadingData.TangentSpaceIncomingDirection);
+								PDF = VNDPDF(ApproximatedNormal.xzy, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
 								break;
 							}
 						}
@@ -308,13 +308,14 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout float Et
 							vec3 ApproximatedNormal = normalize((ShadingData.TangentSpaceIncomingDirection * EtaRatio - RefractedDirection) / sqrt(k));
 
 							/// Get PDF
-							PDF = VNDPDF(ApproximatedNormal, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, -ShadingData.TangentSpaceIncomingDirection);
+							PDF = VNDPDF(ApproximatedNormal.xzy, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
 							PDF /= EtaRatio * EtaRatio;
 							/// Also, ray is now traveling in a new media
 							Eta = Material.SpecularIOR;
 
 							ShadingData.TangentSpaceOutgoingDirection = RefractedDirection;
 							ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
+
 							break;
 						}
 					}
