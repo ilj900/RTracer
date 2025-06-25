@@ -6,7 +6,7 @@
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_nonuniform_qualifier : enable // ?
 
-#define DEBUG_PRINTF
+//#define DEBUG_PRINTF
 #ifdef DEBUG_PRINTF
 //#define DEBUG_ONLY_FIRST_BOUNCE
 #extension GL_EXT_debug_printf : enable
@@ -29,6 +29,8 @@ bool b = false;
     if (b) { debugPrintfEXT(message, v1, v2, v3, v4, v5, v6, v7); }
 #define DP8(message, v1, v2, v3, v4, v5, v6, v7, v8) \
     if (b) { debugPrintfEXT(message, v1, v2, v3, v4, v5, v6, v7, v8); }
+#define DPF(f1) \
+    if (b) { debugPrintfEXT("%f\n", f1); }
 #define DPF1(f1) \
     if (b) { debugPrintfEXT("%f\n", f1); }
 #define DPF2(f1, f2) \
@@ -170,7 +172,7 @@ layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_IMPORTANCE
     FDeviceAliasTableEntry IBLImportanceBuffer[];
 };
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_IMAGE_SAMPLER_INDEX) uniform sampler2D IBLTextureSampler;
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_IMAGE_SAMPLER_INDEX) uniform sampler2D IBLTextureSamplerLinear;
 
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_WEIGHTS_BUFFER_INDEX) buffer IBLPDFBufferObject
 {
@@ -1022,7 +1024,7 @@ vec4 ComputeUniformIBLInput(inout FSamplingState SamplingState, out vec3 LightDi
     /// And if we didn't hit any geometry, then we sample the IBL
     if (HitPayload.RenderableIndex == UINT_MAX)
     {
-        const uvec2 IBLSize = textureSize(IBLTextureSampler, 0);
+        const uvec2 IBLSize = textureSize(IBLTextureSamplerLinear, 0);
         vec2 IBLUV = Vec3ToSphericalUV(ShadingData.WorldSpaceOutgoingDirection, M_PI_2);
         uint TexelIndex = uint(IBLUV.y * IBLSize.x * IBLSize.y) + uint(IBLUV.x * IBLSize.x);
 
@@ -1030,7 +1032,7 @@ vec4 ComputeUniformIBLInput(inout FSamplingState SamplingState, out vec3 LightDi
         float PDF = 0.5f * M_INV_PI;
         UniformSamplingImportancePDF = IBLPDFBuffer[TexelIndex];
         UniformSamplingBXDFPDF = EvaluateScatteringPDF(Material, ShadingData.MaterialInteractionType, LightDirection);
-        return vec4(texture(IBLTextureSampler, IBLUV).xyz * NDotL / PDF, PDF);
+        return vec4(texture(IBLTextureSamplerLinear, IBLUV).xyz * NDotL / PDF, PDF);
     }
     else
     {
@@ -1041,7 +1043,7 @@ vec4 ComputeUniformIBLInput(inout FSamplingState SamplingState, out vec3 LightDi
 vec4 ComputeImportanceIBLInput(inout FSamplingState SamplingState, out vec3 LightDirection, inout float ImportanceSamplingUniformPDF, inout float ImportanceSamplingBXDFPDF)
 {
     vec2 UVCoordinates = Sample2DUnitQuad(SamplingState);
-    const uvec2 IBLSize = textureSize(IBLTextureSampler, 0);
+    const uvec2 IBLSize = textureSize(IBLTextureSamplerLinear, 0);
     uint TexelIndex = uint(IBLSize.x * IBLSize.y * UVCoordinates.y) + uint(IBLSize.x * UVCoordinates.x);
 
     FDeviceAliasTableEntry AliasTableEntry = IBLImportanceBuffer[TexelIndex];
@@ -1081,7 +1083,7 @@ vec4 ComputeImportanceIBLInput(inout FSamplingState SamplingState, out vec3 Ligh
         float PDF = IBLPDFBuffer[TexelIndex] * IBLSize.x * IBLSize.y;
         ImportanceSamplingUniformPDF = 0.5f * M_INV_PI;
         ImportanceSamplingBXDFPDF = EvaluateScatteringPDF(Material, ShadingData.MaterialInteractionType, LightDirection);
-        return vec4(texture(IBLTextureSampler, UVCoordinates).xyz * NDotL / PDF, PDF);
+        return vec4(texture(IBLTextureSamplerLinear, UVCoordinates).xyz * NDotL / PDF, PDF);
     }
     else
     {
@@ -1103,7 +1105,7 @@ vec4 ComputeBXDFIBLInput(inout FSamplingState SamplingState, vec3 LightDirection
     /// And if we didn't hit any geometry, then we sample the IBL
     if (HitPayload.RenderableIndex == UINT_MAX)
     {
-        const uvec2 IBLSize = textureSize(IBLTextureSampler, 0);
+        const uvec2 IBLSize = textureSize(IBLTextureSamplerLinear, 0);
         vec2 IBLUV = Vec3ToSphericalUV(ShadingData.WorldSpaceOutgoingDirection, M_PI_2);
         uint TexelIndex = uint(IBLUV.y * IBLSize.x * IBLSize.y) + uint(IBLUV.x * IBLSize.x);
 
@@ -1112,7 +1114,7 @@ vec4 ComputeBXDFIBLInput(inout FSamplingState SamplingState, vec3 LightDirection
         BXDFSamplingImportancePDF = IBLPDFBuffer[TexelIndex];
         /// We use abs because LightDirection is actually the direction of scattered ray and that ray can not be on the wrong side of the hemisphere
         float NDotL = abs(dot(ShadingData.NormalInWorldSpace, LightDirection));
-        return vec4(texture(IBLTextureSampler, IBLUV).xyz * NDotL / PDF, PDF);
+        return vec4(texture(IBLTextureSamplerLinear, IBLUV).xyz * NDotL / PDF, PDF);
     }
     else
     {
@@ -1168,7 +1170,6 @@ void main()
     if (PixelCoords.x == PushConstants.Width / 2 && PixelCoords.y == PushConstants.Height / 2)
     {
         b = true;
-        debugPrintfEXT("Bounse: %i\n", PushConstants.BounceIndex);
     }
 #endif
 
@@ -1178,6 +1179,8 @@ void main()
         b = false;
     }
 #endif
+
+    //DP1("Bounse: %i\n", PushConstants.BounceIndex);
 
     /// Fetch required data
     FRayData RayData = RayDataBuffer[PixelIndex];
@@ -1434,15 +1437,6 @@ void main()
     vec3 BounceInput = vec3(0);
     BounceInput += PointLightResult + DirectionalLightResult + SpotLightResult + AreaLightResult + IBLResult;
     ThroughputBuffer[PixelIndex].xyz = ThroughputBuffer[PixelIndex].xyz + BounceInput;
-
-    vec3 C = ShadingData.IntersectionCoordinatesInWorldSpace;
-    vec3 I = C - ShadingData.WorldSpaceIncomingDirection;
-    vec3 NO = C - ShadingData.NormalInWorldSpace;
-    vec3 NE = C + ShadingData.NormalInWorldSpace;
-    vec3 O = C + ShadingData.WorldSpaceOutgoingDirection;
-    DP2("((%f, %f, %f), (%f, %f, %f), 'r'), #Incoming\n", I, C);
-    DP2("((%f, %f, %f), (%f, %f, %f), 'b'), #Normal\n", NO, NE);
-    DP2("((%f, %f, %f), (%f, %f, %f), 'g'), #Outgoing\n", C, O);
 
     if ((PushConstants.BounceIndex == LAST_DIFFUSE_BOUNCE && CheckFlag(RayData.RayFlags, DIFFUSE_LAYER))
     || (PushConstants.BounceIndex == LAST_REFLECTION_BOUNCE && CheckFlag(RayData.RayFlags, SPECULAR_LAYER))

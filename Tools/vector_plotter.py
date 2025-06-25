@@ -37,6 +37,7 @@ def plot_vectors_3d(vector_data):
     ax.set_xlabel('X-axis')
     ax.set_ylabel('Y-axis')
     ax.set_zlabel('Z-axis')
+    ax.set_aspect('equal')
     ax.set_title('3D Vector Plot')
     plt.show()
 
