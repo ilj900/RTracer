@@ -6,7 +6,7 @@
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_nonuniform_qualifier : enable // ?
 
-//#define DEBUG_PRINTF
+#define DEBUG_PRINTF
 #ifdef DEBUG_PRINTF
 //#define DEBUG_ONLY_FIRST_BOUNCE
 #extension GL_EXT_debug_printf : enable
@@ -1180,7 +1180,7 @@ void main()
     }
 #endif
 
-    //DP1("Bounse: %i\n", PushConstants.BounceIndex);
+    DP1("Bounse: %i\n", PushConstants.BounceIndex);
 
     /// Fetch required data
     FRayData RayData = RayDataBuffer[PixelIndex];
@@ -1194,8 +1194,7 @@ void main()
     Material = GetMaterial(ShadingData.UVCoordinates);
     /// Process material interaction
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
-    ShadingData.MaterialScatteringPDF = ScatterMaterial(Material, ShadingData.MaterialInteractionType, RayData.Eta, SamplingState, ShadingData.bFrontFacing);
-
+    ShadingData.MaterialScatteringPDF = ScatterMaterial(Material, ShadingData.MaterialInteractionType, RayData, SamplingState, ShadingData.bFrontFacing);
     /// If we hit emissive material on the first hit, just output it, nothing else to do here
     if (PushConstants.BounceIndex == 0 && ShadingData.MaterialInteractionType == EMISSION_LAYER)
     {

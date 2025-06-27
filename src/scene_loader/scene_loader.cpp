@@ -145,17 +145,21 @@ void FSceneLoader::LoadScene(const std::string& Name)
 	else if (Name == SCENE_ROUGH_GLASS)
 	{
 		auto Sphere = Render->CreateUVSphere(512, 256, 1.f);
+        int32_t W = 4;
+        int32_t H = 4;
+        float Ws = 1.f / float(W);
+        float Hs = 1.f / float (W * H);
 
-		for (int i = 0; i < 4; ++i)
-		{
-			for (int j = 0; j < 4; ++j)
-			{
-				auto SphereInstance = Render->CreateInstance(Sphere, { float(-2 + i) * 2.1f, float(1 - j) * 2.1f, 0 });
-				auto Material = Render->CreateRefractiveMaterial({ 1, 1, 1 });
-				Render->MaterialSetTransmissionRoughness(Material, i * 0.25f + j * 0.0625f);
-				Render->ShapeSetMaterial(SphereInstance, Material);
-			}
-		}
+        for (int i = 0; i < W; ++i)
+        {
+            for (int j = 0; j < H; ++j)
+            {
+                auto SphereInstance = Render->CreateInstance(Sphere, { float(float(-W) * 0.5f + float(i)) * 2.1f, float(float(H) * 0.5f - float(j)) * 2.1f, 0 });
+                auto Material = Render->CreateRefractiveMaterial({ 1, 1, 1 });
+                Render->MaterialSetTransmissionRoughness(Material, float(i) * Ws + float(j) * Hs);
+                Render->ShapeSetMaterial(SphereInstance, Material);
+            }
+        }
 
 		Render->SetIBL("../resources/sun.exr");
 	}

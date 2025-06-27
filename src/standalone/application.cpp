@@ -45,7 +45,7 @@ FApplication::~FApplication()
 int FApplication::Run()
 {
 	uint32_t ImageIndex = UINT32_MAX;
-	LoadCamera(Controller->Camera, Render, "../data/cameras/Test");
+	LoadCamera(Controller->Camera, Render, "../data/cameras/blender_camera_exports/glass_sphere");
 	SceneLoader->LoadScene(SCENE_ROUGH_GLASS);
 
 	FSynchronizationPoint RenderingFinished;

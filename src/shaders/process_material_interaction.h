@@ -124,7 +124,7 @@ float PDFLambertian(vec3 OutgoingTangentSpaceDirection)
 }
 
 /// Scatter ray based on material properties.
-float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout float Eta, inout FSamplingState SamplingState, bool bFrontFacing)
+float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData RayData, inout FSamplingState SamplingState, bool bFrontFacing)
 {
 	float LayerSample = RandomFloat(SamplingState);
 	RayType = SelectLayer(Material, LayerSample);
@@ -188,7 +188,7 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout float Et
 		}
 		case TRANSMISSION_LAYER:
 		{
-			float IOR1 = bFrontFacing ? Eta : Material.SpecularIOR;
+			float IOR1 = RayData.Eta;
 			float IOR2 = bFrontFacing ? Material.SpecularIOR : 1;
 			float EtaRatio = IOR1 / IOR2;
 
@@ -202,9 +202,11 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout float Et
 				ShadingData.IsScatteredRaySingular = true;
 				PDF = 1.f;
 
-				/// NDotI also equals to cos(angle)
-				float NDotI = dot(vec3(0, 1, 0), -TangentSpaceViewDirection);
-				float RTheta = R0 + (1. - R0) * pow(1. - NDotI, 5.f);
+				/// NDotI is not equal to cos(theta) cause I in NDotI points towards the surface
+				float NDotI = dot(vec3(0, 1, 0), TangentSpaceViewDirection);
+                float CosTheta = abs(NDotI);
+				float RTheta = R0 + (1. - R0) * pow(1. - CosTheta, 5.f);
+                DebugGlobal0.xyz = vec3(RTheta, RTheta, RTheta);
 
 				/// Decide on whether the ray is reflected or refracted
 				float RF = RandomFloat(SamplingState);
@@ -236,8 +238,8 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout float Et
 						ShadingData.TangentSpaceOutgoingDirection = RefractedDirection;
 						ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
 
-						/// Also, ray is now traveling in a new media
-						Eta = Material.SpecularIOR;
+						/// Also, ray is now traveling in a new medium
+                        RayData.Eta = IOR2;
 					}
 				}
 			}
@@ -250,10 +252,10 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout float Et
 					vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
 					vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, RandomSquare.x, RandomSquare.y).xzy;
 
-					/// NDotI also equals to cos(angle)
-					/// '-' here is because ViewDirection points to the surface
-					float NDotI = dot(NewNormal, -TangentSpaceViewDirection);
-					float RTheta = R0 + (1. - R0) * pow(1. - NDotI, 5.f);
+                    /// NDotI is not equal to cos(theta) cause I in NDotI points towards the surface
+                    float NDotI = dot(vec3(0, 1, 0), TangentSpaceViewDirection);
+                    float CosTheta = abs(NDotI);
+					float RTheta = R0 + (1. - R0) * pow(1. - CosTheta, 5.f);
 
 					/// Decide on whether the ray is reflected or refracted
 					float RF = RandomFloat(SamplingState);
@@ -311,7 +313,7 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout float Et
 							PDF = VNDPDF(ApproximatedNormal.xzy, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
 							PDF /= EtaRatio * EtaRatio;
 							/// Also, ray is now traveling in a new media
-							Eta = Material.SpecularIOR;
+                            RayData.Eta = Material.SpecularIOR;
 
 							ShadingData.TangentSpaceOutgoingDirection = RefractedDirection;
 							ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
