@@ -1,62 +1,78 @@
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
 
 
-def plot_vectors_3d(vector_data):
+def plot_vectors(vector_data, figsize=(12, 9), colors=None):
     """
-    Plot 3D vectors based on their starting and ending positions and colors.
+    Plot 3D vectors from vector data.
 
-    :param vector_data: List of tuples, where each tuple contains
-                        ((x_start, y_start, z_start), (x_end, y_end, z_end), 'color')
+    Parameters:
+    vector_data: list of tuples, where each tuple contains:
+        - origin: tuple of 3 floats (x, y, z coordinates of vector origin)
+        - direction: tuple of 3 floats (x, y, z components of vector direction)
+        - color_index: int (index for color selection)
+    figsize: tuple, figure size (width, height)
+    colors: list of colors, if None uses default color cycle
     """
-    fig = plt.figure(figsize=(8, 8))
+
+    # Create figure and 3D axis
+    fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111, projection='3d')
 
-    for data in vector_data:
-        start, end, color = data
-        x_start, y_start, z_start = start
-        x_end, y_end, z_end = end
+    # Default colors if none provided
+    if colors is None:
+        colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
 
-        # Calculate the vector components
-        dx = x_end - x_start
-        dy = y_end - y_start
-        dz = z_end - z_start
+    # Extract and plot each vector
+    for origin, direction, color_idx in vector_data:
+        # Extract coordinates
+        x0, y0, z0 = origin
+        dx, dy, dz = direction
 
-        # Plot the vector
-        ax.quiver(x_start, y_start, z_start, dx, dy, dz, color=color)
+        # Select color based on index
+        color = colors[color_idx % len(colors)]
 
-    # Set plot limits for better visualization
-    all_x = [x for (start, end, _) in vector_data for x, _, _ in (start, end)]
-    all_y = [y for (start, end, _) in vector_data for _, y, _ in (start, end)]
-    all_z = [z for (start, end, _) in vector_data for _, _, z in (start, end)]
+        # Plot vector as arrow
+        ax.quiver(x0, y0, z0, dx, dy, dz,
+                  color=color, arrow_length_ratio=0.1, linewidth=2)
 
-    ax.set_xlim(min(all_x) - 1, max(all_x) + 1)
-    ax.set_ylim(min(all_y) - 1, max(all_y) + 1)
-    ax.set_zlim(min(all_z) - 1, max(all_z) + 1)
-
-    ax.set_xlabel('X-axis')
-    ax.set_ylabel('Y-axis')
-    ax.set_zlabel('Z-axis')
-    ax.set_aspect('equal')
+    # Set labels and title
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
     ax.set_title('3D Vector Plot')
+
+    # Create legend
+    unique_indices = sorted(set([color_idx for _, _, color_idx in vector_data]))
+    legend_elements = [plt.Line2D([0], [0], color=colors[idx % len(colors)],
+                                  linewidth=2, label=f'Color Index {idx}')
+                       for idx in unique_indices]
+    ax.legend(handles=legend_elements)
+
+    # Set equal aspect ratio for better visualization
+    ax.set_box_aspect([1, 1, 1])
+
+    plt.tight_layout()
     plt.show()
 
 
-# Example usage:
-vector_data = [
-    ((0, 0, 0), (-0.080753, 0.156862, 0.984314), 'r'),  # NewNormal
-    ((-0.016088, -0.667443, -0.744487), (0, 0, 0), 'g'),  # TangentSpaceViewDirection before
-    ((0, 0, 0), (-0.151140, -0.405106, 0.901690), 'b'),  # TangentSpaceViewDirection after
-    ((0, 0, 0), (0.282505, 0.112946, -0.952593), 'c'),  # NewNormal
-    ((-0.151140, -0.405106, 0.901690), (0, 0, 0), 'm'),  # TangentSpaceViewDirection before
-    ((0, 0, 0), (0.384149, -0.191097, -0.903278), 'y'),  # TangentSpaceViewDirection after
-    ((0, 0, 0), (-0.480330, 0.090232, 0.872434), 'k'),  # NewNormal
-    ((0.384149, -0.191097, -0.903278), (0, 0, 0), 'navy'),  # TangentSpaceViewDirection before
-    ((0, 0, 0), (-0.566723, -0.012472, 0.823814), 'slategrey'),  # TangentSpaceViewDirection after
-    ((0, 0, 0), (0.654147, 0.075835, -0.752556), 'pink'),  # NewNormal
-    ((-0.566723, -0.012472, 0.823814), (0, 0, 0), 'orange'),  # TangentSpaceViewDirection before
-    ((0, 0, 0), (0.730623, 0.137928, -0.668704), 'black'),  # TangentSpaceViewDirection after
+# Example usage with your data
+if __name__ == "__main__":
+    vector_data = [
+        ((-6.059510, 4.487666, 0.093596), (0.907407, -0.180059, -0.379725), 0),
+        ((-5.152103, 4.307607, -0.286130), (-0.952127, 0.107609, -0.286137), 1),
+        ((-5.152103, 4.307607, -0.286130), (0.973925, -0.163524, -0.157259), 2),
+        ((-4.373211, 4.176829, -0.411897), (0.973925, -0.163524, -0.157259), 0),
+        ((-3.399287, 4.013305, -0.569156), (-0.800739, 0.186701, 0.569174), 1),
+        ((-3.399287, 4.013305, -0.569156), (0.987666, -0.138127, 0.073732), 2),
+        ((-3.894635, 4.082581, -0.606135), (0.987666, -0.138127, 0.073732), 0),
+        ((-2.906969, 3.944453, -0.532403), (-0.806987, -0.255552, -0.532415), 1),
+        ((-2.906969, 3.944453, -0.532403), (0.969154, 0.012614, 0.246134), 2),
+        ((-2.099964, 3.954957, -0.327450), (0.969154, 0.012614, 0.246134), 0),
+        ((-1.130810, 3.967571, -0.081316), (-0.969207, 0.232434, 0.081317), 1),
+        ((-1.130810, 3.967571, -0.081316), (0.910467, 0.158581, 0.381970), 2),
+    ]
 
-]
-
-plot_vectors_3d(vector_data)
+    # Plot the vectors
+    plot_vectors(vector_data)

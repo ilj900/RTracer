@@ -49,8 +49,15 @@ bool b = false;
     if (b) { debugPrintfEXT("Mark: %i\n", I); }
 #define BOOL(B, I) \
     if (b && B) { debugPrintfEXT("Bool: %i\n", I); }
-#endif
 
+void DPDirection(vec3 Origin, vec3 Direction, int Color)
+{
+    if (b)
+    {
+        debugPrintfEXT("((%f, %f, %f), (%f, %f, %f), %i),\n", Origin.x, Origin.y, Origin.z, Direction.x, Direction.y, Direction.z, Color);
+    }
+}
+#endif
 vec4 DebugGlobal0 = vec4(0);
 vec4 DebugGlobal1 = vec4(0);
 vec4 DebugGlobal2 = vec4(0);
