@@ -40,6 +40,12 @@ FQuaternion operator*(const FQuaternion& A, const FQuaternion& B)
     return Result;
 }
 
+FVector3 operator*(const FQuaternion& A, const FVector3& B)
+{
+    FQuaternion I = A * FQuaternion(0, B.X, B.Y, B.Z);
+    return {I.X, I.Y, I.Z};
+}
+
 ///****************************************************************
 ///FVector4 and it's operations
 ///****************************************************************
@@ -52,6 +58,11 @@ float FVector4::Length()
 float FVector4::Length2()
 {
     return X * X + Y * Y + Z * Z + W + W;
+}
+
+FVector3 FVector4::ToFVector3()
+{
+    return {X, Y, Z};
 }
 
 bool operator==(const FVector4& A, const FVector4& B)

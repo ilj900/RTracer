@@ -31,7 +31,9 @@
 ///Z positive direction goes "from the screen" to "you"
 ///Vector multiplication works as in glsl - componentwise
 
-
+struct FVector2;
+struct FVector3;
+struct FVector4;
 struct FMatrix3;
 struct FMatrix4;
 
@@ -54,6 +56,7 @@ struct FQuaternion
 };
 
 FQuaternion operator*(const FQuaternion& A, const FQuaternion& B);
+FVector3 operator*(const FQuaternion& A, const FVector3& B);
 
 struct FVector4
 {
@@ -63,6 +66,7 @@ struct FVector4
 
     float Length();
     float Length2();
+    FVector3 ToFVector3();
 
     union
 	{
@@ -209,6 +213,30 @@ struct FMatrix4
              Data({Vec1, Vec2, Vec3, Vec4}) {};
 	FMatrix4(const FMatrix3& M) :
  			Data({FVector4{M.Data[0].X, M.Data[0].Y, M.Data[0].Z, 0}, FVector4{M.Data[1].X, M.Data[1].Y, M.Data[1].Z, 0}, FVector4{M.Data[2].X, M.Data[2].Y, M.Data[2].Z, 0}, FVector4{0, 0, 0, 1}}) {};
+    FMatrix4(float DataIn[16]) {
+        std::memcpy(Data.data(), DataIn, sizeof(float) * 16);
+    }
+
+    explicit FMatrix4(const double DataIn[16]) {
+        int c = 0;
+
+        for (int i = 0; i < 4; ++i)
+        {
+            Data[i].x = static_cast<float>(DataIn[c]);
+            c++;
+            Data[i].y = static_cast<float>(DataIn[c]);
+            c++;
+            Data[i].z = static_cast<float>(DataIn[c]);
+            c++;
+            Data[i].w = static_cast<float>(DataIn[c]);
+            c++;
+        }
+    }
+
+    FVector4& operator[](int I)
+    {
+        return Data[I];
+    }
 
 	FMatrix4 GetInverse();
 	FMatrix4& Transpose();

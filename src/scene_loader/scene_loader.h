@@ -21,6 +21,7 @@
 #define SCENE_THREE_SPHERES "Three_Spheres"
 #define SCENE_VIKINGS_ROOM "Vikings_Room"
 #define SCENE_WHITE_FURNACE "White_Furnace"
+#define SCENE_GLTF_ROUGH_GLASS "Gltf_Rough_Glass"
 
 class FRender;
 

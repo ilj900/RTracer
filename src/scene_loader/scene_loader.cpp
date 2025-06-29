@@ -1,7 +1,9 @@
 #include "render.h"
+#include "tiny_gltf.h"
 
 #include "scene_loader.h"
 
+#include <iostream>
 #include <random>
 
 FSceneLoader::FSceneLoader(std::shared_ptr<FRender> RenderIn) : Render(RenderIn)
@@ -496,6 +498,80 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->SetIBL("../resources/hdr_black_image.exr");
 	}
+    else if (Name == SCENE_GLTF_ROUGH_GLASS)
+    {
+        tinygltf::Model Model;
+        tinygltf::TinyGLTF Loader;
+        std::string Errors;
+        std::string Warnings;
+
+        bool LoadStatus = Loader.LoadASCIIFromFile(&Model, &Errors, &Warnings, "../resources/glass_sphere/glass_sphere.gltf");
+
+        if (!Warnings.empty())
+        {
+            std::cout << Warnings << std::endl;
+        }
+
+        if (!Errors.empty())
+        {
+            std::cout << Errors << std::endl;
+        }
+
+        if (!LoadStatus)
+        {
+            throw std::runtime_error("Failed to parse glb file.");
+        }
+
+        for (int i = 0; i < Model.nodes.size(); ++i)
+        {
+            auto& Node = Model.nodes[i];
+
+            if (Node.camera >= 0)
+            {
+                auto Camera = (i == 0) ? Render->GetActiveCamera() : Render->CreateCamera();
+                FVector3 Position{0, 0, 0};
+                FVector3 Direction{0, 0, -1};
+                FVector3 Up{0, 1, 0};
+                float SensorWidth = 0.036f;
+                float SensorHeight = 0.024f;
+                float FocalDistance = 0.018f;
+
+                if (Node.matrix.size() == 16)
+                {
+                    auto CameraMatrix = FMatrix4(Node.matrix.data());
+
+                    Position = FVector3(CameraMatrix[0].z, CameraMatrix[0].z, CameraMatrix[0].z);
+                    Direction = CameraMatrix * FVector4(0, 0, 1, 0).ToFVector3().GetNormalized();
+                    Up = CameraMatrix * FVector4(0, 1, 0, 0).ToFVector3().GetNormalized();
+                }
+                else
+                {
+                    if (Node.translation.size() == 3)
+                    {
+                        Position = FVector3(float(Node.translation[0]), float(Node.translation[1]), float(Node.translation[2]));
+                    }
+
+                    if (Node.rotation.size() == 4)
+                    {
+                        FQuaternion Rotation = FQuaternion(float(Node.rotation[3]), float(Node.rotation[0]), float(Node.rotation[1]), float(Node.rotation[2]));
+                        Direction = Rotation * FVector3(0, 0, 1);
+                        Direction.Normalize();
+                        Up = Rotation * FVector3(0, 1, 0);
+                        Up.Normalize();
+                    }
+                }
+
+                Render->SetCameraPosition(Position, Direction, Up, Camera);
+                Render->SetCameraSensorProperties(SensorWidth, SensorHeight, FocalDistance, Camera);
+            }
+        }
+
+        auto Sphere = Render->CreateUVSphere(512, 256, 1.f);
+        auto SphereInstance = Render->CreateInstance(Sphere, { 0, 0, 0 });
+        auto Material = Render->CreateRefractiveMaterial({ 1, 1, 1 });
+        Render->ShapeSetMaterial(SphereInstance, Material);
+        Render->SetIBL("../resources/sun.exr");
+    }
     else
     {
         throw std::runtime_error("Scene not found");

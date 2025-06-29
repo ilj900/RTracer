@@ -379,6 +379,11 @@ void FRender::SetActiveCamera(ECS::FEntity Camera)
     ActiveCamera = Camera;
 }
 
+ECS::FEntity FRender::GetActiveCamera()
+{
+    return ActiveCamera;
+}
+
 void FRender::SetCameraPosition(const FVector3& Position, const std::optional<FVector3>& Direction, const std::optional<FVector3>& Up, const std::optional<ECS::FEntity>& Camera)
 {
 	if (Camera)

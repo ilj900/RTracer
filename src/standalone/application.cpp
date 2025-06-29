@@ -20,6 +20,7 @@ FApplication::FApplication()
 
 	Render->RegisterExternalOutputs(Swapchain->GetImages(), Swapchain->GetSemaphores());
 	Render->Init();
+    Render->SetActiveCamera(Render->CreateCamera());
 	Controller = std::make_shared<FController>(Render);
 	Controller->SetWindow(WindowManager->GetWindow());
 	WindowManager->SetController(Controller.get());
@@ -45,8 +46,8 @@ FApplication::~FApplication()
 int FApplication::Run()
 {
 	uint32_t ImageIndex = UINT32_MAX;
-	LoadCamera(Controller->Camera, Render, "../data/cameras/blender_camera_exports/glass_sphere");
-	SceneLoader->LoadScene(SCENE_ROUGH_GLASS);
+	//LoadCamera(Controller->Camera, Render, "../data/cameras/blender_camera_exports/glass_sphere");
+	SceneLoader->LoadScene(SCENE_GLTF_ROUGH_GLASS);
 
 	FSynchronizationPoint RenderingFinished;
 

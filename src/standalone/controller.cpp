@@ -3,8 +3,7 @@
 
 FController::FController(std::shared_ptr<FRender> RenderIn) : Render(RenderIn)
 {
-    Camera = RenderIn->CreateCamera();
-	RenderIn->SetActiveCamera(Camera);
+    Camera = RenderIn->GetActiveCamera();
 }
 
 void FController::SetWindow(GLFWwindow* WindowIn)
