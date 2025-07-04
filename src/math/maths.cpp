@@ -1,12 +1,13 @@
 #include "maths.h"
 
 #include <string>
+#include <cassert>
 
 ///****************************************************************
 ///FQuaternion and it's operations
 ///****************************************************************
 
-FQuaternion FQuaternion::GetInverse()
+FQuaternion FQuaternion::GetInverse() const
 {
     FQuaternion Result = GetConjugation();
     float Q2 = W * W + X * X + Y * Y + Z * Z;
@@ -18,16 +19,16 @@ FQuaternion FQuaternion::GetInverse()
     return Result;
 };
 
-FQuaternion FQuaternion::GetConjugation()
+FQuaternion FQuaternion::GetConjugation() const
 {
-    return {W, X == 0.f ? X : -X, Y == 0.f ? Y : -Y, Z == 0.f ? Z : -Z};
+    return FQuaternion{W, -X, -Y, -Z};
 };
 
-FQuaternion FQuaternion::GetNormalized()
+FQuaternion FQuaternion::GetNormalized() const
 {
     float Length = W * W + X * X + Y * Y + Z * Z;
 	Length = sqrt(Length);
-	return FQuaternion(W / Length, X / Length, Y / Length, Z / Length);
+	return FQuaternion{W / Length, X / Length, Y / Length, Z / Length};
 };
 
 FQuaternion operator*(const FQuaternion& A, const FQuaternion& B)
@@ -42,7 +43,7 @@ FQuaternion operator*(const FQuaternion& A, const FQuaternion& B)
 
 FVector3 operator*(const FQuaternion& A, const FVector3& B)
 {
-    FQuaternion I = A * FQuaternion(0, B.X, B.Y, B.Z);
+    FQuaternion I = A * FQuaternion(0, B.X, B.Y, B.Z) * A.GetInverse();
     return {I.X, I.Y, I.Z};
 }
 

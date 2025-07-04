@@ -1,9 +1,10 @@
 #pragma once
 
 #include <array>
-#include <stdexcept>
+#include <cstdint>
 #include <cmath>
-#include <cassert>
+#include <cstring>
+#include <stdexcept>
 
 #ifndef M_PI
 #define M_PI 3.14159265359f
@@ -44,9 +45,9 @@ struct FQuaternion
     FQuaternion(float W, float X, float Y, float Z) :W(W), X(X), Y(Y), Z(Z) {};
 
     /// Functions
-    FQuaternion GetConjugation();
-    FQuaternion GetInverse();
-	FQuaternion GetNormalized();
+    FQuaternion GetConjugation() const;
+    FQuaternion GetInverse() const;
+	FQuaternion GetNormalized() const;
 
     /// Data
     float X = 0.f;

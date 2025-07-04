@@ -138,7 +138,7 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
 
 	AllocateIndependentResources();
 
-	Time = std::chrono::high_resolution_clock::now();
+	Time = std::chrono::steady_clock::now();
 	PreviousTime = Time;
 }
 
@@ -490,7 +490,7 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 {
     uint32_t CurrentFrame = RenderFrameIndex % MaxFramesInFlight;
 	PreviousTime = Time;
-	Time = std::chrono::high_resolution_clock::now();
+	Time = std::chrono::steady_clock::now();
 
 	UpdateTLASTask->Reload();
 	ResetRenderIterations->Reload();
@@ -1251,6 +1251,33 @@ ECS::FEntity FRender::CreateModel(const std::string& Path)
     MESH_SYSTEM()->GenerateBLAS(NewModel);
 
     return NewModel;
+}
+
+ECS::FEntity FRender::CreateMesh(const std::vector<float>& Positions, const std::vector<float>& Normals, const std::vector<float>& UV_Coordinates, const std::optional<std::vector<uint32_t>>& Indices)
+{
+	auto NewModel = CreateEmptyModel();
+	auto& MeshComponent = COORDINATOR().GetComponent<ECS::COMPONENTS::FMeshComponent>(NewModel);
+
+	MeshComponent.Vertices.resize(Positions.size());
+
+	for (int i = 0; i < Positions.size() / 3; ++i)
+	{
+		MeshComponent.Vertices[i].Position = {Positions[i * 3], Positions[i * 3 + 1], Positions[i * 3 + 2]};
+		MeshComponent.Vertices[i].Normal = {Normals[i * 3], Normals[i * 3 + 1], Normals[i * 3 + 2]};
+		MeshComponent.Vertices[i].TexCoord = {UV_Coordinates[i * 2], UV_Coordinates[i * 2 + 1]};
+	}
+
+	if (Indices)
+	{
+		MeshComponent.Indices.resize(Indices->size());
+		MeshComponent.Indices = Indices.value();
+		MeshComponent.Indexed = true;
+	}
+
+	MESH_SYSTEM()->LoadToGPU(NewModel);
+	MESH_SYSTEM()->GenerateBLAS(NewModel);
+
+	return NewModel;
 }
 
 ECS::FEntity FRender::CreatePyramid()

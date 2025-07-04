@@ -1,4 +1,5 @@
 #include "string_manipulation.h"
+#include <algorithm>
 
 size_t FindString(const std::string& StringToCheck, const std::string& StringToFind, size_t StartingChar)
 {

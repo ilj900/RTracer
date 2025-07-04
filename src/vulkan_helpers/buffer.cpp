@@ -3,6 +3,7 @@
 #include "buffer.h"
 
 #include <cassert>
+#include <cstdint>
 
 bool operator==(const FMemoryPtr& A, const FMemoryPtr& B)
 {

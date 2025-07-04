@@ -500,12 +500,16 @@ void FSceneLoader::LoadScene(const std::string& Name)
 	}
     else if (Name == SCENE_GLTF_ROUGH_GLASS)
     {
+    	auto Material = Render->CreateRefractiveMaterial({ 1, 1, 1 });
+
         tinygltf::Model Model;
         tinygltf::TinyGLTF Loader;
         std::string Errors;
         std::string Warnings;
 
-        bool LoadStatus = Loader.LoadASCIIFromFile(&Model, &Errors, &Warnings, "../resources/glass_sphere/glass_sphere.gltf");
+        //bool LoadStatus = Loader.LoadASCIIFromFile(&Model, &Errors, &Warnings, "../resources/glass_sphere/glass_sphere.gltf");
+    	bool LoadStatus = Loader.LoadASCIIFromFile(&Model, &Errors, &Warnings, "../resources/glass_cube/glass_cube.gltf");
+    	//bool LoadStatus = Loader.LoadASCIIFromFile(&Model, &Errors, &Warnings, "../resources/simple_plane/simple_plane.gltf");
 
         if (!Warnings.empty())
         {
@@ -528,6 +532,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
             if (Node.camera >= 0)
             {
+            	/// For the first camera we get the active one
                 auto Camera = (i == 0) ? Render->GetActiveCamera() : Render->CreateCamera();
                 FVector3 Position{0, 0, 0};
                 FVector3 Direction{0, 0, -1};
@@ -541,8 +546,8 @@ void FSceneLoader::LoadScene(const std::string& Name)
                     auto CameraMatrix = FMatrix4(Node.matrix.data());
 
                     Position = FVector3(CameraMatrix[0].z, CameraMatrix[0].z, CameraMatrix[0].z);
-                    Direction = CameraMatrix * FVector4(0, 0, 1, 0).ToFVector3().GetNormalized();
-                    Up = CameraMatrix * FVector4(0, 1, 0, 0).ToFVector3().GetNormalized();
+                    Direction = (CameraMatrix * FVector4(Direction.X, Direction.Y, Direction.Z, 0)).ToFVector3().GetNormalized();
+                    Up = (CameraMatrix * FVector4(Up.X, Up.Y, Up.z, 0)).ToFVector3().GetNormalized();
                 }
                 else
                 {
@@ -553,10 +558,10 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
                     if (Node.rotation.size() == 4)
                     {
-                        FQuaternion Rotation = FQuaternion(float(Node.rotation[3]), float(Node.rotation[0]), float(Node.rotation[1]), float(Node.rotation[2]));
-                        Direction = Rotation * FVector3(0, 0, 1);
+						auto Rotation = FQuaternion(static_cast<float>(Node.rotation[3]), static_cast<float>(Node.rotation[0]), static_cast<float>(Node.rotation[1]), static_cast<float>(Node.rotation[2]));
+                        Direction = Rotation * Direction;
                         Direction.Normalize();
-                        Up = Rotation * FVector3(0, 1, 0);
+                        Up = Rotation * Up;
                         Up.Normalize();
                     }
                 }
@@ -564,12 +569,63 @@ void FSceneLoader::LoadScene(const std::string& Name)
                 Render->SetCameraPosition(Position, Direction, Up, Camera);
                 Render->SetCameraSensorProperties(SensorWidth, SensorHeight, FocalDistance, Camera);
             }
-        }
+        	else if (Node.mesh >= 0)
+        	{
+        		auto& Mesh = Model.meshes[Node.mesh];
 
-        auto Sphere = Render->CreateUVSphere(512, 256, 1.f);
-        auto SphereInstance = Render->CreateInstance(Sphere, { 0, 0, 0 });
-        auto Material = Render->CreateRefractiveMaterial({ 1, 1, 1 });
-        Render->ShapeSetMaterial(SphereInstance, Material);
+        		for (auto & Primitive : Mesh.primitives)
+        		{
+        				std::optional<std::vector<uint32_t>> Indices;
+
+        			if (Primitive.indices >= 0)
+        			{
+        				auto& Accessor = Model.accessors[Primitive.indices];
+        				auto& BufferView = Model.bufferViews[Accessor.bufferView];
+        				auto& Buffer = Model.buffers[BufferView.buffer];
+
+        				const unsigned char* DataPointer = Buffer.data.data() + BufferView.byteOffset + Accessor.byteOffset;
+
+        				Indices = std::vector<uint32_t>(static_cast<uint32_t>(Accessor.count));
+        				if (Accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
+        				{
+        					for (int j = 0; j < Accessor.count; ++j)
+        					{
+        						uint16_t Tmp = DataPointer[j * 2];
+        						(*Indices)[j] = static_cast<uint32_t>(Tmp);
+        					}
+        				}
+        			}
+
+        			std::vector<float> Positions;
+        			std::vector<float> Normals;
+        			std::vector<float> UV_Coordinates;
+
+        			auto FillData = [&Primitive, &Model](std::vector<float>& Data, uint32_t NumberOfElements, const char* AttributeName)
+        			{
+        				if (const auto It = Primitive.attributes.find(AttributeName); It != Primitive.attributes.end())
+        				{
+							const auto& Accessor = Model.accessors[It->second];
+							const auto& BufferView = Model.bufferViews[Accessor.bufferView];
+        					auto& Buffer = Model.buffers[BufferView.buffer];
+
+        					const float* DataPointer = reinterpret_cast<float*>(Buffer.data.data() + BufferView.byteOffset + Accessor.byteOffset);
+
+        					Data.resize(Accessor.count * NumberOfElements);
+        					std::memcpy(Data.data(), DataPointer, Accessor.count * NumberOfElements * sizeof(float));
+        				}
+        			};
+
+        			FillData(Positions, 3, "POSITION");
+        			FillData(Normals, 3, "NORMAL");
+        			FillData(UV_Coordinates, 2, "TEXCOORD_0");
+
+				auto MeshEntity = Render->CreateMesh(Positions, Normals, UV_Coordinates, Indices);
+        		auto MeshInstance = Render->CreateInstance(MeshEntity, { 0, 0, 0 });
+        		Render->ShapeSetMaterial(MeshInstance, Material);
+        		}
+        	}
+		}
+
         Render->SetIBL("../resources/sun.exr");
     }
     else

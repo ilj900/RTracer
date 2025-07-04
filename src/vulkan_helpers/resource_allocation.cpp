@@ -3,6 +3,7 @@
 #include "vk_context.h"
 #include "vk_debug.h"
 
+#include <cassert>
 #include <stdexcept>
 #include <utility>
 
