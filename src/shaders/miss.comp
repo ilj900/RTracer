@@ -145,7 +145,7 @@ void main()
     if (PushConstants.BounceIndex == 0)
     {
         FRayData RayData = FetchRayData(NewPixelIndex);
-        vec2 IBLUV = Vec3ToSphericalUV(RayData.Direction.xyz, M_PI_2);
+        vec2 IBLUV = Vec3ToSphericalUV(RayData.Direction.xyz, M_PI);
         vec3 SampledColor = vec3(texture(IBLTextureSamplerLinear, IBLUV));
         imageStore(OutcomingImage, ivec2(NewPixelCoords), vec4(SampledColor, 0.f));
     }
