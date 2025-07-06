@@ -71,6 +71,7 @@ public:
 
 	/// Materials creation
     ECS::FEntity CreateTexture(const std::string& FilePath);
+	ECS::FEntity CreateTexture(const std::vector<unsigned char>& Data, int Width, int Height, int NumberOfChannels, const std::string& DebugImageName = "");
 	ECS::FEntity CreateEmptyMaterial();
     ECS::FEntity CreateMaterial();
 	ECS::FEntity CreateDiffuseMaterial(const FVector3& BaseColor);

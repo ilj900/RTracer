@@ -18,5 +18,18 @@ namespace ECS
             COORDINATOR().AddComponent<ECS::COMPONENTS::FTextureComponent>(Texture, {ImageIndex});
             return Texture;
         }
+
+    	FEntity FTextureSystem::CreateTextureFromData(const std::vector<unsigned char>& Data, int Width, int Height, int NumberOfChannels, const std::string& DebugImageName)
+        {
+        	static int i = 0;
+        	std::string ImageUniqueName = "Image_from_data_" + std::to_string(i);
+        	++i;
+        	auto Image = VK_CONTEXT()->LoadImageFromMemory(Data, Width, Height, NumberOfChannels, DebugImageName);
+        	uint32_t ImageIndex = TEXTURE_MANAGER()->RegisterTexture(Image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, ImageUniqueName);
+
+        	FEntity Texture = COORDINATOR().CreateEntity();
+        	COORDINATOR().AddComponent<ECS::COMPONENTS::FTextureComponent>(Texture, {ImageIndex});
+        	return Texture;
+        }
     }
 }

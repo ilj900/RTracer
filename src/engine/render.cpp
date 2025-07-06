@@ -674,6 +674,11 @@ ECS::FEntity FRender::CreateTexture(const std::string& FilePath)
     return TEXTURE_SYSTEM()->CreateTextureFromFile(FilePath);
 }
 
+ECS::FEntity FRender::CreateTexture(const std::vector<unsigned char>& Data, int Width, int Height, int NumberOfChannels, const std::string& DebugImageName)
+{
+	return TEXTURE_SYSTEM()->CreateTextureFromData(Data, Width, Height, NumberOfChannels, DebugImageName);
+}
+
 ECS::FEntity FRender::CreateEmptyMaterial()
 {
 	auto NewMaterial = MATERIAL_SYSTEM()->CreateEmptyMaterial();

@@ -3,6 +3,8 @@
 
 #include "scene_loader.h"
 
+#include "imgui/imgui.h"
+
 #include <iostream>
 #include <random>
 
@@ -500,15 +502,13 @@ void FSceneLoader::LoadScene(const std::string& Name)
 	}
     else if (Name == SCENE_GLTF_ROUGH_GLASS)
     {
-    	auto Material = Render->CreateRefractiveMaterial({ 1, 1, 1 });
-
         tinygltf::Model Model;
         tinygltf::TinyGLTF Loader;
         std::string Errors;
         std::string Warnings;
 
         //bool LoadStatus = Loader.LoadASCIIFromFile(&Model, &Errors, &Warnings, "../resources/glass_sphere/glass_sphere.gltf");
-    	bool LoadStatus = Loader.LoadASCIIFromFile(&Model, &Errors, &Warnings, "../resources/glass_cube/glass_cube.gltf");
+    	bool LoadStatus = Loader.LoadASCIIFromFile(&Model, &Errors, &Warnings, "../resources/diffuse_cube/diffuse_cube.gltf");
     	//bool LoadStatus = Loader.LoadASCIIFromFile(&Model, &Errors, &Warnings, "../resources/simple_plane/simple_plane.gltf");
 
         if (!Warnings.empty())
@@ -526,6 +526,52 @@ void FSceneLoader::LoadScene(const std::string& Name)
             throw std::runtime_error("Failed to parse glb file.");
         }
 
+    	std::vector<ECS::FEntity> Materials(Model.materials.size());
+
+    	for (int i = 0; i < Model.materials.size(); ++i)
+    	{
+    		auto MaterialEntity = Render->CreateEmptyMaterial();
+    		const tinygltf::Material& Material = Model.materials[i];
+    		const auto& PBR = Material.pbrMetallicRoughness;
+
+    		auto Setter = [&Model, MaterialEntity](int TextureIndex, std::shared_ptr<FRender>& Render)
+    		{
+    			const tinygltf::Texture& Texture = Model.textures[TextureIndex];
+
+    			if (Texture.sampler >= 0)
+    			{
+    				const tinygltf::Image& Image = Model.images[Texture.source];
+    				auto TextureEntity = Render->CreateTexture(Image.image, Image.width, Image.height, Image.component);
+    				FRender::MaterialSetBaseColor(MaterialEntity, TextureEntity);
+    			}
+    			else
+    			{
+    				/// Set magenta as mark that something went wrong
+    				FRender::MaterialSetBaseColor(MaterialEntity, {1, 0, 1});
+    			}
+    		};
+
+    		if (PBR.baseColorTexture.index >= 0)
+    		{
+    			Setter(0, Render);
+    		}
+    		else
+    		{
+    			FRender::MaterialSetBaseColor(MaterialEntity, { static_cast<float>(PBR.baseColorFactor[0]), static_cast<float>(PBR.baseColorFactor[1]), static_cast<float>(PBR.baseColorFactor[2]) });
+    		}
+
+    		if (PBR.metallicRoughnessTexture.index >= 0)
+    		{
+    			Setter(PBR.metallicRoughnessTexture.index, Render);
+    		}
+    		else
+    		{
+    			FRender::MaterialSetMetalness(MaterialEntity, static_cast<float>(PBR.metallicFactor));
+    		}
+
+    		Materials[i] = MaterialEntity;
+    	}
+
         for (int i = 0; i < Model.nodes.size(); ++i)
         {
             auto& Node = Model.nodes[i];
@@ -539,7 +585,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
                 FVector3 Up{0, 1, 0};
                 float SensorWidth = 0.036f;
                 float SensorHeight = 0.024f;
-                float FocalDistance = 0.018f;
+                float FocalDistance = 0.05f;
 
                 if (Node.matrix.size() == 16)
                 {
@@ -621,7 +667,10 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 				auto MeshEntity = Render->CreateMesh(Positions, Normals, UV_Coordinates, Indices);
         		auto MeshInstance = Render->CreateInstance(MeshEntity, { 0, 0, 0 });
-        		Render->ShapeSetMaterial(MeshInstance, Material);
+        		if (Primitive.material >= 0)
+        		{
+        			Render->ShapeSetMaterial(MeshInstance, Materials[Primitive.material]);
+        		}
         		}
         	}
 		}

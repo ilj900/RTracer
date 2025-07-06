@@ -1213,9 +1213,6 @@ ImagePtr FVulkanContext::LoadImageFromFile(const std::string& Path, const std::s
         throw std::runtime_error("Failed to load texture image!");
     }
 
-    /// Load data into staging buffer
-
-
     ImagePtr Image = std::make_shared<FImage>(TexWidth, TexHeight, true, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                  VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                  VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, DebugImageName);
@@ -1229,6 +1226,23 @@ ImagePtr FVulkanContext::LoadImageFromFile(const std::string& Path, const std::s
     Image->GenerateMipMaps();
 
     return Image;
+}
+
+ImagePtr FVulkanContext::LoadImageFromMemory(const std::vector<unsigned char>& Data, int Width, int Height, int NumberOfChannels, const std::string& DebugImageName)
+{
+	ImagePtr Image = std::make_shared<FImage>(Width, Height, true, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+				VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, DebugImageName);
+
+	V::SetName(LogicalDevice, Image->Image, DebugImageName);
+	V::SetName(LogicalDevice, Image->View, DebugImageName);
+
+	Image->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	RESOURCE_ALLOCATOR()->LoadDataToImage(*Image, Width * Height * NumberOfChannels, (void*)Data.data());
+	/// Generate MipMaps only after we loaded image data
+	Image->GenerateMipMaps();
+
+	return Image;
 }
 
 ImagePtr FVulkanContext::Wrap(VkImage ImageToWrap, uint32_t WidthIn, uint32_t HeightIn, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, const std::string& DebugImageName)

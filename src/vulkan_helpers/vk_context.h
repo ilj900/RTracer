@@ -110,6 +110,7 @@ public:
                                VkImageAspectFlags AspectFlags, VkDevice Device, const std::string& DebugImageName);
     ImagePtr CreateEXRImageFromFile(const std::string& Path, const std::string& DebugImageName);
     ImagePtr LoadImageFromFile(const std::string& Path, const std::string& DebugImageName);
+	ImagePtr LoadImageFromMemory(const std::vector<unsigned char>& Data, int Width, int Height, int NumberOfChannels, const std::string& DebugImageName);
     ImagePtr Wrap(VkImage ImageToWrap, uint32_t WidthIn, uint32_t HeightIn, VkFormat Format, VkImageAspectFlags AspectFlags, VkDevice LogicalDevice, const std::string& DebugImageName);
 	void SaveImagePng(const std::string& ImageName, const std::string& FileName = "");
 	void SaveImageExr(const std::string& ImageName, const std::string& FileName = "");
