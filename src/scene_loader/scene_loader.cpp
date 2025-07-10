@@ -496,6 +496,21 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->SetIBL("../resources/hdr_black_image.exr");
 	}
+	else if (Name == SCENE_TEXTURE_SYSTEM_TEST)
+	{
+		auto Plane = Render->CreatePlane({4, 4});
+
+		auto Tile = Render->CreateInstance(Plane, {0, 0, 0}, {0, 1, 0}, {0, 0, -1});
+
+		auto Material = Render->CreateEmptyMaterial();
+		auto AlbedoTexture = Render->CreateTexture("../resources/Wood/Wood_8K_Albedo.jpg");
+		Render->MaterialSetBaseColor(Material, AlbedoTexture);
+		Render->MaterialSetBaseColorWeight(Material, 1.f);
+
+		Render->ShapeSetMaterial(Tile, Material);
+
+		Render->SetIBL("../resources/Sun.exr");
+	}
     else
     {
         throw std::runtime_error("Scene not found");

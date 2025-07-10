@@ -22,12 +22,23 @@ public:
     ImagePtr GetTexture(uint32_t TextureIndex);
     ImagePtr GetTexture(const std::string& Name);
     ImagePtr GetFramebufferImage(const std::string& Name);
-    VkDescriptorImageInfo* GetDescriptorImageInfos();
+    VkDescriptorImageInfo* GetDescriptorImageInfosFloat();
+	VkDescriptorImageInfo* GetDescriptorImageInfosUint();
+	VkDescriptorImageInfo* GetDescriptorImageInfosInt();
+	void RegisterIBL(const ImagePtr& ImagePointer);
+	ImagePtr GetIBLImage();
 
 private:
-    std::vector<ImagePtr> Textures;
-    std::vector<VkDescriptorImageInfo> DescriptorImageInfos;
-    ImagePtr DummyImage = nullptr;
+    std::vector<ImagePtr> TexturesFloat;
+	std::vector<ImagePtr> TexturesUint;
+	std::vector<ImagePtr> TexturesInt;
+    std::vector<VkDescriptorImageInfo> DescriptorImageInfosFloat;
+	std::vector<VkDescriptorImageInfo> DescriptorImageInfosUint;
+	std::vector<VkDescriptorImageInfo> DescriptorImageInfosInt;
+    ImagePtr DummyImageFloat = nullptr;
+	ImagePtr DummyImageUint = nullptr;
+	ImagePtr DummyImageInt = nullptr;
+	ImagePtr IBLImage = nullptr;
     std::unordered_map<std::string, uint32_t> TextureNameToIndexMap;
 
     std::unordered_map<std::string, ImagePtr> FramebufferNameToImageMap;

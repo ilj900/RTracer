@@ -18,6 +18,7 @@
 #define SCENE_SPECULAR_ROUGHNESS "Specular_Roughness"
 #define SCENE_SPOT_LIGHT "Spot_Light"
 #define SCENE_STANFORD_DRAGON "Stanford_Dragon"
+#define	SCENE_TEXTURE_SYSTEM_TEST "Texture_System_Test"
 #define SCENE_THREE_SPHERES "Three_Spheres"
 #define SCENE_VIKINGS_ROOM "Vikings_Room"
 #define SCENE_WHITE_FURNACE "White_Furnace"

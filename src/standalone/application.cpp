@@ -46,7 +46,7 @@ int FApplication::Run()
 {
 	uint32_t ImageIndex = UINT32_MAX;
 	LoadCamera(Controller->Camera, Render, "../data/cameras/blender_camera_exports/glass_sphere");
-	SceneLoader->LoadScene(SCENE_ROUGH_GLASS);
+	SceneLoader->LoadScene(SCENE_TEXTURE_SYSTEM_TEST);
 
 	FSynchronizationPoint RenderingFinished;
 

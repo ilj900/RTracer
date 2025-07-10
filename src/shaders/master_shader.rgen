@@ -102,7 +102,9 @@ layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_TLAS_INDEX) un
 
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_TEXTURE_SAMPLER) uniform sampler Sampler;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_TEXTURE_ARRAY) uniform texture2D Textures[MAX_TEXTURES];
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_FLOAT_TEXTURE_ARRAY) uniform texture2D Textures[MAX_TEXTURES];
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_UINT_TEXTURE_ARRAY) uniform utexture2D UTextures[MAX_TEXTURES];
+layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_INT_TEXTURE_ARRAY) uniform itexture2D ITextures[MAX_TEXTURES];
 
 layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_RAYS_BUFFER_INDEX) buffer RaysBufferObject
 {
@@ -288,14 +290,34 @@ FVertex UnpackDeviceVertex(FDeviceVertex DV)
     return V;
 }
 
+float SampleFloat(uint TextureIndex, vec2 TextureCoords)
+{
+    return texture(sampler2D(Textures[TextureIndex], Sampler), TextureCoords).r;
+}
+
+vec2 SampleVec2(uint TextureIndex, vec2 TextureCoords)
+{
+    return texture(sampler2D(Textures[TextureIndex], Sampler), TextureCoords).rg;
+}
+
 vec3 SampleVec3(uint TextureIndex, vec2 TextureCoords)
 {
     return texture(sampler2D(Textures[TextureIndex], Sampler), TextureCoords).rgb;
 }
 
-float SampleFloat(uint TextureIndex, vec2 TextureCoords)
+vec4 SampleVec4(uint TextureIndex, vec2 TextureCoords)
 {
-    return texture(sampler2D(Textures[TextureIndex], Sampler), TextureCoords).r;
+    return texture(sampler2D(Textures[TextureIndex], Sampler), TextureCoords).rgba;
+}
+
+uint SampleUint(uint TextureIndex, vec2 TextureCoords)
+{
+    return texture(usampler2D(UTextures[TextureIndex], Sampler), TextureCoords).r;
+}
+
+int SampleInt(uint TextureIndex, vec2 TextureCoords)
+{
+    return texture(isampler2D(ITextures[TextureIndex], Sampler), TextureCoords).r;
 }
 
 FDeviceMaterial GetMaterial(vec2 TextureCoords);

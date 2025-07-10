@@ -4,6 +4,9 @@
 
 #include "texture_manager.h"
 
+#include <typeindex>
+#include <type_traits>
+
 namespace ECS
 {
     namespace SYSTEMS
@@ -694,37 +697,38 @@ namespace ECS
 			return *this;
 		}
 
-		std::string GenerateGetFunctionFloat(const std::string& ParameterName, uint32_t TextureIndex, float FallbackValue)
-		{
-			std::string Result = "    " + ParameterName;
+    	template <typename T> struct TypeToString;
+    	template <> struct TypeToString<float> {static std::string Name() { return "SampleFloat"; }};
+    	template <> struct TypeToString<uint32_t> {static std::string Name() { return "SampleUint"; }};
+    	template <> struct TypeToString<int> {static std::string Name() { return "SampleInt"; }};
+    	template <> struct TypeToString<FVector2> {static std::string Name() { return "SampleVec2"; }};
+    	template <> struct TypeToString<FVector3> {static std::string Name() { return "SampleVec3"; }};
+    	template <> struct TypeToString<FVector4> {static std::string Name() { return "SampleVec4"; }};
 
-			if (UINT32_MAX == TextureIndex)
-			{
-				Result += " = " + std::to_string(FallbackValue) + ";\r\n";
-			}
-			else
-			{
-				Result += " = SampleFloat(" + std::to_string(TextureIndex) + ", TextureCoords);\r\n";
-			}
+    	template <typename T>
+    	std::string GenerateGetFunction(const std::string& ParameterName, uint32_t TextureIndex, T FallbackValue)
+    	{
+    		std::string Result = "    " + ParameterName;
 
-			return Result;
-		};
+    		if (UINT32_MAX == TextureIndex)
+    		{
+    			if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int> || std::is_same_v<T, uint32_t>)
+    			{
+    				Result += " = " + std::to_string(FallbackValue) + ";\r\n";
+    			}
+    			else
+    			{
+    				Result += " = " + FallbackValue.ToString() + ";\r\n";
 
-		std::string GenerateGetFunctionVector3(const std::string& ParameterName, uint32_t TextureIndex, FVector3 FallbackValue)
-		{
-			std::string Result = "    " + ParameterName;
+    			}
+    		}
+    		else
+    		{
+    			Result += " = " + TypeToString<T> ::Name()+ "(" + std::to_string(TextureIndex) + ", TextureCoords);\r\n";
+    		}
 
-			if (UINT32_MAX == TextureIndex)
-			{
-				Result += " = " + FallbackValue.ToString() + ";\r\n";
-			}
-			else
-			{
-				Result += " = SampleVec3(" + std::to_string(TextureIndex) + ", TextureCoords);\r\n";
-			}
-
-			return Result;
-		};
+    		return Result;
+    	}
 
         std::string FMaterialSystem::GenerateMaterialCode(FEntity MaterialEntity)
         {
@@ -736,46 +740,46 @@ namespace ECS
             Result += "{\r\n";
             Result += "    FDeviceMaterial Material;\r\n";
 
-            Result += GenerateGetFunctionFloat("Material.BaseWeight", MaterialComponent.BaseWeightTexture, MaterialComponent.BaseWeight);
-            Result += GenerateGetFunctionVector3("Material.BaseColor", MaterialComponent.BaseColorTexture, MaterialComponent.BaseColor);
-            Result += GenerateGetFunctionFloat("Material.DiffuseRoughness", MaterialComponent.DiffuseRoughnessTexture, MaterialComponent.DiffuseRoughness);
-            Result += GenerateGetFunctionFloat("Material.Metalness", MaterialComponent.MetalnessTexture, MaterialComponent.Metalness);
-            Result += GenerateGetFunctionVector3("Material.Normal", MaterialComponent.NormalTexture, MaterialComponent.Normal);
-            Result += GenerateGetFunctionFloat("Material.SpecularWeight", MaterialComponent.SpecularWeightTexture, MaterialComponent.SpecularWeight);
-            Result += GenerateGetFunctionVector3("Material.SpecularColor", MaterialComponent.SpecularColorTexture, MaterialComponent.SpecularColor);
-            Result += GenerateGetFunctionFloat("Material.SpecularRoughness", MaterialComponent.SpecularRoughnessTexture, MaterialComponent.SpecularRoughness);
-            Result += GenerateGetFunctionFloat("Material.SpecularIOR", MaterialComponent.SpecularIORTexture, MaterialComponent.SpecularIOR);
-            Result += GenerateGetFunctionFloat("Material.SpecularAnisotropy", MaterialComponent.SpecularAnisotropyTexture, MaterialComponent.SpecularAnisotropy);
-            Result += GenerateGetFunctionFloat("Material.SpecularRotation", MaterialComponent.SpecularRotationTexture, MaterialComponent.SpecularRotation);
-            Result += GenerateGetFunctionFloat("Material.TransmissionWeight", MaterialComponent.TransmissionWeightTexture, MaterialComponent.TransmissionWeight);
-            Result += GenerateGetFunctionVector3("Material.TransmissionColor", MaterialComponent.TransmissionColorTexture, MaterialComponent.TransmissionColor);
-            Result += GenerateGetFunctionFloat("Material.TransmissionDepth", MaterialComponent.TransmissionDepthTexture, MaterialComponent.TransmissionDepth);
-            Result += GenerateGetFunctionVector3("Material.TransmissionScatter", MaterialComponent.TransmissionScatterTexture, MaterialComponent.TransmissionScatter);
-            Result += GenerateGetFunctionFloat("Material.TransmissionAnisotropy", MaterialComponent.TransmissionAnisotropyTexture, MaterialComponent.TransmissionAnisotropy);
-            Result += GenerateGetFunctionFloat("Material.TransmissionDispersion", MaterialComponent.TransmissionDispersionTexture, MaterialComponent.TransmissionDispersion);
-            Result += GenerateGetFunctionFloat("Material.TransmissionRoughness", MaterialComponent.TransmissionRoughnessTexture, MaterialComponent.TransmissionRoughness);
-            Result += GenerateGetFunctionFloat("Material.SubsurfaceWeight", MaterialComponent.SubsurfaceWeightTexture, MaterialComponent.SubsurfaceWeight);
-            Result += GenerateGetFunctionVector3("Material.SubsurfaceColor", MaterialComponent.SubsurfaceColorTexture, MaterialComponent.SubsurfaceColor);
-            Result += GenerateGetFunctionVector3("Material.SubsurfaceRadius", MaterialComponent.SubsurfaceRadiusTexture, MaterialComponent.SubsurfaceRadius);
-            Result += GenerateGetFunctionFloat("Material.SubsurfaceScale", MaterialComponent.SubsurfaceScaleTexture, MaterialComponent.SubsurfaceScale);
-            Result += GenerateGetFunctionFloat("Material.SubsurfaceAnisotropy", MaterialComponent.SubsurfaceAnisotropyTexture, MaterialComponent.SubsurfaceAnisotropy);
-            Result += GenerateGetFunctionFloat("Material.SheenWeight", MaterialComponent.SheenWeightTexture, MaterialComponent.SheenWeight);
-            Result += GenerateGetFunctionVector3("Material.SheenColor", MaterialComponent.SheenColorTexture, MaterialComponent.SheenColor);
-            Result += GenerateGetFunctionFloat("Material.SheenRoughness", MaterialComponent.SheenRoughnessTexture, MaterialComponent.SheenRoughness);
-            Result += GenerateGetFunctionFloat("Material.CoatWeight", MaterialComponent.CoatWeightTexture, MaterialComponent.CoatWeight);
-            Result += GenerateGetFunctionVector3("Material.CoatColor", MaterialComponent.CoatColorTexture, MaterialComponent.CoatColor);
-            Result += GenerateGetFunctionFloat("Material.CoatRoughness", MaterialComponent.CoatRoughnessTexture, MaterialComponent.CoatRoughness);
-            Result += GenerateGetFunctionFloat("Material.CoatAnisotropy", MaterialComponent.CoatAnisotropyTexture, MaterialComponent.CoatAnisotropy);
-            Result += GenerateGetFunctionFloat("Material.CoatRotation", MaterialComponent.CoatRotationTexture, MaterialComponent.CoatRotation);
-            Result += GenerateGetFunctionFloat("Material.CoatIOR", MaterialComponent.CoatIORTexture, MaterialComponent.CoatIOR);
-            Result += GenerateGetFunctionVector3("Material.CoatNormal", MaterialComponent.CoatNormalTexture, MaterialComponent.CoatNormal);
-            Result += GenerateGetFunctionFloat("Material.CoatAffectColor", MaterialComponent.CoatAffectColorTexture, MaterialComponent.CoatAffectColor);
-            Result += GenerateGetFunctionFloat("Material.CoatAffectRoughness", MaterialComponent.CoatAffectRoughnessTexture, MaterialComponent.CoatAffectRoughness);
-            Result += GenerateGetFunctionFloat("Material.ThinFilmThickness", MaterialComponent.ThinFilmThicknessTexture, MaterialComponent.ThinFilmThickness);
-            Result += GenerateGetFunctionFloat("Material.ThinFilmIOR", MaterialComponent.ThinFilmIORTexture, MaterialComponent.ThinFilmIOR);
-            Result += GenerateGetFunctionFloat("Material.EmissionWeight", MaterialComponent.EmissionWeightTexture, MaterialComponent.EmissionWeight);
-            Result += GenerateGetFunctionVector3("Material.EmissionColor", MaterialComponent.EmissionColorTexture, MaterialComponent.EmissionColor);
-            Result += GenerateGetFunctionVector3("Material.Opacity", MaterialComponent.OpacityTexture, MaterialComponent.Opacity);
+            Result += GenerateGetFunction<float>("Material.BaseWeight", MaterialComponent.BaseWeightTexture, MaterialComponent.BaseWeight);
+            Result += GenerateGetFunction<FVector3>("Material.BaseColor", MaterialComponent.BaseColorTexture, MaterialComponent.BaseColor);
+            Result += GenerateGetFunction<float>("Material.DiffuseRoughness", MaterialComponent.DiffuseRoughnessTexture, MaterialComponent.DiffuseRoughness);
+            Result += GenerateGetFunction<float>("Material.Metalness", MaterialComponent.MetalnessTexture, MaterialComponent.Metalness);
+            Result += GenerateGetFunction<FVector3>("Material.Normal", MaterialComponent.NormalTexture, MaterialComponent.Normal);
+            Result += GenerateGetFunction<float>("Material.SpecularWeight", MaterialComponent.SpecularWeightTexture, MaterialComponent.SpecularWeight);
+            Result += GenerateGetFunction<FVector3>("Material.SpecularColor", MaterialComponent.SpecularColorTexture, MaterialComponent.SpecularColor);
+            Result += GenerateGetFunction<float>("Material.SpecularRoughness", MaterialComponent.SpecularRoughnessTexture, MaterialComponent.SpecularRoughness);
+            Result += GenerateGetFunction<float>("Material.SpecularIOR", MaterialComponent.SpecularIORTexture, MaterialComponent.SpecularIOR);
+            Result += GenerateGetFunction<float>("Material.SpecularAnisotropy", MaterialComponent.SpecularAnisotropyTexture, MaterialComponent.SpecularAnisotropy);
+            Result += GenerateGetFunction<float>("Material.SpecularRotation", MaterialComponent.SpecularRotationTexture, MaterialComponent.SpecularRotation);
+            Result += GenerateGetFunction<float>("Material.TransmissionWeight", MaterialComponent.TransmissionWeightTexture, MaterialComponent.TransmissionWeight);
+            Result += GenerateGetFunction<FVector3>("Material.TransmissionColor", MaterialComponent.TransmissionColorTexture, MaterialComponent.TransmissionColor);
+            Result += GenerateGetFunction<float>("Material.TransmissionDepth", MaterialComponent.TransmissionDepthTexture, MaterialComponent.TransmissionDepth);
+            Result += GenerateGetFunction<FVector3>("Material.TransmissionScatter", MaterialComponent.TransmissionScatterTexture, MaterialComponent.TransmissionScatter);
+            Result += GenerateGetFunction<float>("Material.TransmissionAnisotropy", MaterialComponent.TransmissionAnisotropyTexture, MaterialComponent.TransmissionAnisotropy);
+            Result += GenerateGetFunction<float>("Material.TransmissionDispersion", MaterialComponent.TransmissionDispersionTexture, MaterialComponent.TransmissionDispersion);
+            Result += GenerateGetFunction<float>("Material.TransmissionRoughness", MaterialComponent.TransmissionRoughnessTexture, MaterialComponent.TransmissionRoughness);
+            Result += GenerateGetFunction<float>("Material.SubsurfaceWeight", MaterialComponent.SubsurfaceWeightTexture, MaterialComponent.SubsurfaceWeight);
+            Result += GenerateGetFunction<FVector3>("Material.SubsurfaceColor", MaterialComponent.SubsurfaceColorTexture, MaterialComponent.SubsurfaceColor);
+            Result += GenerateGetFunction<FVector3>("Material.SubsurfaceRadius", MaterialComponent.SubsurfaceRadiusTexture, MaterialComponent.SubsurfaceRadius);
+            Result += GenerateGetFunction<float>("Material.SubsurfaceScale", MaterialComponent.SubsurfaceScaleTexture, MaterialComponent.SubsurfaceScale);
+            Result += GenerateGetFunction<float>("Material.SubsurfaceAnisotropy", MaterialComponent.SubsurfaceAnisotropyTexture, MaterialComponent.SubsurfaceAnisotropy);
+            Result += GenerateGetFunction<float>("Material.SheenWeight", MaterialComponent.SheenWeightTexture, MaterialComponent.SheenWeight);
+            Result += GenerateGetFunction<FVector3>("Material.SheenColor", MaterialComponent.SheenColorTexture, MaterialComponent.SheenColor);
+            Result += GenerateGetFunction<float>("Material.SheenRoughness", MaterialComponent.SheenRoughnessTexture, MaterialComponent.SheenRoughness);
+            Result += GenerateGetFunction<float>("Material.CoatWeight", MaterialComponent.CoatWeightTexture, MaterialComponent.CoatWeight);
+            Result += GenerateGetFunction<FVector3>("Material.CoatColor", MaterialComponent.CoatColorTexture, MaterialComponent.CoatColor);
+            Result += GenerateGetFunction<float>("Material.CoatRoughness", MaterialComponent.CoatRoughnessTexture, MaterialComponent.CoatRoughness);
+            Result += GenerateGetFunction<float>("Material.CoatAnisotropy", MaterialComponent.CoatAnisotropyTexture, MaterialComponent.CoatAnisotropy);
+            Result += GenerateGetFunction<float>("Material.CoatRotation", MaterialComponent.CoatRotationTexture, MaterialComponent.CoatRotation);
+            Result += GenerateGetFunction<float>("Material.CoatIOR", MaterialComponent.CoatIORTexture, MaterialComponent.CoatIOR);
+            Result += GenerateGetFunction<FVector3>("Material.CoatNormal", MaterialComponent.CoatNormalTexture, MaterialComponent.CoatNormal);
+            Result += GenerateGetFunction<float>("Material.CoatAffectColor", MaterialComponent.CoatAffectColorTexture, MaterialComponent.CoatAffectColor);
+            Result += GenerateGetFunction<float>("Material.CoatAffectRoughness", MaterialComponent.CoatAffectRoughnessTexture, MaterialComponent.CoatAffectRoughness);
+            Result += GenerateGetFunction<float>("Material.ThinFilmThickness", MaterialComponent.ThinFilmThicknessTexture, MaterialComponent.ThinFilmThickness);
+            Result += GenerateGetFunction<float>("Material.ThinFilmIOR", MaterialComponent.ThinFilmIORTexture, MaterialComponent.ThinFilmIOR);
+            Result += GenerateGetFunction<float>("Material.EmissionWeight", MaterialComponent.EmissionWeightTexture, MaterialComponent.EmissionWeight);
+            Result += GenerateGetFunction<FVector3>("Material.EmissionColor", MaterialComponent.EmissionColorTexture, MaterialComponent.EmissionColor);
+            Result += GenerateGetFunction<FVector3>("Material.Opacity", MaterialComponent.OpacityTexture, MaterialComponent.Opacity);
             //TODO: Add uint textures
             Result += "    Material.ThinWalled = " + std::to_string(MaterialComponent.ThinWalled) + ";\r\n";
 
@@ -811,8 +815,8 @@ namespace ECS
 				auto& MaterialComponent = GetComponentByIndex<ECS::COMPONENTS::FMaterialComponent>(Entry.first);
 				Result += "    case " + std::to_string(Entry.first) + ":\r\n";
 				Result += "    {\r\n";
-				Result += "    " + GenerateGetFunctionVector3("Material.EmissionColor", MaterialComponent.EmissionColorTexture, MaterialComponent.EmissionColor);
-				Result += "    " + GenerateGetFunctionFloat("Material.EmissionWeight", MaterialComponent.EmissionWeightTexture, MaterialComponent.EmissionWeight);
+				Result += "    " + GenerateGetFunction<FVector3>("Material.EmissionColor", MaterialComponent.EmissionColorTexture, MaterialComponent.EmissionColor);
+				Result += "    " + GenerateGetFunction<float>("Material.EmissionWeight", MaterialComponent.EmissionWeightTexture, MaterialComponent.EmissionWeight);
 				Result += "    break;\r\n";
 				Result += "    }\r\n";
 			}

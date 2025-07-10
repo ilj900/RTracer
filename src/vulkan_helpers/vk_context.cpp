@@ -1205,7 +1205,7 @@ ImagePtr FVulkanContext::LoadImageFromFile(const std::string& Path, const std::s
     /// Load data from image file
     int TexWidth, TexHeight, TexChannels;
     stbi_uc* Pixels = stbi_load(Path.c_str(), &TexWidth, &TexHeight, &TexChannels, STBI_rgb_alpha);
-    VkDeviceSize ImageSize = TexWidth * TexHeight * 4;
+    VkDeviceSize ImageSize = TexWidth * TexHeight * TexChannels;
 
     if (!Pixels)
     {
@@ -1213,9 +1213,9 @@ ImagePtr FVulkanContext::LoadImageFromFile(const std::string& Path, const std::s
     }
 
     /// Load data into staging buffer
+	std::unordered_map<int, VkFormat> FormatMap{{1, VK_FORMAT_R8_UNORM}, {2, VK_FORMAT_R8G8_UNORM}, {3, VK_FORMAT_R8G8B8A8_UNORM}, {4, VK_FORMAT_R8G8B8A8_UNORM} };
 
-
-    ImagePtr Image = std::make_shared<FImage>(TexWidth, TexHeight, true, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+    ImagePtr Image = std::make_shared<FImage>(TexWidth, TexHeight, true, VK_SAMPLE_COUNT_1_BIT, FormatMap[TexChannels], VK_IMAGE_TILING_OPTIMAL,
                  VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                  VK_IMAGE_ASPECT_COLOR_BIT, LogicalDevice, DebugImageName);
 
