@@ -868,7 +868,7 @@ FBuffer FVulkanContext::GenerateSBT(VkPipeline Pipeline, VkStridedDeviceAddressR
 	assert(Result == VK_SUCCESS && "Failed to get handles for SBT");
 
 	VkDeviceSize SBTSize = RayGenRegion.size + RayMissRegion.size + RayHitRegion.size;
-	FBuffer SBTBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(SBTSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
+	FBuffer SBTBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(SBTSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "V::Raytrace_SBT_Buffer");
 
 	auto SBTBufferAddress = VK_CONTEXT()->GetBufferDeviceAddressInfo(SBTBuffer);

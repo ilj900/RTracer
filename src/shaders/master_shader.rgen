@@ -1466,6 +1466,13 @@ void main()
     BounceInput += PointLightResult + DirectionalLightResult + SpotLightResult + AreaLightResult + IBLResult;
     ThroughputBuffer[PixelIndex].xyz = ThroughputBuffer[PixelIndex].xyz + BounceInput;
 
+    if(PushConstants.BounceIndex == 0)
+    {
+        SaveAOVs(PixelCoords, ShadingData.NormalInWorldSpace, ShadingData.NormalInWorldSpace, ShadingData.UVCoordinates, ShadingData.IntersectionCoordinatesInWorldSpace, 1., Depth,
+                 Material.BaseColor, TotalIncomingLight, Hit.RenderableIndex, Hit.PrimitiveIndex, PushConstants.MaterialIndex,
+                 DebugGlobal0, DebugGlobal1, DebugGlobal2, DebugGlobal3);
+    }
+
     if ((PushConstants.BounceIndex == LAST_DIFFUSE_BOUNCE && CheckFlag(RayData.RayFlags, DIFFUSE_LAYER))
     || (PushConstants.BounceIndex == LAST_REFLECTION_BOUNCE && CheckFlag(RayData.RayFlags, SPECULAR_LAYER))
     || (PushConstants.BounceIndex == LAST_REFRACTION_BOUNCE && CheckFlag(RayData.RayFlags, TRANSMISSION_LAYER))
@@ -1486,11 +1493,4 @@ void main()
 
     RayDataBuffer[PixelIndex] = RayData;
     NormalBuffer[PixelIndex] = vec4(ShadingData.NormalInWorldSpace, 1);
-
-    if(PushConstants.BounceIndex == 0)
-    {
-        SaveAOVs(PixelCoords, ShadingData.NormalInWorldSpace, ShadingData.NormalInWorldSpace, ShadingData.UVCoordinates, ShadingData.IntersectionCoordinatesInWorldSpace, 1., Depth,
-        Material.BaseColor, TotalIncomingLight, Hit.RenderableIndex, Hit.PrimitiveIndex, PushConstants.MaterialIndex,
-        DebugGlobal0, DebugGlobal1, DebugGlobal2, DebugGlobal3);
-    }
 }

@@ -20,8 +20,6 @@ FMissTask::FMissTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, ui
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_MISS_LAYOUT_INDEX, COMPUTE_MISS_IBL_IMAGE_SAMPLER_LINEAR_INDEX,
 		{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,  VK_SHADER_STAGE_COMPUTE_BIT});
-	DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_MISS_LAYOUT_INDEX, COMPUTE_MISS_IBL_IMAGE_SAMPLER_NEAREST_INDEX,
-		{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,  VK_SHADER_STAGE_COMPUTE_BIT});
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_MISS_LAYOUT_INDEX, COMPUTE_MISS_MATERIAL_INDEX_MAP,
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_COMPUTE_BIT});
     DescriptorSetManager->AddDescriptorLayout(Name, COMPUTE_MISS_LAYOUT_INDEX, COMPUTE_MISS_MATERIAL_INDEX_AOV_MAP,
@@ -77,7 +75,6 @@ FMissTask::FMissTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t SubmitXIn, ui
 FMissTask::~FMissTask()
 {
     vkDestroySampler(LogicalDevice, IBLImageSamplerLinear, nullptr);
-	vkDestroySampler(LogicalDevice, IBLImageSamplerNearest, nullptr);
 };
 
 void FMissTask::Init(FCompileDefinitions* CompileDefinitions)
@@ -91,7 +88,6 @@ void FMissTask::Init(FCompileDefinitions* CompileDefinitions)
     Pipeline = VK_CONTEXT()->CreateComputePipeline(ShadeShader(), PipelineLayout);
 
 	IBLImageSamplerLinear = VK_CONTEXT()->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT, VK_FILTER_LINEAR);
-	IBLImageSamplerNearest = VK_CONTEXT()->CreateTextureSampler(VK_SAMPLE_COUNT_1_BIT, VK_FILTER_NEAREST);
 
     /// Reserve descriptor sets that will be bound once per frame and once for each renderable objects
     DescriptorSetManager->ReserveDescriptorSet(Name, COMPUTE_MISS_LAYOUT_INDEX, TotalSize);
@@ -107,7 +103,6 @@ void FMissTask::UpdateDescriptorSets()
     {
         UpdateDescriptorSet(COMPUTE_MISS_LAYOUT_INDEX, COMPUTE_MISS_RAYS_BUFFER_INDEX, i, RESOURCE_ALLOCATOR()->GetBuffer(INITIAL_RAYS_BUFFER));
         UpdateDescriptorSet(COMPUTE_MISS_LAYOUT_INDEX, COMPUTE_MISS_IBL_IMAGE_SAMPLER_LINEAR_INDEX, i, TEXTURE_MANAGER()->GetIBLImage(), IBLImageSamplerLinear);
-		UpdateDescriptorSet(COMPUTE_MISS_LAYOUT_INDEX, COMPUTE_MISS_IBL_IMAGE_SAMPLER_NEAREST_INDEX, i, TEXTURE_MANAGER()->GetIBLImage(), IBLImageSamplerNearest);
         UpdateDescriptorSet(COMPUTE_MISS_LAYOUT_INDEX, COMPUTE_MISS_MATERIAL_INDEX_MAP, i, RESOURCE_ALLOCATOR()->GetBuffer(PIXEL_INDEX_BUFFER));
         UpdateDescriptorSet(COMPUTE_MISS_LAYOUT_INDEX, COMPUTE_MISS_MATERIAL_INDEX_AOV_MAP, i, RESOURCE_ALLOCATOR()->GetBuffer(MATERIAL_INDEX_AOV_BUFFER));
         UpdateDescriptorSet(COMPUTE_MISS_LAYOUT_INDEX, COMPUTE_MISS_MATERIALS_OFFSETS, i, RESOURCE_ALLOCATOR()->GetBuffer(MATERIALS_OFFSETS_PER_MATERIAL_BUFFER));

@@ -39,7 +39,7 @@ FRaytraceTask::FRaytraceTask(uint32_t WidthIn, uint32_t HeightIn, uint32_t Submi
 	DescriptorSetManager->AddDescriptorLayout(Name, RAYTRACE_LAYOUT_INDEX, RAYTRACE_THROUGHPUT_BUFFER,
 		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 
-	VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FPushConstants)};
+	VkPushConstantRange PushConstantRange{VK_SHADER_STAGE_RAYGEN_BIT_KHR, 0, sizeof(FPushConstants)};
 	DescriptorSetManager->CreateDescriptorSetLayout({PushConstantRange}, Name);
 
     PipelineStageFlags = VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;

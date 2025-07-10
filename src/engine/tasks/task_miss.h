@@ -13,5 +13,4 @@ public:
     void RecordCommands() override;
 
     VkSampler IBLImageSamplerLinear = VK_NULL_HANDLE;
-	VkSampler IBLImageSamplerNearest = VK_NULL_HANDLE;
 };
