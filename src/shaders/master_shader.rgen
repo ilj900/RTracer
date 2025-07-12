@@ -98,153 +98,155 @@ FDeviceMaterial Material;
 
 layout (location = 0) rayPayloadEXT FHitPayload HitPayload;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_TLAS_INDEX) uniform accelerationStructureEXT TLAS;
+/// Set 0
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_TLAS_INDEX) uniform accelerationStructureEXT TLAS;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_TEXTURE_SAMPLER) uniform sampler Sampler;
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_TEXTURE_SAMPLER) uniform sampler Sampler;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_FLOAT_TEXTURE_ARRAY) uniform texture2D Textures[MAX_TEXTURES];
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_UINT_TEXTURE_ARRAY) uniform utexture2D UTextures[MAX_TEXTURES];
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_INT_TEXTURE_ARRAY) uniform itexture2D ITextures[MAX_TEXTURES];
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_FLOAT_TEXTURE_ARRAY) uniform texture2D Textures[MAX_TEXTURES];
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_UINT_TEXTURE_ARRAY) uniform utexture2D UTextures[MAX_TEXTURES];
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_INT_TEXTURE_ARRAY) uniform itexture2D ITextures[MAX_TEXTURES];
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_RAYS_BUFFER_INDEX) buffer RaysBufferObject
-{
-    FRayData RayDataBuffer[];
-};
-
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_HITS_BUFFER_INDEX) buffer HitsBufferObject
-{
-    FHit Hits[];
-};
-
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_RENDERABLES_BUFFER_INDEX) buffer RenderablesBufferObject
-{
-    FRenderable Renderables[];
-};
-
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_TRANSFORMS_BUFFER_INDEX) buffer TransformsBufferObject
-{
-    FDeviceTransform DeviceTransforms[];
-};
-
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_MATERIALS_OFFSETS) buffer MaterialsOffsetsBufferObject
-{
-    uint MaterialsOffsets[];
-};
-
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_PIXEL_INDEX_BUFFER) buffer PixelIndexIndexMapBufferObject
-{
-    uint PixelIndexIndexMap[];
-};
-
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_DIRECTIONAL_LIGHTS_BUFFER_INDEX) buffer DirectionalLightsBufferObject
-{
-    FDirectionalLight DirectionalLightsBuffer[];
-};
-
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_DIRECTIONAL_LIGHTS_IMPORTANCE_BUFFER_INDEX) buffer DirectionalLightsImportanceBufferObject
-{
-    FDeviceAliasTableEntry DirectionalLightsImportanceBuffer[];
-};
-
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_SPOT_LIGHTS_BUFFER_INDEX) buffer SpotLightsBufferObject
-{
-    FSpotLight SpotLightsBuffer[];
-};
-
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_SPOT_LIGHTS_IMPORTANCE_BUFFER_INDEX) buffer SpotLightsImportanceBufferObject
-{
-    FDeviceAliasTableEntry SpotLightsImportanceBuffer[];
-};
-
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_POINT_LIGHTS_BUFFER_INDEX) buffer PointLightsBufferObject
-{
-    FPointLight PointLightsBuffer[];
-};
-
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_POINT_LIGHTS_IMPORTANCE_BUFFER_INDEX) buffer PointLightsImportanceBufferObject
-{
-    FDeviceAliasTableEntry PointLightsImportanceBuffer[];
-};
-
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_AREA_LIGHTS_BUFFER_INDEX) buffer AreaLightsBufferObject
-{
-    FAreaLight AreaLightsBuffer[];
-};
-
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_AREA_LIGHTS_IMPORTANCE_BUFFER_INDEX) buffer AreaLightsImportanceBufferObject
-{
-    FDeviceAliasTableEntry AreaLightsImportanceBuffer[];
-};
-
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_IMPORTANCE_BUFFER_INDEX) buffer IBLImportanceBufferObject
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_IBL_IMPORTANCE_BUFFER_INDEX) buffer IBLImportanceBufferObject
 {
     FDeviceAliasTableEntry IBLImportanceBuffer[];
 };
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_IMAGE_SAMPLER_INDEX) uniform sampler2D IBLTextureSamplerLinear;
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_IBL_IMAGE_SAMPLER_INDEX) uniform sampler2D IBLTextureSamplerLinear;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_IBL_WEIGHTS_BUFFER_INDEX) buffer IBLPDFBufferObject
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_IBL_WEIGHTS_BUFFER_INDEX) buffer IBLPDFBufferObject
 {
     float IBLPDFBuffer[];
 };
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_UTILITY_BUFFER_INDEX) uniform UtilityDataUniformBufferObject
-{
-    FUtilityData UtilityData;
-};
-
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_RENDER_ITERATION_BUFFER_INDEX) buffer RenderIterationBufferObject
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_RENDER_ITERATION_BUFFER_INDEX) buffer RenderIterationBufferObject
 {
     uint RenderIteration;
 };
 
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_RAYS_BUFFER_INDEX) buffer RaysBufferObject
+{
+    FRayData RayDataBuffer[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_HITS_BUFFER_INDEX) buffer HitsBufferObject
+{
+    FHit Hits[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_MATERIALS_OFFSETS) buffer MaterialsOffsetsBufferObject
+{
+    uint MaterialsOffsets[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_PIXEL_INDEX_BUFFER) buffer PixelIndexIndexMapBufferObject
+{
+    uint PixelIndexIndexMap[];
+};
+
 /// TODO: Rename this buffer
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_CUMULATIVE_MATERIAL_COLOR_BUFFER_INDEX) buffer CumulativeMaterialColorBufferObject
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_CUMULATIVE_MATERIAL_COLOR_BUFFER_INDEX) buffer CumulativeMaterialColorBufferObject
 {
     vec4 CumulativeMaterialColorBuffer[];
 };
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_NORMAL_BUFFER) buffer NormalBufferObject
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_NORMAL_BUFFER) buffer NormalBufferObject
 {
     vec4 NormalBuffer[];
 };
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_THROUGHPUT_BUFFER) buffer ThroughputBufferObject
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_THROUGHPUT_BUFFER) buffer ThroughputBufferObject
 {
     vec4 ThroughputBuffer[];
 };
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_COLOR_AOV_IMAGE_INDEX, rgba32f) uniform image2D OutcomingImage;
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_UTILITY_BUFFER_INDEX) uniform UtilityDataUniformBufferObject
+{
+    FUtilityData UtilityData;
+};
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_SHADING_NORMAL_AOV_IMAGE_INDEX, rgba32f) uniform image2D ShadingNormalAOVImage;
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_COLOR_AOV_IMAGE_INDEX, rgba32f) uniform image2D OutcomingImage;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_GEOMETRIC_NORMAL_AOV_IMAGE_INDEX, rgba32f) uniform image2D GeometricNormalAOVImage;
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_SHADING_NORMAL_AOV_IMAGE_INDEX, rgba32f) uniform image2D ShadingNormalAOVImage;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_UV_AOV_IMAGE_INDEX, rg32f) uniform image2D UVAOVImage;
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_GEOMETRIC_NORMAL_AOV_IMAGE_INDEX, rgba32f) uniform image2D GeometricNormalAOVImage;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_WORLD_SPACE_POSITION_AOV_IMAGE_INDEX, rgba32f) uniform image2D WorldSpacePositionAOVImage;
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_UV_AOV_IMAGE_INDEX, rg32f) uniform image2D UVAOVImage;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_OPACITY_AOV_IMAGE_INDEX, rgba32f) uniform image2D OpacityAOVImage;
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_WORLD_SPACE_POSITION_AOV_IMAGE_INDEX, rgba32f) uniform image2D WorldSpacePositionAOVImage;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_DEPTH_AOV_IMAGE_INDEX, rgba32f) uniform image2D DepthAOVImage;
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_OPACITY_AOV_IMAGE_INDEX, rgba32f) uniform image2D OpacityAOVImage;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_ALBEDO_AOV_IMAGE_INDEX, rgba32f) uniform image2D AlbedoAOVImage;
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_DEPTH_AOV_IMAGE_INDEX, rgba32f) uniform image2D DepthAOVImage;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_LUMINANCE_AOV_IMAGE_INDEX, rgba32f) uniform image2D LuminanceAOVImage;
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_ALBEDO_AOV_IMAGE_INDEX, rgba32f) uniform image2D AlbedoAOVImage;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_RENDERABLE_INDEX_IMAGE_INDEX, rgba32f) uniform image2D RenderableIndexAOVImage;
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_LUMINANCE_AOV_IMAGE_INDEX, rgba32f) uniform image2D LuminanceAOVImage;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_PRIMITIVE_INDEX_IMAGE_INDEX, rgba32f) uniform image2D PrimitiveIndexAOVImage;
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_RENDERABLE_INDEX_IMAGE_INDEX, rgba32f) uniform image2D RenderableIndexAOVImage;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_MATERIAL_INDEX_IMAGE_INDEX, rgba32f) uniform image2D MaterialindexAOVImage;
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_PRIMITIVE_INDEX_IMAGE_INDEX, rgba32f) uniform image2D PrimitiveIndexAOVImage;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_DEBUG_LAYER_IMAGE_0_INDEX, rgba32f) uniform image2D DebugLayerImage0;
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_MATERIAL_INDEX_IMAGE_INDEX, rgba32f) uniform image2D MaterialindexAOVImage;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_DEBUG_LAYER_IMAGE_1_INDEX, rgba32f) uniform image2D DebugLayerImage1;
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_DEBUG_LAYER_IMAGE_0_INDEX, rgba32f) uniform image2D DebugLayerImage0;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_DEBUG_LAYER_IMAGE_2_INDEX, rgba32f) uniform image2D DebugLayerImage2;
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_DEBUG_LAYER_IMAGE_1_INDEX, rgba32f) uniform image2D DebugLayerImage1;
 
-layout (set = MASTER_SHADER_LAYOUT_INDEX, binding = MASTER_SHADER_DEBUG_LAYER_IMAGE_3_INDEX, rgba32f) uniform image2D DebugLayerImage3;
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_DEBUG_LAYER_IMAGE_2_INDEX, rgba32f) uniform image2D DebugLayerImage2;
+
+layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_DEBUG_LAYER_IMAGE_3_INDEX, rgba32f) uniform image2D DebugLayerImage3;
+
+/// Set 1 (for each new render
+layout (set = MASTER_SHADER_LAYOUT_INDEX_PER_FRAME, binding = MASTER_SHADER_DIRECTIONAL_LIGHTS_BUFFER_INDEX) buffer DirectionalLightsBufferObject
+{
+    FDirectionalLight DirectionalLightsBuffer[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX_PER_FRAME, binding = MASTER_SHADER_DIRECTIONAL_LIGHTS_IMPORTANCE_BUFFER_INDEX) buffer DirectionalLightsImportanceBufferObject
+{
+    FDeviceAliasTableEntry DirectionalLightsImportanceBuffer[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX_PER_FRAME, binding = MASTER_SHADER_SPOT_LIGHTS_BUFFER_INDEX) buffer SpotLightsBufferObject
+{
+    FSpotLight SpotLightsBuffer[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX_PER_FRAME, binding = MASTER_SHADER_SPOT_LIGHTS_IMPORTANCE_BUFFER_INDEX) buffer SpotLightsImportanceBufferObject
+{
+    FDeviceAliasTableEntry SpotLightsImportanceBuffer[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX_PER_FRAME, binding = MASTER_SHADER_POINT_LIGHTS_BUFFER_INDEX) buffer PointLightsBufferObject
+{
+    FPointLight PointLightsBuffer[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX_PER_FRAME, binding = MASTER_SHADER_POINT_LIGHTS_IMPORTANCE_BUFFER_INDEX) buffer PointLightsImportanceBufferObject
+{
+    FDeviceAliasTableEntry PointLightsImportanceBuffer[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX_PER_FRAME, binding = MASTER_SHADER_AREA_LIGHTS_BUFFER_INDEX) buffer AreaLightsBufferObject
+{
+    FAreaLight AreaLightsBuffer[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX_PER_FRAME, binding = MASTER_SHADER_AREA_LIGHTS_IMPORTANCE_BUFFER_INDEX) buffer AreaLightsImportanceBufferObject
+{
+    FDeviceAliasTableEntry AreaLightsImportanceBuffer[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX_PER_FRAME, binding = MASTER_SHADER_RENDERABLES_BUFFER_INDEX) buffer RenderablesBufferObject
+{
+    FRenderable Renderables[];
+};
+
+layout (set = MASTER_SHADER_LAYOUT_INDEX_PER_FRAME, binding = MASTER_SHADER_TRANSFORMS_BUFFER_INDEX) buffer TransformsBufferObject
+{
+    FDeviceTransform DeviceTransforms[];
+};
 
 layout (buffer_reference, scalar) buffer Vertices
 {
