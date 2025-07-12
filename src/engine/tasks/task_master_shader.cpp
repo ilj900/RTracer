@@ -173,7 +173,7 @@ void FMasterShader::Init(FCompileDefinitions* CompileDefinitions)
 
 void FMasterShader::UpdateDescriptorSets()
 {
-	   VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_STATIC_INDEX, MASTER_SHADER_TLAS_INDEX, 0, &ACCELERATION_STRUCTURE_SYSTEM()->TLAS.AccelerationStructure);
+	VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_STATIC_INDEX, MASTER_SHADER_TLAS_INDEX, 0, &ACCELERATION_STRUCTURE_SYSTEM()->TLAS.AccelerationStructure);
 	VkDescriptorImageInfo MaterialTextureSamplerInfo{};
 	MaterialTextureSamplerInfo.sampler = MaterialTextureSampler;
 	VK_CONTEXT()->DescriptorSetManager->UpdateDescriptorSetInfo(Name, MASTER_SHADER_LAYOUT_STATIC_INDEX, MASTER_SHADER_TEXTURE_SAMPLER, 0, &MaterialTextureSamplerInfo);

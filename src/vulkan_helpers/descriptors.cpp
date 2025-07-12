@@ -127,7 +127,7 @@ void FPipelineDescriptorSetLayout::ReserveDescriptorPool(VkDevice LogicalDevice)
         auto DescriptorSetLayout = PipelineDescriptorSets[SetIndex];
         for (auto Descriptor : DescriptorSetLayout.DescriptorSets)
         {
-            TypeCount[Descriptor.second.Type] += Count;
+            TypeCount[Descriptor.second.Type] += Count * Descriptor.second.DescriptorCount;
         }
     }
 

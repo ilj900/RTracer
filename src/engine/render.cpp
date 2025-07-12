@@ -330,7 +330,7 @@ ECS::FEntity FRender::CreateCamera()
 
 ECS::FEntity FRender::CreateFramebuffer(int WidthIn, int HeightIn, const std::string& DebugName)
 {
-    auto FramebufferImage = TEXTURE_MANAGER()->CreateStorageImage(WidthIn, HeightIn, DebugName);
+    auto FramebufferImage = TEXTURE_MANAGER()->CreateStorageImage(WidthIn, HeightIn, VK_FORMAT_R32G32B32A32_SFLOAT, DebugName);
     static int Counter = 0;
 	std::string FramebufferName = (DebugName.empty()) ? ("Unnamed Framebuffer " + std::to_string(Counter++)) : DebugName;
     TEXTURE_MANAGER()->RegisterFramebuffer(FramebufferImage, FramebufferName);
@@ -1359,31 +1359,31 @@ void FRender::AllocateDependentResources()
 
 	/// Create internal images
 	std::vector<FImageDescription> ImageDescriptions = {
-		{"ColorImage", 					Width, Height, 0},
-		{"ShadingNormalAOVImage", 		Width, Height, 0},
-		{"GeometricNormalAOVImage", 		Width, Height, 0},
-		{"UVAOVImage", 					Width, Height, 0},
-		{"WorldSpacePositionAOVImage", 	Width, Height, 0},
-		{"OpacityAOVImage", 				Width, Height, 0},
-		{"DepthAOVImage", 				Width, Height, 0},
-		{"AlbedoAOVImage", 				Width, Height, 0},
-		{"LuminanceAOVImage", 			Width, Height, 0},
-		{"MaterialIDAOVImage", 			Width, Height, 0},
-		{"RenderableIDAOVImage", 			Width, Height, 0},
-		{"PrimitiveIDAOVImage", 			Width, Height, 0},
-		{"DebugLayerImage0", 				Width, Height, 0},
-		{"DebugLayerImage1", 				Width, Height, 0},
-		{"DebugLayerImage2", 				Width, Height, 0},
-		{"DebugLayerImage3", 				Width, Height, 0},
+		{"ColorImage", 					Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
+		{"ShadingNormalAOVImage", 		Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
+		{"GeometricNormalAOVImage", 		Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
+		{"UVAOVImage", 					Width, Height, VK_FORMAT_R32G32_SFLOAT},
+		{"WorldSpacePositionAOVImage", 	Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
+		{"OpacityAOVImage", 				Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
+		{"DepthAOVImage", 				Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
+		{"AlbedoAOVImage", 				Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
+		{"LuminanceAOVImage", 			Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
+		{"MaterialIDAOVImage", 			Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
+		{"RenderableIDAOVImage", 			Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
+		{"PrimitiveIDAOVImage", 			Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
+		{"DebugLayerImage0", 				Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
+		{"DebugLayerImage1", 				Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
+		{"DebugLayerImage2", 				Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
+		{"DebugLayerImage3", 				Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
 	};
 
 	CreateRegisterAndTransitionImageShortcut(ImageDescriptions);
 
-	auto AccumulatorImage = TEXTURE_MANAGER()->CreateClearableStorageImage(Width, Height,"AccumulatorImage");
+	auto AccumulatorImage = TEXTURE_MANAGER()->CreateClearableStorageImage(Width, Height,VK_FORMAT_R32G32B32A32_SFLOAT, "AccumulatorImage");
 	TEXTURE_MANAGER()->RegisterFramebuffer(AccumulatorImage, "AccumulatorImage");
 	AccumulatorImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-	auto EstimatedImage = TEXTURE_MANAGER()->CreateSampledStorageImage(Width, Height, "EstimatedImage");
+	auto EstimatedImage = TEXTURE_MANAGER()->CreateSampledStorageImage(Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT, "EstimatedImage");
 	TEXTURE_MANAGER()->RegisterFramebuffer(EstimatedImage, "EstimatedImage");
 	EstimatedImage->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 }
@@ -1474,7 +1474,7 @@ void FRender::CreateRegisterAndTransitionImageShortcut(const std::vector<FImageD
 {
 	for (auto & ImageDescription : ImageDescriptions)
 	{
-		auto Image = TEXTURE_MANAGER()->CreateStorageImage(ImageDescription.Width, ImageDescription.Height, ImageDescription.Name);
+		auto Image = TEXTURE_MANAGER()->CreateStorageImage(ImageDescription.Width, ImageDescription.Height, ImageDescription.Format, ImageDescription.Name);
 		TEXTURE_MANAGER()->RegisterFramebuffer(Image, ImageDescription.Name);
 		Image->Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 	}

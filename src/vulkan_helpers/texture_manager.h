@@ -12,9 +12,9 @@ public:
     FTextureManager();
     ~FTextureManager();
 
-    ImagePtr CreateStorageImage(uint32_t WidthIn, uint32_t HeightIn, const std::string& DebugName = "");
-	ImagePtr CreateClearableStorageImage(uint32_t WidthIn, uint32_t HeightIn, const std::string& DebugName = "");
-    ImagePtr CreateSampledStorageImage(uint32_t WidthIn, uint32_t HeightIn, const std::string& DebugName = "");
+    ImagePtr CreateStorageImage(uint32_t WidthIn, uint32_t HeightIn, VkFormat Format = VK_FORMAT_R32G32B32A32_SFLOAT, const std::string& DebugName = "");
+	ImagePtr CreateClearableStorageImage(uint32_t WidthIn, uint32_t HeightIn, VkFormat Format = VK_FORMAT_R32G32B32A32_SFLOAT, const std::string& DebugName = "");
+    ImagePtr CreateSampledStorageImage(uint32_t WidthIn, uint32_t HeightIn, VkFormat Format = VK_FORMAT_R32G32B32A32_SFLOAT, const std::string& DebugName = "");
 	ImagePtr CreateColorAttachment(uint32_t WidthIn, uint32_t HeightIn, const std::string& DebugName = "");
     uint32_t RegisterTexture(const ImagePtr& ImagePointer, VkImageLayout ImageLayout, const std::string& Name);
     void RegisterFramebuffer(const ImagePtr& ImagePointer, const std::string& Name);

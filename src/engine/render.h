@@ -251,7 +251,7 @@ private:
 		std::string Name;
 		uint32_t Width;
 		uint32_t Height;
-		uint32_t Format;
+		VkFormat Format;
 	};
 
 	void CreateAndRegisterBufferShortcut(const std::vector<FBufferDescription>& BufferDescriptions);
