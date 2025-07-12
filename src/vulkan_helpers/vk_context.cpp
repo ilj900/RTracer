@@ -1204,13 +1204,34 @@ ImagePtr FVulkanContext::LoadImageFromFile(const std::string& Path, const std::s
 {
     /// Load data from image file
     int TexWidth, TexHeight, TexChannels;
+	/// STBI_rgb_alpha
     stbi_uc* Pixels = stbi_load(Path.c_str(), &TexWidth, &TexHeight, &TexChannels, STBI_rgb_alpha);
-    VkDeviceSize ImageSize = TexWidth * TexHeight * TexChannels;
+    VkDeviceSize ImageSize = TexWidth * TexHeight * STBI_rgb_alpha;
 
     if (!Pixels)
     {
         throw std::runtime_error("Failed to load texture image!");
     }
+
+	/// For 1 and 2 channels we repack the loaded data from 4 channels
+	if (TexChannels == 2)
+	{
+		for (int i = 0; i < TexHeight * TexWidth; i++)
+		{
+			Pixels[2 * i] = Pixels[4 * i];
+			Pixels[2 * i + 1] = Pixels[4 * i + 1];
+		}
+		ImageSize = TexWidth * TexHeight * TexChannels;
+	}
+
+	if (TexChannels == 1)
+	{
+		for (int i = 0; i < TexHeight * TexWidth; i++)
+		{
+			Pixels[i] = Pixels[4 * i];
+		}
+		ImageSize = TexWidth * TexHeight * TexChannels;
+	}
 
     /// Load data into staging buffer
 	std::unordered_map<int, VkFormat> FormatMap{{1, VK_FORMAT_R8_UNORM}, {2, VK_FORMAT_R8G8_UNORM}, {3, VK_FORMAT_R8G8B8A8_UNORM}, {4, VK_FORMAT_R8G8B8A8_UNORM} };
