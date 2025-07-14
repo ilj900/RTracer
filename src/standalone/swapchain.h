@@ -2,7 +2,6 @@
 
 #include "vulkan/vulkan.h"
 #include "image.h"
-#include "entity.h"
 
 #include "vk_utils.h"
 

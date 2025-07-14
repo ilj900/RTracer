@@ -85,7 +85,7 @@ FSwapchain::FSwapchain(uint32_t Width, uint32_t Height, VkFormat Format, VkColor
 	CreateInfo.imageColorSpace = SurfaceFormat.colorSpace;
 	CreateInfo.imageExtent = Extent;
 	CreateInfo.imageArrayLayers = 1;
-	CreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	CreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
 	uint32_t QueueFamilyIndices[] = {VK_CONTEXT()->GetGraphicsQueueIndex(), VK_CONTEXT()->GetPresentIndex()};
 	if (VK_CONTEXT()->GetGraphicsQueueIndex() != VK_CONTEXT()->GetPresentIndex())
