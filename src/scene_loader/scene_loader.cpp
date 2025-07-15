@@ -498,16 +498,23 @@ void FSceneLoader::LoadScene(const std::string& Name)
 	}
 	else if (Name == SCENE_TEXTURE_SYSTEM_TEST)
 	{
-		auto Plane = Render->CreatePlane({4, 4});
+		auto Shaderball = Render->CreateModel("../models/Shaderball.obj");
 
-		auto Tile = Render->CreateInstance(Plane, {0, 0, 0}, {0, 1, 0}, {0, 0, -1});
+		auto ShaderballInstance = Render->CreateInstance(Shaderball, {0, 0, 0}, {0, 0, 1}, {0, 1, 0});
 
 		auto Material = Render->CreateEmptyMaterial();
-		auto AlbedoTexture = Render->CreateTexture("../resources/Wood/Wood_8K_Albedo.jpg");
-		Render->MaterialSetBaseColor(Material, AlbedoTexture);
-		Render->MaterialSetBaseColorWeight(Material, 1.f);
 
-		Render->ShapeSetMaterial(Tile, Material);
+		auto AlbedoTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_color.jpg");
+		Render->MaterialSetBaseColor(Material, AlbedoTexture);
+		Render->MaterialSetBaseColorWeight(Material, 0.f);
+
+		Render->MaterialSetSpecularWeight(Material, 0.4f);
+		auto RoughnessTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_roughness.jpg");
+		Render->MaterialSetSpecularRoughness(Material, RoughnessTexture);
+		Render->MaterialSetSpecularAnisotropy(Material, 0.5f);
+
+
+		Render->ShapeSetMaterial(ShaderballInstance, Material);
 
 		Render->SetIBL("../resources/Sun.exr");
 	}

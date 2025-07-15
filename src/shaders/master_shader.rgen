@@ -322,6 +322,20 @@ int SampleInt(uint TextureIndex, vec2 TextureCoords)
     return texture(isampler2D(ITextures[TextureIndex], Sampler), TextureCoords).r;
 }
 
+vec3 SRGBToLinear(vec3 SRGBColor) {
+    vec3 bLess = step(vec3(0.04045f), SRGBColor);
+    vec3 Low  = SRGBColor / 12.92f;
+    vec3 High = pow((SRGBColor + 0.055f) / 1.055f, vec3(2.4f));
+    return mix(Low, High, bLess);
+}
+
+vec3 LinearToSRGB(vec3 LinearColor) {
+    vec3 bLess = step(vec3(0.0031308f), LinearColor);
+    vec3 Low  = LinearColor * 12.92f;
+    vec3 High = 1.055 * pow(LinearColor, vec3(1.f/2.4f)) - 0.055f;
+    return mix(Low, High, bLess);
+}
+
 FDeviceMaterial GetMaterial(vec2 TextureCoords);
 FDeviceMaterial GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex);
 
