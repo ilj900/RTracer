@@ -230,8 +230,6 @@ public:
 	std::vector<FSynchronizationPoint> ExternalImageAvailable;
     std::vector<ECS::FEntity> OutputFramebuffers;
 
-	std::unordered_map<EOutputType, std::string> OutputToFramebufferNameMap;
-
 private:
     ECS::FEntity CreateEmptyModel();
 	void AllocateDependentResources();

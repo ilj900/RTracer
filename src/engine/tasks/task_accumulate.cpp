@@ -54,35 +54,24 @@ void FAccumulateTask::Init(FCompileDefinitions* CompileDefinitions)
 
 void FAccumulateTask::UpdateDescriptorSets()
 {
-	static const std::unordered_map<EOutputType, std::string> OutputToImageNameMap = {
-		{EOutputType::Color, 				"ColorImage"},
-		{EOutputType::ShadingNormal, 		"AOVImage"},
-		{EOutputType::GeometricNormal, 		"AOVImage"},
-		{EOutputType::UV, 					"AOVImage"},
-		{EOutputType::WorldSpacePosition, 	"AOVImage"},
-		{EOutputType::Opacity, 				"AOVImage"},
-		{EOutputType::Depth, 				"AOVImage"},
-		{EOutputType::Albedo, 				"AOVImage"},
-		{EOutputType::Luminance, 			"AOVImage"},
-		{EOutputType::MaterialID, 			"AOVImage"},
-		{EOutputType::RenderableID, 			"AOVImage"},
-		{EOutputType::PrimitiveID, 			"AOVImage"},
-		{EOutputType::DebugLayer0, 			"AOVImage"},
-		{EOutputType::DebugLayer1, 			"AOVImage"},
-		{EOutputType::DebugLayer2, 			"AOVImage"},
-		{EOutputType::DebugLayer3, 			"AOVImage"},
-	};
-
     for (uint32_t i = 0; i < TotalSize; ++i)
     {
-		auto Iter = OutputToImageNameMap.find(RENDER_STATE()->RenderTarget);
-
-		if (Iter == OutputToImageNameMap.end())
+		if (RENDER_STATE()->RenderTarget == EOutputType::Color)
 		{
-			throw std::runtime_error("Unsupported AOV input.");
+			UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("ColorImage"));
 		}
+		else
+		{
+			if (RENDER_STATE()->RenderTarget >= EOutputType::Max)
+			{
+				throw std::runtime_error("Unsupported AOV input.");
+			}
+			else
+			{
+				UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage("AOVImage"));
+			}
 
-		UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, INCOMING_IMAGE_TO_SAMPLE, i, TEXTURE_MANAGER()->GetFramebufferImage(Iter->second));
+		}
         UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, ACCUMULATE_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("AccumulatorImage"));
         UpdateDescriptorSet(ACCUMULATE_PER_FRAME_LAYOUT_INDEX, ESTIMATED_IMAGE_INDEX, i, TEXTURE_MANAGER()->GetFramebufferImage("EstimatedImage"));
     }

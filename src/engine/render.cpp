@@ -245,23 +245,6 @@ int FRender::Init()
 
     RenderFrameIndex = 0;
 	Counter = 0;
-
-	OutputToFramebufferNameMap[EOutputType::Color] 				= "ColorImage";
-	OutputToFramebufferNameMap[EOutputType::ShadingNormal] 		= "AOVImage";
-	OutputToFramebufferNameMap[EOutputType::GeometricNormal]	= "AOVImage";
-	OutputToFramebufferNameMap[EOutputType::UV] 				= "AOVImage";
-	OutputToFramebufferNameMap[EOutputType::WorldSpacePosition] = "AOVImage";
-	OutputToFramebufferNameMap[EOutputType::Opacity]			= "AOVImage";
-	OutputToFramebufferNameMap[EOutputType::Depth]				= "AOVImage";
-	OutputToFramebufferNameMap[EOutputType::Albedo]				= "AOVImage";
-	OutputToFramebufferNameMap[EOutputType::Luminance]			= "AOVImage";
-	OutputToFramebufferNameMap[EOutputType::MaterialID] 		= "AOVImage";
-	OutputToFramebufferNameMap[EOutputType::RenderableID]		= "AOVImage";
-	OutputToFramebufferNameMap[EOutputType::PrimitiveID] 		= "AOVImage";
-	OutputToFramebufferNameMap[EOutputType::DebugLayer0] 		= "AOVImage";
-	OutputToFramebufferNameMap[EOutputType::DebugLayer1] 		= "AOVImage";
-	OutputToFramebufferNameMap[EOutputType::DebugLayer2] 		= "AOVImage";
-	OutputToFramebufferNameMap[EOutputType::DebugLayer3] 		= "AOVImage";
     return 0;
 }
 
@@ -454,12 +437,40 @@ void FRender::SaveFramebufferExr(ECS::FEntity Framebuffer, const std::string& Fi
 
 void FRender::SaveOutputPng(EOutputType OutputType, const std::string& Filename)
 {
-	VK_CONTEXT()->SaveImagePng(OutputToFramebufferNameMap[OutputType], Filename);
+	std::string ImageName = "ColorImage";
+
+	if (OutputType < EOutputType::Max)
+	{
+		if (OutputType > EOutputType::Color)
+		{
+			ImageName = "AOVImage";
+		}
+	}
+	else
+	{
+		throw std::runtime_error("Requested to save output that didn't exists.");
+	}
+
+	VK_CONTEXT()->SaveImagePng(ImageName, Filename);
 }
 
 void FRender::SaveOutputExr(EOutputType OutputType, const std::string& Filename)
 {
-	VK_CONTEXT()->SaveImageExr(OutputToFramebufferNameMap[OutputType], Filename);
+	std::string ImageName = "ColorImage";
+
+	if (OutputType < EOutputType::Max)
+	{
+		if (OutputType > EOutputType::Color)
+		{
+			ImageName = "AOVImage";
+		}
+	}
+	else
+	{
+		throw std::runtime_error("Requested to save output that didn't exists.");
+	}
+
+	VK_CONTEXT()->SaveImageExr(ImageName, Filename);
 }
 
 void FRender::PrintScreenPng(const std::string& Filename)
