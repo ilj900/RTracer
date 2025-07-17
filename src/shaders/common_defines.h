@@ -44,6 +44,66 @@
 #define EMISSION_LAYER															1u << 7
 #define RAY_TYPE_MASK															0x0000FFFE
 
+
+/// AOV Indices
+#define AOV_COLOR																0u
+#define AOV_SHADING_NORMAL														1u
+#define AOV_GEOMETRIC_NORMAL													2u
+#define AOV_UV_COORDS															3u
+#define AOV_WORLD_SPACE_POSITION												4u
+#define AOV_OPACITY																5u
+#define AOV_DEPTH																6u
+#define AOV_MATERIAL_ALBEDO_WEIGHT												7u
+#define AOV_MATERIAL_ALBEDO														8u
+#define AOV_MATERIAL_DIFFUSE_ROUGHNESS											9u
+#define AOV_MATERIAL_METALNESS													10u
+#define AOV_MATERIAL_NORMAL														11u
+#define AOV_MATERIAL_SPECULAR_WEIGHT											12u
+#define AOV_MATERIAL_SPECULAR_COLOR												13u
+#define AOV_MATERIAL_SPECULAR_ROUGHNESS											14u
+#define AOV_MATERIAL_SPECULAR_IOR												15u
+#define AOV_MATERIAL_SPECULAR_ANISOTROPY										16u
+#define AOV_MATERIAL_SPECULAR_ROTATION											17u
+#define AOV_MATERIAL_TRANSMISSION_WEIGHT										18u
+#define AOV_MATERIAL_TRANSMISSION_COLOR											19u
+#define AOV_MATERIAL_TRANSMISSION_DEPTH											20u
+#define AOV_MATERIAL_TRANSMISSION_SCATTER										21u
+#define AOV_MATERIAL_TRANSMISSION_ANISOTROPY									22u
+#define AOV_MATERIAL_TRANSMISSION_DISPERSION									23u
+#define AOV_MATERIAL_TRANSMISSION_ROUGHNESS										24u
+#define AOV_MATERIAL_SUBSURFACE_WEIGHT											25u
+#define AOV_MATERIAL_SUBSURFACE_COLOR											26u
+#define AOV_MATERIAL_SUBSURFACE_RADIUS											27u
+#define AOV_MATERIAL_SUBSURFACE_SCALE											28u
+#define AOV_MATERIAL_SUBSURFACE_ANISOTROPY										29u
+#define AOV_MATERIAL_SHEEN_WEIGHT												30u
+#define AOV_MATERIAL_SHEEN_COLOR												31u
+#define AOV_MATERIAL_SHEEN_ROUGHNESS											32u
+#define AOV_MATERIAL_COAT_WEIGHT												33u
+#define AOV_MATERIAL_COAT_COLOR													34u
+#define AOV_MATERIAL_COAT_ROUGHNESS												35u
+#define AOV_MATERIAL_COAT_ANISOTROPY											36u
+#define AOV_MATERIAL_COAT_ROTATION												37u
+#define AOV_MATERIAL_COAT_IOR													38u
+#define AOV_MATERIAL_COAT_NORMAL												39u
+#define AOV_MATERIAL_COAT_AFFECT_COLOR											40u
+#define AOV_MATERIAL_COAT_AFFECT_ROUGHNESS										41u
+#define AOV_MATERIAL_THIN_FILM_THICKNESS										42u
+#define AOV_MATERIAL_THIN_FILM_IOR												43u
+#define AOV_MATERIAL_EMISSION_WEIGHT											44u
+#define AOV_MATERIAL_COLOR														45u
+#define AOV_MATERIAL_OPACITY													46u
+#define AOV_MATERIAL_THIN_WALLED												47u
+#define AOV_LUMINANCE															48u
+#define AOV_RENDERABLE_INDEX													49u
+#define AOV_PRIMITIVE_INDEX														51u
+#define AOV_MATERIAL_INDEX														52u
+#define AOV_DEBUG_LAYER_0														53u
+#define AOV_DEBUG_LAYER_1														54u
+#define AOV_DEBUG_LAYER_2														55u
+#define AOV_DEBUG_LAYER_3														56u
+#define AOV_MAX																	57u
+
 /// Task accumulate descriptor set layout defines
 #define ACCUMULATE_PER_FRAME_LAYOUT_INDEX 										0u
 
@@ -96,21 +156,7 @@
 #define MASTER_SHADER_THROUGHPUT_BUFFER											15u
 #define MASTER_SHADER_UTILITY_BUFFER_INDEX 										16u
 #define MASTER_SHADER_COLOR_AOV_IMAGE_INDEX 									17u
-#define MASTER_SHADER_SHADING_NORMAL_AOV_IMAGE_INDEX 							18u
-#define MASTER_SHADER_GEOMETRIC_NORMAL_AOV_IMAGE_INDEX							19u
-#define MASTER_SHADER_UV_AOV_IMAGE_INDEX										20u
-#define MASTER_SHADER_WORLD_SPACE_POSITION_AOV_IMAGE_INDEX						21u
-#define MASTER_SHADER_OPACITY_AOV_IMAGE_INDEX									22u
-#define MASTER_SHADER_DEPTH_AOV_IMAGE_INDEX										23u
-#define MASTER_SHADER_ALBEDO_AOV_IMAGE_INDEX									24u
-#define MASTER_SHADER_LUMINANCE_AOV_IMAGE_INDEX									25u
-#define MASTER_SHADER_RENDERABLE_INDEX_IMAGE_INDEX								26u
-#define MASTER_SHADER_PRIMITIVE_INDEX_IMAGE_INDEX								27u
-#define MASTER_SHADER_MATERIAL_INDEX_IMAGE_INDEX								28u
-#define MASTER_SHADER_DEBUG_LAYER_IMAGE_0_INDEX									29u
-#define MASTER_SHADER_DEBUG_LAYER_IMAGE_1_INDEX									30u
-#define MASTER_SHADER_DEBUG_LAYER_IMAGE_2_INDEX									31u
-#define MASTER_SHADER_DEBUG_LAYER_IMAGE_3_INDEX									32u
+#define MASTER_SHADER_AOV_RGBA32F_IMAGE_INDEX 									18u
 
 /// Descriptors that might be updated out of order (by double/triple buffering for example)
 #define MASTER_SHADER_LAYOUT_INDEX_PER_FRAME									1u
@@ -139,21 +185,8 @@
 #define COMPUTE_MISS_CUMULATIVE_MATERIAL_COLOR_BUFFER_INDEX						6u
 #define COMPUTE_MISS_THROUGHPUT_BUFFER 											7u
 #define COMPUTE_MISS_OUTPUT_IMAGE_INDEX 										8u
-#define COMPUTE_MISS_SHADING_NORMAL_AOV_IMAGE_INDEX								9u
-#define COMPUTE_MISS_GEOMETRIC_NORMAL_AOV_IMAGE_INDEX							10u
-#define COMPUTE_MISS_UV_AOV_IMAGE_INDEX											11u
-#define COMPUTE_MISS_WORLD_SPACE_POSITION_AOV_IMAGE_INDEX						12u
-#define COMPUTE_MISS_OPACITY_AOV_IMAGE_INDEX									13u
-#define COMPUTE_MISS_DEPTH_AOV_IMAGE_INDEX										14u
-#define COMPUTE_MISS_ALBEDO_AOV_IMAGE_INDEX										15u
-#define COMPUTE_MISS_LUMINANCE_AOV_IMAGE_INDEX									16u
-#define COMPUTE_MISS_RENDERABLE_INDEX_IMAGE_INDEX								17u
-#define COMPUTE_MISS_PRIMITIVE_INDEX_IMAGE_INDEX								18u
-#define COMPUTE_MISS_MATERIAL_INDEX_IMAGE_INDEX									19u
-#define COMPUTE_MISS_DEBUG_LAYER_IMAGE_0_INDEX									20u
-#define COMPUTE_MISS_DEBUG_LAYER_IMAGE_1_INDEX									21u
-#define COMPUTE_MISS_DEBUG_LAYER_IMAGE_2_INDEX									22u
-#define COMPUTE_MISS_DEBUG_LAYER_IMAGE_3_INDEX									23u
+#define COMPUTE_MISS_AOV_RGBA32F_IMAGE_INDEX 									9u
+#define COMPUTE_MISS_UTILITY_BUFFER_INDEX										10u
 
 /// Task advance render count descriptor set layout defines
 #define ADVANCE_RENDER_COUNT_LAYOUT_INDEX 										0u

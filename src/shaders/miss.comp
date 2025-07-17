@@ -52,32 +52,12 @@ layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_THROUGHPUT_BUFFE
 
 layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_OUTPUT_IMAGE_INDEX, rgba32f) uniform writeonly image2D OutcomingImage;
 
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_SHADING_NORMAL_AOV_IMAGE_INDEX, rgba32f) uniform image2D ShadingNormalAOVImage;
+layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_AOV_RGBA32F_IMAGE_INDEX, rgba32f) uniform image2D AOV_RGBA32F_Image;
 
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_GEOMETRIC_NORMAL_AOV_IMAGE_INDEX, rgba32f) uniform image2D GeometricNormalAOVImage;
-
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_UV_AOV_IMAGE_INDEX, rg32f) uniform image2D UVAOVImage;
-
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_WORLD_SPACE_POSITION_AOV_IMAGE_INDEX, rgba32f) uniform image2D WorldSpacePositionAOVImage;
-
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_OPACITY_AOV_IMAGE_INDEX, rgba32f) uniform image2D OpacityAOVImage;
-
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_DEPTH_AOV_IMAGE_INDEX, rgba32f) uniform image2D DepthAOVImage;
-
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_ALBEDO_AOV_IMAGE_INDEX, rgba32f) uniform image2D AlbedoAOVImage;
-
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_LUMINANCE_AOV_IMAGE_INDEX, rgba32f) uniform image2D LuminanceAOVImage;
-
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_RENDERABLE_INDEX_IMAGE_INDEX, rgba32f) uniform image2D RenderableIndexAOVImage;
-
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_PRIMITIVE_INDEX_IMAGE_INDEX, rgba32f) uniform image2D PrimitiveIndexAOVImage;
-
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_MATERIAL_INDEX_IMAGE_INDEX, rgba32f) uniform image2D MaterialindexAOVImage;
-
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_DEBUG_LAYER_IMAGE_0_INDEX, rgba32f) uniform image2D DebugLayerImage0;
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_DEBUG_LAYER_IMAGE_1_INDEX, rgba32f) uniform image2D DebugLayerImage1;
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_DEBUG_LAYER_IMAGE_2_INDEX, rgba32f) uniform image2D DebugLayerImage2;
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_DEBUG_LAYER_IMAGE_3_INDEX, rgba32f) uniform image2D DebugLayerImage3;
+layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_UTILITY_BUFFER_INDEX) uniform UtilityDataUniformBufferObject
+{
+    FUtilityData UtilityData;
+};
 
 FRayData FetchRayData(uint RayIndex)
 {
@@ -98,21 +78,44 @@ layout (local_size_x = BASIC_CHUNK_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 void SaveAOVs(uvec2 PixelCoords, vec4 DebugData0, vec4 DebugData1, vec4 DebugData2, vec4 DebugData3)
 {
-    imageStore(ShadingNormalAOVImage, ivec2(PixelCoords), vec4(0));
-    imageStore(GeometricNormalAOVImage, ivec2(PixelCoords), vec4(0));
-    imageStore(UVAOVImage, ivec2(PixelCoords), vec4(0));
-    imageStore(WorldSpacePositionAOVImage, ivec2(PixelCoords), vec4(0));
-    imageStore(OpacityAOVImage, ivec2(PixelCoords), vec4(0));
-    imageStore(DepthAOVImage, ivec2(PixelCoords), vec4(0));
-    imageStore(AlbedoAOVImage, ivec2(PixelCoords), vec4(0));
-    imageStore(LuminanceAOVImage, ivec2(PixelCoords), vec4(0));
-    imageStore(RenderableIndexAOVImage, ivec2(PixelCoords), vec4(0));
-    imageStore(PrimitiveIndexAOVImage, ivec2(PixelCoords), vec4(0));
-    imageStore(MaterialindexAOVImage, ivec2(PixelCoords), vec4(0));
-    imageStore(DebugLayerImage0, ivec2(PixelCoords), DebugData0);
-    imageStore(DebugLayerImage1, ivec2(PixelCoords), DebugData1);
-    imageStore(DebugLayerImage2, ivec2(PixelCoords), DebugData2);
-    imageStore(DebugLayerImage3, ivec2(PixelCoords), DebugData3);
+    switch (UtilityData.AOVIndex)
+    {
+        case AOV_SHADING_NORMAL:
+        case AOV_GEOMETRIC_NORMAL:
+        case AOV_UV_COORDS:
+        case AOV_WORLD_SPACE_POSITION:
+        case AOV_OPACITY:
+        case AOV_DEPTH:
+        case AOV_MATERIAL_ALBEDO:
+        case AOV_LUMINANCE:
+        case AOV_RENDERABLE_INDEX:
+        case AOV_PRIMITIVE_INDEX:
+        case AOV_MATERIAL_INDEX:
+            {
+                imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), vec4(0));
+                break;
+            }
+        case AOV_DEBUG_LAYER_0:
+            {
+                imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugData0);
+                break;
+            }
+        case AOV_DEBUG_LAYER_1:
+            {
+                imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugData1);
+                break;
+            }
+        case AOV_DEBUG_LAYER_2:
+            {
+                imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugData2);
+                break;
+            }
+        case AOV_DEBUG_LAYER_3:
+            {
+                imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugData3);
+                break;
+            }
+    }
 }
 
 void main()

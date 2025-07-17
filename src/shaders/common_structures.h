@@ -123,6 +123,7 @@ struct FUtilityData
 	float TotalPointLightPower;
 	uint32_t ActiveAreaLightsCount;
 	float TotalAreaLightArea;
+	uint32_t AOVIndex;
 };
 
 /// Should be aligned with FAliasTableEntry

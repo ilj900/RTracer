@@ -247,21 +247,21 @@ int FRender::Init()
 	Counter = 0;
 
 	OutputToFramebufferNameMap[EOutputType::Color] 				= "ColorImage";
-	OutputToFramebufferNameMap[EOutputType::ShadingNormal] 		= "ShadingNormalAOVImage";
-	OutputToFramebufferNameMap[EOutputType::GeometricNormal]	= "GeometricNormalAOVImage";
-	OutputToFramebufferNameMap[EOutputType::UV] 				= "UVAOVImage";
-	OutputToFramebufferNameMap[EOutputType::WorldSpacePosition] = "WorldSpacePositionAOVImage";
-	OutputToFramebufferNameMap[EOutputType::Opacity]			= "OpacityAOVImage";
-	OutputToFramebufferNameMap[EOutputType::Depth]				= "DepthAOVImage";
-	OutputToFramebufferNameMap[EOutputType::Albedo]				= "AlbedoAOVImage";
-	OutputToFramebufferNameMap[EOutputType::Luminance]			= "LuminanceAOVImage";
-	OutputToFramebufferNameMap[EOutputType::MaterialID] 		= "MaterialIDAOVImage";
-	OutputToFramebufferNameMap[EOutputType::RenderableID]		= "RenderableIDAOVImage";
-	OutputToFramebufferNameMap[EOutputType::PrimitiveID] 		= "PrimitiveIDAOVImage";
-	OutputToFramebufferNameMap[EOutputType::DebugLayer0] 		= "DebugLayerImage0";
-	OutputToFramebufferNameMap[EOutputType::DebugLayer1] 		= "DebugLayerImage1";
-	OutputToFramebufferNameMap[EOutputType::DebugLayer2] 		= "DebugLayerImage2";
-	OutputToFramebufferNameMap[EOutputType::DebugLayer3] 		= "DebugLayerImage3";
+	OutputToFramebufferNameMap[EOutputType::ShadingNormal] 		= "AOVImage";
+	OutputToFramebufferNameMap[EOutputType::GeometricNormal]	= "AOVImage";
+	OutputToFramebufferNameMap[EOutputType::UV] 				= "AOVImage";
+	OutputToFramebufferNameMap[EOutputType::WorldSpacePosition] = "AOVImage";
+	OutputToFramebufferNameMap[EOutputType::Opacity]			= "AOVImage";
+	OutputToFramebufferNameMap[EOutputType::Depth]				= "AOVImage";
+	OutputToFramebufferNameMap[EOutputType::Albedo]				= "AOVImage";
+	OutputToFramebufferNameMap[EOutputType::Luminance]			= "AOVImage";
+	OutputToFramebufferNameMap[EOutputType::MaterialID] 		= "AOVImage";
+	OutputToFramebufferNameMap[EOutputType::RenderableID]		= "AOVImage";
+	OutputToFramebufferNameMap[EOutputType::PrimitiveID] 		= "AOVImage";
+	OutputToFramebufferNameMap[EOutputType::DebugLayer0] 		= "AOVImage";
+	OutputToFramebufferNameMap[EOutputType::DebugLayer1] 		= "AOVImage";
+	OutputToFramebufferNameMap[EOutputType::DebugLayer2] 		= "AOVImage";
+	OutputToFramebufferNameMap[EOutputType::DebugLayer3] 		= "AOVImage";
     return 0;
 }
 
@@ -316,6 +316,7 @@ void FRender::SetRenderTarget(EOutputType OutputType)
 	{
 		RENDER_STATE()->RenderTarget = OutputType;
 		AccumulateTask->SetDirty(OUTDATED_DESCRIPTOR_SET | OUTDATED_COMMAND_BUFFER);
+		RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t) * 1,  offsetof(FUtilityData, AOVIndex), &RENDER_STATE()->RenderTarget);
 		bAnyUpdate = true;
 	}
 }
@@ -1359,22 +1360,8 @@ void FRender::AllocateDependentResources()
 
 	/// Create internal images
 	std::vector<FImageDescription> ImageDescriptions = {
-		{"ColorImage", 					Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
-		{"ShadingNormalAOVImage", 		Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
-		{"GeometricNormalAOVImage", 		Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
-		{"UVAOVImage", 					Width, Height, VK_FORMAT_R32G32_SFLOAT},
-		{"WorldSpacePositionAOVImage", 	Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
-		{"OpacityAOVImage", 				Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
-		{"DepthAOVImage", 				Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
-		{"AlbedoAOVImage", 				Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
-		{"LuminanceAOVImage", 			Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
-		{"MaterialIDAOVImage", 			Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
-		{"RenderableIDAOVImage", 			Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
-		{"PrimitiveIDAOVImage", 			Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
-		{"DebugLayerImage0", 				Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
-		{"DebugLayerImage1", 				Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
-		{"DebugLayerImage2", 				Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
-		{"DebugLayerImage3", 				Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
+		{"ColorImage", 		Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
+		{"AOVImage", 		Width, Height, VK_FORMAT_R32G32B32A32_SFLOAT},
 	};
 
 	CreateRegisterAndTransitionImageShortcut(ImageDescriptions);
@@ -1427,23 +1414,7 @@ void FRender::FreeDependentResources()
 
 	/// Free images
 	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("ColorImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("ShadingNormalAOVImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("GeometricNormalAOVImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("UVAOVImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("WorldSpacePositionAOVImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("OpacityAOVImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("DepthAOVImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("AlbedoAOVImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("LuminanceAOVImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("MaterialIDAOVImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("RenderableIDAOVImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("PrimitiveIDAOVImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("AccumulatorImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("EstimatedImage");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("DebugLayerImage0");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("DebugLayerImage1");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("DebugLayerImage2");
-	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("DebugLayerImage3");
+	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("AOVImage");
 }
 
 void FRender::FreeIndependentResources()

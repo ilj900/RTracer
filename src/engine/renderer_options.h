@@ -1,23 +1,25 @@
 #pragma once
 
+#include "common_defines.h"
+
 enum class EOutputType {
-	Color 				= 0,
-	ShadingNormal		= 1,
-	GeometricNormal		= 2,
-	UV 					= 3,
-	WorldSpacePosition 	= 4,
-	Opacity				= 5,
-	Depth				= 6,
-	Albedo				= 7,
-	Luminance			= 8,
-	MaterialID 			= 9,
-	RenderableID		= 10,
-	PrimitiveID			= 11,
-	DebugLayer0			= 12,
-	DebugLayer1			= 13,
-	DebugLayer2			= 14,
-	DebugLayer3			= 15,
-	Max 				= 16};
+	Color 				= AOV_COLOR,
+	ShadingNormal		= AOV_SHADING_NORMAL,
+	GeometricNormal		= AOV_GEOMETRIC_NORMAL,
+	UV 					= AOV_UV_COORDS,
+	WorldSpacePosition 	= AOV_WORLD_SPACE_POSITION,
+	Opacity				= AOV_OPACITY,
+	Depth				= AOV_DEPTH,
+	Albedo				= AOV_MATERIAL_ALBEDO,
+	Luminance			= AOV_LUMINANCE,
+	MaterialID 			= AOV_MATERIAL_INDEX,
+	RenderableID		= AOV_RENDERABLE_INDEX,
+	PrimitiveID			= AOV_PRIMITIVE_INDEX,
+	DebugLayer0			= AOV_DEBUG_LAYER_0,
+	DebugLayer1			= AOV_DEBUG_LAYER_1,
+	DebugLayer2			= AOV_DEBUG_LAYER_2,
+	DebugLayer3			= AOV_DEBUG_LAYER_3,
+	Max 				= AOV_MAX};
 
 struct FRenderState
 {
