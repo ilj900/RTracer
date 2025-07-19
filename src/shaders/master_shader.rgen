@@ -58,6 +58,7 @@ void DPDirection(vec3 Origin, vec3 Direction, int Color)
     }
 }
 #endif
+
 vec4 DebugGlobal0 = vec4(0);
 vec4 DebugGlobal1 = vec4(0);
 vec4 DebugGlobal2 = vec4(0);

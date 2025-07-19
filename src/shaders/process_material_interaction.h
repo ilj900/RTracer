@@ -206,7 +206,6 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData
 				float NDotI = dot(vec3(0, 1, 0), TangentSpaceViewDirection);
                 float CosTheta = abs(NDotI);
 				float RTheta = R0 + (1. - R0) * pow(1. - CosTheta, 5.f);
-                DebugGlobal0.xyz = vec3(RTheta, RTheta, RTheta);
 
 				/// Decide on whether the ray is reflected or refracted
 				float RF = RandomFloat(SamplingState);

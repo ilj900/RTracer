@@ -504,9 +504,9 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		auto Material = Render->CreateEmptyMaterial();
 
+		Render->MaterialSetBaseColorWeight(Material, 1.f);
 		auto AlbedoTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_color.jpg");
 		Render->MaterialSetBaseColor(Material, AlbedoTexture);
-		Render->MaterialSetBaseColorWeight(Material, 0.f);
 
 		Render->MaterialSetSpecularWeight(Material, 0.4f);
 		auto RoughnessTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_roughness.jpg");
