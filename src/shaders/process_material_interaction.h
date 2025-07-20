@@ -443,7 +443,7 @@ vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType)
 	return BXDF;
 }
 
-/// It's like EvaluateMaterialInteraction, but it take direction to the light source, not the scattered direction
+/// It's like EvaluateMaterialInteraction, but it takes direction to the light source, not the scattered direction
 vec3 EvaluateMaterialInteractionFromDirection(FDeviceMaterial Material, uint RayType, vec3 WorldSpaceLightDirection)
 {
 	vec3 BXDF = vec3(0.f);
