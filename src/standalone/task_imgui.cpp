@@ -175,10 +175,104 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 		ProfilerData.Render();
 	}
 
+	static EOutputType SelectedAOV = EOutputType::Color;
+	static EOutputType CurrentAOV = EOutputType::Color;
+
+	ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4{0.2, 0.8, 0.4, 0.5});
+
+	if (ImGui::BeginMainMenuBar())
+	{
+		if (ImGui::BeginMenu("AOV"))
+		{
+			if (ImGui::BeginMenu("General"))
+			{
+				if (ImGui::MenuItem("Color")) { SelectedAOV = EOutputType::Color; };
+				if (ImGui::MenuItem("Shading normal")) { SelectedAOV = EOutputType::ShadingNormal; };
+				if (ImGui::MenuItem("Geometric normal")) { SelectedAOV = EOutputType::GeometricNormal; };
+				if (ImGui::MenuItem("UV")) { SelectedAOV = EOutputType::UV; };
+				if (ImGui::MenuItem("World-space position")) { SelectedAOV = EOutputType::WorldSpacePosition; };
+				if (ImGui::MenuItem("Opacity")) { SelectedAOV = EOutputType::Opacity; };
+				if (ImGui::MenuItem("Depth")) { SelectedAOV = EOutputType::Depth; };
+				if (ImGui::MenuItem("Luminance")) { SelectedAOV = EOutputType::Luminance; };
+				if (ImGui::MenuItem("MaterialID")) { SelectedAOV = EOutputType::MaterialID; };
+				if (ImGui::MenuItem("RenderableID")) { SelectedAOV = EOutputType::RenderableID; };
+				if (ImGui::MenuItem("PrimitiveID")) { SelectedAOV = EOutputType::PrimitiveID; };
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Material"))
+			{
+				if (ImGui::MenuItem("Material base weight")) { SelectedAOV = EOutputType::MaterialBaseWeight; };
+				if (ImGui::MenuItem("Material base color")) { SelectedAOV = EOutputType::MaterialBaseColor; };
+				if (ImGui::MenuItem("Material diffuse roughness")) { SelectedAOV = EOutputType::MaterialDiffuseRoughness; };
+				if (ImGui::MenuItem("Material metalness")) { SelectedAOV = EOutputType::MaterialMetalness; };
+				if (ImGui::MenuItem("Material normal")) { SelectedAOV = EOutputType::MaterialNormal; };
+				if (ImGui::MenuItem("Material specular weight")) { SelectedAOV = EOutputType::MaterialSpecularWeight; };
+				if (ImGui::MenuItem("Material specular color")) { SelectedAOV = EOutputType::MaterialSpecularColor; };
+				if (ImGui::MenuItem("Material specular roughness")) { SelectedAOV = EOutputType::MaterialSpecularRoughness; };
+				if (ImGui::MenuItem("Material specular ior")) { SelectedAOV = EOutputType::MaterialSpecularIOR; };
+				if (ImGui::MenuItem("Material specular anisotropy")) { SelectedAOV = EOutputType::MaterialSpecularAnisotropy; };
+				if (ImGui::MenuItem("Material specular rotation")) { SelectedAOV = EOutputType::MaterialSpecularRotation; };
+				if (ImGui::MenuItem("Material transmission weight")) { SelectedAOV = EOutputType::MaterialTransmissionWeight; };
+				if (ImGui::MenuItem("Material transmission color")) { SelectedAOV = EOutputType::MaterialTransmissionColor; };
+				if (ImGui::MenuItem("Material transmission depth")) { SelectedAOV = EOutputType::MaterialTransmissionDepth; };
+				if (ImGui::MenuItem("Material transmission scatter")) { SelectedAOV = EOutputType::MaterialTransmissionScatter; };
+				if (ImGui::MenuItem("Material transmission anisotropy")) { SelectedAOV = EOutputType::MaterialTransmissionAnisotropy; };
+				if (ImGui::MenuItem("Material transmission dispersion")) { SelectedAOV = EOutputType::MaterialTransmissionDispersion; };
+				if (ImGui::MenuItem("Material transmission roughness")) { SelectedAOV = EOutputType::MaterialTransmissionRoughness; };
+				if (ImGui::MenuItem("Material subsurface weight")) { SelectedAOV = EOutputType::MaterialSubsurfaceWeight; };
+				if (ImGui::MenuItem("Material subsurface color")) { SelectedAOV = EOutputType::MaterialSubsurfaceColor; };
+				if (ImGui::MenuItem("Material subsurface radius")) { SelectedAOV = EOutputType::MaterialSubsurfaceRadius; };
+				if (ImGui::MenuItem("Material subsurface scale")) { SelectedAOV = EOutputType::MaterialSubsurfaceScale; };
+				if (ImGui::MenuItem("Material subsurface anisotropy")) { SelectedAOV = EOutputType::MaterialSubsurfaceAnisotropy; };
+				if (ImGui::MenuItem("Material sheen weight")) { SelectedAOV = EOutputType::MaterialSheenWeight; };
+				if (ImGui::MenuItem("Material sheen color")) { SelectedAOV = EOutputType::MaterialSheenColor; };
+				if (ImGui::MenuItem("Material sheen roughness")) { SelectedAOV = EOutputType::MaterialSheenRoughness; };
+				if (ImGui::MenuItem("Material coat weight")) { SelectedAOV = EOutputType::MaterialCoatWeight; };
+				if (ImGui::MenuItem("Material coat colo")) { SelectedAOV = EOutputType::MaterialCoatColor; };
+				if (ImGui::MenuItem("Material coat roughness")) { SelectedAOV = EOutputType::MaterialCoatRoughness; };
+				if (ImGui::MenuItem("Material coat anisotropy")) { SelectedAOV = EOutputType::MaterialCoatAnisotropy; };
+				if (ImGui::MenuItem("Material coat rotation")) { SelectedAOV = EOutputType::MaterialCoatRotation; };
+				if (ImGui::MenuItem("Material coat ior")) { SelectedAOV = EOutputType::MaterialCoatIOR; };
+				if (ImGui::MenuItem("Material coat normal")) { SelectedAOV = EOutputType::MaterialCoatNormal; };
+				if (ImGui::MenuItem("Material coat affect color")) { SelectedAOV = EOutputType::MaterialCoatAffectColor; };
+				if (ImGui::MenuItem("Material coat affect roughness")) { SelectedAOV = EOutputType::MaterialCoatAffectRoughness; };
+				if (ImGui::MenuItem("Material thin film thickness")) { SelectedAOV = EOutputType::MaterialThinFilmThickness; };
+				if (ImGui::MenuItem("Material thin film ior")) { SelectedAOV = EOutputType::MaterialThinFilmIOR; };
+				if (ImGui::MenuItem("Material emission weight")) { SelectedAOV = EOutputType::MaterialEmissionWeight; };
+				if (ImGui::MenuItem("Material emission color")) { SelectedAOV = EOutputType::MaterialEmissionColor; };
+				if (ImGui::MenuItem("Material opacity")) { SelectedAOV = EOutputType::MaterialOpacity; };
+				if (ImGui::MenuItem("Material thin walled")) { SelectedAOV = EOutputType::MaterialThinWalled; };
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Debug"))
+			{
+				if (ImGui::MenuItem("DebugLayer0")) { SelectedAOV = EOutputType::DebugLayer0; };
+				if (ImGui::MenuItem("DebugLayer1")) { SelectedAOV = EOutputType::DebugLayer1; };
+				if (ImGui::MenuItem("DebugLayer2")) { SelectedAOV = EOutputType::DebugLayer2; };
+				if (ImGui::MenuItem("DebugLayer3")) { SelectedAOV = EOutputType::DebugLayer3; };
+				ImGui::EndMenu();
+			}
+
+			ImGui::EndMenu();
+		}
+
+		ImGui::EndMainMenuBar();
+	}
+
+	ImGui::PopStyleColor();
+
+	if (CurrentAOV != SelectedAOV)
+	{
+		CurrentAOV = SelectedAOV;
+		Render->SetRenderTarget(SelectedAOV);
+	}
+
 	float GizmoSize = 200.f;
 	float GizmoHalfSize = GizmoSize * 0.5f;
 	ImVec2 viewportSize = ImGui::GetMainViewport()->Size;
-	ImGui::SetNextWindowPos(ImVec2(viewportSize.x - GizmoHalfSize, GizmoHalfSize), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+	ImGui::SetNextWindowPos(ImVec2(viewportSize.x - GizmoHalfSize, GizmoHalfSize + ImGui::GetFrameHeight()), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
 
 	if (ImGui::Begin("Axes hint", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings ))
 	{
@@ -190,84 +284,6 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 		auto Quat = QuatFromVectors(Right, Up, -Front);
 		quat qRot = quat(Quat.W, Quat.X, Quat.Y, Quat.Z);
 		ImGui::gizmo3D(" ", qRot, GizmoSize);
-
-		ImGui::End();
-	}
-
-	if (ImGui::Begin("AOV selector", nullptr))
-	{
-		static const std::vector<const char*> Names = {
-			"Color",
-			"Shading normal",
-			"Geometric normal",
-			"UV",
-			"World-space position",
-			"Opacity",
-			"Depth",
-			"Material base weight",
-			"Material base color",
-			"Material diffuse roughness",
-			"Material metalness",
-			"Material normal",
-			"Material specular weight",
-			"Material specular color",
-			"Material specular roughness",
-			"Material specular ior",
-			"Material specular anisotropy",
-			"Material specular rotation",
-			"Material transmission weight",
-			"Material transmission color",
-			"Material transmission depth",
-			"Material transmission scatter",
-			"Material transmission anisotropy",
-			"Material transmission dispersion",
-			"Material transmission roughness",
-			"Material subsurface weight",
-			"Material subsurface color",
-			"Material subsurface radius",
-			"Material subsurface scale",
-			"Material subsurface anisotropy",
-			"Material sheen weight",
-			"Material sheen color",
-			"Material sheen roughness",
-			"Material coat weight",
-			"Material coat colo",
-			"Material coat roughness",
-			"Material coat anisotropy",
-			"Material coat rotation",
-			"Material coat ior",
-			"Material coat normal",
-			"Material coat affect color",
-			"Material coat affect roughness",
-			"Material thin film thickness",
-			"Material thin film ior",
-			"Material emission weight",
-			"Material emission color",
-			"Material opacity",
-			"Material thin walled",
-			"Luminance",
-			"MaterialID",
-			"RenderableID",
-			"PrimitiveID",
-			"DebugLayer0",
-			"DebugLayer1",
-			"DebugLayer2",
-			"DebugLayer3",
-		};
-
-		static EOutputType CurrentAOV = EOutputType::Color;
-		static int RadioButtonIndex = int(CurrentAOV);
-
-		for (int i = 0; i < Names.size(); ++i)
-		{
-			ImGui::RadioButton(Names[i], &RadioButtonIndex, i);
-		}
-
-		if (RadioButtonIndex != int(CurrentAOV))
-		{
-			CurrentAOV = EOutputType(RadioButtonIndex);
-			Render->SetRenderTarget(CurrentAOV);
-		}
 
 		ImGui::End();
 	}
