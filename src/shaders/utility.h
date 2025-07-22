@@ -12,7 +12,7 @@ vec4 IndexToColor(uint Value)
 }
 
 void SaveAOVs(uvec2 PixelCoords, vec3 ShadingNormal, vec3 GeometricNormal, vec2 UV, vec3 WorldSpacePosition, float Opacity, float Depth, FDeviceMaterial Material,
-              vec3 Luminance, uint RenderableIndex, uint PrimitiveIndex, uint Materialindex, vec4 DebugData0, vec4 DebugData1, vec4 DebugData2, vec4 DebugData3)
+              vec3 Luminance, uint RenderableIndex, uint PrimitiveIndex, uint Materialindex)
 {
     switch (UtilityData.AOVIndex)
     {
@@ -67,10 +67,14 @@ void SaveAOVs(uvec2 PixelCoords, vec3 ShadingNormal, vec3 GeometricNormal, vec2 
         case AOV_RENDERABLE_INDEX: { vec4 RenderableIdColor = IndexToColor(RenderableIndex); imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), RenderableIdColor); break; }
         case AOV_PRIMITIVE_INDEX: { vec4 PrimitiveIdColor = IndexToColor(PrimitiveIndex); imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), PrimitiveIdColor); break; }
         case AOV_MATERIAL_INDEX: { vec4 MaterialIdColor = IndexToColor(Materialindex); imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), MaterialIdColor); break; }
-        case AOV_DEBUG_LAYER_0: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugData0); break; }
-        case AOV_DEBUG_LAYER_1: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugData1); break; }
-        case AOV_DEBUG_LAYER_2: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugData2); break; }
-        case AOV_DEBUG_LAYER_3: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugData3); break; }
+        case AOV_DEBUG_LAYER_0: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugGlobal0); break; }
+        case AOV_DEBUG_LAYER_1: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugGlobal1); break; }
+        case AOV_DEBUG_LAYER_2: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugGlobal2); break; }
+        case AOV_DEBUG_LAYER_3: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugGlobal3); break; }
+    	case AOV_DEBUG_LAYER_4: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugGlobal4); break; }
+    	case AOV_DEBUG_LAYER_5: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugGlobal5); break; }
+    	case AOV_DEBUG_LAYER_6: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugGlobal6); break; }
+    	case AOV_DEBUG_LAYER_7: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugGlobal7); break; }
     }
 }
 

@@ -8,6 +8,15 @@
 bool b = false;
 #endif
 
+vec4 DebugGlobal0 = vec4(0);
+vec4 DebugGlobal1 = vec4(0);
+vec4 DebugGlobal2 = vec4(0);
+vec4 DebugGlobal3 = vec4(0);
+vec4 DebugGlobal4 = vec4(0);
+vec4 DebugGlobal5 = vec4(0);
+vec4 DebugGlobal6 = vec4(0);
+vec4 DebugGlobal7 = vec4(0);
+
 #include "common_defines.h"
 #include "common_structures.h"
 #include "glsl_math.h"
@@ -76,7 +85,7 @@ layout (push_constant) uniform PushConstantsBlock
 /// TODO: Is "local_size_x = BASIC_CHUNK_SIZE" correct?
 layout (local_size_x = BASIC_CHUNK_SIZE, local_size_y = 1, local_size_z = 1) in;
 
-void SaveAOVs(uvec2 PixelCoords, vec4 DebugData0, vec4 DebugData1, vec4 DebugData2, vec4 DebugData3)
+void SaveAOVs(uvec2 PixelCoords)
 {
     switch (UtilityData.AOVIndex)
     {
@@ -90,31 +99,15 @@ void SaveAOVs(uvec2 PixelCoords, vec4 DebugData0, vec4 DebugData1, vec4 DebugDat
         case AOV_LUMINANCE:
         case AOV_RENDERABLE_INDEX:
         case AOV_PRIMITIVE_INDEX:
-        case AOV_MATERIAL_INDEX:
-            {
-                imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), vec4(0));
-                break;
-            }
-        case AOV_DEBUG_LAYER_0:
-            {
-                imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugData0);
-                break;
-            }
-        case AOV_DEBUG_LAYER_1:
-            {
-                imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugData1);
-                break;
-            }
-        case AOV_DEBUG_LAYER_2:
-            {
-                imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugData2);
-                break;
-            }
-        case AOV_DEBUG_LAYER_3:
-            {
-                imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugData3);
-                break;
-            }
+        case AOV_MATERIAL_INDEX: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), vec4(0)); break; }
+        case AOV_DEBUG_LAYER_0: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugGlobal0); break; }
+        case AOV_DEBUG_LAYER_1: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugGlobal1); break; }
+        case AOV_DEBUG_LAYER_2: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugGlobal2); break; }
+        case AOV_DEBUG_LAYER_3: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugGlobal3); break; }
+        case AOV_DEBUG_LAYER_4: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugGlobal4); break; }
+        case AOV_DEBUG_LAYER_5: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugGlobal5); break; }
+        case AOV_DEBUG_LAYER_6: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugGlobal6); break; }
+        case AOV_DEBUG_LAYER_7: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), DebugGlobal7); break; }
     }
 }
 
@@ -163,6 +156,6 @@ void main()
 
     if (PushConstants.BounceIndex == 0)
     {
-        SaveAOVs(NewPixelCoords, vec4(0), vec4(0), vec4(0), vec4(0));
+        SaveAOVs(NewPixelCoords);
     }
 }

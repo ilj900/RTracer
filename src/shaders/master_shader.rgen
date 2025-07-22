@@ -63,6 +63,10 @@ vec4 DebugGlobal0 = vec4(0);
 vec4 DebugGlobal1 = vec4(0);
 vec4 DebugGlobal2 = vec4(0);
 vec4 DebugGlobal3 = vec4(0);
+vec4 DebugGlobal4 = vec4(0);
+vec4 DebugGlobal5 = vec4(0);
+vec4 DebugGlobal6 = vec4(0);
+vec4 DebugGlobal7 = vec4(0);
 
 struct FShadingData
 {
@@ -668,8 +672,7 @@ void main()
     if(PushConstants.BounceIndex == 0)
     {
         SaveAOVs(PixelCoords, ShadingData.NormalInWorldSpace, ShadingData.NormalInWorldSpace, ShadingData.UVCoordinates, ShadingData.IntersectionCoordinatesInWorldSpace, 1., Depth,
-                 Material, TotalIncomingLight, Hit.RenderableIndex, Hit.PrimitiveIndex, PushConstants.MaterialIndex,
-                 DebugGlobal0, DebugGlobal1, DebugGlobal2, DebugGlobal3);
+                 Material, TotalIncomingLight, Hit.RenderableIndex, Hit.PrimitiveIndex, PushConstants.MaterialIndex);
     }
 
     if ((PushConstants.BounceIndex == LAST_DIFFUSE_BOUNCE && CheckFlag(RayData.RayFlags, DIFFUSE_LAYER))

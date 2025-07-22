@@ -102,7 +102,11 @@
 #define AOV_DEBUG_LAYER_1														53u
 #define AOV_DEBUG_LAYER_2														54u
 #define AOV_DEBUG_LAYER_3														55u
-#define AOV_MAX																	56u
+#define AOV_DEBUG_LAYER_4														56u
+#define AOV_DEBUG_LAYER_5														57u
+#define AOV_DEBUG_LAYER_6														58u
+#define AOV_DEBUG_LAYER_7														59u
+#define AOV_MAX																	60u
 
 /// Task accumulate descriptor set layout defines
 #define ACCUMULATE_PER_FRAME_LAYOUT_INDEX 										0u

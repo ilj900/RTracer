@@ -59,6 +59,10 @@ enum class EOutputType {
 	DebugLayer1							= AOV_DEBUG_LAYER_1,
 	DebugLayer2							= AOV_DEBUG_LAYER_2,
 	DebugLayer3							= AOV_DEBUG_LAYER_3,
+	DebugLayer4							= AOV_DEBUG_LAYER_4,
+	DebugLayer5							= AOV_DEBUG_LAYER_5,
+	DebugLayer6							= AOV_DEBUG_LAYER_6,
+	DebugLayer7							= AOV_DEBUG_LAYER_7,
 	Max 								= AOV_MAX};
 
 struct FRenderState

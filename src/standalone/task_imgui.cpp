@@ -224,6 +224,10 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 				if (ImGui::MenuItem("DebugLayer1")) { SelectedAOV = EOutputType::DebugLayer1; };
 				if (ImGui::MenuItem("DebugLayer2")) { SelectedAOV = EOutputType::DebugLayer2; };
 				if (ImGui::MenuItem("DebugLayer3")) { SelectedAOV = EOutputType::DebugLayer3; };
+				if (ImGui::MenuItem("DebugLayer4")) { SelectedAOV = EOutputType::DebugLayer4; };
+				if (ImGui::MenuItem("DebugLayer5")) { SelectedAOV = EOutputType::DebugLayer5; };
+				if (ImGui::MenuItem("DebugLayer6")) { SelectedAOV = EOutputType::DebugLayer6; };
+				if (ImGui::MenuItem("DebugLayer7")) { SelectedAOV = EOutputType::DebugLayer7; };
 				ImGui::EndMenu();
 			}
 
