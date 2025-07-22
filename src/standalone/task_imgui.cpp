@@ -138,50 +138,22 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 	};
 
 	{
-		ImVec2 Position(50.0f, 20.0f);
+		ImVec2 Position(50.0f, Height - 20.0f);
 		ImDrawList* drawList = ImGui::GetForegroundDrawList();
 		drawList->AddText(Position, IM_COL32(0, 255, 0, 255), ("Frames accumulated: " + std::to_string(Render->Counter) + ".").c_str());
 	}
 
-	static ImGuiUtils::ProfilersWindow ProfilerData;
-
-	if (!bFirstCall)
-	{
-		std::vector<std::string> Names;
-		std::vector<std::vector<float>> Timings;
-		float DeltaTime = 0;
-		Render->GetAllTimings(Names, Timings, DeltaTime, PreviousIterationIndex);
-		std::vector<legit::ProfilerTask> GPUTasks(Timings.size());
-
-		float StartTime = 0.f;
-		float EndTime = 0.f;
-
-		for (int i = 0; i < Names.size(); ++i)
-		{
-			float TaskTime = 0;
-
-			for (int j = 0; j < Timings[i].size(); j++)
-			{
-				TaskTime += Timings[i][j];
-			}
-
-			EndTime = StartTime + TaskTime;
-			GPUTasks[i] = {StartTime, EndTime, Names[i], StringToColor(Names[i])};
-			StartTime = EndTime;
-		}
-
-		ProfilerData.gpuGraph.LoadFrameData(GPUTasks.data(), GPUTasks.size());
-
-		ProfilerData.Render();
-	}
-
 	static EOutputType SelectedAOV = EOutputType::Color;
 	static EOutputType CurrentAOV = EOutputType::Color;
-
-	ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4{0.2, 0.8, 0.4, 0.5});
+	static bool bDisplayProfiler = false;
 
 	if (ImGui::BeginMainMenuBar())
 	{
+		if (ImGui::BeginMenu("Profiler"))
+		{
+			if (ImGui::MenuItem("Profiler")) {bDisplayProfiler = true; bFirstCall = true;};
+			ImGui::EndMenu();
+		}
 		if (ImGui::BeginMenu("AOV"))
 		{
 			if (ImGui::BeginMenu("General"))
@@ -261,14 +233,49 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 		ImGui::EndMainMenuBar();
 	}
 
-	ImGui::PopStyleColor();
-
 	if (CurrentAOV != SelectedAOV)
 	{
 		CurrentAOV = SelectedAOV;
 		Render->SetRenderTarget(SelectedAOV);
 	}
 
+	/// Profiler
+	static ImGuiUtils::ProfilersWindow ProfilerData;
+
+	if (!bFirstCall)
+	{
+		if (bDisplayProfiler)
+		{
+			std::vector<std::string> Names;
+			std::vector<std::vector<float>> Timings;
+			float DeltaTime = 0;
+			Render->GetAllTimings(Names, Timings, DeltaTime, PreviousIterationIndex);
+			std::vector<legit::ProfilerTask> GPUTasks(Timings.size());
+
+			float StartTime = 0.f;
+			float EndTime = 0.f;
+
+			for (int i = 0; i < Names.size(); ++i)
+			{
+				float TaskTime = 0;
+
+				for (int j = 0; j < Timings[i].size(); j++)
+				{
+					TaskTime += Timings[i][j];
+				}
+
+				EndTime = StartTime + TaskTime;
+				GPUTasks[i] = {StartTime, EndTime, Names[i], StringToColor(Names[i])};
+				StartTime = EndTime;
+			}
+
+			ProfilerData.gpuGraph.LoadFrameData(GPUTasks.data(), GPUTasks.size());
+
+			ProfilerData.Render(&bDisplayProfiler);
+		}
+	}
+
+	/// Axis gizmo
 	float GizmoSize = 200.f;
 	float GizmoHalfSize = GizmoSize * 0.5f;
 	ImVec2 viewportSize = ImGui::GetMainViewport()->Size;
