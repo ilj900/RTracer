@@ -510,13 +510,18 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		Render->MaterialSetSpecularWeight(Material, 0.4f);
 		auto RoughnessTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_roughness.jpg");
+		Render->MaterialSetSpecularColor(Material, FVector3(1, 1, 1));
 		Render->MaterialSetSpecularRoughness(Material, RoughnessTexture);
 		Render->MaterialSetSpecularAnisotropy(Material, 0.5f);
 
+		/// Disabled for now
+		//Render->MaterialSetCoatWeight(Material, 0.1f);
+		//Render->MaterialSetCoatRoughness(Material, 0.2f);
+		//Render->MaterialSetCoatAnisotropy(Material, 0.5f);
 
 		Render->ShapeSetMaterial(ShaderballInstance, Material);
 
-		Render->SetIBL("../resources/Sun.exr");
+		Render->SetIBL("../resources/san_giuseppe_bridge_4k.exr");
 	}
     else
     {
