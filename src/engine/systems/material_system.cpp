@@ -47,6 +47,7 @@ namespace ECS
 
     			RESOURCE_ALLOCATOR()->LoadDataToBuffer(MATERIAL_SYSTEM_DATA_BUFFER, Sizes, Offsets, DataPointers);
     			ChangedMaterials.clear();
+    			return true;
     		}
 
     		return false;

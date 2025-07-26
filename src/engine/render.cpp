@@ -735,6 +735,16 @@ ECS::FEntity FRender::ShapeSetMaterial(ECS::FEntity Shape, ECS::FEntity Material
     return Shape;
 }
 
+const std::set<ECS::FEntity>& FRender::GetMaterials()
+{
+	return MATERIAL_SYSTEM()->Entities;
+}
+
+const ECS::COMPONENTS::FMaterialComponent& FRender::GetMaterial(ECS::FEntity Material)
+{
+	return MATERIAL_SYSTEM()->GetComponent<ECS::COMPONENTS::FMaterialComponent>(Material);
+}
+
 void FRender::MaterialSetBaseColorWeight(ECS::FEntity MaterialEntity, float Weight)
 {
 	MATERIAL_SYSTEM()->SetBaseColorWeight(MaterialEntity, Weight);

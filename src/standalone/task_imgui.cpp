@@ -146,12 +146,14 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 	static EOutputType SelectedAOV = EOutputType::Color;
 	static EOutputType CurrentAOV = EOutputType::Color;
 	static bool bDisplayProfiler = false;
+	static bool bDisplayMaterialConfigurator = false;
 
 	if (ImGui::BeginMainMenuBar())
 	{
-		if (ImGui::BeginMenu("Profiler"))
+		if (ImGui::BeginMenu("Windows"))
 		{
 			if (ImGui::MenuItem("Profiler")) {bDisplayProfiler = true; bFirstCall = true;};
+			if (ImGui::MenuItem("Material configurator")) {bDisplayMaterialConfigurator = true;};
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("AOV"))
@@ -277,6 +279,63 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 
 			ProfilerData.Render(&bDisplayProfiler);
 		}
+	}
+
+	/// Material configurator
+	if (bDisplayMaterialConfigurator && ImGui::Begin("Material configurator", &bDisplayMaterialConfigurator))
+	{
+		auto& Materials = Render->GetMaterials();
+		std::vector<std::string> Names;
+		std::vector<ECS::FEntity> MaterialsOrdered;
+
+		for (auto& Material : Materials)
+		{
+			Names.push_back("Material entity " + std::to_string(Material));
+			MaterialsOrdered.push_back(Material);
+		}
+
+		static int CurrentMaterialIndex = 0;
+
+		if (!Names.empty())
+		{
+			if (ImGui::BeginCombo("Material", Names[CurrentMaterialIndex].c_str()))
+			{
+				for (int i = 0; i < Names.size(); ++i)
+				{
+					bool IsSelected = (CurrentMaterialIndex == i);
+					if (ImGui::Selectable(Names[i].c_str(), IsSelected))
+					{
+						CurrentMaterialIndex = i;
+					}
+
+					if (IsSelected)
+					{
+						ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::EndCombo();
+			}
+
+			auto CurrentMaterial = MaterialsOrdered[CurrentMaterialIndex];
+			auto& Material = Render->GetMaterial(CurrentMaterial);
+
+			float BaseWeight = Material.BaseWeight;
+			if (ImGui::SliderFloat("Base weight", &BaseWeight, 0.0f, 1.0f))
+			{
+				Render->MaterialSetBaseColorWeight(CurrentMaterial, BaseWeight);
+			}
+
+			if (Material.BaseColorTexture == UINT32_MAX)
+			{
+				FVector3 BaseColor = Material.BaseColor;
+
+				if (ImGui::ColorEdit3("Base color", &BaseColor.x))
+				{
+					Render->MaterialSetBaseColor(CurrentMaterial, BaseColor);
+				}
+			}
+		}
+		ImGui::End();
 	}
 
 	/// Axis gizmo

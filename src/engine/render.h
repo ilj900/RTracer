@@ -25,6 +25,8 @@
 #include "tasks/task_passthrough.h"
 #include "tasks/task_advance_render_count.h"
 
+#include "components/material_component.h"
+
 #include "renderer_options.h"
 
 #include <optional>
@@ -76,6 +78,8 @@ public:
 	ECS::FEntity CreateReflectiveMaterial(const FVector3& BaseColor);
 	ECS::FEntity CreateRefractiveMaterial(const FVector3& BaseColor);
     ECS::FEntity ShapeSetMaterial(ECS::FEntity Shape, ECS::FEntity Material);
+	const std::set<ECS::FEntity>& GetMaterials();
+	const ECS::COMPONENTS::FMaterialComponent& GetMaterial(ECS::FEntity Material);
 
 	/// Materials manipulation
 	/// Albedo
