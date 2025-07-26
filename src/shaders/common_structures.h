@@ -135,55 +135,136 @@ struct FDeviceAliasTableEntry
 
 struct FDeviceMaterial
 {
-    float BaseWeight;
     FVector3 BaseColor;
-    float DiffuseRoughness;
-    float Metalness;
+    float BaseWeight;
+	///--------------------------------
     FVector3 Normal;
+    float DiffuseRoughness;
+	///--------------------------------
+    float Metalness;
 
     float SpecularWeight;
-    FVector3 SpecularColor;
     float SpecularRoughness;
     float SpecularIOR;
+	///--------------------------------
+    FVector3 SpecularColor;
     float SpecularAnisotropy;
+	///--------------------------------
     float SpecularRotation;
 
     float TransmissionWeight;
-    FVector3 TransmissionColor;
     float TransmissionDepth;
-    FVector3 TransmissionScatter;
     float TransmissionAnisotropy;
+	///--------------------------------
+    FVector3 TransmissionColor;
     float TransmissionDispersion;
+	///--------------------------------
+    FVector3 TransmissionScatter;
     float TransmissionRoughness;
 
-    float SubsurfaceWeight;
     FVector3 SubsurfaceColor;
+    float SubsurfaceWeight;
+	///--------------------------------
     FVector3 SubsurfaceRadius;
     float SubsurfaceScale;
+	///--------------------------------
     float SubsurfaceAnisotropy;
 
     float SheenWeight;
-    FVector3 SheenColor;
     float SheenRoughness;
-
     float CoatWeight;
-    FVector3 CoatColor;
+	///--------------------------------
+    FVector3 SheenColor;
     float CoatRoughness;
+	///--------------------------------
+
+    FVector3 CoatColor;
     float CoatAnisotropy;
-    float CoatRotation;
-    float CoatIOR;
+	///--------------------------------
     FVector3 CoatNormal;
+    float CoatRotation;
+	///--------------------------------
+    float CoatIOR;
     float CoatAffectColor;
     float CoatAffectRoughness;
 
     float ThinFilmThickness;
-    float ThinFilmIOR;
-
-    float EmissionWeight;
+	///--------------------------------
     FVector3 EmissionColor;
-
+    float ThinFilmIOR;
+	///--------------------------------
     FVector3 Opacity;
+    float EmissionWeight;
+
+	///--------------------------------
     uint32_t ThinWalled;
+	float Dummy1;
+	float Dummy2;
+	float Dummy3;
+
+	///--------------------------------
+	uint32_t BaseWeightTexture;
+    uint32_t BaseColorTexture;
+    uint32_t DiffuseRoughnessTexture;
+    uint32_t MetalnessTexture;
+    ///--------------------------------
+    uint32_t NormalTexture;
+
+    uint32_t SpecularWeightTexture;
+    uint32_t SpecularColorTexture;
+    uint32_t SpecularRoughnessTexture;
+    ///--------------------------------
+    uint32_t SpecularIORTexture;
+    uint32_t SpecularAnisotropyTexture;
+    uint32_t SpecularRotationTexture;
+
+    uint32_t TransmissionWeightTexture;
+    ///--------------------------------
+    uint32_t TransmissionColorTexture;
+    uint32_t TransmissionDepthTexture;
+    uint32_t TransmissionScatterTexture;
+    uint32_t TransmissionAnisotropyTexture;
+    ///--------------------------------
+    uint32_t TransmissionDispersionTexture;
+    uint32_t TransmissionRoughnessTexture;
+
+    uint32_t SubsurfaceWeightTexture;
+    uint32_t SubsurfaceColorTexture;
+    ///--------------------------------
+    uint32_t SubsurfaceRadiusTexture;
+    uint32_t SubsurfaceScaleTexture;
+    uint32_t SubsurfaceAnisotropyTexture;
+
+    uint32_t SheenWeightTexture;
+    ///--------------------------------
+    uint32_t SheenColorTexture;
+    uint32_t SheenRoughnessTexture;
+
+    uint32_t CoatWeightTexture;
+    uint32_t CoatColorTexture;
+    ///--------------------------------
+    uint32_t CoatRoughnessTexture;
+    uint32_t CoatAnisotropyTexture;
+    uint32_t CoatRotationTexture;
+    uint32_t CoatIORTexture;
+    ///--------------------------------
+    uint32_t CoatNormalTexture;
+    uint32_t CoatAffectColorTexture;
+    uint32_t CoatAffectRoughnessTexture;
+
+    uint32_t ThinFilmThicknessTexture;
+    ///--------------------------------
+    uint32_t ThinFilmIORTexture;
+
+    uint32_t EmissionWeightTexture;
+    uint32_t EmissionColorTexture;
+
+    uint32_t OpacityTexture;
+    ///--------------------------------
+    uint32_t ThinWalledTexture;
+    uint32_t Dummy4;
+    uint32_t Dummy5;
+    uint32_t Dummy6;
 };
 
 const uint32_t RENDERABLE_AREA_LIGHT_INDEX_MASK = 0x01FF; // It's related to maximum number of area lights (512) in Area lights system

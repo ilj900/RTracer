@@ -13,6 +13,8 @@ namespace ECS
         class FMaterialSystem : public FSystem
         {
         public:
+        	void Init();
+        	bool Update();
             FEntity			 CreateDefaultMaterial();
 			FEntity			 CreateEmptyMaterial();
 			/// Albedo
@@ -121,6 +123,10 @@ namespace ECS
 			std::string GenerateEmissiveMaterialsCode(const std::unordered_map<uint32_t , uint32_t>& EmissiveMaterials);
 
             const uint32_t MAX_MATERIALS = IBL_MATERIAL_INDEX;
+
+        	std::unordered_map<FEntity, uint32_t> MaterialToIndexMap;
+        	std::queue<uint32_t> FreeIndices;
+        	std::set<FEntity> ChangedMaterials;
         };
     }
 }

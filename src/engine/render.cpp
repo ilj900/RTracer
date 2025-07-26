@@ -129,6 +129,7 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     CAMERA_SYSTEM()->Init(MaxFramesInFlight);
     RENDERABLE_SYSTEM()->Init(MaxFramesInFlight);
     MESH_SYSTEM()->Init();
+	MATERIAL_SYSTEM()->Init();
 	POINT_LIGHT_SYSTEM()->Init(MaxFramesInFlight);
 	DIRECTIONAL_LIGHT_SYSTEM()->Init(MaxFramesInFlight);
     SPOT_LIGHT_SYSTEM()->Init(MaxFramesInFlight);
@@ -651,6 +652,7 @@ int FRender::Update()
 	bAnyUpdate |= SPOT_LIGHT_SYSTEM()->Update();
     bAnyUpdate |= AREA_LIGHT_SYSTEM()->Update();
 	bAnyUpdate |= ACCELERATION_STRUCTURE_SYSTEM()->Update();
+	bAnyUpdate |= MATERIAL_SYSTEM()->Update();
 
 	Counter = bAnyUpdate ? 0 : Counter;
 

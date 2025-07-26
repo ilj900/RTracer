@@ -25,7 +25,7 @@
 #define M_RAD (180.f / M_PI)
 #endif
 
-///The selected coordinate system is right handed
+///The selected coordinate system is right-handed
 ///X positive direction goes right
 ///Y positive direction goes up
 ///Z positive direction goes "from the screen" to "you"

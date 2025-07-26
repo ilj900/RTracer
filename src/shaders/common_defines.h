@@ -161,6 +161,7 @@
 #define MASTER_SHADER_UTILITY_BUFFER_INDEX 										16u
 #define MASTER_SHADER_COLOR_AOV_IMAGE_INDEX 									17u
 #define MASTER_SHADER_AOV_RGBA32F_IMAGE_INDEX 									18u
+#define MASTER_SHADER_MATERIAL_SYSTEM_DATA_BUFFER_INDEX							19u
 
 /// Descriptors that might be updated out of order (by double/triple buffering for example)
 #define MASTER_SHADER_LAYOUT_INDEX_PER_FRAME									1u

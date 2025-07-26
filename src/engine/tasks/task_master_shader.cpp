@@ -61,6 +61,8 @@ FMasterShader::FMasterShader(uint32_t WidthIn, uint32_t HeightIn, uint32_t Submi
 		{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_STATIC_INDEX, MASTER_SHADER_AOV_RGBA32F_IMAGE_INDEX,
 		{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
+	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_STATIC_INDEX, MASTER_SHADER_MATERIAL_SYSTEM_DATA_BUFFER_INDEX,
+		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,  VK_SHADER_STAGE_RAYGEN_BIT_KHR});
 
 
 	DescriptorSetManager->AddDescriptorLayout(Name, MASTER_SHADER_LAYOUT_INDEX_PER_FRAME, MASTER_SHADER_DIRECTIONAL_LIGHTS_BUFFER_INDEX,
@@ -120,6 +122,8 @@ void FMasterShader::Init(FCompileDefinitions* CompileDefinitions)
     auto EmissiveMaterialCode = MATERIAL_SYSTEM()->GenerateEmissiveMaterialsCode(EmissiveMaterials);
     FCompileDefinitions MasterShaderCompileDefinitions(*CompileDefinitions);
     MasterShaderCompileDefinitions.Push("FDeviceMaterial GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex);", EmissiveMaterialCode);
+	MasterShaderCompileDefinitions.Push("SIZE_OF_DEVICE_MATERIAL_STRUCT", std::to_string(sizeof(FDeviceMaterial)));
+	MasterShaderCompileDefinitions.Push("SIZE_OF_FLOAT", std::to_string(sizeof(float)));
 
 	for (auto& Material : *MATERIAL_SYSTEM())
 	{
@@ -169,6 +173,7 @@ void FMasterShader::UpdateDescriptorSets()
 	UpdateDescriptorSet(MASTER_SHADER_LAYOUT_STATIC_INDEX, MASTER_SHADER_UTILITY_BUFFER_INDEX, 0, RESOURCE_ALLOCATOR()->GetBuffer(UTILITY_INFO_BUFFER));
 	UpdateDescriptorSet(MASTER_SHADER_LAYOUT_STATIC_INDEX, MASTER_SHADER_COLOR_AOV_IMAGE_INDEX, 0, TEXTURE_MANAGER()->GetFramebufferImage("ColorImage"));
 	UpdateDescriptorSet(MASTER_SHADER_LAYOUT_STATIC_INDEX, MASTER_SHADER_AOV_RGBA32F_IMAGE_INDEX, 0, TEXTURE_MANAGER()->GetFramebufferImage("AOVImage"));
+	UpdateDescriptorSet(MASTER_SHADER_LAYOUT_STATIC_INDEX, MASTER_SHADER_MATERIAL_SYSTEM_DATA_BUFFER_INDEX, 0, RESOURCE_ALLOCATOR()->GetBuffer(MATERIAL_SYSTEM_DATA_BUFFER));
 
     for (int i = 0; i < SubmitY; ++i)
     {
