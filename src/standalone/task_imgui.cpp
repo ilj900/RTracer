@@ -9,6 +9,7 @@
 #include "imgui_impl_vulkan.h"
 #include "imGuIZMO.quat/imGuIZMO.quat/imGuIZMOquat.h"
 #include "ImGuiProfilerRenderer.h"
+#include "L2DFileDialog.h"
 
 #include "GLFW/glfw3.h"
 
@@ -287,6 +288,8 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 		auto& Materials = Render->GetMaterials();
 		std::vector<std::string> Names;
 		std::vector<ECS::FEntity> MaterialsOrdered;
+		static char* FileDialogBuffer = nullptr;
+		static char Path[500];
 
 		for (auto& Material : Materials)
 		{
@@ -332,6 +335,22 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 				if (ImGui::ColorEdit3("Base color", &BaseColor.x))
 				{
 					Render->MaterialSetBaseColor(CurrentMaterial, BaseColor);
+				}
+
+				ImGui::SameLine();
+				if (ImGui::Button("Browse##path")) {
+					FileDialogBuffer = Path;
+					FileDialog::file_dialog_open = true;
+					FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+				}
+
+				if (FileDialog::file_dialog_open) {
+					FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, FileDialogBuffer, sizeof(FileDialogBuffer), FileDialog::file_dialog_open_type);
+					if (!FileDialog::file_dialog_open)
+					{
+						auto Texture = Render->CreateTexture(FileDialogBuffer);
+						Render->MaterialSetBaseColor(CurrentMaterial, Texture);
+					}
 				}
 			}
 		}
