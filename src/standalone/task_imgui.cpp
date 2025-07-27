@@ -332,12 +332,24 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 			{
 				FVector3 BaseColor = Material.BaseColor;
 
-				if (ImGui::ColorEdit3("Base color", &BaseColor.x))
+				static bool bPickerOpened = false;
+				if (ImGui::Button("Pick BaseColor"))
 				{
-					Render->MaterialSetBaseColor(CurrentMaterial, BaseColor);
+					bPickerOpened = true;
 				}
 
-				ImGui::SameLine();
+				if (bPickerOpened && ImGui::Begin("Base Color", &bPickerOpened))
+				{
+					if (ImGui::ColorPicker3("Base color", &BaseColor.x))
+					{
+						Render->MaterialSetBaseColor(CurrentMaterial, BaseColor);
+					}
+
+					ImGui::End();
+				}
+			}
+			else
+			{
 				if (ImGui::Button("Browse##path")) {
 					FileDialogBuffer = Path;
 					FileDialog::file_dialog_open = true;
