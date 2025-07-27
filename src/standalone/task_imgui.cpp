@@ -322,30 +322,54 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 			auto CurrentMaterial = MaterialsOrdered[CurrentMaterialIndex];
 			auto& Material = Render->GetMaterial(CurrentMaterial);
 
-			float BaseWeight = Material.BaseWeight;
-			if (ImGui::SliderFloat("Base weight", &BaseWeight, 0.0f, 1.0f))
+			enum class UIElementType {FloatSlider01, Float3Color};
+
+			auto AddMaterialPropertyElement = [&](const std::string& ElementName, UIElementType ElementType, const uint32_t* TextureIndex, void* MaterialData,
+				const std::function<void(ECS::FEntity, float)>& CallbackForFloat, const std::function<void(ECS::FEntity, ECS::FEntity)>& CallbackForTexture)
 			{
-				Render->MaterialSetBaseColorWeight(CurrentMaterial, BaseWeight);
-			}
+				switch (ElementType)
+				{
+					case UIElementType::FloatSlider01:
+						if (*TextureIndex == UINT32_MAX)
+						{
+							float Value = *static_cast<float*>(MaterialData);
+							if (ImGui::SliderFloat("Base weight", &Value, 0.0f, 1.0f))
+							{
+								CallbackForFloat(CurrentMaterial, Value);
+							}
+						}
+						else
+						{
+							if (ImGui::Button("Browse##path")) {
+								FileDialogBuffer = Path;
+								FileDialog::file_dialog_open = true;
+								FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+							}
+
+							if (FileDialog::file_dialog_open) {
+								FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, FileDialogBuffer, sizeof(FileDialogBuffer), FileDialog::file_dialog_open_type);
+								if (!FileDialog::file_dialog_open)
+								{
+									auto Texture = Render->CreateTexture(FileDialogBuffer);
+									CallbackForTexture(CurrentMaterial, Texture);
+								}
+							}
+						}
+						break;
+				}
+			};
+
+			const auto func1 = static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetBaseColorWeight);
+			const auto func2 = static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetBaseColorWeight);
+			AddMaterialPropertyElement("Base weight", UIElementType::FloatSlider01, &Material.BaseWeightTexture, (void*)&Material.BaseWeight, func1, func2);
 
 			if (Material.BaseColorTexture == UINT32_MAX)
 			{
 				FVector3 BaseColor = Material.BaseColor;
 
-				static bool bPickerOpened = false;
-				if (ImGui::Button("Pick BaseColor"))
+				if (ImGui::ColorEdit3("Base color", &BaseColor.x))
 				{
-					bPickerOpened = true;
-				}
-
-				if (bPickerOpened && ImGui::Begin("Base Color", &bPickerOpened))
-				{
-					if (ImGui::ColorPicker3("Base color", &BaseColor.x))
-					{
-						Render->MaterialSetBaseColor(CurrentMaterial, BaseColor);
-					}
-
-					ImGui::End();
+					Render->MaterialSetBaseColor(CurrentMaterial, BaseColor);
 				}
 			}
 			else
