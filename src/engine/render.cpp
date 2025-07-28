@@ -785,7 +785,7 @@ void FRender::MaterialSetMetalness(ECS::FEntity MaterialEntity, ECS::FEntity Tex
 	MATERIAL_SYSTEM()->SetMetalness(MaterialEntity, TextureEntity);
 }
 
-void FRender::MaterialSetAlbedoNormal(ECS::FEntity MaterialEntity, FVector3 Normal)
+void FRender::MaterialSetAlbedoNormal(ECS::FEntity MaterialEntity, const FVector3& Normal)
 {
 	MATERIAL_SYSTEM()->SetAlbedoNormal(MaterialEntity, Normal);
 }

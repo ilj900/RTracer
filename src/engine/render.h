@@ -91,7 +91,7 @@ public:
 	static void MaterialSetDiffuseRoughness(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity);
 	static void MaterialSetMetalness(ECS::FEntity MaterialEntity, float Metalness);
 	static void MaterialSetMetalness(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity);
-	static void MaterialSetAlbedoNormal(ECS::FEntity MaterialEntity, FVector3 Normal);
+	static void MaterialSetAlbedoNormal(ECS::FEntity MaterialEntity, const FVector3& Normal);
 	static void MaterialSetAlbedoNormal(ECS::FEntity MaterialEntity, ECS::FEntity TextureEntity);
 	/// Specular
 	static void MaterialSetSpecularWeight(ECS::FEntity MaterialEntity, float Weight);

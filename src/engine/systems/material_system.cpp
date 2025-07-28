@@ -185,7 +185,7 @@ namespace ECS
 			return *this;
 		}
 
-		FMaterialSystem& FMaterialSystem::SetAlbedoNormal(FEntity MaterialEntity, FVector3 Normal)
+		FMaterialSystem& FMaterialSystem::SetAlbedoNormal(FEntity MaterialEntity, const FVector3& Normal)
 		{
 			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
 			MaterialComponent.Normal = Normal;

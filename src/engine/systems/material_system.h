@@ -26,7 +26,7 @@ namespace ECS
 			FMaterialSystem& SetDiffuseRoughness(FEntity MaterialEntity, FEntity TextureEntity);
 			FMaterialSystem& SetMetalness(FEntity MaterialEntity, float Metalness);
 			FMaterialSystem& SetMetalness(FEntity MaterialEntity, FEntity TextureEntity);
-			FMaterialSystem& SetAlbedoNormal(FEntity MaterialEntity, FVector3 Normal);
+			FMaterialSystem& SetAlbedoNormal(FEntity MaterialEntity, const FVector3& Normal);
 			FMaterialSystem& SetAlbedoNormal(FEntity MaterialEntity, FEntity TextureEntity);
 
 			/// Specular
