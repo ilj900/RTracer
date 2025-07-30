@@ -356,7 +356,6 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData
 /// Outgoing is the direction from the shading point to the camera
 vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType)
 {
-	MARK(1);
 	vec3 BXDF = vec3(0.f);
 
 	switch (RayType)
@@ -439,7 +438,6 @@ vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType)
 /// It's like EvaluateMaterialInteraction, but it takes direction to the light source, not the scattered direction
 vec3 EvaluateMaterialInteractionFromDirection(FDeviceMaterial Material, uint RayType, vec3 WorldSpaceLightDirection)
 {
-	MARK(2);
 	vec3 BXDF = vec3(0.f);
 
 	switch (RayType)
