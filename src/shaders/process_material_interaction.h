@@ -379,11 +379,11 @@ vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType, vec3 Wo
 			float NDotL = clamp(dot(N, L), 0, 1);
 			float NDotV = clamp(dot(N, V), 0, 1);
 			float NDotH = clamp(dot(N, H), 0, 1);
-			float LDotH = clamp(dot(L, H), 0, 1);
+			float VDotH = clamp(dot(V, H), 0, 1);
 
 			float D = DistributionGGX(NDotH, Material.SpecularRoughness);
 			float G = GeometrySmith(NDotV, NDotL, Material.SpecularRoughness);
-			vec3 F = FresnelSchlick(LDotH, F0);
+			vec3 F = FresnelSchlick(VDotH, F0);
 
 			BXDF = D * G * F / (4 * max (NDotV * NDotL, 0.001));
 
