@@ -276,79 +276,79 @@ FVertex UnpackDeviceVertex(FDeviceVertex DV)
 
 float SampleFloat(uint MaterialIndex, uint TextureFieldOffset, vec2 TextureCoords)
 {
-    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + TextureFieldOffset * SIZE_OF_FLOAT;
+    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + TextureFieldOffset;
     uint TextureIndex = floatBitsToUint(MaterialSystemDataBuffer[TotalOffset]);
     return texture(sampler2D(Textures[nonuniformEXT(TextureIndex)], Sampler), TextureCoords).r;
 }
 
 vec2 SampleVec2(uint MaterialIndex, uint TextureFieldOffset, vec2 TextureCoords)
 {
-    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + TextureFieldOffset * SIZE_OF_FLOAT;
+    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + TextureFieldOffset;
     uint TextureIndex = floatBitsToUint(MaterialSystemDataBuffer[TotalOffset]);
     return texture(sampler2D(Textures[nonuniformEXT(TextureIndex)], Sampler), TextureCoords).rg;
 }
 
 vec3 SampleVec3(uint MaterialIndex, uint TextureFieldOffset, vec2 TextureCoords)
 {
-    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + TextureFieldOffset * SIZE_OF_FLOAT;
+    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + TextureFieldOffset;
     uint TextureIndex = floatBitsToUint(MaterialSystemDataBuffer[TotalOffset]);
     return texture(sampler2D(Textures[nonuniformEXT(TextureIndex)], Sampler), TextureCoords).rgb;
 }
 
 vec4 SampleVec4(uint MaterialIndex, uint TextureFieldOffset, vec2 TextureCoords)
 {
-    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + TextureFieldOffset * SIZE_OF_FLOAT;
+    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + TextureFieldOffset;
     uint TextureIndex = floatBitsToUint(MaterialSystemDataBuffer[TotalOffset]);
     return texture(sampler2D(Textures[nonuniformEXT(TextureIndex)], Sampler), TextureCoords).rgba;
 }
 
 uint SampleUint(uint MaterialIndex, uint TextureFieldOffset, vec2 TextureCoords)
 {
-    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + TextureFieldOffset * SIZE_OF_FLOAT;
+    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + TextureFieldOffset;
     uint TextureIndex = floatBitsToUint(MaterialSystemDataBuffer[TotalOffset]);
     return texture(usampler2D(UTextures[nonuniformEXT(TextureIndex)], Sampler), TextureCoords).r;
 }
 
 int SampleInt(uint MaterialIndex, uint TextureFieldOffset, vec2 TextureCoords)
 {
-    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + TextureFieldOffset * SIZE_OF_FLOAT;
+    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + TextureFieldOffset;
     uint TextureIndex = floatBitsToUint(MaterialSystemDataBuffer[TotalOffset]);
     return texture(isampler2D(ITextures[nonuniformEXT(TextureIndex)], Sampler), TextureCoords).r;
 }
 
 float SampleFloat(uint MaterialIndex, uint MaterialFieldOffset)
 {
-    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + MaterialFieldOffset * SIZE_OF_FLOAT;
+    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + MaterialFieldOffset;
     return MaterialSystemDataBuffer[TotalOffset];
 }
 
 vec2 SampleVec2(uint MaterialIndex, uint MaterialFieldOffset)
 {
-    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + MaterialFieldOffset * SIZE_OF_FLOAT;
+    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + MaterialFieldOffset;
     return vec2(MaterialSystemDataBuffer[TotalOffset], MaterialSystemDataBuffer[TotalOffset + 1]);
 }
 
 vec3 SampleVec3(uint MaterialIndex, uint MaterialFieldOffset)
 {
-    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + MaterialFieldOffset * SIZE_OF_FLOAT;
+    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + MaterialFieldOffset;
     return vec3(MaterialSystemDataBuffer[TotalOffset], MaterialSystemDataBuffer[TotalOffset + 1], MaterialSystemDataBuffer[TotalOffset + 2]);
 }
 
 vec4 SampleVec4(uint MaterialIndex, uint MaterialFieldOffset)
 {
-    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + MaterialFieldOffset * SIZE_OF_FLOAT;
+    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + MaterialFieldOffset;
     return vec4(MaterialSystemDataBuffer[TotalOffset], MaterialSystemDataBuffer[TotalOffset + 1], MaterialSystemDataBuffer[TotalOffset + 2], MaterialSystemDataBuffer[TotalOffset + 3]);
 }
 
 uint SampleUint(uint MaterialIndex, uint MaterialFieldOffset)
 {
-    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + MaterialFieldOffset * SIZE_OF_FLOAT;
+    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + MaterialFieldOffset;
     return floatBitsToUint(MaterialSystemDataBuffer[TotalOffset]);
 }
 
 int SampleInt(uint MaterialIndex, uint MaterialFieldOffset)
 {
-    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + MaterialFieldOffset * SIZE_OF_FLOAT;
+    uint TotalOffset = MaterialIndex * SIZE_OF_DEVICE_MATERIAL_STRUCT + MaterialFieldOffset;
     return floatBitsToInt(MaterialSystemDataBuffer[TotalOffset]);
 }
 

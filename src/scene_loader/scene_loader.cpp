@@ -504,20 +504,81 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		auto Material = Render->CreateEmptyMaterial();
 
-		Render->MaterialSetBaseColorWeight(Material, 1.f);
-		//auto AlbedoTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_color.jpg");
-		Render->MaterialSetBaseColor(Material, FVector3{1, 0, 0});
+		//Render->MaterialSetBaseColorWeight(Material, 1.f);
+		////auto AlbedoTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_color.jpg");
+		//Render->MaterialSetBaseColor(Material, FVector3{1, 0, 0});
+//
+		//Render->MaterialSetSpecularWeight(Material, 0.4f);
+		//auto RoughnessTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_roughness.jpg");
+		//Render->MaterialSetSpecularColor(Material, FVector3(1, 1, 1));
+		//Render->MaterialSetSpecularRoughness(Material, RoughnessTexture);
+		//Render->MaterialSetSpecularAnisotropy(Material, 0.5f);
 
-		Render->MaterialSetSpecularWeight(Material, 0.4f);
-		auto RoughnessTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_roughness.jpg");
-		Render->MaterialSetSpecularColor(Material, FVector3(1, 1, 1));
-		Render->MaterialSetSpecularRoughness(Material, RoughnessTexture);
-		Render->MaterialSetSpecularAnisotropy(Material, 0.5f);
-
-		/// Disabled for now
-		//Render->MaterialSetCoatWeight(Material, 0.1f);
-		//Render->MaterialSetCoatRoughness(Material, 0.2f);
-		//Render->MaterialSetCoatAnisotropy(Material, 0.5f);
+		//float iii = 0;
+		//FVector3 III = FVector3(0, 0, 0);
+//
+		//Render->MaterialSetBaseColorWeight(Material, iii++);
+		//Render->MaterialSetBaseColor(Material, III);
+		//III += FVector3(0.1, 0.2, 0.3);
+		//Render->MaterialSetDiffuseRoughness(Material, iii++);
+		//Render->MaterialSetMetalness(Material, iii++);
+		//Render->MaterialSetAlbedoNormal(Material, III);
+		//III += FVector3(0.1, 0.2, 0.3);
+		///// Specular
+		//Render->MaterialSetSpecularWeight(Material, iii++);
+		//Render->MaterialSetSpecularColor(Material, III);
+		//III += FVector3(0.1, 0.2, 0.3);
+		//Render->MaterialSetSpecularRoughness(Material,  iii++);
+		//Render->MaterialSetSpecularIOR(Material,  iii++);
+		//Render->MaterialSetSpecularAnisotropy(Material,  iii++);
+		//Render->MaterialSetSpecularRotation(Material,  iii++);
+		///// Transmission
+		//Render->MaterialSetTransmissionWeight(Material, iii++);
+		//Render->MaterialSetTransmissionColor(Material, III);
+		//III += FVector3(0.1, 0.2, 0.3);
+		//Render->MaterialSetTransmissionDepth(Material,  iii++);
+		//Render->MaterialSetTransmissionScatter(Material, III);
+		//III += FVector3(0.1, 0.2, 0.3);
+		//Render->MaterialSetTransmissionAnisotropy(Material,  iii++);
+		//Render->MaterialSetTransmissionDispersion(Material,  iii++);
+		//Render->MaterialSetTransmissionRoughness(Material,  iii++);
+		///// Subsurface
+		//Render->MaterialSetSubsurfaceWeight(Material, iii++);
+		//Render->MaterialSetSubsurfaceColor(Material, III);
+		//III += FVector3(0.1, 0.2, 0.3);
+		//Render->MaterialSetSubsurfaceRadius(Material, III);
+		//III += FVector3(0.1, 0.2, 0.3);
+		//Render->MaterialSetSubsurfaceScale(Material,  iii++);
+		//Render->MaterialSetSubsurfaceAnisotropy(Material,  iii++);
+		///// Sheen
+		//Render->MaterialSetSheenWeight(Material,  iii++);
+		//Render->MaterialSetSheenColor(Material, III);
+		//III += FVector3(0.1, 0.2, 0.3);
+		//Render->MaterialSetSheenRoughness(Material,  iii++);
+		///// Coat
+		//Render->MaterialSetCoatWeight(Material,  iii++);
+		//Render->MaterialSetCoatColor(Material, III);
+		//III += FVector3(0.1, 0.2, 0.3);
+		//Render->MaterialSetCoatRoughness(Material,  iii++);
+		//Render->MaterialSetCoatAnisotropy(Material,  iii++);
+		//Render->MaterialSetCoatRotation(Material,  iii++);
+		//Render->MaterialSetCoatIOR(Material,  iii++);
+		//Render->MaterialSetCoatNormal(Material, III);
+		//III += FVector3(0.1, 0.2, 0.3);
+		//Render->MaterialSetCoatAffectColor(Material,  iii++);
+		//Render->MaterialSetCoatAffectRoughness(Material,  iii++);
+		///// Thin film
+		//Render->MaterialSetThinFilmThickness(Material,  iii++);
+		//Render->MaterialSetThinFilmIOR(Material,  iii++);
+		///// Emission
+		//Render->MaterialSetEmissionWeight(Material,  iii++);
+		//Render->MaterialSetEmissionColor(Material, III);
+		//III += FVector3(0.1, 0.2, 0.3);
+		///// Opacity
+		//Render->MaterialSetOpacity(Material, III);
+		//III += FVector3(0.1, 0.2, 0.3);
+		///// Thin walled
+		//Render->MaterialSetThinWalled(Material, true);
 
 		Render->ShapeSetMaterial(ShaderballInstance, Material);
 

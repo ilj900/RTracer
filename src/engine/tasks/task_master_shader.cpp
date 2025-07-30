@@ -122,8 +122,8 @@ void FMasterShader::Init(FCompileDefinitions* CompileDefinitions)
     auto EmissiveMaterialCode = MATERIAL_SYSTEM()->GenerateEmissiveMaterialsCode(EmissiveMaterials);
     FCompileDefinitions MasterShaderCompileDefinitions(*CompileDefinitions);
     MasterShaderCompileDefinitions.Push("FDeviceMaterial GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex);", EmissiveMaterialCode);
-	MasterShaderCompileDefinitions.Push("SIZE_OF_DEVICE_MATERIAL_STRUCT", std::to_string(sizeof(FDeviceMaterial)));
-	MasterShaderCompileDefinitions.Push("SIZE_OF_FLOAT", std::to_string(sizeof(float)));
+	assert((sizeof(FDeviceMaterial) % sizeof(float)) == 0);
+	MasterShaderCompileDefinitions.Push("SIZE_OF_DEVICE_MATERIAL_STRUCT", std::to_string(sizeof(FDeviceMaterial) / sizeof(float)));
 
 	for (auto& Material : *MATERIAL_SYSTEM())
 	{
