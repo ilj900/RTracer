@@ -537,7 +537,6 @@ void FSceneLoader::LoadScene(const std::string& Name)
 			auto ShaderballCopper = Render->CreateInstance(Shaderball, {-3, 0, 0}, {0, 0, 1}, {0, 1, 0});
 
 			auto CopperMaterial = Render->CreateEmptyMaterial();
-			//Render->MaterialSetBaseColorWeight(CopperMaterial, 1.f);
 			Render->MaterialSetBaseColor(CopperMaterial, FVector3(0.96467984, 0.37626296, 0.25818297));
 			Render->MaterialSetMetalness(CopperMaterial, 1.f);
 
@@ -552,7 +551,6 @@ void FSceneLoader::LoadScene(const std::string& Name)
 			auto ShaderballPlastic = Render->CreateInstance(Shaderball, {0, 3, 0}, {0, 0, 1}, {0, 1, 0});
 
 			auto PlasticMaterial = Render->CreateEmptyMaterial();
-			//Render->MaterialSetBaseColorWeight(CopperMaterial, 1.f);
 			Render->MaterialSetBaseColor(PlasticMaterial, FVector3(1, 0, 0));
 			Render->MaterialSetMetalness(PlasticMaterial, 0.f);
 
@@ -561,6 +559,16 @@ void FSceneLoader::LoadScene(const std::string& Name)
 			Render->MaterialSetSpecularRoughness(PlasticMaterial, 0.f);
 
 			Render->ShapeSetMaterial(ShaderballPlastic, PlasticMaterial);
+		}
+
+		{
+			auto ShaderballDiffuse = Render->CreateInstance(Shaderball, {-3, 3, 0}, {0, 0, 1}, {0, 1, 0});
+
+			auto DiffuseMaterial = Render->CreateEmptyMaterial();
+			Render->MaterialSetBaseColorWeight(DiffuseMaterial, 1.f);
+			Render->MaterialSetBaseColor(DiffuseMaterial, FVector3(0., 0.37, 0.54));
+
+			Render->ShapeSetMaterial(ShaderballDiffuse, DiffuseMaterial);
 		}
 
 		Render->SetIBL("../resources/san_giuseppe_bridge_4k.exr");

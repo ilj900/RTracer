@@ -1,7 +1,7 @@
 #ifndef PROCESS_MATERIAL_INTERACTION_H
 #define PROCESS_MATERIAL_INTERACTION_H
 
-//#define OREN_NAYAR
+#define OREN_NAYAR
 
 uint SelectLayer(FDeviceMaterial Material, float MaterialSample)
 {
