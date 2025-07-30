@@ -169,6 +169,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 				if (ImGui::MenuItem("Opacity")) { SelectedAOV = EOutputType::Opacity; };
 				if (ImGui::MenuItem("Depth")) { SelectedAOV = EOutputType::Depth; };
 				if (ImGui::MenuItem("Luminance")) { SelectedAOV = EOutputType::Luminance; };
+				if (ImGui::MenuItem("Bounce heatmap")) { SelectedAOV = EOutputType::BounceHeatmap; };
 				if (ImGui::MenuItem("MaterialID")) { SelectedAOV = EOutputType::MaterialID; };
 				if (ImGui::MenuItem("RenderableID")) { SelectedAOV = EOutputType::RenderableID; };
 				if (ImGui::MenuItem("PrimitiveID")) { SelectedAOV = EOutputType::PrimitiveID; };

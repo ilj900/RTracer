@@ -95,18 +95,19 @@
 #define AOV_MATERIAL_OPACITY													46u
 #define AOV_MATERIAL_THIN_WALLED												47u
 #define AOV_LUMINANCE															48u
-#define AOV_RENDERABLE_INDEX													49u
-#define AOV_PRIMITIVE_INDEX														50u
-#define AOV_MATERIAL_INDEX														51u
-#define AOV_DEBUG_LAYER_0														52u
-#define AOV_DEBUG_LAYER_1														53u
-#define AOV_DEBUG_LAYER_2														54u
-#define AOV_DEBUG_LAYER_3														55u
-#define AOV_DEBUG_LAYER_4														56u
-#define AOV_DEBUG_LAYER_5														57u
-#define AOV_DEBUG_LAYER_6														58u
-#define AOV_DEBUG_LAYER_7														59u
-#define AOV_MAX																	60u
+#define AOV_BOUNCE_HEATMAP														49u
+#define AOV_RENDERABLE_INDEX													50u
+#define AOV_PRIMITIVE_INDEX														51u
+#define AOV_MATERIAL_INDEX														52u
+#define AOV_DEBUG_LAYER_0														53u
+#define AOV_DEBUG_LAYER_1														54u
+#define AOV_DEBUG_LAYER_2														55u
+#define AOV_DEBUG_LAYER_3														56u
+#define AOV_DEBUG_LAYER_4														57u
+#define AOV_DEBUG_LAYER_5														58u
+#define AOV_DEBUG_LAYER_6														59u
+#define AOV_DEBUG_LAYER_7														60u
+#define AOV_MAX																	61u
 
 /// Task accumulate descriptor set layout defines
 #define ACCUMULATE_PER_FRAME_LAYOUT_INDEX 										0u

@@ -97,6 +97,7 @@ void SaveAOVs(uvec2 PixelCoords)
         case AOV_DEPTH:
         case AOV_MATERIAL_ALBEDO:
         case AOV_LUMINANCE:
+        case AOV_BOUNCE_HEATMAP:
         case AOV_RENDERABLE_INDEX:
         case AOV_PRIMITIVE_INDEX:
         case AOV_MATERIAL_INDEX: { imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), vec4(0)); break; }

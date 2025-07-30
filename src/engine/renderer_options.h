@@ -52,6 +52,7 @@ enum class EOutputType {
 	MaterialOpacity						= AOV_MATERIAL_OPACITY,
 	MaterialThinWalled					= AOV_MATERIAL_THIN_WALLED,
 	Luminance							= AOV_LUMINANCE,
+	BounceHeatmap						= AOV_BOUNCE_HEATMAP,
 	MaterialID 							= AOV_MATERIAL_INDEX,
 	RenderableID						= AOV_RENDERABLE_INDEX,
 	PrimitiveID							= AOV_PRIMITIVE_INDEX,

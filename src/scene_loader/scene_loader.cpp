@@ -504,15 +504,15 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		auto Material = Render->CreateEmptyMaterial();
 
-		//Render->MaterialSetBaseColorWeight(Material, 1.f);
-		////auto AlbedoTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_color.jpg");
-		//Render->MaterialSetBaseColor(Material, FVector3{1, 0, 0});
-//
-		//Render->MaterialSetSpecularWeight(Material, 0.4f);
-		//auto RoughnessTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_roughness.jpg");
-		//Render->MaterialSetSpecularColor(Material, FVector3(1, 1, 1));
-		//Render->MaterialSetSpecularRoughness(Material, RoughnessTexture);
-		//Render->MaterialSetSpecularAnisotropy(Material, 0.5f);
+		Render->MaterialSetBaseColorWeight(Material, 1.f);
+		auto AlbedoTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_color.jpg");
+		Render->MaterialSetBaseColor(Material, AlbedoTexture);
+
+		Render->MaterialSetSpecularWeight(Material, 0.4f);
+		auto RoughnessTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_roughness.jpg");
+		Render->MaterialSetSpecularColor(Material, FVector3(1, 1, 1));
+		Render->MaterialSetSpecularRoughness(Material, RoughnessTexture);
+		Render->MaterialSetSpecularAnisotropy(Material, 0.5f);
 
 		Render->ShapeSetMaterial(ShaderballInstance, Material);
 

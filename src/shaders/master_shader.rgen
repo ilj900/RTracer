@@ -727,6 +727,12 @@ void main()
         SaveAOVs(PixelCoords, ShadingData.NormalInWorldSpace, ShadingData.NormalInWorldSpace, ShadingData.UVCoordinates, ShadingData.IntersectionCoordinatesInWorldSpace, 1., Depth,
                  Material, TotalIncomingLight, Hit.RenderableIndex, Hit.PrimitiveIndex, PushConstants.MaterialIndex);
     }
+    if (UtilityData.AOVIndex == AOV_BOUNCE_HEATMAP)
+    {
+        float T = float(PushConstants.BounceIndex - 1) / float(LAST_BOUNCE);
+        vec3 Heat = mix(vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), T);
+        imageStore(AOV_RGBA32F_Image, ivec2(PixelCoords), vec4(Heat, 0));
+    }
 
     if ((PushConstants.BounceIndex == LAST_DIFFUSE_BOUNCE && CheckFlag(RayData.RayFlags, DIFFUSE_LAYER))
     || (PushConstants.BounceIndex == LAST_REFLECTION_BOUNCE && CheckFlag(RayData.RayFlags, SPECULAR_LAYER))
