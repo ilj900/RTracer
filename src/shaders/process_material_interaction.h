@@ -394,12 +394,12 @@ vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType, vec3 Wo
 			DiffuseRatio *= 1.f - Material.Metalness;
 			vec3 DiffuseBRDF = vec3(0);
 
-			#ifdef OREN_NAYAR
+#ifdef OREN_NAYAR
 			vec3 TangentSpaceLightDirectio = WorldSpaceLightDirection * ShadingData.TNBMatrix;
 			DiffuseBRDF = SampleOrenNayar(-ShadingData.TangentSpaceIncomingDirection, TangentSpaceLightDirectio, Material.BaseColor, Material.DiffuseRoughness);
-			#else
+#else
 			DiffuseBRDF = SampleLambertian(Material.BaseColor);
-			#endif
+#endif
 
 			BXDF += DiffuseBRDF * DiffuseRatio;
 			break;
@@ -443,7 +443,6 @@ float EvaluateScatteringPDF(FDeviceMaterial Material, uint RayType, vec3 WorldSp
 	{
 		case DIFFUSE_LAYER:
 		{
-#define OREN_NAYAR
 #ifdef OREN_NAYAR
 			return PDFOrenNayar(TangentSpaceLightDirection);
 #else
