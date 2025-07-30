@@ -1,6 +1,8 @@
 #ifndef PROCESS_MATERIAL_INTERACTION_H
 #define PROCESS_MATERIAL_INTERACTION_H
 
+//#define OREN_NAYAR
+
 uint SelectLayer(FDeviceMaterial Material, float MaterialSample)
 {
 	float TotalWeight = Material.BaseWeight + Material.SpecularWeight + Material.TransmissionWeight + Material.SubsurfaceWeight + Material.SheenWeight + Material.CoatWeight  + Material.EmissionWeight;
@@ -135,7 +137,6 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData
 		case DIFFUSE_LAYER:
 		{
 			ShadingData.TangentSpaceOutgoingDirection = ScatterOrenNayar(SamplingState);
-#define OREN_NAYAR
 #ifdef OREN_NAYAR
 			PDF = PDFOrenNayar(ShadingData.TangentSpaceOutgoingDirection);
 #else
@@ -362,7 +363,6 @@ vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType)
 	{
 		case DIFFUSE_LAYER:
 		{
-#define OREN_NAYAR
 #ifdef OREN_NAYAR
 			BXDF = SampleOrenNayar(-ShadingData.TangentSpaceIncomingDirection, ShadingData.TangentSpaceOutgoingDirection, Material.BaseColor, Material.DiffuseRoughness);
 #else
@@ -444,7 +444,6 @@ vec3 EvaluateMaterialInteractionFromDirection(FDeviceMaterial Material, uint Ray
 	{
 		case DIFFUSE_LAYER:
 		{
-#define OREN_NAYAR
 #ifdef OREN_NAYAR
 			vec3 TangentSpaceLightDirectio = WorldSpaceLightDirection * ShadingData.TNBMatrix;
 			BXDF = SampleOrenNayar(-ShadingData.TangentSpaceIncomingDirection, TangentSpaceLightDirectio, Material.BaseColor, Material.DiffuseRoughness);
