@@ -356,6 +356,7 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData
 /// Outgoing is the direction from the shading point to the camera
 vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType)
 {
+	MARK(1);
 	vec3 BXDF = vec3(0.f);
 
 	switch (RayType)
@@ -372,45 +373,37 @@ vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType)
 		}
 		case SPECULAR_LAYER:
 		{
-			if (Material.SpecularRoughness != 0)
-			{
-				vec3 V = ShadingData.WorldSpaceOutgoingDirection;
-				vec3 L = - ShadingData.WorldSpaceIncomingDirection;
-				vec3 N = ShadingData.NormalInWorldSpace;
-				vec3 H = normalize(L + V);
-				vec3 F0 = mix(vec3(0.04), Material.BaseColor, Material.Metalness);
+			vec3 V = - ShadingData.WorldSpaceIncomingDirection;
+			vec3 L = ShadingData.WorldSpaceOutgoingDirection;
+			vec3 N = ShadingData.NormalInWorldSpace;
+			vec3 H = normalize(L + V);
+			vec3 F0 = mix(vec3(0.04), Material.BaseColor, Material.Metalness);
 
-				float NDotL = clamp(dot(N, L), 0, 1);
-				float NDotV = clamp(dot(N, V), 0, 1);
-				float NDotH = clamp(dot(N, H), 0, 1);
-				float LDotH = clamp(dot(L, H), 0, 1);
+			float NDotL = clamp(dot(N, L), 0, 1);
+			float NDotV = clamp(dot(N, V), 0, 1);
+			float NDotH = clamp(dot(N, H), 0, 1);
+			float LDotH = clamp(dot(L, H), 0, 1);
 
-				float D = DistributionGGX(NDotH, Material.SpecularRoughness);
-				float G = GeometrySmith(NDotV, NDotL, Material.SpecularRoughness);
-				vec3 F = FresnelSchlick(LDotH, F0);
+			float D = DistributionGGX(NDotH, Material.SpecularRoughness);
+			float G = GeometrySmith(NDotV, NDotL, Material.SpecularRoughness);
+			vec3 F = FresnelSchlick(LDotH, F0);
 
-				BXDF = D * G * F / (4 * max (NDotV * NDotL, 0.001));
+			BXDF = D * G * F / (4 * max (NDotV * NDotL, 0.001));
 
-				/// From https://learnopengl.com/PBR/Lighting
-				/// We still has to calculate diffuse BRDF...
-				vec3 SpecularRatio = F;
-				vec3 DiffuseRatio = vec3(1.f) - SpecularRatio;
-				DiffuseRatio *= 1.f - Material.Metalness;
-				vec3 DiffuseBRDF = vec3(0);
+			/// From https://learnopengl.com/PBR/Lighting
+			/// We still has to calculate diffuse BRDF...
+			vec3 SpecularRatio = F;
+			vec3 DiffuseRatio = vec3(1.f) - SpecularRatio;
+			DiffuseRatio *= 1.f - Material.Metalness;
+			vec3 DiffuseBRDF = vec3(0);
 
-#ifdef OREN_NAYAR
-				DiffuseBRDF = SampleOrenNayar(-ShadingData.TangentSpaceIncomingDirection, ShadingData.TangentSpaceOutgoingDirection, Material.BaseColor, Material.DiffuseRoughness);
-#else
-				DiffuseBRDF = SampleLambertian(Material.BaseColor);
-#endif
+			#ifdef OREN_NAYAR
+			DiffuseBRDF = SampleOrenNayar(-ShadingData.TangentSpaceIncomingDirection, ShadingData.TangentSpaceOutgoingDirection, Material.BaseColor, Material.DiffuseRoughness);
+			#else
+			DiffuseBRDF = SampleLambertian(Material.BaseColor);
+			#endif
 
-				BXDF *= Material.SpecularColor;
-				BXDF += DiffuseBRDF * DiffuseRatio;
-			}
-			else
-			{
-				BXDF = Material.SpecularColor;
-			}
+			BXDF += DiffuseBRDF * DiffuseRatio;
 			break;
 		}
 		case TRANSMISSION_LAYER:
@@ -446,6 +439,7 @@ vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType)
 /// It's like EvaluateMaterialInteraction, but it takes direction to the light source, not the scattered direction
 vec3 EvaluateMaterialInteractionFromDirection(FDeviceMaterial Material, uint RayType, vec3 WorldSpaceLightDirection)
 {
+	MARK(2);
 	vec3 BXDF = vec3(0.f);
 
 	switch (RayType)
@@ -463,46 +457,38 @@ vec3 EvaluateMaterialInteractionFromDirection(FDeviceMaterial Material, uint Ray
 		}
 		case SPECULAR_LAYER:
 		{
-			if (Material.SpecularRoughness != 0)
-			{
-				vec3 V = WorldSpaceLightDirection;
-				vec3 L = - ShadingData.WorldSpaceIncomingDirection;
-				vec3 N = ShadingData.NormalInWorldSpace;
-				vec3 H = normalize(L + V);
-				vec3 F0 = mix(vec3(0.04), Material.BaseColor, Material.Metalness);
+			vec3 V = - ShadingData.WorldSpaceIncomingDirection;
+			vec3 L = WorldSpaceLightDirection;
+			vec3 N = ShadingData.NormalInWorldSpace;
+			vec3 H = normalize(L + V);
+			vec3 F0 = mix(vec3(0.04), Material.BaseColor, Material.Metalness);
 
-				float NDotL = clamp(dot(N, L), 0, 1);
-				float NDotV = clamp(dot(N, V), 0, 1);
-				float NDotH = clamp(dot(N, H), 0, 1);
-				float LDotH = clamp(dot(L, H), 0, 1);
+			float NDotL = clamp(dot(N, L), 0, 1);
+			float NDotV = clamp(dot(N, V), 0, 1);
+			float NDotH = clamp(dot(N, H), 0, 1);
+			float LDotH = clamp(dot(L, H), 0, 1);
 
-				float D = DistributionGGX(NDotH, Material.SpecularRoughness);
-				float G = GeometrySmith(NDotV, NDotL, Material.SpecularRoughness);
-				vec3 F = FresnelSchlick(LDotH, F0);
+			float D = DistributionGGX(NDotH, Material.SpecularRoughness);
+			float G = GeometrySmith(NDotV, NDotL, Material.SpecularRoughness);
+			vec3 F = FresnelSchlick(LDotH, F0);
 
-				BXDF = D * G * F / (4 * max (NDotV * NDotL, 0.001));
+			BXDF = D * G * F / (4 * max (NDotV * NDotL, 0.001));
 
-				/// From https://learnopengl.com/PBR/Lighting
-				/// We still has to calculate diffuse BRDF...
-				vec3 SpecularRatio = F;
-				vec3 DiffuseRatio = vec3(1.f) - SpecularRatio;
-				DiffuseRatio *= 1.f - Material.Metalness;
-				vec3 DiffuseBRDF = vec3(0);
+			/// From https://learnopengl.com/PBR/Lighting
+			/// We still has to calculate diffuse BRDF...
+			vec3 SpecularRatio = F;
+			vec3 DiffuseRatio = vec3(1.f) - SpecularRatio;
+			DiffuseRatio *= 1.f - Material.Metalness;
+			vec3 DiffuseBRDF = vec3(0);
 
-#ifdef OREN_NAYAR
-				vec3 TangentSpaceLightDirectio = WorldSpaceLightDirection * ShadingData.TNBMatrix;
-				DiffuseBRDF = SampleOrenNayar(-ShadingData.TangentSpaceIncomingDirection, TangentSpaceLightDirectio, Material.BaseColor, Material.DiffuseRoughness);
-#else
-				DiffuseBRDF = SampleLambertian(Material.BaseColor);
-#endif
+			#ifdef OREN_NAYAR
+			vec3 TangentSpaceLightDirectio = WorldSpaceLightDirection * ShadingData.TNBMatrix;
+			DiffuseBRDF = SampleOrenNayar(-ShadingData.TangentSpaceIncomingDirection, TangentSpaceLightDirectio, Material.BaseColor, Material.DiffuseRoughness);
+			#else
+			DiffuseBRDF = SampleLambertian(Material.BaseColor);
+			#endif
 
-				BXDF *= Material.SpecularColor;
-				BXDF += DiffuseBRDF * DiffuseRatio;
-			}
-			else
-			{
-				BXDF = Material.SpecularColor;
-			}
+			BXDF += DiffuseBRDF * DiffuseRatio;
 			break;
 		}
 		case TRANSMISSION_LAYER:
