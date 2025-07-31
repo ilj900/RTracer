@@ -76,6 +76,17 @@ std::vector<uint32_t> CompileShaderToSpirVData(const std::string &Path,  const F
     auto ShaderType = GetShaderType(Path);
     auto ShaderCode = ReadFileToString(Path);
 
+	auto StartingIndex = FindString(ShaderCode, "#include \"");
+
+	while (StartingIndex != std::string::npos)
+	{
+		auto IncludedFile = GetIncludeFileName(ShaderCode, StartingIndex);
+		auto IncludeString = ReadFileToString("../src/shaders/" + IncludedFile);
+		auto FullString = GetStringTillTheEOL(ShaderCode, StartingIndex);
+		ReplaceString(ShaderCode, FullString, IncludeString, StartingIndex);
+		StartingIndex = FindString(ShaderCode, "#include \"", StartingIndex);
+	}
+
     if (CompileDefinitions)
     {
         for (auto &Define: CompileDefinitions->Defines)
@@ -92,17 +103,6 @@ std::vector<uint32_t> CompileShaderToSpirVData(const std::string &Path,  const F
             }
             /// TODO: What if Define was not found? looks like an error...
         }
-    }
-
-    auto StartingIndex = FindString(ShaderCode, "#include \"");
-
-    while (StartingIndex != std::string::npos)
-    {
-        auto IncludedFile = GetIncludeFileName(ShaderCode, StartingIndex);
-        auto IncludeString = ReadFileToString("../src/shaders/" + IncludedFile);
-        auto FullString = GetStringTillTheEOL(ShaderCode, StartingIndex);
-        ReplaceString(ShaderCode, FullString, IncludeString, StartingIndex);
-        StartingIndex = FindString(ShaderCode, "#include \"", StartingIndex);
     }
 
     std::map<shaderc_shader_kind, std::string> ShaderTypeToExtensionMap

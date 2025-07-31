@@ -24,7 +24,6 @@
 #include "texture_component.h"
 #include "material_system.h"
 
-#include "vk_functions.h"
 #include "render.h"
 #include "texture_manager.h"
 
