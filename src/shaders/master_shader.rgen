@@ -37,7 +37,7 @@ struct FShadingData
     uint MaterialInteractionType;
 };
 
-#define DEBUG_PRINTF
+//#define DEBUG_PRINTF
 #include "debug.h"
 #include "common_defines.h"
 #include "common_structures.h"
