@@ -124,6 +124,9 @@ struct FUtilityData
 	uint32_t ActiveAreaLightsCount;
 	float TotalAreaLightArea;
 	uint32_t AOVIndex;
+	uint32_t AccumulateFrames;
+	uint32_t AccumulateBounces;
+	uint32_t Dummy;
 };
 
 /// Should be aligned with FAliasTableEntry

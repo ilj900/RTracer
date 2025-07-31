@@ -300,9 +300,21 @@ void FRender::SetRenderTarget(EOutputType OutputType)
 	{
 		RENDER_STATE()->RenderTarget = OutputType;
 		AccumulateTask->SetDirty(OUTDATED_DESCRIPTOR_SET | OUTDATED_COMMAND_BUFFER);
-		RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t) * 1,  offsetof(FUtilityData, AOVIndex), &RENDER_STATE()->RenderTarget);
+		RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t),  offsetof(FUtilityData, AOVIndex), &RENDER_STATE()->RenderTarget);
 		bAnyUpdate = true;
 	}
+}
+
+void FRender::SetAccumulateFrames(bool bAccumulateFrames)
+{
+	uint32_t Value = bAccumulateFrames ? 1 : 0;
+	RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t),  offsetof(FUtilityData, AccumulateFrames), &Value);
+}
+
+void FRender::SetAccumulateBounces(bool bAccumulateBounces)
+{
+	uint32_t Value = bAccumulateBounces ? 1 : 0;
+	RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t),  offsetof(FUtilityData, AccumulateBounces), &Value);
 }
 
 ECS::FEntity FRender::CreateCamera()
@@ -1414,9 +1426,14 @@ void FRender::AllocateIndependentResources()
 
 	CreateAndRegisterBufferShortcut(BufferDescriptions);
 
-	auto UtilityInfoPointLight = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FUtilityData),
+	auto UtilityInfo = RESOURCE_ALLOCATOR()->CreateBuffer(sizeof(FUtilityData),
 		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, UTILITY_INFO_BUFFER);
-	RESOURCE_ALLOCATOR()->RegisterBuffer(UtilityInfoPointLight, UTILITY_INFO_BUFFER);
+	RESOURCE_ALLOCATOR()->RegisterBuffer(UtilityInfo, UTILITY_INFO_BUFFER);
+
+	FUtilityData UtilityData{};
+	UtilityData.AccumulateBounces = true;
+	UtilityData.AccumulateFrames = true;
+	RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(FUtilityData), 0, &UtilityData);
 }
 
 void FRender::FreeDependentResources()

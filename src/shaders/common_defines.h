@@ -115,6 +115,7 @@
 #define INCOMING_IMAGE_TO_SAMPLE 												0u
 #define ACCUMULATE_IMAGE_INDEX 													1u
 #define ESTIMATED_IMAGE_INDEX 													2u
+#define UTILITY_BUFFER_INDEX													3u
 
 /// Task passthrough descriptor set layout defines
 #define PASSTHROUGH_PER_FRAME_LAYOUT_INDEX 										0u

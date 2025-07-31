@@ -148,6 +148,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 	static EOutputType CurrentAOV = EOutputType::Color;
 	static bool bDisplayProfiler = false;
 	static bool bDisplayMaterialConfigurator = false;
+	static bool bDisplayRenderSettings = false;
 
 	if (ImGui::BeginMainMenuBar())
 	{
@@ -155,6 +156,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 		{
 			if (ImGui::MenuItem("Profiler")) {bDisplayProfiler = true; bFirstCall = true;};
 			if (ImGui::MenuItem("Material configurator")) {bDisplayMaterialConfigurator = true;};
+			if (ImGui::MenuItem("Render settings")) {bDisplayRenderSettings = true;};
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("AOV"))
@@ -450,6 +452,26 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 			AddMaterialPropertyElement("Transmission roughness",		UIElementType::FloatSlider01,	&Material.TransmissionRoughnessTexture,		(void*)&Material.TransmissionRoughness,		static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetTransmissionRoughness),	DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetTransmissionRoughness));
 		}
 		ImGui::End();
+	}
+
+	/// Render settings
+	{
+		if (bDisplayRenderSettings && ImGui::Begin("Render Settings", &bDisplayRenderSettings))
+		{
+			static bool bAccumulateFrames = true;
+			if (ImGui::Checkbox("Accumulate frames", &bAccumulateFrames))
+			{
+				Render->SetAccumulateFrames(bAccumulateFrames);
+			}
+
+			static bool bAccumulateBounces = true;
+			if (ImGui::Checkbox("Accumulate bounces", &bAccumulateBounces))
+			{
+				Render->SetAccumulateBounces(bAccumulateFrames);
+			}
+
+			ImGui::End();
+		}
 	}
 
 	/// Axis gizmo

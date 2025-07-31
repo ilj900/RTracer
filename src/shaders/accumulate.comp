@@ -2,12 +2,19 @@
 
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 
+//#define DEBUG_PRINTF
+#include "debug.h"
 #include "common_defines.h"
 #include "common_structures.h"
 
 layout (set = ACCUMULATE_PER_FRAME_LAYOUT_INDEX, binding = INCOMING_IMAGE_TO_SAMPLE, rgba32f) uniform readonly image2D IncomingImage;
 layout (set = ACCUMULATE_PER_FRAME_LAYOUT_INDEX, binding = ACCUMULATE_IMAGE_INDEX, rgba32f) uniform image2D AccumulatorImage;
 layout (set = ACCUMULATE_PER_FRAME_LAYOUT_INDEX, binding = ESTIMATED_IMAGE_INDEX, rgba32f) uniform writeonly image2D EstimatedImage;
+
+layout (set = ACCUMULATE_PER_FRAME_LAYOUT_INDEX, binding = UTILITY_BUFFER_INDEX) uniform UtilityDataUniformBufferObject
+{
+    FUtilityData UtilityData;
+};
 
 layout (push_constant) uniform PushConstantsBlock
 {
@@ -30,10 +37,24 @@ vec3 ACESToneMapping(vec3 Value)
 
 void main()
 {
-    ivec2 UV = ivec2(gl_GlobalInvocationID.x % PushConstants.Width, gl_GlobalInvocationID.x / PushConstants.Width);
+    ivec2 PixelCoords = ivec2(gl_GlobalInvocationID.x % PushConstants.Width, gl_GlobalInvocationID.x / PushConstants.Width);
 
-    vec4 AccumulatedValue = imageLoad(AccumulatorImage, UV);
-    vec4 IncomingValue = imageLoad(IncomingImage, UV);
+    #ifdef DEBUG_PRINTF
+    if (PixelCoords.x == PushConstants.Width / 2 && PixelCoords.y == PushConstants.Height / 2)
+    {
+        b = true;
+    }
+    #endif
+
+    #ifdef DEBUG_ONLY_FIRST_BOUNCE
+    if (PushConstants.BounceIndex != 0)
+    {
+        b = false;
+    }
+    #endif
+
+    vec4 AccumulatedValue = imageLoad(AccumulatorImage, PixelCoords);
+    vec4 IncomingValue = imageLoad(IncomingImage, PixelCoords);
 
     if (IncomingValue.w != 0)
     {
@@ -43,9 +64,18 @@ void main()
         IncomingValue.xyz = pow(IncomingValue.xyz, vec3(1.f / 2.2f));
     }
 
-    AccumulatedValue += vec4(IncomingValue.xyz, 1.f);
-    vec3 EstimatedValue = AccumulatedValue.xyz / AccumulatedValue.w;
+    vec3 EstimatedValue = vec3(0);
 
-    imageStore(AccumulatorImage, UV, AccumulatedValue);
-    imageStore(EstimatedImage, UV, vec4(EstimatedValue, 1.f));
+    if (UtilityData.AccumulateFrames == 1u)
+    {
+        AccumulatedValue += vec4(IncomingValue.xyz, 1.f);
+        EstimatedValue = AccumulatedValue.xyz / AccumulatedValue.w;
+    }
+    else
+    {
+        EstimatedValue = IncomingValue.xyz;
+    }
+
+    imageStore(AccumulatorImage, PixelCoords, AccumulatedValue);
+    imageStore(EstimatedImage, PixelCoords, vec4(EstimatedValue, 1.f));
 }

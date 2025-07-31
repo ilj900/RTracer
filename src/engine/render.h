@@ -44,6 +44,8 @@ public:
     int Cleanup();
     int SetSize(uint32_t WidthIn, uint32_t HeightIn);
 	void SetRenderTarget(EOutputType OutputType);
+	void SetAccumulateFrames(bool bAccumulateFrames);
+	void SetAccumulateBounces(bool bAccumulateBounces);
 
     ECS::FEntity CreateCamera();
     void SetActiveCamera(ECS::FEntity Camera);
