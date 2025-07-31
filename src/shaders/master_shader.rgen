@@ -672,7 +672,6 @@ void main()
     BounceInput += PointLightResult + DirectionalLightResult + SpotLightResult + AreaLightResult + IBLResult;
     ThroughputBuffer[PixelIndex].xyz = ThroughputBuffer[PixelIndex].xyz + BounceInput;
 
-    MARK(UtilityData.AOVIndex);
     if(PushConstants.BounceIndex == 0)
     {
         SaveAOVs(PixelCoords, ShadingData.NormalInWorldSpace, ShadingData.NormalInWorldSpace, ShadingData.UVCoordinates, ShadingData.IntersectionCoordinatesInWorldSpace, 1., Depth,
