@@ -464,10 +464,10 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 				Render->SetAccumulateFrames(bAccumulateFrames);
 			}
 
-			static bool bAccumulateBounces = true;
+			static bool bAccumulateBounces = false;
 			if (ImGui::Checkbox("Accumulate bounces", &bAccumulateBounces))
 			{
-				Render->SetAccumulateBounces(bAccumulateFrames);
+				Render->SetAccumulateBounces(bAccumulateBounces);
 			}
 
 			ImGui::End();

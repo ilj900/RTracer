@@ -308,12 +308,14 @@ void FRender::SetAccumulateFrames(bool bAccumulateFrames)
 {
 	uint32_t Value = bAccumulateFrames ? 1 : 0;
 	RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t),  offsetof(FUtilityData, AccumulateFrames), &Value);
+	bAnyUpdate = true;
 }
 
 void FRender::SetAccumulateBounces(bool bAccumulateBounces)
 {
 	uint32_t Value = bAccumulateBounces ? 1 : 0;
 	RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(uint32_t),  offsetof(FUtilityData, AccumulateBounces), &Value);
+	bAnyUpdate = true;
 }
 
 ECS::FEntity FRender::CreateCamera()
@@ -1430,7 +1432,6 @@ void FRender::AllocateIndependentResources()
 	RESOURCE_ALLOCATOR()->RegisterBuffer(UtilityInfo, UTILITY_INFO_BUFFER);
 
 	FUtilityData UtilityData{};
-	UtilityData.AccumulateBounces = true;
 	UtilityData.AccumulateFrames = true;
 	RESOURCE_ALLOCATOR()->LoadDataToBuffer(UTILITY_INFO_BUFFER, sizeof(FUtilityData), 0, &UtilityData);
 }
