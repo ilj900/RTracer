@@ -286,7 +286,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 	}
 
 	/// Material configurator
-	if (bDisplayMaterialConfigurator && ImGui::Begin("Material configurator", &bDisplayMaterialConfigurator))
+	if (bDisplayMaterialConfigurator && ImGui::Begin("Material configurator", &bDisplayMaterialConfigurator, ImGuiWindowFlags_NoCollapse ))
 	{
 		auto& Materials = Render->GetMaterials();
 		std::vector<std::string> Names;
@@ -456,7 +456,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 
 	/// Render settings
 	{
-		if (bDisplayRenderSettings && ImGui::Begin("Render Settings", &bDisplayRenderSettings))
+		if (bDisplayRenderSettings && ImGui::Begin("Render Settings", &bDisplayRenderSettings, ImGuiWindowFlags_NoCollapse ))
 		{
 			static bool bAccumulateFrames = true;
 			if (ImGui::Checkbox("Accumulate frames", &bAccumulateFrames))
