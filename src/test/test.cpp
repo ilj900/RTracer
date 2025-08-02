@@ -319,38 +319,6 @@ TEST_CASE( "Test random cosine hemisphere", "[Utility]")
 	}
 }
 
-TEST_CASE( "Test GGX normal generator", "[GGX]")
-{
-	float Roughness = 0.;
-	uint32_t NumberOfSamplePerStep = 1000u;
-	uint32_t NumberOfRoughnessSteps = 10;
-
-	for (uint32_t i = 0; i <= NumberOfRoughnessSteps; ++i)
-	{
-		float a2 = Roughness * Roughness;
-		FSamplingState SamplingState = {0, 0, i, SAMPLE_TYPE_GENERATE_RAYS, 0};
-		std::vector<FVector3> Values(NumberOfSamplePerStep);
-		for (int j = 0; j < NumberOfSamplePerStep; ++j)
-		{
-			auto Random = Sample2DUnitQuad(SamplingState);
-			SamplingState.RenderIteration++;
-			auto SphericalCoords = CDFCookTorrance(a2, Random.X, Random.Y);
-			Values[j].X = cos(SphericalCoords.Y) * sin(SphericalCoords.X);
-			Values[j].Y = cos(SphericalCoords.X);
-			Values[j].Z = sin(SphericalCoords.Y) * sin(SphericalCoords.X);
-		}
-
-		std::ofstream File("../data/debug/GGX_" + std::to_string(Roughness) + ".bin", std::ios::binary);
-		if (File)
-		{
-			File.write(reinterpret_cast<const char*>(Values.data()), sizeof(FVector3) * Values.size());
-			File.close();
-		}
-
-		Roughness += 1.f / NumberOfRoughnessSteps;
-	}
-}
-
 TEST_CASE( "Test GGX of VNDF", "[GGX]")
 {
 	float Roughness = 0.;

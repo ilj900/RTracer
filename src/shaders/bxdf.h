@@ -1,11 +1,49 @@
 #ifndef BXDF_H
 #define BXDF_H
 
-FVector2 CDFCookTorrance(float a2, float e1, float e2)
+/// Cook-Torrance GGX
+/// Calculates D (Distribution) term for BRDF
+/// incoming Roughness is expected to be [0, 1] (The default material's roughness)
+float DistributionGGX(float NDotH, float Roughness)
 {
-	float Theta = acos(sqrt((1 - e1) / (e1 * (a2 - 1) + 1)));
-	float Phi = M_2_PI * e2;
-	return FVector2(Theta, Phi);
+	float A = Roughness * Roughness;
+	float A2 = A * A;
+	float NDotH2 = NDotH * NDotH;
+	float Nominator = A2;
+	float Denominator = (NDotH2 * (A2 - 1.) + 1.);
+	Denominator = M_PI * Denominator * Denominator;
+
+	Denominator = max(Denominator, 1e-6);
+	return Nominator / Denominator;
+}
+
+/// Schlick-GGX approximation for geometric attenuation (shadowing/masking) using roughness.
+/// NDotV is not necessary angle between normal and view direction. It's suitable for light direction
+float GeometrySchlickGGX(float NDotV, float Roughness)
+{
+	float R = Roughness + 1.;
+	float K = (R * R) / 8.;
+	float Nominator = NDotV;
+	float Denominator = NDotV * (1. - K) + K;
+	return Nominator / Denominator;
+}
+
+/// Smith's GGX
+/// Calculates G (Geometric) term for BRDF
+float GeometrySmith(float NDotV, float NDotL, float Roughness)
+{
+	float GGX2 = GeometrySchlickGGX(NDotV, Roughness);
+	float GGX1 = GeometrySchlickGGX(NDotL, Roughness);
+	return GGX1 * GGX2;
+}
+
+/// Fresnel Schlick's approximation
+/// Calculates F (Fresnel) term for BRDF
+/// Defines the part of light that is reflected
+/// Other part is "passed inside" the material
+vec3 FresnelSchlick(float CosTheta, vec3 F0)
+{
+	return F0 + (1. - F0) * pow(clamp(1.f - CosTheta, 0, 1), 5.0);
 }
 
 /// https://jcgt.org/published/0007/04/01/paper.pdf

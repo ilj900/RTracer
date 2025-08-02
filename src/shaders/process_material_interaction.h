@@ -36,40 +36,6 @@ uint SelectLayer(FDeviceMaterial Material, float MaterialSample)
 	return EMISSION_LAYER;
 }
 
-/// Cook-Torrance GGX
-float DistributionGGX(float NDotH, float Roughness)
-{
-	float A = Roughness * Roughness;
-	float A2 = A * A;
-	float NDotH2 = NDotH * NDotH;
-	float Nominator = A2;
-	float Denominator = (NDotH2 * (A2 - 1.) + 1.);
-	Denominator = M_PI * Denominator * Denominator;
-
-	return Nominator / Denominator;
-}
-
-float GeometrySchlickGGX(float NDotV, float Roughness)
-{
-	float R = Roughness + 1.;
-	float K = (R * R) / 8.;
-	float Nominator = NDotV;
-	float Denominator = NDotV * (1. - K) + K;
-	return Nominator / Denominator;
-}
-
-float GeometrySmith(float NDotV, float NDotL, float Roughness)
-{
-	float GGX2 = GeometrySchlickGGX(NDotV, Roughness);
-	float GGX1 = GeometrySchlickGGX(NDotL, Roughness);
-	return GGX1 * GGX2;
-}
-
-vec3 FresnelSchlick(float CosTheta, vec3 F0)
-{
-	return F0 + (1. - F0) * pow(clamp(1.f - CosTheta, 0, 1), 5.0);
-}
-
 vec3 Transform(vec3 NormalInWorldSpace, vec3 VectorInLocalSpace)
 {
 	vec3 A = (abs(NormalInWorldSpace.x) > 0.0) ? vec3(0, 1, 0) : vec3(1, 0, 0);
