@@ -426,7 +426,6 @@ void main()
 
     /// Fetch material data
     Material = GetMaterial(ShadingData.UVCoordinates);
-    Material.SpecularRoughness = clamp(Material.SpecularRoughness, 0.001, 1.f);
     /// Process material interaction
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
     ShadingData.MaterialScatteringPDF = ScatterMaterial(Material, ShadingData.MaterialInteractionType, RayData, SamplingState, ShadingData.bFrontFacing);

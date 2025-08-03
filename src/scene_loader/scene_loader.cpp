@@ -501,36 +501,35 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto Shaderball = Render->CreateModel("../models/Shaderball.obj");
 
 		{
-			//auto ShaderballWood = Render->CreateInstance(Shaderball, {0, 0, 0}, {0, 0, 1}, {0, 1, 0});
-//
-			//auto WoodMaterial = Render->CreateEmptyMaterial();
-//
-			//Render->MaterialSetBaseColorWeight(WoodMaterial, 1.f);
-			//auto AlbedoTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_color.jpg");
-			//Render->MaterialSetBaseColor(WoodMaterial, AlbedoTexture);
-//
-			//Render->MaterialSetSpecularWeight(WoodMaterial, 0.4f);
-			//auto RoughnessTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_roughness.jpg");
-			//Render->MaterialSetSpecularColor(WoodMaterial, FVector3(1, 1, 1));
-			//Render->MaterialSetSpecularRoughness(WoodMaterial, RoughnessTexture);
-			//Render->MaterialSetSpecularAnisotropy(WoodMaterial, 0.5f);
-//
-			//Render->ShapeSetMaterial(ShaderballWood, WoodMaterial);
+			auto ShaderballWood = Render->CreateInstance(Shaderball, {0, 0, 0}, {0, 0, 1}, {0, 1, 0});
+
+			auto WoodMaterial = Render->CreateEmptyMaterial();
+
+			Render->MaterialSetBaseColorWeight(WoodMaterial, 1.f);
+			auto AlbedoTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_color.jpg");
+			Render->MaterialSetBaseColor(WoodMaterial, AlbedoTexture);
+
+			Render->MaterialSetSpecularWeight(WoodMaterial, 0.4f);
+			auto RoughnessTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_roughness.jpg");
+			Render->MaterialSetSpecularColor(WoodMaterial, FVector3(1, 1, 1));
+			Render->MaterialSetSpecularRoughness(WoodMaterial, RoughnessTexture);
+			Render->MaterialSetSpecularAnisotropy(WoodMaterial, 0.5f);
+
+			Render->ShapeSetMaterial(ShaderballWood, WoodMaterial);
 		}
 
 		{
-			//auto ShaderballChrome = Render->CreateInstance(Shaderball, {3, 0, 0}, {0, 0, 1}, {0, 1, 0});
-//
-			//auto ChromeMaterial = Render->CreateEmptyMaterial();
-			//Render->MaterialSetBaseColorWeight(ChromeMaterial, 1.f);
-			//Render->MaterialSetBaseColor(ChromeMaterial, FVector3(1, 1, 1));
-//
-			//Render->MaterialSetSpecularWeight(ChromeMaterial, 1.f);
-			//Render->MaterialSetSpecularColor(ChromeMaterial, FVector3(1, 1, 1));
-			//Render->MaterialSetSpecularRoughness(ChromeMaterial, 0.f);
-			//Render->MaterialSetMetalness(ChromeMaterial, 1.f);
-//
-			//Render->ShapeSetMaterial(ShaderballChrome, ChromeMaterial);
+			auto ShaderballChrome = Render->CreateInstance(Shaderball, {3, 0, 0}, {0, 0, 1}, {0, 1, 0});
+
+			auto ChromeMaterial = Render->CreateEmptyMaterial();
+			Render->MaterialSetBaseColor(ChromeMaterial, FVector3(1, 1, 1));
+
+			Render->MaterialSetSpecularWeight(ChromeMaterial, 1.f);
+			Render->MaterialSetSpecularColor(ChromeMaterial, FVector3(1, 1, 1));
+			Render->MaterialSetSpecularRoughness(ChromeMaterial, 0.f);
+			Render->MaterialSetMetalness(ChromeMaterial, 1.f);
+
+			Render->ShapeSetMaterial(ShaderballChrome, ChromeMaterial);
 		}
 
 		{
@@ -548,20 +547,6 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		}
 
 		{
-			auto ShaderballPlastic = Render->CreateInstance(Shaderball, {0, 3, 0}, {0, 0, 1}, {0, 1, 0});
-
-			auto PlasticMaterial = Render->CreateEmptyMaterial();
-			Render->MaterialSetBaseColor(PlasticMaterial, FVector3(1, 0, 0));
-			Render->MaterialSetMetalness(PlasticMaterial, 0.f);
-
-			Render->MaterialSetSpecularWeight(PlasticMaterial, 1.f);
-			Render->MaterialSetSpecularColor(PlasticMaterial, FVector3(1, 1, 1));
-			Render->MaterialSetSpecularRoughness(PlasticMaterial, 0.f);
-
-			Render->ShapeSetMaterial(ShaderballPlastic, PlasticMaterial);
-		}
-
-		{
 			auto ShaderballDiffuse = Render->CreateInstance(Shaderball, {-3, 3, 0}, {0, 0, 1}, {0, 1, 0});
 
 			auto DiffuseMaterial = Render->CreateEmptyMaterial();
@@ -569,6 +554,34 @@ void FSceneLoader::LoadScene(const std::string& Name)
 			Render->MaterialSetBaseColor(DiffuseMaterial, FVector3(0., 0.37, 0.54));
 
 			Render->ShapeSetMaterial(ShaderballDiffuse, DiffuseMaterial);
+		}
+
+		{
+			auto ShaderballPlasticSmooth = Render->CreateInstance(Shaderball, {0, 3, 0}, {0, 0, 1}, {0, 1, 0});
+
+			auto SmoothPlasticMaterial = Render->CreateEmptyMaterial();
+			Render->MaterialSetBaseColor(SmoothPlasticMaterial, FVector3(0.356f, 0.529, 0.913));
+			Render->MaterialSetMetalness(SmoothPlasticMaterial, 0.f);
+
+			Render->MaterialSetSpecularWeight(SmoothPlasticMaterial, 1.f);
+			Render->MaterialSetSpecularColor(SmoothPlasticMaterial, FVector3(1, 1, 1));
+			Render->MaterialSetSpecularRoughness(SmoothPlasticMaterial, 0.f);
+
+			Render->ShapeSetMaterial(ShaderballPlasticSmooth, SmoothPlasticMaterial);
+		}
+
+		{
+			auto ShaderballPlasticRough = Render->CreateInstance(Shaderball, {3, 3, 0}, {0, 0, 1}, {0, 1, 0});
+
+			auto RoughPlasticMaterial = Render->CreateEmptyMaterial();
+			Render->MaterialSetBaseColor(RoughPlasticMaterial, FVector3(0.356f, 0.529, 0.913));
+			Render->MaterialSetMetalness(RoughPlasticMaterial, 0.f);
+
+			Render->MaterialSetSpecularWeight(RoughPlasticMaterial, 1.f);
+			Render->MaterialSetSpecularColor(RoughPlasticMaterial, FVector3(1, 1, 1));
+			Render->MaterialSetSpecularRoughness(RoughPlasticMaterial, 0.324f);
+
+			Render->ShapeSetMaterial(ShaderballPlasticRough, RoughPlasticMaterial);
 		}
 
 		Render->SetIBL("../resources/san_giuseppe_bridge_4k.exr");

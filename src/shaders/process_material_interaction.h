@@ -133,7 +133,7 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData
 				{
 					vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
 					/// We invert the TangentSpaceViewDirection because if i == 0 then it's ray's direction that points to (under) the surface, if i != 0, the only way we get here is if ray is still pointing under the surface.
-					vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
+					vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.SpecularRoughness, Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
 					TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
 
 					/// If ray's on the right side of the surface, then leave it
@@ -143,7 +143,7 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData
 						ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
 
 						vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + ShadingData.TangentSpaceOutgoingDirection));
-						PDF = VNDPDF(ApproximatedNormal.xzy, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
+						PDF = VNDPDF(ApproximatedNormal.xzy, Material.SpecularRoughness, Material.SpecularRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
 						break;
 					}
 				}
@@ -431,7 +431,7 @@ float EvaluateScatteringPDF(FDeviceMaterial Material, uint RayType, vec3 WorldSp
 			else
 			{
 				vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + TangentSpaceLightDirection));
-				return VNDPDF(ApproximatedNormal.xzy, Material.SpecularRoughness * Material.SpecularRoughness, Material.SpecularRoughness * Material.SpecularRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
+				return VNDPDF(ApproximatedNormal.xzy, Material.SpecularRoughness, Material.SpecularRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
 			}
 		}
 		case TRANSMISSION_LAYER:

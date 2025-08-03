@@ -46,6 +46,10 @@ vec3 FresnelSchlick(float CosTheta, vec3 F0)
 	return F0 + (1. - F0) * pow(clamp(1.f - CosTheta, 0, 1), 5.0);
 }
 
+/// Random visible normal generator
+/// U1 and U2 - two random numbers [0, 1]
+/// AlphaX and AlphaZ - roughness [0, 1]
+/// The coordinates basis of this code is X - right, Y - front and Z - up.
 /// https://jcgt.org/published/0007/04/01/paper.pdf
 FVector3 SampleGGXVNDF(FVector3 ViewDirection, float AlphaX, float AlphaZ, float U1, float U2)
 {
@@ -92,6 +96,8 @@ FVector3 SampleGGXVNDF(FVector3 ViewDirection, float AlphaX, float AlphaZ, float
 #endif
 }
 
+/// Computes pdf of a sampled Normal
+/// Also pay close attention to axis: X - right, Y - front and Z - up.
 /// https://jcgt.org/published/0007/04/01/paper.pdf
 float VNDPDF(FVector3 Normal, float AlphaX, float AlphaY, FVector3 ViewDirection)
 {
