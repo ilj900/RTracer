@@ -696,21 +696,21 @@ ECS::FEntity FRender::CreateTexture(const std::string& FilePath)
     return TEXTURE_SYSTEM()->CreateTextureFromFile(FilePath);
 }
 
-ECS::FEntity FRender::CreateEmptyMaterial()
+ECS::FEntity FRender::CreateEmptyMaterial(const std::string& MaterialName)
 {
-	auto NewMaterial = MATERIAL_SYSTEM()->CreateEmptyMaterial();
+	auto NewMaterial = MATERIAL_SYSTEM()->CreateEmptyMaterial(MaterialName);
 	return NewMaterial;
 }
 
-ECS::FEntity FRender::CreateMaterial()
+ECS::FEntity FRender::CreateMaterial(const std::string& MaterialName)
 {
-    auto NewMaterial = MATERIAL_SYSTEM()->CreateDefaultMaterial();
+    auto NewMaterial = MATERIAL_SYSTEM()->CreateDefaultMaterial(MaterialName);
     return NewMaterial;
 }
 
-ECS::FEntity FRender::CreateDiffuseMaterial(const FVector3& BaseColor)
+ECS::FEntity FRender::CreateDiffuseMaterial(const FVector3& BaseColor, const std::string& MaterialName)
 {
-	auto NewMaterial = MATERIAL_SYSTEM()->CreateEmptyMaterial();
+	auto NewMaterial = MATERIAL_SYSTEM()->CreateEmptyMaterial(MaterialName);
 
 	MATERIAL_SYSTEM()->SetBaseColorWeight(NewMaterial, 1.f);
 	MATERIAL_SYSTEM()->SetBaseColor(NewMaterial, BaseColor);
@@ -719,9 +719,9 @@ ECS::FEntity FRender::CreateDiffuseMaterial(const FVector3& BaseColor)
 	return NewMaterial;
 }
 
-ECS::FEntity FRender::CreateReflectiveMaterial(const FVector3& BaseColor)
+ECS::FEntity FRender::CreateReflectiveMaterial(const FVector3& BaseColor, const std::string& MaterialName)
 {
-	auto NewMaterial = MATERIAL_SYSTEM()->CreateEmptyMaterial();
+	auto NewMaterial = MATERIAL_SYSTEM()->CreateEmptyMaterial(MaterialName);
 
 	MATERIAL_SYSTEM()->SetSpecularWeight(NewMaterial, 1.f);
 	MATERIAL_SYSTEM()->SetSpecularColor(NewMaterial, BaseColor);
@@ -729,9 +729,9 @@ ECS::FEntity FRender::CreateReflectiveMaterial(const FVector3& BaseColor)
 	return NewMaterial;
 }
 
-ECS::FEntity FRender::CreateRefractiveMaterial(const FVector3& BaseColor)
+ECS::FEntity FRender::CreateRefractiveMaterial(const FVector3& BaseColor, const std::string& MaterialName)
 {
-	auto NewMaterial = MATERIAL_SYSTEM()->CreateEmptyMaterial();
+	auto NewMaterial = MATERIAL_SYSTEM()->CreateEmptyMaterial(MaterialName);
 
 	MATERIAL_SYSTEM()->SetTransmissionWeight(NewMaterial, 1.f);
 	MATERIAL_SYSTEM()->SetTransmissionColor(NewMaterial, BaseColor);
@@ -748,9 +748,9 @@ ECS::FEntity FRender::ShapeSetMaterial(ECS::FEntity Shape, ECS::FEntity Material
     return Shape;
 }
 
-const std::set<ECS::FEntity>& FRender::GetMaterials()
+const std::unordered_map<ECS::FEntity, std::string>& FRender::GetMaterials()
 {
-	return MATERIAL_SYSTEM()->Entities;
+	return MATERIAL_SYSTEM()->MaterialToName;
 }
 
 const ECS::COMPONENTS::FMaterialComponent& FRender::GetMaterial(ECS::FEntity Material)

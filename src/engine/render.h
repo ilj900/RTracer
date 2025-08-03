@@ -74,13 +74,13 @@ public:
 
 	/// Materials creation
     ECS::FEntity CreateTexture(const std::string& FilePath);
-	ECS::FEntity CreateEmptyMaterial();
-    ECS::FEntity CreateMaterial();
-	ECS::FEntity CreateDiffuseMaterial(const FVector3& BaseColor);
-	ECS::FEntity CreateReflectiveMaterial(const FVector3& BaseColor);
-	ECS::FEntity CreateRefractiveMaterial(const FVector3& BaseColor);
+	ECS::FEntity CreateEmptyMaterial(const std::string& MaterialName = "");
+    ECS::FEntity CreateMaterial(const std::string& MaterialName = "");
+	ECS::FEntity CreateDiffuseMaterial(const FVector3& BaseColor, const std::string& MaterialName = "");
+	ECS::FEntity CreateReflectiveMaterial(const FVector3& BaseColor, const std::string& MaterialName = "");
+	ECS::FEntity CreateRefractiveMaterial(const FVector3& BaseColor, const std::string& MaterialName = "");
     ECS::FEntity ShapeSetMaterial(ECS::FEntity Shape, ECS::FEntity Material);
-	const std::set<ECS::FEntity>& GetMaterials();
+	const std::unordered_map<ECS::FEntity, std::string>& GetMaterials();
 	const ECS::COMPONENTS::FMaterialComponent& GetMaterial(ECS::FEntity Material);
 
 	/// Materials manipulation

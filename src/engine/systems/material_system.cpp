@@ -53,18 +53,20 @@ namespace ECS
     		return false;
     	}
 
-        FEntity FMaterialSystem::CreateDefaultMaterial()
+        FEntity FMaterialSystem::CreateDefaultMaterial(const std::string& MaterialName)
         {
             FEntity Material = COORDINATOR().CreateEntity();
+    		MaterialToName[Material] = MaterialName.empty() ? "Material entity " + std::to_string(Material) : MaterialName;
             COORDINATOR().AddComponent<ECS::COMPONENTS::FMaterialComponent>(Material, {});
     		MaterialToIndexMap[Material] = FreeIndices.front();
     		FreeIndices.pop();
             return Material;
         }
 
-		FEntity FMaterialSystem::CreateEmptyMaterial()
+		FEntity FMaterialSystem::CreateEmptyMaterial(const std::string& MaterialName)
 		{
 			FEntity Material = COORDINATOR().CreateEntity();
+    		MaterialToName[Material] = MaterialName.empty() ? "Material entity " + std::to_string(Material) : MaterialName;
 			COORDINATOR().AddComponent<ECS::COMPONENTS::FMaterialComponent>(Material, {});
 			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(Material);
 

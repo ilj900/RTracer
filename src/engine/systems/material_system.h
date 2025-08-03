@@ -15,8 +15,8 @@ namespace ECS
         public:
         	void Init();
         	bool Update();
-            FEntity			 CreateDefaultMaterial();
-			FEntity			 CreateEmptyMaterial();
+            FEntity			 CreateDefaultMaterial(const std::string& MaterialName = "");
+			FEntity			 CreateEmptyMaterial(const std::string& MaterialName = "");
 			/// Albedo
 			FMaterialSystem& SetBaseColorWeight(FEntity MaterialEntity, float Weight);
 			FMaterialSystem& SetBaseColorWeight(FEntity MaterialEntity, FEntity TextureEntity);
@@ -127,6 +127,7 @@ namespace ECS
         	std::unordered_map<FEntity, uint32_t> MaterialToIndexMap;
         	std::queue<uint32_t> FreeIndices;
         	std::set<FEntity> ChangedMaterials;
+        	std::unordered_map<FEntity, std::string> MaterialToName;
         };
     }
 }

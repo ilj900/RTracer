@@ -288,30 +288,22 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 	/// Material configurator
 	if (bDisplayMaterialConfigurator && ImGui::Begin("Material configurator", &bDisplayMaterialConfigurator, ImGuiWindowFlags_NoCollapse ))
 	{
-		auto& Materials = Render->GetMaterials();
-		std::vector<std::string> Names;
-		std::vector<ECS::FEntity> MaterialsOrdered;
+		const auto& Materials = Render->GetMaterials();
 		static char* FileDialogBuffer = nullptr;
 		static char Path[500];
 
-		for (auto& Material : Materials)
-		{
-			Names.push_back("Material entity " + std::to_string(Material));
-			MaterialsOrdered.push_back(Material);
-		}
+		static ECS::FEntity CurrentMaterialEntity = Materials.begin()->first;
 
-		static int CurrentMaterialIndex = 0;
-
-		if (!Names.empty())
+		if (!Materials.empty())
 		{
-			if (ImGui::BeginCombo("Material", Names[CurrentMaterialIndex].c_str()))
+			if (ImGui::BeginCombo("Material", Materials.find(CurrentMaterialEntity)->second.c_str()))
 			{
-				for (int i = 0; i < Names.size(); ++i)
+				for (auto& Material : Materials)
 				{
-					bool IsSelected = (CurrentMaterialIndex == i);
-					if (ImGui::Selectable(Names[i].c_str(), IsSelected))
+					bool IsSelected = (Material.first == CurrentMaterialEntity);
+					if (ImGui::Selectable(Material.second.c_str(), IsSelected))
 					{
-						CurrentMaterialIndex = i;
+						CurrentMaterialEntity = Material.first;
 					}
 
 					if (IsSelected)
@@ -322,8 +314,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 				ImGui::EndCombo();
 			}
 
-			auto CurrentMaterial = MaterialsOrdered[CurrentMaterialIndex];
-			auto& Material = Render->GetMaterial(CurrentMaterial);
+			auto& Material = Render->GetMaterial(CurrentMaterialEntity);
 
 			auto PlotSlider = [&](const std::string& ElementName, const uint32_t* TextureIndex, void* MaterialData,
 				const std::function<void(ECS::FEntity, float)>& CallbackForFloat,
@@ -334,7 +325,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 					float Value = *static_cast<float*>(MaterialData);
 					if (ImGui::SliderFloat(ElementName.c_str(), &Value, Min, Max))
 					{
-						CallbackForFloat(CurrentMaterial, Value);
+						CallbackForFloat(CurrentMaterialEntity, Value);
 					}
 				}
 				else
@@ -350,7 +341,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 						if (!FileDialog::file_dialog_open)
 						{
 							auto Texture = Render->CreateTexture(FileDialogBuffer);
-							CallbackForTexture(CurrentMaterial, Texture);
+							CallbackForTexture(CurrentMaterialEntity, Texture);
 						}
 					}
 				}
@@ -366,7 +357,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 
 					if (ImGui::ColorEdit3(ElementName.c_str(), &BaseColor.x))
 					{
-						CallbackForVec3(CurrentMaterial, BaseColor);
+						CallbackForVec3(CurrentMaterialEntity, BaseColor);
 					}
 				}
 				else
@@ -382,7 +373,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 						if (!FileDialog::file_dialog_open)
 						{
 							auto Texture = Render->CreateTexture(FileDialogBuffer);
-							CallbackForTexture(CurrentMaterial, Texture);
+							CallbackForTexture(CurrentMaterialEntity, Texture);
 						}
 					}
 				}
