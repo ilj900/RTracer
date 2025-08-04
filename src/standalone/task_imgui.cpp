@@ -147,7 +147,10 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 	static EOutputType SelectedAOV = EOutputType::Color;
 	static EOutputType CurrentAOV = EOutputType::Color;
 	static bool bDisplayProfiler = false;
-	static bool bDisplayMaterialConfigurator = false;
+	constexpr uint32_t MaxNumberOfMaterialWindows = 3;
+	static std::vector<char> OpenedMaterialEditorWindows(MaxNumberOfMaterialWindows, 0);
+	static std::vector<char*> FileDialogBuffer(MaxNumberOfMaterialWindows);
+	static char Path[MaxNumberOfMaterialWindows][500];
 	static bool bDisplayRenderSettings = false;
 
 	if (ImGui::BeginMainMenuBar())
@@ -155,7 +158,7 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 		if (ImGui::BeginMenu("Windows"))
 		{
 			if (ImGui::MenuItem("Profiler")) {bDisplayProfiler = true; bFirstCall = true;};
-			if (ImGui::MenuItem("Material configurator")) {bDisplayMaterialConfigurator = true;};
+			if (ImGui::MenuItem("Material configurator")) { for (int i = 0; i < OpenedMaterialEditorWindows.size(); ++i) if (OpenedMaterialEditorWindows[i] == false) {OpenedMaterialEditorWindows[i] = true; break;} ; };
 			if (ImGui::MenuItem("Render settings")) {bDisplayRenderSettings = true;};
 			ImGui::EndMenu();
 		}
@@ -286,163 +289,168 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 	}
 
 	/// Material configurator
-	if (bDisplayMaterialConfigurator && ImGui::Begin("Material configurator", &bDisplayMaterialConfigurator, ImGuiWindowFlags_NoCollapse ))
+	for (int i = 0; i < OpenedMaterialEditorWindows.size(); ++i)
 	{
-		const auto& Materials = Render->GetMaterials();
-		static char* FileDialogBuffer = nullptr;
-		static char Path[500];
-
-		static ECS::FEntity CurrentMaterialEntity = Materials.begin()->first;
-
-		if (!Materials.empty())
+		if (!OpenedMaterialEditorWindows[i])
 		{
-			if (ImGui::BeginCombo("Material", Materials.find(CurrentMaterialEntity)->second.c_str()))
-			{
-				for (auto& Material : Materials)
-				{
-					bool IsSelected = (Material.first == CurrentMaterialEntity);
-					if (ImGui::Selectable(Material.second.c_str(), IsSelected))
-					{
-						CurrentMaterialEntity = Material.first;
-					}
-
-					if (IsSelected)
-					{
-						ImGui::SetItemDefaultFocus();
-					}
-				}
-				ImGui::EndCombo();
-			}
-
-			auto& Material = Render->GetMaterial(CurrentMaterialEntity);
-
-			auto PlotSlider = [&](const std::string& ElementName, const uint32_t* TextureIndex, void* MaterialData,
-				const std::function<void(ECS::FEntity, float)>& CallbackForFloat,
-				const std::function<void(ECS::FEntity, ECS::FEntity)>& CallbackForTexture, float Min, float Max)
-			{
-				if (*TextureIndex == UINT32_MAX)
-				{
-					float Value = *static_cast<float*>(MaterialData);
-					if (ImGui::SliderFloat(ElementName.c_str(), &Value, Min, Max))
-					{
-						CallbackForFloat(CurrentMaterialEntity, Value);
-					}
-				}
-				else
-				{
-					if (ImGui::Button((ElementName + "Texture##path").c_str())) {
-						FileDialogBuffer = Path;
-						FileDialog::file_dialog_open = true;
-						FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
-					}
-
-					if (FileDialog::file_dialog_open) {
-						FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, FileDialogBuffer, sizeof(FileDialogBuffer), FileDialog::file_dialog_open_type);
-						if (!FileDialog::file_dialog_open)
-						{
-							auto Texture = Render->CreateTexture(FileDialogBuffer);
-							CallbackForTexture(CurrentMaterialEntity, Texture);
-						}
-					}
-				}
-			};
-
-			auto PlotVec3 = [&](const std::string& ElementName, const uint32_t* TextureIndex, void* MaterialData,
-			const std::function<void(ECS::FEntity, const FVector3&)>& CallbackForVec3,
-				const std::function<void(ECS::FEntity, ECS::FEntity)>& CallbackForTexture)
-			{
-				if (*TextureIndex == UINT32_MAX)
-				{
-					FVector3 BaseColor = *static_cast<FVector3*>(MaterialData);
-
-					if (ImGui::ColorEdit3(ElementName.c_str(), &BaseColor.x))
-					{
-						CallbackForVec3(CurrentMaterialEntity, BaseColor);
-					}
-				}
-				else
-				{
-					if (ImGui::Button((ElementName + "Texture##path").c_str())) {
-						FileDialogBuffer = Path;
-						FileDialog::file_dialog_open = true;
-						FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
-					}
-
-					if (FileDialog::file_dialog_open) {
-						FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, FileDialogBuffer, sizeof(FileDialogBuffer), FileDialog::file_dialog_open_type);
-						if (!FileDialog::file_dialog_open)
-						{
-							auto Texture = Render->CreateTexture(FileDialogBuffer);
-							CallbackForTexture(CurrentMaterialEntity, Texture);
-						}
-					}
-				}
-			};
-
-			enum class UIElementType {FloatSlider01, FloatSlider05, FloatSlider020, FloatSlider0360, FloatSlider070, Float3Color};
-
-			auto AddMaterialPropertyElement = [&](const std::string& ElementName, UIElementType ElementType, const uint32_t* TextureIndex, void* MaterialData,
-				const std::function<void(ECS::FEntity, float)>& CallbackForFloat,
-				const std::function<void(ECS::FEntity, const FVector3&)>& CallbackForVec3,
-				const std::function<void(ECS::FEntity, ECS::FEntity)>& CallbackForTexture)
-			{
-				switch (ElementType)
-				{
-					case UIElementType::FloatSlider01:
-					{
-						PlotSlider(ElementName, TextureIndex, MaterialData, CallbackForFloat, CallbackForTexture, 0.f, 1.f);
-						break;
-					}
-					case UIElementType::FloatSlider05:
-					{
-						PlotSlider(ElementName, TextureIndex, MaterialData, CallbackForFloat, CallbackForTexture, 0.f, 5.f);
-						break;
-					}
-					case UIElementType::FloatSlider020:
-					{
-						PlotSlider(ElementName, TextureIndex, MaterialData, CallbackForFloat, CallbackForTexture, 0.f, 20.f);
-						break;
-					}
-					case UIElementType::FloatSlider0360:
-					{
-						PlotSlider(ElementName, TextureIndex, MaterialData, CallbackForFloat, CallbackForTexture, 0.f, 360.f);
-						break;
-					}
-					case UIElementType::FloatSlider070:
-					{
-						PlotSlider(ElementName, TextureIndex, MaterialData, CallbackForFloat, CallbackForTexture, 0.f, 70.f);
-						break;
-					}
-					case UIElementType::Float3Color:
-					{
-						PlotVec3(ElementName, TextureIndex, MaterialData, CallbackForVec3, CallbackForTexture);
-						break;
-					}
-				}
-			};
-
-			static const auto DummyLambdaFloat = [](ECS::FEntity, float){};
-			static const auto DummyLambdaVec3 = [](ECS::FEntity, const FVector3&){};
-			AddMaterialPropertyElement("Base weight",				UIElementType::FloatSlider01,	&Material.BaseWeightTexture,				(void*)&Material.BaseWeight,				static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetBaseColorWeight),			DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetBaseColorWeight));
-			AddMaterialPropertyElement("Base color",					UIElementType::Float3Color,		&Material.BaseColorTexture,					(void*)&Material.BaseColor,					DummyLambdaFloat,																		static_cast<void(*)(ECS::FEntity, const FVector3&)>(&FRender::MaterialSetBaseColor),				static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetBaseColor));
-			AddMaterialPropertyElement("Diffuse roughness",			UIElementType::FloatSlider01,	&Material.DiffuseRoughnessTexture,			(void*)&Material.DiffuseRoughness,			static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetDiffuseRoughness),		DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetDiffuseRoughness));
-			AddMaterialPropertyElement("Metalness",					UIElementType::FloatSlider01,	&Material.MetalnessTexture,					(void*)&Material.Metalness,					static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetMetalness), 				DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetMetalness));
-			AddMaterialPropertyElement("Normal",						UIElementType::Float3Color,		&Material.NormalTexture,					(void*)&Material.Normal,					DummyLambdaFloat, 																		static_cast<void(*)(ECS::FEntity, const FVector3&)>(&FRender::MaterialSetAlbedoNormal),			static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetAlbedoNormal));
-			AddMaterialPropertyElement("Specular weight",			UIElementType::FloatSlider01,	&Material.SpecularWeightTexture,			(void*)&Material.SpecularWeight,			static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetSpecularWeight), 			DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetSpecularWeight));
-			AddMaterialPropertyElement("Specular color",				UIElementType::Float3Color,		&Material.SpecularColorTexture,				(void*)&Material.SpecularColor,				DummyLambdaFloat, 																		static_cast<void(*)(ECS::FEntity, const FVector3&)>(&FRender::MaterialSetSpecularColor),			static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetSpecularColor));
-			AddMaterialPropertyElement("Specular roughness",			UIElementType::FloatSlider01,	&Material.SpecularRoughnessTexture,			(void*)&Material.SpecularRoughness,			static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetSpecularRoughness), 		DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetSpecularRoughness));
-			AddMaterialPropertyElement("Specular IOR",				UIElementType::FloatSlider05,	&Material.SpecularIORTexture,				(void*)&Material.SpecularIOR,				static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetSpecularIOR), 			DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetSpecularIOR));
-			AddMaterialPropertyElement("Specular anisotropy",		UIElementType::FloatSlider01,	&Material.SpecularAnisotropyTexture,		(void*)&Material.SpecularAnisotropy,		static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetSpecularAnisotropy), 		DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetSpecularAnisotropy));
-			AddMaterialPropertyElement("Specular rotation",			UIElementType::FloatSlider0360, &Material.SpecularRotationTexture,			(void*)&Material.SpecularRotation,			static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetSpecularRotation), 		DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetSpecularRotation));
-			AddMaterialPropertyElement("Transmission weight",		UIElementType::FloatSlider01,	&Material.TransmissionWeightTexture,		(void*)&Material.TransmissionWeight,		static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetTransmissionWeight), 		DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetTransmissionWeight));
-			AddMaterialPropertyElement("Transmission color",			UIElementType::Float3Color,		&Material.TransmissionColorTexture,			(void*)&Material.TransmissionColor,			DummyLambdaFloat, 																		static_cast<void(*)(ECS::FEntity, const FVector3&)>(&FRender::MaterialSetTransmissionColor),		static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetTransmissionColor));
-			AddMaterialPropertyElement("Transmission depth",			UIElementType::FloatSlider020,	&Material.TransmissionDepthTexture,			(void*)&Material.TransmissionDepth,			static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetTransmissionDepth), 		DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetTransmissionDepth));
-			AddMaterialPropertyElement("Transmission scatter",		UIElementType::FloatSlider020,	&Material.TransmissionScatterTexture,		(void*)&Material.TransmissionScatter,		DummyLambdaFloat, 																		static_cast<void(*)(ECS::FEntity, const FVector3&)>(&FRender::MaterialSetTransmissionScatter),	static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetTransmissionScatter));
-			AddMaterialPropertyElement("Transmission anisotropy",	UIElementType::FloatSlider01,	&Material.TransmissionAnisotropyTexture,	(void*)&Material.TransmissionAnisotropy,	static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetTransmissionAnisotropy),	DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetTransmissionAnisotropy));
-			AddMaterialPropertyElement("Transmission dispersion",	UIElementType::FloatSlider070,	&Material.TransmissionDispersionTexture,	(void*)&Material.TransmissionDispersion,	static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetTransmissionDispersion), 	DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetTransmissionDispersion));
-			AddMaterialPropertyElement("Transmission roughness",		UIElementType::FloatSlider01,	&Material.TransmissionRoughnessTexture,		(void*)&Material.TransmissionRoughness,		static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetTransmissionRoughness),	DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetTransmissionRoughness));
+			continue;
 		}
-		ImGui::End();
+		if (ImGui::Begin(("Material configurator " + std::to_string(i)).c_str(), reinterpret_cast<bool*>(&OpenedMaterialEditorWindows[i]), ImGuiWindowFlags_NoCollapse ))
+		{
+			const auto& Materials = Render->GetMaterials();
+
+			static std::vector<ECS::FEntity> CurrentMaterialEntities(3, Materials.begin()->first);
+
+			if (!Materials.empty())
+			{
+				if (ImGui::BeginCombo("Material", Materials.find(CurrentMaterialEntities[i])->second.c_str()))
+				{
+					for (auto& Material : Materials)
+					{
+						bool IsSelected = (Material.first == CurrentMaterialEntities[i]);
+						if (ImGui::Selectable(Material.second.c_str(), IsSelected))
+						{
+							CurrentMaterialEntities[i] = Material.first;
+						}
+
+						if (IsSelected)
+						{
+							ImGui::SetItemDefaultFocus();
+						}
+					}
+					ImGui::EndCombo();
+				}
+
+				auto& Material = Render->GetMaterial(CurrentMaterialEntities[i]);
+
+				auto PlotSlider = [&](const std::string& ElementName, const uint32_t* TextureIndex, void* MaterialData,
+					const std::function<void(ECS::FEntity, float)>& CallbackForFloat,
+					const std::function<void(ECS::FEntity, ECS::FEntity)>& CallbackForTexture, float Min, float Max)
+				{
+					if (*TextureIndex == UINT32_MAX)
+					{
+						float Value = *static_cast<float*>(MaterialData);
+						if (ImGui::SliderFloat(ElementName.c_str(), &Value, Min, Max))
+						{
+							CallbackForFloat(CurrentMaterialEntities[i], Value);
+						}
+					}
+					else
+					{
+						if (ImGui::Button((ElementName + "Texture##path").c_str())) {
+							FileDialogBuffer[i] = Path[i];
+							FileDialog::file_dialog_open = true;
+							FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+						}
+
+						if (FileDialog::file_dialog_open) {
+							FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, FileDialogBuffer[i], sizeof(FileDialogBuffer), FileDialog::file_dialog_open_type);
+							if (!FileDialog::file_dialog_open)
+							{
+								auto Texture = Render->CreateTexture(FileDialogBuffer[i]);
+								CallbackForTexture(CurrentMaterialEntities[i], Texture);
+							}
+						}
+					}
+				};
+
+				auto PlotVec3 = [&](const std::string& ElementName, const uint32_t* TextureIndex, void* MaterialData,
+				const std::function<void(ECS::FEntity, const FVector3&)>& CallbackForVec3,
+					const std::function<void(ECS::FEntity, ECS::FEntity)>& CallbackForTexture)
+				{
+					if (*TextureIndex == UINT32_MAX)
+					{
+						FVector3 BaseColor = *static_cast<FVector3*>(MaterialData);
+
+						if (ImGui::ColorEdit3(ElementName.c_str(), &BaseColor.x))
+						{
+							CallbackForVec3(CurrentMaterialEntities[i], BaseColor);
+						}
+					}
+					else
+					{
+						if (ImGui::Button((ElementName + "Texture##path").c_str())) {
+							FileDialogBuffer[i] = Path[i];
+							FileDialog::file_dialog_open = true;
+							FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+						}
+
+						if (FileDialog::file_dialog_open) {
+							FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, FileDialogBuffer[i], sizeof(FileDialogBuffer), FileDialog::file_dialog_open_type);
+							if (!FileDialog::file_dialog_open)
+							{
+								auto Texture = Render->CreateTexture(FileDialogBuffer[i]);
+								CallbackForTexture(CurrentMaterialEntities[i], Texture);
+							}
+						}
+					}
+				};
+
+				enum class UIElementType {FloatSlider01, FloatSlider05, FloatSlider020, FloatSlider0360, FloatSlider070, Float3Color};
+
+				auto AddMaterialPropertyElement = [&](const std::string& ElementName, UIElementType ElementType, const uint32_t* TextureIndex, void* MaterialData,
+					const std::function<void(ECS::FEntity, float)>& CallbackForFloat,
+					const std::function<void(ECS::FEntity, const FVector3&)>& CallbackForVec3,
+					const std::function<void(ECS::FEntity, ECS::FEntity)>& CallbackForTexture)
+				{
+					switch (ElementType)
+					{
+						case UIElementType::FloatSlider01:
+						{
+							PlotSlider(ElementName, TextureIndex, MaterialData, CallbackForFloat, CallbackForTexture, 0.f, 1.f);
+							break;
+						}
+						case UIElementType::FloatSlider05:
+						{
+							PlotSlider(ElementName, TextureIndex, MaterialData, CallbackForFloat, CallbackForTexture, 0.f, 5.f);
+							break;
+						}
+						case UIElementType::FloatSlider020:
+						{
+							PlotSlider(ElementName, TextureIndex, MaterialData, CallbackForFloat, CallbackForTexture, 0.f, 20.f);
+							break;
+						}
+						case UIElementType::FloatSlider0360:
+						{
+							PlotSlider(ElementName, TextureIndex, MaterialData, CallbackForFloat, CallbackForTexture, 0.f, 360.f);
+							break;
+						}
+						case UIElementType::FloatSlider070:
+						{
+							PlotSlider(ElementName, TextureIndex, MaterialData, CallbackForFloat, CallbackForTexture, 0.f, 70.f);
+							break;
+						}
+						case UIElementType::Float3Color:
+						{
+							PlotVec3(ElementName, TextureIndex, MaterialData, CallbackForVec3, CallbackForTexture);
+							break;
+						}
+					}
+				};
+
+				static const auto DummyLambdaFloat = [](ECS::FEntity, float){};
+				static const auto DummyLambdaVec3 = [](ECS::FEntity, const FVector3&){};
+				AddMaterialPropertyElement("Base weight",				UIElementType::FloatSlider01,	&Material.BaseWeightTexture,				(void*)&Material.BaseWeight,				static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetBaseColorWeight),			DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetBaseColorWeight));
+				AddMaterialPropertyElement("Base color",					UIElementType::Float3Color,		&Material.BaseColorTexture,					(void*)&Material.BaseColor,					DummyLambdaFloat,																		static_cast<void(*)(ECS::FEntity, const FVector3&)>(&FRender::MaterialSetBaseColor),				static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetBaseColor));
+				AddMaterialPropertyElement("Diffuse roughness",			UIElementType::FloatSlider01,	&Material.DiffuseRoughnessTexture,			(void*)&Material.DiffuseRoughness,			static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetDiffuseRoughness),		DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetDiffuseRoughness));
+				AddMaterialPropertyElement("Metalness",					UIElementType::FloatSlider01,	&Material.MetalnessTexture,					(void*)&Material.Metalness,					static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetMetalness), 				DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetMetalness));
+				AddMaterialPropertyElement("Normal",						UIElementType::Float3Color,		&Material.NormalTexture,					(void*)&Material.Normal,					DummyLambdaFloat, 																		static_cast<void(*)(ECS::FEntity, const FVector3&)>(&FRender::MaterialSetAlbedoNormal),			static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetAlbedoNormal));
+				AddMaterialPropertyElement("Specular weight",			UIElementType::FloatSlider01,	&Material.SpecularWeightTexture,			(void*)&Material.SpecularWeight,			static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetSpecularWeight), 			DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetSpecularWeight));
+				AddMaterialPropertyElement("Specular color",				UIElementType::Float3Color,		&Material.SpecularColorTexture,				(void*)&Material.SpecularColor,				DummyLambdaFloat, 																		static_cast<void(*)(ECS::FEntity, const FVector3&)>(&FRender::MaterialSetSpecularColor),			static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetSpecularColor));
+				AddMaterialPropertyElement("Specular roughness",			UIElementType::FloatSlider01,	&Material.SpecularRoughnessTexture,			(void*)&Material.SpecularRoughness,			static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetSpecularRoughness), 		DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetSpecularRoughness));
+				AddMaterialPropertyElement("Specular IOR",				UIElementType::FloatSlider05,	&Material.SpecularIORTexture,				(void*)&Material.SpecularIOR,				static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetSpecularIOR), 			DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetSpecularIOR));
+				AddMaterialPropertyElement("Specular anisotropy",		UIElementType::FloatSlider01,	&Material.SpecularAnisotropyTexture,		(void*)&Material.SpecularAnisotropy,		static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetSpecularAnisotropy), 		DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetSpecularAnisotropy));
+				AddMaterialPropertyElement("Specular rotation",			UIElementType::FloatSlider0360, &Material.SpecularRotationTexture,			(void*)&Material.SpecularRotation,			static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetSpecularRotation), 		DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetSpecularRotation));
+				AddMaterialPropertyElement("Transmission weight",		UIElementType::FloatSlider01,	&Material.TransmissionWeightTexture,		(void*)&Material.TransmissionWeight,		static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetTransmissionWeight), 		DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetTransmissionWeight));
+				AddMaterialPropertyElement("Transmission color",			UIElementType::Float3Color,		&Material.TransmissionColorTexture,			(void*)&Material.TransmissionColor,			DummyLambdaFloat, 																		static_cast<void(*)(ECS::FEntity, const FVector3&)>(&FRender::MaterialSetTransmissionColor),		static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetTransmissionColor));
+				AddMaterialPropertyElement("Transmission depth",			UIElementType::FloatSlider020,	&Material.TransmissionDepthTexture,			(void*)&Material.TransmissionDepth,			static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetTransmissionDepth), 		DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetTransmissionDepth));
+				AddMaterialPropertyElement("Transmission scatter",		UIElementType::FloatSlider020,	&Material.TransmissionScatterTexture,		(void*)&Material.TransmissionScatter,		DummyLambdaFloat, 																		static_cast<void(*)(ECS::FEntity, const FVector3&)>(&FRender::MaterialSetTransmissionScatter),	static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetTransmissionScatter));
+				AddMaterialPropertyElement("Transmission anisotropy",	UIElementType::FloatSlider01,	&Material.TransmissionAnisotropyTexture,	(void*)&Material.TransmissionAnisotropy,	static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetTransmissionAnisotropy),	DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetTransmissionAnisotropy));
+				AddMaterialPropertyElement("Transmission dispersion",	UIElementType::FloatSlider070,	&Material.TransmissionDispersionTexture,	(void*)&Material.TransmissionDispersion,	static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetTransmissionDispersion), 	DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetTransmissionDispersion));
+				AddMaterialPropertyElement("Transmission roughness",		UIElementType::FloatSlider01,	&Material.TransmissionRoughnessTexture,		(void*)&Material.TransmissionRoughness,		static_cast<void(*)(ECS::FEntity, float)>(&FRender::MaterialSetTransmissionRoughness),	DummyLambdaVec3,																					static_cast<void(*)(ECS::FEntity, ECS::FEntity)>(&FRender::MaterialSetTransmissionRoughness));
+			}
+			ImGui::End();
+		}
 	}
 
 	/// Render settings
