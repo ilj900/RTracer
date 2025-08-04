@@ -219,8 +219,6 @@ int FRender::Init()
     ClearImageTask 						= std::make_shared<FClearImageTask>					("AccumulatorImage", 				Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	ClearCumulativeMaterialColorBuffer	= std::make_shared<FClearBufferTask>				(CUMULATIVE_MATERIAL_COLOR_BUFFER, 		Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice, 0x3F800000);
 	ResetActiveRayCountTask 			= std::make_shared<FResetActiveRayCountTask>		(Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
-	std::vector<std::string> BuffersToCleanEachFrame{NORMAL_AOV_BUFFER, UV_AOV_BUFFER, WORLD_SPACE_POSITION_AOV_BUFFER, TRANSFORM_INDEX_BUFFER, DEBUG_LAYER_BUFFER};
-	ClearBuffersEachFrameTask 			= std::make_shared<FClearBufferTask>				(BuffersToCleanEachFrame , Width, Height, 1, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
 	std::vector<std::string> BuffersToCleanEachBounce{COUNTED_MATERIALS_PER_CHUNK_BUFFER};
 	ClearBuffersEachBounceTask 			= std::make_shared<FClearBufferTask>				(BuffersToCleanEachBounce , Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
     RayTraceTask 						= std::make_shared<FRaytraceTask>					(Width, Height, RecursionDepth, MaxFramesInFlight, VK_CONTEXT()->LogicalDevice);
@@ -259,7 +257,6 @@ int FRender::Cleanup()
     ClearImageTask 						= nullptr;
 	ClearCumulativeMaterialColorBuffer	= nullptr;
 	ResetActiveRayCountTask 			= nullptr;
-	ClearBuffersEachFrameTask			= nullptr;
 	ClearBuffersEachBounceTask			= nullptr;
 	ClearBuffersEachBounceTask			= nullptr;
     RayTraceTask 						= nullptr;
@@ -519,7 +516,6 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	ClearCumulativeMaterialColorBuffer->Reload();
 	ResetActiveRayCountTask->Reload();
 	RayTraceTask->Reload();
-	ClearBuffersEachFrameTask->Reload();
 	ClearBuffersEachBounceTask->Reload();
 	ClearTotalMaterialsCountTask->Reload();
 	CountMaterialsPerChunkTask->Reload();
@@ -573,8 +569,6 @@ FSynchronizationPoint FRender::Render(uint32_t OutputImageIndex)
 	}
 
 	SynchronizationPoint = ClearCumulativeMaterialColorBuffer->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
-
-	SynchronizationPoint = ClearBuffersEachFrameTask->Submit(PipelineStageFlags, SynchronizationPoint, 0, CurrentFrame);
 
 	//WaitIdle();
 	//auto BufferData = RESOURCE_ALLOCATOR()->DebugGetDataFromBuffer<float>("DebugBuffer");
@@ -1208,7 +1202,6 @@ void FRender::GetAllTimings(std::vector<std::string>& Names, std::vector<std::ve
 	TimingFillingLambda(ResetRenderIterations, FrameIndex);
 	TimingFillingLambda(ClearImageTask, FrameIndex);
 	TimingFillingLambda(ClearCumulativeMaterialColorBuffer, FrameIndex);
-	TimingFillingLambda(ClearBuffersEachFrameTask, FrameIndex);
 	TimingFillingLambda(ResetActiveRayCountTask, FrameIndex);
 	TimingFillingLambda(ClearBuffersEachBounceTask, FrameIndex);
 	TimingFillingLambda(RayTraceTask, FrameIndex);
@@ -1383,13 +1376,8 @@ void FRender::AllocateDependentResources()
 		{HITS_BUFFER, 						sizeof(FHit) * Width * Height, 	0},
 		{PIXEL_INDEX_BUFFER, 					sizeof(uint32_t) * Width * Height, 0},
 		{MATERIAL_INDEX_AOV_BUFFER,			sizeof(uint32_t) * Width * Height, 0},
-		{NORMAL_AOV_BUFFER, 					sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT},
 		{COUNTED_MATERIALS_PER_CHUNK_BUFFER,	sizeof(uint32_t) * TOTAL_MATERIALS * CalculateMaxGroupCount(Width * Height, BASIC_CHUNK_SIZE),	VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{UV_AOV_BUFFER, 						sizeof(FVector2) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{WORLD_SPACE_POSITION_AOV_BUFFER, 	sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{TRANSFORM_INDEX_BUFFER, 				sizeof(uint32_t) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 		{CUMULATIVE_MATERIAL_COLOR_BUFFER, 	sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
-		{DEBUG_LAYER_BUFFER, 					sizeof(FVector4) * Width * Height, VK_BUFFER_USAGE_TRANSFER_DST_BIT},
 	};
 
 	CreateAndRegisterBufferShortcut(BufferDescriptions);
@@ -1444,13 +1432,8 @@ void FRender::FreeDependentResources()
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(HITS_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(PIXEL_INDEX_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(MATERIAL_INDEX_AOV_BUFFER);
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(NORMAL_AOV_BUFFER);
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(UV_AOV_BUFFER);
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(WORLD_SPACE_POSITION_AOV_BUFFER);
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(TRANSFORM_INDEX_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(CUMULATIVE_MATERIAL_COLOR_BUFFER);
 	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(COUNTED_MATERIALS_PER_CHUNK_BUFFER);
-	RESOURCE_ALLOCATOR()->UnregisterAndDestroyBuffer(DEBUG_LAYER_BUFFER);
 
 	/// Free images
 	TEXTURE_MANAGER()->UnregisterAndFreeFramebuffer("ColorImage");

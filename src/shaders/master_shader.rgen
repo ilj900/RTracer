@@ -104,11 +104,6 @@ layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_CUMULAT
     vec4 CumulativeMaterialColorBuffer[];
 };
 
-layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_NORMAL_BUFFER) buffer NormalBufferObject
-{
-    vec4 NormalBuffer[];
-};
-
 layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_THROUGHPUT_BUFFER) buffer ThroughputBufferObject
 {
     vec4 ThroughputBuffer[];
@@ -696,5 +691,4 @@ void main()
     }
 
     RayDataBuffer[PixelIndex] = RayData;
-    NormalBuffer[PixelIndex] = vec4(ShadingData.NormalInWorldSpace, 1);
 }

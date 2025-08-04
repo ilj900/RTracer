@@ -43,12 +43,6 @@ layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_MATERIALS_OFFSET
     uint MaterialsOffsets[];
 };
 
-/// TODO: Not needed?
-layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_PREVIOUS_BOUNCE_NORMAL_AOV_DATA_BUFFER) buffer PreviousBounceNormalAOVDataBufferObject
-{
-    vec4 PreviousBounceNormalAOVData[];
-};
-
 layout (set = COMPUTE_MISS_LAYOUT_INDEX, binding = COMPUTE_MISS_CUMULATIVE_MATERIAL_COLOR_BUFFER_INDEX) buffer CumulativeMaterialColorBufferObject
 {
     vec4 CumulativeMaterialColorBuffer[];

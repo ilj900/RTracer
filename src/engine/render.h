@@ -213,7 +213,6 @@ public:
     std::shared_ptr<FClearImageTask> ClearImageTask = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearCumulativeMaterialColorBuffer = nullptr;
 	std::shared_ptr<FResetActiveRayCountTask> ResetActiveRayCountTask = nullptr;
-	std::shared_ptr<FClearBufferTask> ClearBuffersEachFrameTask = nullptr;
 	std::shared_ptr<FClearBufferTask> ClearBuffersEachBounceTask = nullptr;
     std::shared_ptr<FRaytraceTask> RayTraceTask = nullptr;
     std::shared_ptr<FClearTotalMaterialsCountTask> ClearTotalMaterialsCountTask = nullptr;
