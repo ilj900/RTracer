@@ -501,52 +501,6 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto Shaderball = Render->CreateModel("../models/Shaderball.obj");
 
 		{
-			auto ShaderballWood = Render->CreateInstance(Shaderball, {0, 0, 0}, {0, 0, 1}, {0, 1, 0});
-
-			auto WoodMaterial = Render->CreateEmptyMaterial("Wood material");
-
-			Render->MaterialSetBaseColorWeight(WoodMaterial, 1.f);
-			auto AlbedoTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_color.jpg");
-			Render->MaterialSetBaseColor(WoodMaterial, AlbedoTexture);
-
-			Render->MaterialSetSpecularWeight(WoodMaterial, 0.4f);
-			auto RoughnessTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_roughness.jpg");
-			Render->MaterialSetSpecularColor(WoodMaterial, FVector3(1, 1, 1));
-			Render->MaterialSetSpecularRoughness(WoodMaterial, RoughnessTexture);
-			Render->MaterialSetSpecularAnisotropy(WoodMaterial, 0.5f);
-
-			Render->ShapeSetMaterial(ShaderballWood, WoodMaterial);
-		}
-
-		{
-			auto ShaderballChrome = Render->CreateInstance(Shaderball, {3, 0, 0}, {0, 0, 1}, {0, 1, 0});
-
-			auto ChromeMaterial = Render->CreateEmptyMaterial("Chrome material");
-			Render->MaterialSetBaseColor(ChromeMaterial, FVector3(1, 1, 1));
-
-			Render->MaterialSetSpecularWeight(ChromeMaterial, 1.f);
-			Render->MaterialSetSpecularColor(ChromeMaterial, FVector3(1, 1, 1));
-			Render->MaterialSetSpecularRoughness(ChromeMaterial, 0.f);
-			Render->MaterialSetMetalness(ChromeMaterial, 1.f);
-
-			Render->ShapeSetMaterial(ShaderballChrome, ChromeMaterial);
-		}
-
-		{
-			auto ShaderballCopper = Render->CreateInstance(Shaderball, {-3, 0, 0}, {0, 0, 1}, {0, 1, 0});
-
-			auto CopperMaterial = Render->CreateEmptyMaterial("Copper material");
-			Render->MaterialSetBaseColor(CopperMaterial, FVector3(0.96467984, 0.37626296, 0.25818297));
-			Render->MaterialSetMetalness(CopperMaterial, 1.f);
-
-			Render->MaterialSetSpecularWeight(CopperMaterial, 1.f);
-			Render->MaterialSetSpecularColor(CopperMaterial, FVector3(1, 1, 1));
-			Render->MaterialSetSpecularRoughness(CopperMaterial, 0.2f);
-
-			Render->ShapeSetMaterial(ShaderballCopper, CopperMaterial);
-		}
-
-		{
 			auto ShaderballDiffuse = Render->CreateInstance(Shaderball, {-3, 3, 0}, {0, 0, 1}, {0, 1, 0});
 
 			auto DiffuseMaterial = Render->CreateEmptyMaterial("Diffuse material");
@@ -582,6 +536,52 @@ void FSceneLoader::LoadScene(const std::string& Name)
 			Render->MaterialSetSpecularRoughness(RoughPlasticMaterial, 0.324f);
 
 			Render->ShapeSetMaterial(ShaderballPlasticRough, RoughPlasticMaterial);
+		}
+
+		{
+			auto ShaderballCopper = Render->CreateInstance(Shaderball, {-3, 0, 0}, {0, 0, 1}, {0, 1, 0});
+
+			auto CopperMaterial = Render->CreateEmptyMaterial("Copper material");
+			Render->MaterialSetBaseColor(CopperMaterial, FVector3(0.96467984, 0.37626296, 0.25818297));
+			Render->MaterialSetMetalness(CopperMaterial, 1.f);
+
+			Render->MaterialSetSpecularWeight(CopperMaterial, 1.f);
+			Render->MaterialSetSpecularColor(CopperMaterial, FVector3(1, 1, 1));
+			Render->MaterialSetSpecularRoughness(CopperMaterial, 0.2f);
+
+			Render->ShapeSetMaterial(ShaderballCopper, CopperMaterial);
+		}
+
+		{
+			auto ShaderballWood = Render->CreateInstance(Shaderball, {0, 0, 0}, {0, 0, 1}, {0, 1, 0});
+
+			auto WoodMaterial = Render->CreateEmptyMaterial("Wood material");
+
+			Render->MaterialSetBaseColorWeight(WoodMaterial, 1.f);
+			auto AlbedoTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_color.jpg");
+			Render->MaterialSetBaseColor(WoodMaterial, AlbedoTexture);
+
+			Render->MaterialSetSpecularWeight(WoodMaterial, 0.4f);
+			auto RoughnessTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_roughness.jpg");
+			Render->MaterialSetSpecularColor(WoodMaterial, FVector3(1, 1, 1));
+			Render->MaterialSetSpecularRoughness(WoodMaterial, RoughnessTexture);
+			Render->MaterialSetSpecularAnisotropy(WoodMaterial, 0.5f);
+
+			Render->ShapeSetMaterial(ShaderballWood, WoodMaterial);
+		}
+
+		{
+			auto ShaderballChrome = Render->CreateInstance(Shaderball, {3, 0, 0}, {0, 0, 1}, {0, 1, 0});
+
+			auto ChromeMaterial = Render->CreateEmptyMaterial("Chrome material");
+			Render->MaterialSetBaseColor(ChromeMaterial, FVector3(1, 1, 1));
+
+			Render->MaterialSetSpecularWeight(ChromeMaterial, 1.f);
+			Render->MaterialSetSpecularColor(ChromeMaterial, FVector3(1, 1, 1));
+			Render->MaterialSetSpecularRoughness(ChromeMaterial, 0.f);
+			Render->MaterialSetMetalness(ChromeMaterial, 1.f);
+
+			Render->ShapeSetMaterial(ShaderballChrome, ChromeMaterial);
 		}
 
 		Render->SetIBL("../resources/san_giuseppe_bridge_4k.exr");
