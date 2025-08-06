@@ -53,6 +53,36 @@ void DPDirection(vec3 Origin, vec3 Direction, int Color)
 		debugPrintfEXT("((%f, %f, %f), (%f, %f, %f), %i),\n", Origin.x, Origin.y, Origin.z, Direction.x, Direction.y, Direction.z, Color);
 	}
 }
+
+void DS(int Index, vec3 Data)
+{
+	switch (Index)
+	{
+		case 0: { DebugGlobal0.xyz = Data; break;}
+		case 1: { DebugGlobal1.xyz = Data; break;}
+		case 2: { DebugGlobal2.xyz = Data; break;}
+		case 3: { DebugGlobal3.xyz = Data; break;}
+		case 4: { DebugGlobal4.xyz = Data; break;}
+		case 5: { DebugGlobal5.xyz = Data; break;}
+		case 6: { DebugGlobal6.xyz = Data; break;}
+		case 7: { DebugGlobal7.xyz = Data; break;}
+	}
+}
+
+void DS(int Index, float Data)
+{
+	switch (Index)
+	{
+		case 0: { DebugGlobal0.xyz = vec3(Data); break; }
+		case 1: { DebugGlobal1.xyz = vec3(Data); break; }
+		case 2: { DebugGlobal2.xyz = vec3(Data); break; }
+		case 3: { DebugGlobal3.xyz = vec3(Data); break; }
+		case 4: { DebugGlobal4.xyz = vec3(Data); break; }
+		case 5: { DebugGlobal5.xyz = vec3(Data); break; }
+		case 6: { DebugGlobal6.xyz = vec3(Data); break; }
+		case 7: { DebugGlobal7.xyz = vec3(Data); break; }
+	}
+}
 #endif
 
 #endif
