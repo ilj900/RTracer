@@ -5,6 +5,8 @@
 //#define DEBUG_ONLY_FIRST_BOUNCE
 #extension GL_EXT_debug_printf : enable
 bool b = false;
+bool bb = false;	/// Marker to isolate some operations
+
 #define DP(message) \
 if (b) { debugPrintfEXT(message); }
 #define DP1(message, v1) \

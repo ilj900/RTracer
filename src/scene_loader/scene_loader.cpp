@@ -520,6 +520,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 			Render->MaterialSetSpecularWeight(SmoothPlasticMaterial, 1.f);
 			Render->MaterialSetSpecularColor(SmoothPlasticMaterial, FVector3(1, 1, 1));
 			Render->MaterialSetSpecularRoughness(SmoothPlasticMaterial, 0.f);
+			Render->MaterialSetSpecularIOR(SmoothPlasticMaterial, 1.45f);
 
 			Render->ShapeSetMaterial(ShaderballPlasticSmooth, SmoothPlasticMaterial);
 		}
@@ -534,6 +535,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 			Render->MaterialSetSpecularWeight(RoughPlasticMaterial, 1.f);
 			Render->MaterialSetSpecularColor(RoughPlasticMaterial, FVector3(1, 1, 1));
 			Render->MaterialSetSpecularRoughness(RoughPlasticMaterial, 0.324f);
+			Render->MaterialSetSpecularIOR(RoughPlasticMaterial, 1.45f);
 
 			Render->ShapeSetMaterial(ShaderballPlasticRough, RoughPlasticMaterial);
 		}
