@@ -741,7 +741,7 @@ vec4 ComputeBXDFIBLInput(inout FSamplingState SamplingState, vec3 LightDirection
     if (HitPayload.RenderableIndex == UINT_MAX)
     {
         const uvec2 IBLSize = textureSize(IBLTextureSamplerLinear, 0);
-        vec2 IBLUV = Vec3ToSphericalUV(ShadingData.WorldSpaceOutgoingDirection, M_PI_2);
+        vec2 IBLUV = Vec3ToSphericalUV(LightDirection, M_PI_2);
         uint TexelIndex = uint(IBLUV.y * IBLSize.x * IBLSize.y) + uint(IBLUV.x * IBLSize.x);
 
         float PDF = BXDFSamplingPDF;
