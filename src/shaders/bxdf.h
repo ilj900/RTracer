@@ -1,7 +1,7 @@
 #ifndef BXDF_H
 #define BXDF_H
 
-/// Cook-Torrance GGX
+/// Trowbridge–Reitz GGX
 /// Calculates D (Distribution) term for BRDF
 /// incoming Roughness is expected to be [0, 1] (The default material's roughness)
 float DistributionGGX(float NDotH, float Roughness)
@@ -9,12 +9,12 @@ float DistributionGGX(float NDotH, float Roughness)
 	float A = Roughness * Roughness;
 	float A2 = A * A;
 	float NDotH2 = NDotH * NDotH;
-	float Nominator = A2;
-	float Denominator = (NDotH2 * (A2 - 1.) + 1.);
+	float Numerator = A2;
+	float Denominator = NDotH2 * (A2 - 1.) + 1.;
 	Denominator = M_PI * Denominator * Denominator;
 
 	Denominator = max(Denominator, 1e-6);
-	return Nominator / Denominator;
+	return Numerator / Denominator;
 }
 
 /// Schlick-GGX approximation for geometric attenuation (shadowing/masking) using roughness.
@@ -23,9 +23,9 @@ float GeometrySchlickGGX(float NDotV, float Roughness)
 {
 	float R = Roughness + 1.;
 	float K = (R * R) / 8.;
-	float Nominator = NDotV;
+	float Numerator = NDotV;
 	float Denominator = NDotV * (1. - K) + K;
-	return Nominator / Denominator;
+	return Numerator / Denominator;
 }
 
 /// Smith's GGX
