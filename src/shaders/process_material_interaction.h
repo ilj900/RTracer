@@ -342,12 +342,13 @@ vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType, vec3 Wo
 			vec3 H = normalize(L + V);
 			vec3 F0 = mix(vec3(0.04), Material.BaseColor, Material.Metalness);
 
-			float NDotL = clamp(dot(N, L), 0, 1);
-			float NDotV = clamp(dot(N, V), 0, 1);
-			float NDotH = clamp(dot(N, H), 0, 1);
-			float VDotH = clamp(dot(V, H), 0, 1);
+			float NDotL = clamp(dot(N, L), 1e-6, 1);
+			float NDotV = clamp(dot(N, V), 1e-6, 1);
+			float NDotH = clamp(dot(N, H), 1e-6, 1);
+			float VDotH = clamp(dot(V, H), 1e-6, 1);
 
 			float D = DistributionGGX(NDotH, Material.SpecularRoughness);
+			D = D < 1e-6 ? 1 : D;
 			float G = GeometrySmith(NDotV, NDotL, Material.SpecularRoughness);
 			vec3 F = FresnelSchlick(VDotH, F0);
 
