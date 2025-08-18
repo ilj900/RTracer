@@ -11,6 +11,16 @@ vec4 IndexToColor(uint Value)
     return Color;
 }
 
+vec3 ApplyGamma(vec3 Color, float Gamma)
+{
+	return pow(Color, vec3(1.f / Gamma));
+}
+
+vec3 RemoveGamma(vec3 Color, float Gamma)
+{
+	return pow(Color, vec3(Gamma));
+}
+
 void SaveAOVs(uvec2 PixelCoords, vec3 ShadingNormal, vec3 GeometricNormal, vec2 UV, vec3 WorldSpacePosition, float Opacity, float Depth, FDeviceMaterial Material,
               vec3 Luminance, uint RenderableIndex, uint PrimitiveIndex, uint Materialindex)
 {

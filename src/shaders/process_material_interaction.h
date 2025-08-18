@@ -364,22 +364,6 @@ vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType, vec3 Wo
 			vec3 F = FresnelSchlick(VDotH, F0);
 
 			BXDF = D * G * F / (4 * max (NDotV * NDotL, 0.001));
-
-			/// From https://learnopengl.com/PBR/Lighting
-			/// We still has to calculate diffuse BRDF...
-			vec3 SpecularRatio = F;
-			vec3 DiffuseRatio = vec3(1.f) - SpecularRatio;
-			DiffuseRatio *= 1.f - Material.Metalness;
-			vec3 DiffuseBRDF = vec3(0);
-
-#ifdef OREN_NAYAR
-			vec3 TangentSpaceLightDirectio = WorldSpaceLightDirection * ShadingData.TNBMatrix;
-			DiffuseBRDF = SampleOrenNayar(-ShadingData.TangentSpaceIncomingDirection, TangentSpaceLightDirectio, Material.BaseColor, Material.DiffuseRoughness);
-#else
-			DiffuseBRDF = SampleLambertian(Material.BaseColor);
-#endif
-
-			BXDF += DiffuseBRDF * DiffuseRatio;
 			break;
 		}
 		case TRANSMISSION_LAYER:

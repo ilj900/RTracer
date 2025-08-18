@@ -148,7 +148,7 @@ layout (set = MASTER_SHADER_LAYOUT_STATIC_INDEX, binding = MASTER_SHADER_MATERIA
     float MaterialSystemDataBuffer[];
 };
 
-/// Set 1 (for each new render
+/// Set 1 (for each new render call)
 layout (set = MASTER_SHADER_LAYOUT_INDEX_PER_FRAME, binding = MASTER_SHADER_DIRECTIONAL_LIGHTS_BUFFER_INDEX) buffer DirectionalLightsBufferObject
 {
     FDirectionalLight DirectionalLightsBuffer[];
