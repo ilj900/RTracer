@@ -98,6 +98,33 @@ vec4 ScatterDiffuse(inout FSamplingState SamplingState)
 	return vec4(TangentSpaceScatterdRayDirection, PDF);
 }
 
+/// Scatter the ray taking roughness and normal into account
+/// TangentSpaceViewDirection points from the surface to the camera (like in the paper https://jcgt.org/published/0007/04/01/paper.pdf)
+vec4 ScatterSpecular(inout FSamplingState SamplingState, vec3 TangentSpaceViewDirection, float Roughness)
+{
+	if (Roughness == 0.f)
+	{
+		/// reflect expects ray pointing to the surface
+		return vec4(reflect(-TangentSpaceViewDirection, vec3(0, 1, 0)), 1.f);
+	}
+
+	vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
+
+	vec3 NewNormal = SampleGGXVNDF(TangentSpaceViewDirection.xzy, Roughness, Roughness, RandomSquare.x, RandomSquare.y).xzy;
+	/// We use "-" here, because reflect expects the direction to be pointing "to" the surface
+	vec3 TangentSpaceOutgoingDirection = reflect(-TangentSpaceViewDirection, NewNormal);
+
+	/// If ray's on the right side of the surface, then calculate PDF
+	if (dot(vec3(0, 1, 0), TangentSpaceOutgoingDirection) > 0.)
+	{
+		float PDF = VNDPDF(NewNormal.xzy, Roughness, Roughness, -TangentSpaceViewDirection.xzy);
+
+		return vec4(TangentSpaceOutgoingDirection, PDF);
+	}
+
+	return vec4(0);
+}
+
 /// Scatter ray based on material properties.
 float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData RayData, inout FSamplingState SamplingState, bool bFrontFacing)
 {
@@ -128,23 +155,19 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData
 			}
 			else
 			{
-				/// try to multi-scatter the ray up to 16 times
-				for (int i = 0; i < 16; ++i)
+				vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
+				/// We invert the TangentSpaceViewDirection because if i == 0 then it's ray's direction that points to (under) the surface, if i != 0, the only way we get here is if ray is still pointing under the surface.
+				vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.SpecularRoughness, Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
+				TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
+
+				/// If ray's on the right side of the surface, then leave it
+				if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
 				{
-					vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
-					/// We invert the TangentSpaceViewDirection because if i == 0 then it's ray's direction that points to (under) the surface, if i != 0, the only way we get here is if ray is still pointing under the surface.
-					vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.SpecularRoughness, Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
-					TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
+					ShadingData.TangentSpaceOutgoingDirection = TangentSpaceViewDirection;
 
-					/// If ray's on the right side of the surface, then leave it
-					if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
-					{
-						ShadingData.TangentSpaceOutgoingDirection = TangentSpaceViewDirection;
-
-						vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + ShadingData.TangentSpaceOutgoingDirection));
-						PDF = VNDPDF(ApproximatedNormal.xzy, Material.SpecularRoughness, Material.SpecularRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
-						break;
-					}
+					vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + ShadingData.TangentSpaceOutgoingDirection));
+					PDF = VNDPDF(ApproximatedNormal.xzy, Material.SpecularRoughness, Material.SpecularRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
+					break;
 				}
 
 				ShadingData.IsScatteredRaySingular = false;
