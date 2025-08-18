@@ -12,7 +12,7 @@ namespace ECS
             FMaterialComponent()
             {
                 BaseWeight = 1.f;
-                BaseColor = {1, 1, 1};
+                BaseColor = {0.8, 0.8, 0.8};
                 DiffuseRoughness = 0.f;
                 Metalness = 0.f;
                 Normal = {0, 1, 0};

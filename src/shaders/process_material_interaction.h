@@ -121,18 +121,14 @@ vec4 ScatterSpecular(inout FSamplingState SamplingState, vec3 TangentSpaceViewDi
 FBXDFPDF CalculateBXDFPDF(FDeviceMaterial Material, FShadingData ShadingData, inout FRayData RayData)
 {
 	float DielectricF0 = CalculateF0(Material.SpecularIOR, RayData.Eta);
-	DP1("1: %f\n", DielectricF0);
 	vec3 F0 = mix(vec3(DielectricF0), Material.BaseColor, Material.Metalness);
-	DPF3(F0.x, F0.y, F0.z);
 
 	FBXDFWeights BXDFWeights = FBXDFWeights(vec3(0), vec3(0), vec3(0), vec3(0), vec3(0), vec3(0), vec3(0));
 
 	vec3 F = FresnelSchlick(ShadingData.NDotI, F0);
 	BXDFWeights.Specular = Material.SpecularWeight * F;
 	float NonMetal = 1.f - Material.Metalness;
-	DPF3(F.x, F.y, F.z);
-	BXDFWeights.Diffuse = Material.SpecularWeight == 0.f ? vec3(Material.BaseWeight) : Material.BaseWeight * (vec3(1) - F) * NonMetal;
-	DPF3(BXDFWeights.Diffuse.x, BXDFWeights.Diffuse.y, BXDFWeights.Diffuse.z);
+	BXDFWeights.Diffuse = Material.BaseWeight * (vec3(1) - F) * NonMetal;
 	BXDFWeights.Transmissive = Material.TransmissionWeight * (vec3(1) - F);
 
 	float BXDFSUM = Luminance709(BXDFWeights.Specular + BXDFWeights.Diffuse + BXDFWeights.Transmissive);

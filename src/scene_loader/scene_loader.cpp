@@ -503,7 +503,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		{
 			auto ShaderballDiffuse = Render->CreateInstance(Shaderball, {-3, 3, 0}, {0, 0, 1}, {0, 1, 0});
 
-			auto DiffuseMaterial = Render->CreateEmptyMaterial("Diffuse material");
+			auto DiffuseMaterial = Render->CreateMaterial("Diffuse material");
 			Render->MaterialSetBaseColorWeight(DiffuseMaterial, 1.f);
 			Render->MaterialSetBaseColor(DiffuseMaterial, FVector3(0., 0.37, 0.54));
 
@@ -513,7 +513,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		{
 			auto ShaderballPlasticSmooth = Render->CreateInstance(Shaderball, {0, 3, 0}, {0, 0, 1}, {0, 1, 0});
 
-			auto SmoothPlasticMaterial = Render->CreateEmptyMaterial("Smooth plastic material");
+			auto SmoothPlasticMaterial = Render->CreateMaterial("Smooth plastic material");
 			Render->MaterialSetBaseColorWeight(SmoothPlasticMaterial, 1.f);
 			Render->MaterialSetBaseColor(SmoothPlasticMaterial, FVector3(0.356f, 0.529, 0.913));
 			Render->MaterialSetMetalness(SmoothPlasticMaterial, 0.f);
@@ -529,7 +529,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		{
 			auto ShaderballPlasticRough = Render->CreateInstance(Shaderball, {3, 3, 0}, {0, 0, 1}, {0, 1, 0});
 
-			auto RoughPlasticMaterial = Render->CreateEmptyMaterial("Rough plastic material");
+			auto RoughPlasticMaterial = Render->CreateMaterial("Rough plastic material");
 			Render->MaterialSetBaseColorWeight(RoughPlasticMaterial, 1.f);
 			Render->MaterialSetBaseColor(RoughPlasticMaterial, FVector3(0.356f, 0.529, 0.913));
 			Render->MaterialSetMetalness(RoughPlasticMaterial, 0.f);
@@ -545,7 +545,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		{
 			auto ShaderballCopper = Render->CreateInstance(Shaderball, {-3, 0, 0}, {0, 0, 1}, {0, 1, 0});
 
-			auto CopperMaterial = Render->CreateEmptyMaterial("Copper material");
+			auto CopperMaterial = Render->CreateMaterial("Copper material");
 			Render->MaterialSetBaseColor(CopperMaterial, FVector3(0.96467984, 0.37626296, 0.25818297));
 			Render->MaterialSetMetalness(CopperMaterial, 1.f);
 
@@ -559,7 +559,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		{
 			auto ShaderballWood = Render->CreateInstance(Shaderball, {0, 0, 0}, {0, 0, 1}, {0, 1, 0});
 
-			auto WoodMaterial = Render->CreateEmptyMaterial("Wood material");
+			auto WoodMaterial = Render->CreateMaterial("Wood material");
 
 			Render->MaterialSetBaseColorWeight(WoodMaterial, 1.f);
 			auto AlbedoTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_color.jpg");
