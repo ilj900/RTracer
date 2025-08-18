@@ -144,35 +144,10 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData
 		}
 		case SPECULAR_LAYER:
 		{
-			vec3 TangentSpaceViewDirection = ShadingData.TangentSpaceIncomingDirection;
-
-			if (Material.SpecularRoughness == 0.f)
-			{
-				TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, vec3(0, 1, 0));
-				ShadingData.TangentSpaceOutgoingDirection = TangentSpaceViewDirection;
-				ShadingData.IsScatteredRaySingular = true;
-				PDF = 1.f;
-			}
-			else
-			{
-				vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
-				/// We invert the TangentSpaceViewDirection because if i == 0 then it's ray's direction that points to (under) the surface, if i != 0, the only way we get here is if ray is still pointing under the surface.
-				vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.SpecularRoughness, Material.SpecularRoughness, RandomSquare.x, RandomSquare.y).xzy;
-				TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
-
-				/// If ray's on the right side of the surface, then leave it
-				if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
-				{
-					ShadingData.TangentSpaceOutgoingDirection = TangentSpaceViewDirection;
-
-					vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + ShadingData.TangentSpaceOutgoingDirection));
-					PDF = VNDPDF(ApproximatedNormal.xzy, Material.SpecularRoughness, Material.SpecularRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
-					break;
-				}
-
-				ShadingData.IsScatteredRaySingular = false;
-			}
-			/// If ray failed to leave the surface, then it's direction is not changed, and thus shouldn't be used later
+			vec4 ScatterSpecularResult = ScatterSpecular(SamplingState, -ShadingData.TangentSpaceIncomingDirection, Material.SpecularRoughness);
+			ShadingData.TangentSpaceOutgoingDirection = ScatterSpecularResult.xyz;
+			PDF = ScatterSpecularResult.w;
+			ShadingData.IsScatteredRaySingular = Material.SpecularRoughness == 0 ? true : false;
 			break;
 		}
 		case TRANSMISSION_LAYER:
