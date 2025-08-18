@@ -3,36 +3,29 @@
 
 #define OREN_NAYAR
 
-uint SelectLayer(FDeviceMaterial Material, float MaterialSample)
+uint SelectLayer(FBXDFPDF BXDFPDF, float MaterialSample)
 {
-	float TotalWeight = Material.BaseWeight + Material.SpecularWeight + Material.TransmissionWeight + Material.SubsurfaceWeight + Material.SheenWeight + Material.CoatWeight  + Material.EmissionWeight;
 	float Weight = 0;
-	MaterialSample *= TotalWeight;
 
-	Weight += Material.BaseWeight;
-	if (MaterialSample <= Weight)
-		return DIFFUSE_LAYER;
+	Weight += BXDFPDF.Diffuse;
+	if (MaterialSample <= Weight) { ShadingData.LayerSelectionPDF = BXDFPDF.Diffuse; return DIFFUSE_LAYER; }
 
-	Weight += Material.SpecularWeight;
-	if (MaterialSample <= Weight)
-		return SPECULAR_LAYER;
+	Weight += BXDFPDF.Specular;
+	if (MaterialSample <= Weight) { ShadingData.LayerSelectionPDF = BXDFPDF.Specular; return SPECULAR_LAYER; }
 
-	Weight += Material.TransmissionWeight;
-	if (MaterialSample <= Weight)
-		return TRANSMISSION_LAYER;
+	Weight += BXDFPDF.Transmissive;
+	if (MaterialSample <= Weight) { ShadingData.LayerSelectionPDF = BXDFPDF.Transmissive; return TRANSMISSION_LAYER; }
 
-	Weight += Material.SubsurfaceWeight;
-	if (MaterialSample <= Weight)
-		return SUBSURFACE_LAYER;
+	Weight += BXDFPDF.Subsurface;
+	if (MaterialSample <= Weight) { ShadingData.LayerSelectionPDF = BXDFPDF.Subsurface; return SUBSURFACE_LAYER; }
 
-	Weight += Material.SheenWeight;
-	if (MaterialSample <= Weight)
-		return SHEEN_LAYER;
+	Weight += BXDFPDF.Sheen;
+	if (MaterialSample <= Weight) { ShadingData.LayerSelectionPDF = BXDFPDF.Sheen; return SHEEN_LAYER; }
 
-	Weight += Material.CoatWeight;
-	if (MaterialSample <= Weight)
-		return COAT_LAYER;
+	Weight += BXDFPDF.Coat;
+	if (MaterialSample <= Weight) { ShadingData.LayerSelectionPDF = BXDFPDF.Coat; return COAT_LAYER; }
 
+	ShadingData.LayerSelectionPDF = BXDFPDF.Emission;
 	return EMISSION_LAYER;
 }
 
@@ -125,11 +118,38 @@ vec4 ScatterSpecular(inout FSamplingState SamplingState, vec3 TangentSpaceViewDi
 	return vec4(0);
 }
 
+FBXDFPDF CalculateBXDFPDF(FDeviceMaterial Material, FShadingData ShadingData, inout FRayData RayData)
+{
+	float DielectricF0 = CalculateF0(Material.SpecularIOR, RayData.Eta);
+	DP1("1: %f\n", DielectricF0);
+	vec3 F0 = mix(vec3(DielectricF0), Material.BaseColor, Material.Metalness);
+	DPF3(F0.x, F0.y, F0.z);
+
+	FBXDFWeights BXDFWeights = FBXDFWeights(vec3(0), vec3(0), vec3(0), vec3(0), vec3(0), vec3(0), vec3(0));
+
+	vec3 F = FresnelSchlick(ShadingData.NDotI, F0);
+	BXDFWeights.Specular = Material.SpecularWeight * F;
+	float NonMetal = 1.f - Material.Metalness;
+	DPF3(F.x, F.y, F.z);
+	BXDFWeights.Diffuse = Material.SpecularWeight == 0.f ? vec3(Material.BaseWeight) : Material.BaseWeight * (vec3(1) - F) * NonMetal;
+	DPF3(BXDFWeights.Diffuse.x, BXDFWeights.Diffuse.y, BXDFWeights.Diffuse.z);
+	BXDFWeights.Transmissive = Material.TransmissionWeight * (vec3(1) - F);
+
+	float BXDFSUM = Luminance709(BXDFWeights.Specular + BXDFWeights.Diffuse + BXDFWeights.Transmissive);
+
+	FBXDFPDF BXDFPDF = FBXDFPDF(0, 0, 0, 0, 0, 0, 0);
+	BXDFPDF.Specular = Luminance709(BXDFWeights.Specular) / BXDFSUM;
+	BXDFPDF.Diffuse = Luminance709(BXDFWeights.Diffuse) / BXDFSUM;
+	BXDFPDF.Transmissive = Luminance709(BXDFWeights.Transmissive) / BXDFSUM;
+
+	return BXDFPDF;
+}
+
 /// Scatter ray based on material properties.
-float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData RayData, inout FSamplingState SamplingState, bool bFrontFacing)
+float ScatterMaterial(FDeviceMaterial Material, FBXDFPDF BXDFPDF, out uint RayType, inout FRayData RayData, inout FSamplingState SamplingState, bool bFrontFacing)
 {
 	float LayerSample = RandomFloat(SamplingState);
-	RayType = SelectLayer(Material, LayerSample);
+	RayType = SelectLayer(BXDFPDF, LayerSample);
 	float PDF = 0.f;
 
 	switch (RayType)

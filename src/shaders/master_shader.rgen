@@ -32,12 +32,36 @@ struct FShadingData
     float MaterialScatteringPDF;
     /// cos(angle) between normal and view direction
     float NDotI;
+    float LayerSelectionPDF;
     bool bFrontFacing;
     bool IsScatteredRaySingular;
     uint MaterialInteractionType;
 };
 
-//#define DEBUG_PRINTF
+struct FBXDFWeights
+{
+    vec3 Diffuse;
+    vec3 Specular;
+    vec3 Transmissive;
+    vec3 Subsurface;
+    vec3 Sheen;
+    vec3 Coat;
+    vec3 Emission;
+};
+
+struct FBXDFPDF
+{
+    float Diffuse;
+    float Specular;
+    float Transmissive;
+    float Subsurface;
+    float Sheen;
+    float Coat;
+    float Emission;
+};
+
+
+#define DEBUG_PRINTF
 #include "debug.h"
 #include "common_defines.h"
 #include "common_structures.h"
@@ -45,6 +69,7 @@ struct FShadingData
 
 FShadingData ShadingData;
 FDeviceMaterial Material;
+FBXDFPDF BXDFPDF;
 
 #include "glsl_math.h"
 #include "bxdf.h"
@@ -423,7 +448,9 @@ void main()
     Material = GetMaterial(ShadingData.UVCoordinates);
     /// Process material interaction
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
-    ShadingData.MaterialScatteringPDF = ScatterMaterial(Material, ShadingData.MaterialInteractionType, RayData, SamplingState, ShadingData.bFrontFacing);
+    BXDFPDF = CalculateBXDFPDF(Material, ShadingData, RayData);
+    DP7("Diffuse PDF = %f, Specular PDF = %f, Other = %f, %f, %f, %f, %f\n", BXDFPDF.Diffuse, BXDFPDF.Specular, BXDFPDF.Coat, BXDFPDF.Emission, BXDFPDF.Sheen, BXDFPDF.Subsurface, BXDFPDF.Transmissive);
+    ShadingData.MaterialScatteringPDF = ScatterMaterial(Material, BXDFPDF, ShadingData.MaterialInteractionType, RayData, SamplingState, ShadingData.bFrontFacing);
     /// If we hit emissive material on the first hit, just output it, nothing else to do here
     if (PushConstants.BounceIndex == 0 && ShadingData.MaterialInteractionType == EMISSION_LAYER)
     {
@@ -434,6 +461,7 @@ void main()
 
     vec3 BxDF = EvaluateMaterialInteraction(Material, ShadingData.MaterialInteractionType, ShadingData.WorldSpaceOutgoingDirection);
     vec3 ThroughputForThisBounce = BxDF * ShadingData.NDotI / ShadingData.MaterialScatteringPDF;
+    ThroughputForThisBounce /= ShadingData.LayerSelectionPDF;
 
     vec3 ThroughputBeforeThisBounce = CumulativeMaterialColorBuffer[PixelIndex].xyz;
     CumulativeMaterialColorBuffer[PixelIndex] = vec4(ThroughputBeforeThisBounce * ThroughputForThisBounce, 1);
@@ -664,6 +692,7 @@ void main()
 
     vec3 BounceInput = vec3(0);
     BounceInput += PointLightResult + DirectionalLightResult + SpotLightResult + AreaLightResult + IBLResult;
+    BounceInput /= ShadingData.LayerSelectionPDF;
     ThroughputBuffer[PixelIndex].xyz = ThroughputBuffer[PixelIndex].xyz + BounceInput;
 
     if((PushConstants.BounceIndex == 0) || (UtilityData.AccumulateBounces == 1))

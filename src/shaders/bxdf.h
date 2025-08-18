@@ -46,6 +46,17 @@ vec3 FresnelSchlick(float CosTheta, vec3 F0)
 	return F0 + (1. - F0) * pow(clamp(1.f - CosTheta, 0, 1), 5.0);
 }
 
+float CalculateF0(float IOR1, float IOR2)
+{
+	float Ratio = (IOR1 - IOR2) / (IOR1 + IOR2);
+	return Ratio * Ratio;
+}
+
+float Luminance709(vec3 Color)
+{
+	return 0.2126 * Color.x + 0.7152 * Color.y + 0.0722 * Color.z;
+}
+
 /// Random visible normal generator
 /// U1 and U2 - two random numbers [0, 1]
 /// AlphaX and AlphaZ - roughness [0, 1]
