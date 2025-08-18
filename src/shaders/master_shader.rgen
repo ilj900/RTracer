@@ -61,7 +61,7 @@ struct FBXDFPDF
 };
 
 
-#define DEBUG_PRINTF
+//#define DEBUG_PRINTF
 #include "debug.h"
 #include "common_defines.h"
 #include "common_structures.h"
@@ -449,7 +449,6 @@ void main()
     /// Process material interaction
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
     BXDFPDF = CalculateBXDFPDF(Material, ShadingData, RayData);
-    DP7("Diffuse PDF = %f, Specular PDF = %f, Other = %f, %f, %f, %f, %f\n", BXDFPDF.Diffuse, BXDFPDF.Specular, BXDFPDF.Coat, BXDFPDF.Emission, BXDFPDF.Sheen, BXDFPDF.Subsurface, BXDFPDF.Transmissive);
     ShadingData.MaterialScatteringPDF = ScatterMaterial(Material, BXDFPDF, ShadingData.MaterialInteractionType, RayData, SamplingState, ShadingData.bFrontFacing);
     /// If we hit emissive material on the first hit, just output it, nothing else to do here
     if (PushConstants.BounceIndex == 0 && ShadingData.MaterialInteractionType == EMISSION_LAYER)
