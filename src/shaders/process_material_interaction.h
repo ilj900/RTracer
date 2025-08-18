@@ -45,14 +45,6 @@ vec3 Transform(vec3 NormalInWorldSpace, vec3 VectorInLocalSpace)
 	return VectorInLocalSpace.x * U + VectorInLocalSpace.y * NormalInWorldSpace + VectorInLocalSpace.z * V;
 }
 
-vec3 ScatterDiffuse(vec3 NormalInWorldSpace, FSamplingState SamplingState)
-{
-	vec3 Result = Sample3DUnitSphere(SamplingState);
-	Result = normalize(Result + NormalInWorldSpace);
-
-	return Result;
-}
-
 /// Generates a cosine weighted direction in tangent-space
 vec3 ScatterOrenNayar(FSamplingState SamplingState)
 {
@@ -91,6 +83,21 @@ float PDFLambertian(vec3 OutgoingTangentSpaceDirection)
 	return OutgoingTangentSpaceDirection.y * M_INV_PI;
 }
 
+/// Scatter a ray in a random direction in a hemisphere
+/// It follows cosine distribution
+vec4 ScatterDiffuse(inout FSamplingState SamplingState)
+{
+	vec3 TangentSpaceScatterdRayDirection = ScatterOrenNayar(SamplingState);
+	float PDF = 0;
+	#ifdef OREN_NAYAR
+	PDF = PDFOrenNayar(TangentSpaceScatterdRayDirection);
+	#else
+	PDF = PDFLambertian(TangentSpaceScatterdRayDirection);
+	#endif
+
+	return vec4(TangentSpaceScatterdRayDirection, PDF);
+}
+
 /// Scatter ray based on material properties.
 float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData RayData, inout FSamplingState SamplingState, bool bFrontFacing)
 {
@@ -102,13 +109,9 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData
 	{
 		case DIFFUSE_LAYER:
 		{
-			ShadingData.TangentSpaceOutgoingDirection = ScatterOrenNayar(SamplingState);
-#ifdef OREN_NAYAR
-			PDF = PDFOrenNayar(ShadingData.TangentSpaceOutgoingDirection);
-#else
-			PDF = PDFLambertian(ShadingData.TangentSpaceOutgoingDirection);
-#endif
-			ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
+			vec4 ScatterDiffuseResult = ScatterDiffuse(SamplingState);
+			ShadingData.TangentSpaceOutgoingDirection = ScatterDiffuseResult.xyz;
+			PDF = ScatterDiffuseResult.w;
 			ShadingData.IsScatteredRaySingular = false;
 			break;
 		}
@@ -295,26 +298,27 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData
 		}
 		case SUBSURFACE_LAYER:
 		{
-			PDF = 1.f;
+			PDF = 0.f;
 			break;
 		}
 		case SHEEN_LAYER:
 		{
-			PDF = 1.f;
+			PDF = 0.f;
 			break;
 		}
 		case COAT_LAYER:
 		{
-			PDF = 1.f;
+			PDF = 0.f;
 			break;
 		}
 		case EMISSION_LAYER:
 		{
-			PDF = 1.f;
+			PDF = 0.f;
 			break;
 		}
 	}
 
+	ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
 	return PDF;
 }
 

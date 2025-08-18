@@ -514,6 +514,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 			auto ShaderballPlasticSmooth = Render->CreateInstance(Shaderball, {0, 3, 0}, {0, 0, 1}, {0, 1, 0});
 
 			auto SmoothPlasticMaterial = Render->CreateEmptyMaterial("Smooth plastic material");
+			Render->MaterialSetBaseColorWeight(SmoothPlasticMaterial, 1.f);
 			Render->MaterialSetBaseColor(SmoothPlasticMaterial, FVector3(0.356f, 0.529, 0.913));
 			Render->MaterialSetMetalness(SmoothPlasticMaterial, 0.f);
 
@@ -529,6 +530,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 			auto ShaderballPlasticRough = Render->CreateInstance(Shaderball, {3, 3, 0}, {0, 0, 1}, {0, 1, 0});
 
 			auto RoughPlasticMaterial = Render->CreateEmptyMaterial("Rough plastic material");
+			Render->MaterialSetBaseColorWeight(RoughPlasticMaterial, 1.f);
 			Render->MaterialSetBaseColor(RoughPlasticMaterial, FVector3(0.356f, 0.529, 0.913));
 			Render->MaterialSetMetalness(RoughPlasticMaterial, 0.f);
 
