@@ -122,10 +122,7 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData
 			if (Material.SpecularRoughness == 0.f)
 			{
 				TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, vec3(0, 1, 0));
-
 				ShadingData.TangentSpaceOutgoingDirection = TangentSpaceViewDirection;
-				ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
-
 				ShadingData.IsScatteredRaySingular = true;
 				PDF = 1.f;
 			}
@@ -143,7 +140,6 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData
 					if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
 					{
 						ShadingData.TangentSpaceOutgoingDirection = TangentSpaceViewDirection;
-						ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
 
 						vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + ShadingData.TangentSpaceOutgoingDirection));
 						PDF = VNDPDF(ApproximatedNormal.xzy, Material.SpecularRoughness, Material.SpecularRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
@@ -185,7 +181,6 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData
 					/// Reflected it be
 					RayType = SPECULAR_LAYER;
 					ShadingData.TangentSpaceOutgoingDirection = reflect(TangentSpaceViewDirection, vec3(0, 1, 0));
-					ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
 				}
 				else
 				{
@@ -198,14 +193,12 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData
 
 						/// Total internal reflection is happening
 						ShadingData.TangentSpaceOutgoingDirection = reflect(TangentSpaceViewDirection, vec3(0, 1, 0));
-						ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
 					}
 					else
 					{
 						/// Refraction
 						vec3 RefractedDirection = normalize(EtaRatio * TangentSpaceViewDirection - (EtaRatio * NDotI + sqrt(k)) * vec3(0, 1, 0));
 						ShadingData.TangentSpaceOutgoingDirection = RefractedDirection;
-						ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
 
 						/// Also, ray is now traveling in a new medium
                         RayData.Eta = IOR2;
@@ -239,7 +232,6 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData
 						{
 							RayType = SPECULAR_LAYER;
 							ShadingData.TangentSpaceOutgoingDirection = TangentSpaceViewDirection;
-							ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
 
 							vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + ShadingData.TangentSpaceOutgoingDirection));
 							PDF = VNDPDF(ApproximatedNormal.xzy, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
@@ -261,7 +253,6 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData
 							{
 								RayType = SPECULAR_LAYER;
 								ShadingData.TangentSpaceOutgoingDirection = TangentSpaceViewDirection;
-								ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
 
 								vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + ShadingData.TangentSpaceOutgoingDirection));
 								PDF = VNDPDF(ApproximatedNormal.xzy, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
@@ -285,7 +276,6 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData
                             RayData.Eta = Material.SpecularIOR;
 
 							ShadingData.TangentSpaceOutgoingDirection = RefractedDirection;
-							ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
 
 							break;
 						}
@@ -318,7 +308,10 @@ float ScatterMaterial(FDeviceMaterial Material, out uint RayType, inout FRayData
 		}
 	}
 
-	ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
+	if (PDF != 0.f)
+	{
+		ShadingData.WorldSpaceOutgoingDirection = ShadingData.TangentSpaceOutgoingDirection * ShadingData.TransposedTNBMatrix;
+	}
 	return PDF;
 }
 
