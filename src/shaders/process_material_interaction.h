@@ -129,7 +129,7 @@ FBXDFPDF CalculateBXDFPDF(FDeviceMaterial Material, FShadingData ShadingData, in
 	BXDFWeights.Specular = Material.SpecularWeight * F;
 	float NonMetal = 1.f - Material.Metalness;
 	BXDFWeights.Diffuse = Material.BaseWeight * (vec3(1) - F) * NonMetal;
-	BXDFWeights.Transmissive = Material.TransmissionWeight * (vec3(1) - F);
+	BXDFWeights.Transmissive = Material.TransmissionWeight * (vec3(1) - F) * NonMetal;
 
 	float BXDFSUM = Luminance709(BXDFWeights.Specular + BXDFWeights.Diffuse + BXDFWeights.Transmissive);
 
@@ -351,7 +351,8 @@ vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType, vec3 Wo
 			vec3 L = WorldSpaceLightDirection;
 			vec3 N = ShadingData.NormalInWorldSpace;
 			vec3 H = normalize(L + V);
-			vec3 F0 = mix(vec3(0.04), Material.BaseColor, Material.Metalness);
+			float DielectricF0 = CalculateF0(ShadingData.IOR1, Material.SpecularIOR);
+			vec3 F0 = mix(vec3(DielectricF0), Material.BaseColor, Material.Metalness);
 
 			float NDotL = clamp(dot(N, L), 1e-6, 1);
 			float NDotV = clamp(dot(N, V), 1e-6, 1);

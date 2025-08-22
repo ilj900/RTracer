@@ -36,6 +36,8 @@ struct FShadingData
     bool bFrontFacing;
     bool IsScatteredRaySingular;
     uint MaterialInteractionType;
+    float IOR1;
+    float IOR2;
 };
 
 struct FBXDFWeights
@@ -408,6 +410,8 @@ void ComputeShadingData(FRenderable Renderable, FHit Hit, FDeviceTransform Trans
     /// TODO: Can Hit.HitUV just be used?
     ShadingData.UVCoordinates = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
     ShadingData.MaterialInteractionType = 0u;
+
+    ShadingData.IOR1 = RayData.Eta;
 }
 
 #include "lighting.h"
