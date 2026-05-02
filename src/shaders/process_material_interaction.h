@@ -17,17 +17,8 @@ uint SelectLayer(FBXDFPDF BXDFPDF, float MaterialSample)
 	Weight += BXDFPDF.Transmissive;
 	if (MaterialSample <= Weight) { ShadingData.LayerSelectionPDF = BXDFPDF.Transmissive; return TRANSMISSION_LAYER; }
 
-	Weight += BXDFPDF.Subsurface;
-	if (MaterialSample <= Weight) { ShadingData.LayerSelectionPDF = BXDFPDF.Subsurface; return SUBSURFACE_LAYER; }
-
-	Weight += BXDFPDF.Sheen;
-	if (MaterialSample <= Weight) { ShadingData.LayerSelectionPDF = BXDFPDF.Sheen; return SHEEN_LAYER; }
-
-	Weight += BXDFPDF.Coat;
-	if (MaterialSample <= Weight) { ShadingData.LayerSelectionPDF = BXDFPDF.Coat; return COAT_LAYER; }
-
-	ShadingData.LayerSelectionPDF = BXDFPDF.Emission;
-	return EMISSION_LAYER;
+	ShadingData.LayerSelectionPDF = 0.f;
+	return 0u;
 }
 
 vec3 Transform(vec3 NormalInWorldSpace, vec3 VectorInLocalSpace)
@@ -123,7 +114,7 @@ FBXDFPDF CalculateBXDFPDF(FDeviceMaterial Material, FShadingData ShadingData, in
 {
 	FBXDFWeights BXDFWeights = FBXDFWeights(vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0));
 
-	float DielectricF0 = CalculateF0(Material.SpecularIOR, RayData.Eta);
+	float DielectricF0 = CalculateF0(RayData.Eta, Material.SpecularIOR);
 	vec3 F0 = mix(vec3(DielectricF0), Material.BaseColor, Material.Metalness);
 
 	vec3 F = FresnelSchlick(ShadingData.NDotI, F0);
@@ -138,6 +129,7 @@ FBXDFPDF CalculateBXDFPDF(FDeviceMaterial Material, FShadingData ShadingData, in
 		float Sin2Theta = 1.0 - ShadingData.NDotI * ShadingData.NDotI;
 		float EtaRation = RayData.Eta / Material.SpecularIOR;
 		float Sin2Theta2 = EtaRation * EtaRation * Sin2Theta;
+
 		if (Sin2Theta2 > 1.0)
 		{
 			BXDFWeights.Transmissive = vec3(0.0);

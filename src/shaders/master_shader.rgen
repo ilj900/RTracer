@@ -450,15 +450,24 @@ void main()
 
     /// Fetch material data
     Material = GetMaterial(ShadingData.UVCoordinates);
+
+    vec3 PathThroughput = CumulativeMaterialColorBuffer[PixelIndex].xyz;
+
+    if (Material.EmissionWeight > 0.f)
+    {
+        ThroughputBuffer[PixelIndex].xyz += PathThroughput * Material.EmissionColor * Material.EmissionWeight;
+    }
+
     /// Process material interaction
     FSamplingState SamplingState = FSamplingState(RenderIteration, PushConstants.BounceIndex, 0, PixelIndex, SAMPLE_TYPE_GENERATE_RAYS);
     BXDFPDF = CalculateBXDFPDF(Material, ShadingData, RayData);
     ShadingData.MaterialScatteringPDF = ScatterMaterial(Material, BXDFPDF, ShadingData.MaterialInteractionType, RayData, SamplingState, ShadingData.bFrontFacing);
-    /// If we hit emissive material on the first hit, just output it, nothing else to do here
-    if (PushConstants.BounceIndex == 0 && ShadingData.MaterialInteractionType == EMISSION_LAYER)
+
+    /// If probability of scattering is zero, we can just output the throughput and exit
+    if (ShadingData.LayerSelectionPDF <= 1e-6f || ShadingData.MaterialScatteringPDF <= 1e-6f)
     {
         RayDataBuffer[PixelIndex].RayFlags = RAY_DATA_RAY_MISSED;
-        imageStore(OutcomingImage, ivec2(PixelCoords), vec4(Material.EmissionColor , 1));
+        imageStore(OutcomingImage, ivec2(PixelCoords), vec4(ThroughputBuffer[PixelIndex].xyz, 1));
         return;
     }
 
