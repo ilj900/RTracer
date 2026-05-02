@@ -1,6 +1,11 @@
 #ifndef BXDF_H
 #define BXDF_H
 
+float Saturate(float X)
+{
+	return clamp(X, 0.0, 1.0);
+}
+
 /// Trowbridge–Reitz GGX
 /// Calculates D (Distribution) term for BRDF
 /// incoming Roughness is expected to be [0, 1] (The default material's roughness)
@@ -43,7 +48,10 @@ float GeometrySmith(float NDotV, float NDotL, float Roughness)
 /// Other part is "passed inside" the material
 vec3 FresnelSchlick(float CosTheta, vec3 F0)
 {
-	return F0 + (1. - F0) * pow(clamp(1.f - CosTheta, 0, 1), 5.0);
+	float M = Saturate(1.0 - CosTheta);
+	float M2 = M * M;
+	float M5 = M2 * M2 * M;
+	return F0 + (1.0 - F0) * M5;
 }
 
 float CalculateF0(float IOR1, float IOR2)

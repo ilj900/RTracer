@@ -2,6 +2,7 @@
 #define PROCESS_MATERIAL_INTERACTION_H
 
 #define OREN_NAYAR
+#include "bxdf.h"
 
 uint SelectLayer(FBXDFPDF BXDFPDF, float MaterialSample)
 {
@@ -120,20 +121,38 @@ vec4 ScatterSpecular(inout FSamplingState SamplingState, vec3 TangentSpaceViewDi
 
 FBXDFPDF CalculateBXDFPDF(FDeviceMaterial Material, FShadingData ShadingData, inout FRayData RayData)
 {
+	FBXDFWeights BXDFWeights = FBXDFWeights(vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0));
+
 	float DielectricF0 = CalculateF0(Material.SpecularIOR, RayData.Eta);
 	vec3 F0 = mix(vec3(DielectricF0), Material.BaseColor, Material.Metalness);
-
-	FBXDFWeights BXDFWeights = FBXDFWeights(vec3(0), vec3(0), vec3(0), vec3(0), vec3(0), vec3(0), vec3(0));
 
 	vec3 F = FresnelSchlick(ShadingData.NDotI, F0);
 	BXDFWeights.Specular = Material.SpecularWeight * F;
 	float NonMetal = 1.f - Material.Metalness;
-	BXDFWeights.Diffuse = Material.BaseWeight * (vec3(1) - F) * NonMetal;
-	BXDFWeights.Transmissive = Material.TransmissionWeight * (vec3(1) - F) * NonMetal;
+	BXDFWeights.Diffuse = Material.BaseWeight * Material.BaseColor * (vec3(1.0) - F) * NonMetal;
+	BXDFWeights.Transmissive = Material.TransmissionWeight * (vec3(1.0) - F) * NonMetal;
+
+	/// Check for TIR
+	if (BXDFWeights.Transmissive != vec3(0.0))
+	{
+		float Sin2Theta = 1.0 - ShadingData.NDotI * ShadingData.NDotI;
+		float EtaRation = RayData.Eta / Material.SpecularIOR;
+		float Sin2Theta2 = EtaRation * EtaRation * Sin2Theta;
+		if (Sin2Theta2 > 1.0)
+		{
+			BXDFWeights.Transmissive = vec3(0.0);
+		}
+	}
 
 	float BXDFSUM = Luminance709(BXDFWeights.Specular + BXDFWeights.Diffuse + BXDFWeights.Transmissive);
 
-	FBXDFPDF BXDFPDF = FBXDFPDF(0, 0, 0, 0, 0, 0, 0);
+	FBXDFPDF BXDFPDF = FBXDFPDF(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+
+	if (BXDFSUM < 1e-6)
+	{
+		return BXDFPDF;
+	}
+
 	BXDFPDF.Specular = Luminance709(BXDFWeights.Specular) / BXDFSUM;
 	BXDFPDF.Diffuse = Luminance709(BXDFWeights.Diffuse) / BXDFSUM;
 	BXDFPDF.Transmissive = Luminance709(BXDFWeights.Transmissive) / BXDFSUM;

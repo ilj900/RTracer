@@ -504,7 +504,7 @@ void main()
         {
             MaterialInteractionEvaluationResultUniformSampling = EvaluateMaterialInteraction(Material, ShadingData.MaterialInteractionType, UniformOutgoingDirection);
             MaterialInteractionEvaluationResultUniformSampling = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResultUniformSampling * UniformPointLightSamplingResult.xyz;
-            W1 = UniformPointLightSamplingResult.w / (UniformPointLightSamplingResult.x + UniformSamplingImportanceSamplePDF);
+            W1 = UniformPointLightSamplingResult.w / (UniformPointLightSamplingResult.w + UniformSamplingImportanceSamplePDF);
         }
 
         if (ImportancePointLightSamplingResult.w > 0.)
@@ -541,7 +541,7 @@ void main()
         {
             MaterialInteractionEvaluationResultUniformSampling = EvaluateMaterialInteraction(Material, ShadingData.MaterialInteractionType, UniformOutgoingDirection);
             MaterialInteractionEvaluationResultUniformSampling = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResultUniformSampling * UniformDirectionalLightSamplingResult.xyz;
-            W1 = UniformDirectionalLightSamplingResult.w / (UniformDirectionalLightSamplingResult.x + UniformSamplingImportanceSamplePDF);
+            W1 = UniformDirectionalLightSamplingResult.w / (UniformDirectionalLightSamplingResult.w + UniformSamplingImportanceSamplePDF);
         }
 
         if (ImportanceDirectionalLightSamplingResult.w != 0)
@@ -577,7 +577,7 @@ void main()
         {
             MaterialInteractionEvaluationResultUniformSampling = EvaluateMaterialInteraction(Material, ShadingData.MaterialInteractionType, UniformOutgoingDirection);
             MaterialInteractionEvaluationResultUniformSampling = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResultUniformSampling * UniformSpotLightSamplingResult.xyz;
-            W1 = UniformSpotLightSamplingResult.w / (UniformSpotLightSamplingResult.x + UniformSamplingImportanceSamplePDF);
+            W1 = UniformSpotLightSamplingResult.w / (UniformSpotLightSamplingResult.w + UniformSamplingImportanceSamplePDF);
         }
 
         if (ImportanceSpotLightSamplingResult.w != 0)
