@@ -114,7 +114,10 @@ FBXDFPDF CalculateBXDFPDF(FDeviceMaterial Material, FShadingData ShadingData, in
 {
 	FBXDFWeights BXDFWeights = FBXDFWeights(vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0));
 
-	float DielectricF0 = CalculateF0(RayData.Eta, Material.SpecularIOR);
+	float IOR1 = RayData.Eta;
+	float IOR2 = ShadingData.bFrontFacing ? Material.SpecularIOR : 1.f;
+
+	float DielectricF0 = CalculateF0(IOR1, IOR2);
 	vec3 F0 = mix(vec3(DielectricF0), Material.BaseColor, Material.Metalness);
 
 	vec3 F = FresnelSchlick(ShadingData.NDotI, F0);
@@ -127,8 +130,8 @@ FBXDFPDF CalculateBXDFPDF(FDeviceMaterial Material, FShadingData ShadingData, in
 	if (BXDFWeights.Transmissive != vec3(0.0))
 	{
 		float Sin2Theta = 1.0 - ShadingData.NDotI * ShadingData.NDotI;
-		float EtaRation = RayData.Eta / Material.SpecularIOR;
-		float Sin2Theta2 = EtaRation * EtaRation * Sin2Theta;
+		float EtaRatio = IOR1 / IOR2;
+		float Sin2Theta2 = EtaRatio * EtaRatio * Sin2Theta;
 
 		if (Sin2Theta2 > 1.0)
 		{

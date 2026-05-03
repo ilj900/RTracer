@@ -58,6 +58,8 @@ vec3 FresnelSchlick(float CosTheta, vec3 F0)
 /// IOR2 - Index of refraction of the media ray is going to
 float CalculateF0(float IOR1, float IOR2)
 {
+	IOR1 = max(1e-6, IOR1);
+	IOR2 = max(1e-6, IOR2);
 	float Ratio = (IOR1 - IOR2) / (IOR1 + IOR2);
 	return Ratio * Ratio;
 }

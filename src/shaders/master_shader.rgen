@@ -398,6 +398,10 @@ void ComputeShadingData(FRenderable Renderable, FHit Hit, FDeviceTransform Trans
         ShadingData.bFrontFacing = true;
     }
 
+    /// Because we swapped the Normal, then we can clamp the NDotI to be between 0 and 1.
+    /// It really can happen sometimes that NDotI is greater than 1
+    ShadingData.NDotI = clamp(ShadingData.NDotI, 0.f, 1.f);
+
     ShadingData.TNBMatrix = CreateTNBMatrix(ShadingData.NormalInWorldSpace);
     ShadingData.TransposedTNBMatrix = transpose(ShadingData.TNBMatrix);
 
