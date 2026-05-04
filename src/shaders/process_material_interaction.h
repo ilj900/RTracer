@@ -243,7 +243,7 @@ float ScatterMaterial(FDeviceMaterial Material, FBXDFPDF BXDFPDF, out uint RayTy
 					vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, RandomSquare.x, RandomSquare.y).xzy;
 
                     /// NDotI is not equal to cos(theta) cause I in NDotI points towards the surface
-                    float NDotI = dot(vec3(0, 1, 0), TangentSpaceViewDirection);
+                    float NDotI = dot(NewNormal, TangentSpaceViewDirection);
                     float CosTheta = abs(NDotI);
 					float RTheta = R0 + (1. - R0) * pow(1. - CosTheta, 5.f);
 
@@ -301,7 +301,7 @@ float ScatterMaterial(FDeviceMaterial Material, FBXDFPDF BXDFPDF, out uint RayTy
 							PDF = VNDPDF(ApproximatedNormal.xzy, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
 							PDF /= EtaRatio * EtaRatio;
 							/// Also, ray is now traveling in a new media
-                            RayData.Eta = Material.SpecularIOR;
+                            RayData.Eta = IOR2;
 
 							ShadingData.TangentSpaceOutgoingDirection = RefractedDirection;
 
