@@ -128,8 +128,7 @@ float VNDPDF(FVector3 Normal, float AlphaX, float AlphaY, FVector3 ViewDirection
 	float DN = 1.f / (M_PI * AlphaX * AlphaY * VarA * VarA);
 	float VarB = 1.f + (AlphaX * AlphaX * ViewDirection.x * ViewDirection.x + AlphaY * AlphaY * ViewDirection.y * ViewDirection.y) / (ViewDirection.z * ViewDirection.z);
 	float G1V = 1.f / (1.f + 0.5f * (-1 + sqrt(VarB)));
-	float DVN = G1V * clamp(dot(ViewDirection, Normal), 0, 1) * DN / dot(ViewDirection, FVector3(0, 0, 1));
-	float PDF = 0.25f * DVN / dot(ViewDirection, Normal);
+	float PDF = 0.25f * G1V * DN / ViewDirection.z;
 	return PDF;
 }
 #endif // BXDF_H
