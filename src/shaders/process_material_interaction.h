@@ -102,7 +102,7 @@ vec4 ScatterSpecular(inout FSamplingState SamplingState, vec3 TangentSpaceViewDi
 	/// If ray's on the right side of the surface, then calculate PDF
 	if (dot(vec3(0, 1, 0), TangentSpaceOutgoingDirection) > 0.)
 	{
-		float PDF = VNDPDF(NewNormal.xzy, Roughness, Roughness, -TangentSpaceViewDirection.xzy);
+		float PDF = VNDPDF(NewNormal.xzy, Roughness, Roughness, TangentSpaceViewDirection.xzy);
 
 		return vec4(TangentSpaceOutgoingDirection, PDF);
 	}
@@ -110,7 +110,7 @@ vec4 ScatterSpecular(inout FSamplingState SamplingState, vec3 TangentSpaceViewDi
 	return vec4(0);
 }
 
-FBXDFPDF CalculateBXDFPDF(FDeviceMaterial Material, FShadingData ShadingData, inout FRayData RayData)
+FBXDFPDF CalculateBXDFPDF(FDeviceMaterial Material, FShadingData ShadingData, FRayData RayData)
 {
 	FBXDFWeights BXDFWeights = FBXDFWeights(vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0));
 
