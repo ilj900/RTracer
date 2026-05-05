@@ -3,6 +3,7 @@
 
 #define OREN_NAYAR
 #include "bxdf.h"
+#include "maths.h"
 
 uint SelectLayer(FBXDFPDF BXDFPDF, float MaterialSample)
 {
@@ -31,18 +32,18 @@ vec3 Transform(vec3 NormalInWorldSpace, vec3 VectorInLocalSpace)
 }
 
 /// Generates a cosine weighted direction in tangent-space
-vec3 ScatterOrenNayar(FSamplingState SamplingState)
+vec3 ScatterOrenNayar(inout FSamplingState SamplingState)
 {
 	return SampleCosineHemisphereMalleys(SamplingState);
 }
 
-vec3 SampleOrenNayar(vec3 IncomingTangentSpaceDirection, vec3 OutgoingTangentSpaceDirection, vec3 Albedo, float Sigma)
+vec3 EvaluateOrenNayar(vec3 IncomingTangentSpaceDirection, vec3 OutgoingTangentSpaceDirection, vec3 Albedo, float Sigma)
 {
 	float Sigma2 = Sigma * Sigma;
 	float A = 1.f - (Sigma2 * 0.5f / (Sigma2 + 0.33f));
 	float B = 0.45f * Sigma2 / (Sigma2 + 0.09f);
-	float Alpha = IncomingTangentSpaceDirection.y > OutgoingTangentSpaceDirection.y ? acos(IncomingTangentSpaceDirection.y) : acos(OutgoingTangentSpaceDirection.y);
-	float Beta = IncomingTangentSpaceDirection.y < OutgoingTangentSpaceDirection.y ? acos(IncomingTangentSpaceDirection.y) : acos(OutgoingTangentSpaceDirection.y);
+	float Alpha = IncomingTangentSpaceDirection.y < OutgoingTangentSpaceDirection.y ? acos(IncomingTangentSpaceDirection.y) : acos(OutgoingTangentSpaceDirection.y);
+	float Beta = IncomingTangentSpaceDirection.y > OutgoingTangentSpaceDirection.y ? acos(IncomingTangentSpaceDirection.y) : acos(OutgoingTangentSpaceDirection.y);
 	float CosPhiIncoming = CosPhi(IncomingTangentSpaceDirection);
 	float SinPhiIncoming = SinPhi(IncomingTangentSpaceDirection);
 	float CosPhiOutgoing = CosPhi(OutgoingTangentSpaceDirection);
@@ -58,7 +59,7 @@ float PDFOrenNayar(vec3 OutgoingTangentSpaceDirection)
 	return OutgoingTangentSpaceDirection.y * M_INV_PI;
 }
 
-vec3 SampleLambertian(vec3 Albedo)
+vec3 EvaluateLambertian(vec3 Albedo)
 {
 	return Albedo * M_INV_PI;
 }
@@ -95,14 +96,15 @@ vec4 ScatterSpecular(inout FSamplingState SamplingState, vec3 TangentSpaceViewDi
 
 	vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
 
-	vec3 NewNormal = SampleGGXVNDF(TangentSpaceViewDirection.xzy, Roughness, Roughness, RandomSquare.x, RandomSquare.y).xzy;
+	float R2 = Roughness * Roughness;
+	vec3 NewNormal = SampleGGXVNDF(TangentSpaceViewDirection.xzy, R2, R2, RandomSquare.x, RandomSquare.y).xzy;
 	/// We use "-" here, because reflect expects the direction to be pointing "to" the surface
 	vec3 TangentSpaceOutgoingDirection = reflect(-TangentSpaceViewDirection, NewNormal);
 
 	/// If ray's on the right side of the surface, then calculate PDF
 	if (dot(vec3(0, 1, 0), TangentSpaceOutgoingDirection) > 0.)
 	{
-		float PDF = VNDPDF(NewNormal.xzy, Roughness, Roughness, TangentSpaceViewDirection.xzy);
+		float PDF = VNDPDF(NewNormal.xzy, R2, R2, TangentSpaceViewDirection.xzy);
 
 		return vec4(TangentSpaceOutgoingDirection, PDF);
 	}
@@ -174,7 +176,9 @@ float ScatterMaterial(FDeviceMaterial Material, FBXDFPDF BXDFPDF, out uint RayTy
 		}
 		case SPECULAR_LAYER:
 		{
-			vec4 ScatterSpecularResult = ScatterSpecular(SamplingState, -ShadingData.TangentSpaceIncomingDirection, Material.SpecularRoughness);
+			vec4 ScatterSpecularResult = ScatterSpecular(SamplingState,
+				-ShadingData.TangentSpaceIncomingDirection,
+				Material.SpecularRoughness);
 			ShadingData.TangentSpaceOutgoingDirection = ScatterSpecularResult.xyz;
 			PDF = ScatterSpecularResult.w;
 			ShadingData.IsScatteredRaySingular = Material.SpecularRoughness == 0 ? true : false;
@@ -235,83 +239,81 @@ float ScatterMaterial(FDeviceMaterial Material, FBXDFPDF BXDFPDF, out uint RayTy
 			}
 			else
 			{
-                ShadingData.IsScatteredRaySingular = false;
+				ShadingData.IsScatteredRaySingular = false;
 
-				for (int i = 0; i < 16; ++i)
+				vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
+				vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy,
+					Material.TransmissionRoughness * Material.TransmissionRoughness,
+					Material.TransmissionRoughness * Material.TransmissionRoughness,
+					RandomSquare.x, RandomSquare.y).xzy;
+                /// NDotI is not equal to cos(theta) cause I in NDotI points towards the surface
+                float NDotI = dot(NewNormal, TangentSpaceViewDirection);
+				float CosTheta = abs(NDotI);
+				float RTheta = R0 + (1. - R0) * pow(1. - CosTheta, 5.f);
+
+				/// Decide on whether the ray is reflected or refracted
+				float RF = RandomFloat(SamplingState);
+
+				if (RF < RTheta)
 				{
-					vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
-					vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, RandomSquare.x, RandomSquare.y).xzy;
+					/// Ray reflected
+					vec3 Reflected = reflect(TangentSpaceViewDirection, NewNormal);
 
-                    /// NDotI is not equal to cos(theta) cause I in NDotI points towards the surface
-                    float NDotI = dot(NewNormal, TangentSpaceViewDirection);
-                    float CosTheta = abs(NDotI);
-					float RTheta = R0 + (1. - R0) * pow(1. - CosTheta, 5.f);
+					if (dot(vec3(0, 1, 0), Reflected) <= 0.f)
+						/// We reflected "under" the surface
+						break;
 
-					/// Decide on whether the ray is reflected or refracted
-					float RF = RandomFloat(SamplingState);
+					RayType = SPECULAR_LAYER;
+					ShadingData.TangentSpaceOutgoingDirection = Reflected;
+					PDF = VNDPDF(NewNormal.xzy,
+						Material.TransmissionRoughness * Material.TransmissionRoughness,
+						Material.TransmissionRoughness * Material.TransmissionRoughness,
+						-TangentSpaceViewDirection.xzy);
+				}
+				else
+				{
+					/// Refraction or TIR is happening
+					float k = 1. - (EtaRatio * EtaRatio * (1. - (NDotI * NDotI)));
 
-					if (RF < RTheta)
+					if (k < 0.f)
 					{
-						/// Reflected it be
-						TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
+						/// TIR
+						vec3 Reflected = reflect(TangentSpaceViewDirection, NewNormal);
 
-						/// If reflected ray's on the correct side, then it's done.
-						if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
-						{
-							RayType = SPECULAR_LAYER;
-							ShadingData.TangentSpaceOutgoingDirection = TangentSpaceViewDirection;
-
-							vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + ShadingData.TangentSpaceOutgoingDirection));
-							PDF = VNDPDF(ApproximatedNormal.xzy, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
+						/// Reflected "under" the surface
+						if (dot(vec3(0, 1, 0), Reflected) <= 0.f)
 							break;
-						}
+
+						RayType = SPECULAR_LAYER;
+						ShadingData.TangentSpaceOutgoingDirection = Reflected;
+						PDF = VNDPDF(NewNormal.xzy,
+							Material.TransmissionRoughness * Material.TransmissionRoughness,
+							Material.TransmissionRoughness * Material.TransmissionRoughness,
+							-TangentSpaceViewDirection.xzy);
 					}
 					else
 					{
-						/// Refraction or TIR is happening
-						float k = 1. - (EtaRatio * EtaRatio * (1. - (NDotI * NDotI)));
+						/// Refraction
+						vec3 RefractedDirection = normalize(EtaRatio * TangentSpaceViewDirection - (EtaRatio * NDotI + sqrt(k)) * NewNormal);
+						ShadingData.TangentSpaceOutgoingDirection = RefractedDirection;
+						RayData.Eta = IOR2;
 
-						if (k < 0.)
-						{
-							/// Total internal reflection is happening
-							TangentSpaceViewDirection = reflect(TangentSpaceViewDirection, NewNormal);
+						float CosT  = abs(dot(NewNormal, RefractedDirection));
+						float Denom = IOR1 * CosTheta + IOR2 * CosT;
 
-							/// If reflected ray's on the correct side, then it's done.
-							if (dot(vec3(0, 1, 0), TangentSpaceViewDirection) > 0.)
-							{
-								RayType = SPECULAR_LAYER;
-								ShadingData.TangentSpaceOutgoingDirection = TangentSpaceViewDirection;
-
-								vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + ShadingData.TangentSpaceOutgoingDirection));
-								PDF = VNDPDF(ApproximatedNormal.xzy, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
-								break;
-							}
-						}
-						else
-						{
-							/// Refraction
-							vec3 RefractedDirection = normalize(EtaRatio * TangentSpaceViewDirection - (EtaRatio * NDotI + sqrt(k)) * NewNormal);
-
-							/// Find a normal that should be used to refract the ray this way
-							float CosThetaI = dot(-ShadingData.TangentSpaceIncomingDirection, RefractedDirection);
-							k = 1.f - EtaRatio * EtaRatio * (1.f - CosThetaI * CosThetaI);
-							vec3 ApproximatedNormal = normalize((ShadingData.TangentSpaceIncomingDirection * EtaRatio - RefractedDirection) / sqrt(k));
-
-							/// Get PDF
-							PDF = VNDPDF(ApproximatedNormal.xzy, Material.TransmissionRoughness * Material.TransmissionRoughness, Material.TransmissionRoughness * Material.TransmissionRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
-							PDF /= EtaRatio * EtaRatio;
-							/// Also, ray is now traveling in a new media
-                            RayData.Eta = IOR2;
-
-							ShadingData.TangentSpaceOutgoingDirection = RefractedDirection;
-
+						if (abs(Denom) < 1e-6)
 							break;
-						}
+
+						PDF = VNDPDF(NewNormal.xzy,
+							Material.TransmissionRoughness * Material.TransmissionRoughness,
+							Material.TransmissionRoughness * Material.TransmissionRoughness,
+							-TangentSpaceViewDirection.xzy);
+
+						PDF = 4.f * CosTheta * PDF * IOR2 * IOR2 * CosT / (Denom * Denom);
 					}
 				}
 			}
 
-			/// If we are here, it means that ray's failed to leave the surface, thus PDF remains 0
 			break;
 		}
 		case SUBSURFACE_LAYER:
@@ -353,9 +355,12 @@ vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType, vec3 Wo
 		{
 #ifdef OREN_NAYAR
 			vec3 TangentSpaceLightDirectio = WorldSpaceLightDirection * ShadingData.TNBMatrix;
-			BXDF = SampleOrenNayar(-ShadingData.TangentSpaceIncomingDirection, TangentSpaceLightDirectio, Material.BaseColor, Material.DiffuseRoughness);
+			BXDF = EvaluateOrenNayar(-ShadingData.TangentSpaceIncomingDirection,
+				TangentSpaceLightDirectio,
+				Material.BaseColor,
+				Material.DiffuseRoughness * M_PI_2);
 #else
-			BXDF = SampleLambertian(Material.BaseColor);
+			BXDF = EvaluateLambertian(Material.BaseColor);
 #endif
 			break;
 		}
@@ -442,7 +447,10 @@ float EvaluateScatteringPDF(FDeviceMaterial Material, uint RayType, vec3 WorldSp
 			else
 			{
 				vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + TangentSpaceLightDirection));
-				return VNDPDF(ApproximatedNormal.xzy, Material.SpecularRoughness, Material.SpecularRoughness, -ShadingData.TangentSpaceIncomingDirection.xzy);
+				return VNDPDF(ApproximatedNormal.xzy,
+					Material.SpecularRoughness * Material.SpecularRoughness,
+					Material.SpecularRoughness * Material.SpecularRoughness,
+					-ShadingData.TangentSpaceIncomingDirection.xzy);
 			}
 		}
 		case TRANSMISSION_LAYER:
