@@ -354,9 +354,9 @@ vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType, vec3 Wo
 		case DIFFUSE_LAYER:
 		{
 #ifdef OREN_NAYAR
-			vec3 TangentSpaceLightDirectio = WorldSpaceLightDirection * ShadingData.TNBMatrix;
+			vec3 TangentSpaceLightDirection = WorldSpaceLightDirection * ShadingData.TNBMatrix;
 			BXDF = EvaluateOrenNayar(-ShadingData.TangentSpaceIncomingDirection,
-				TangentSpaceLightDirectio,
+				TangentSpaceLightDirection,
 				Material.BaseColor,
 				Material.DiffuseRoughness * M_PI_2);
 #else
@@ -379,7 +379,6 @@ vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType, vec3 Wo
 			float VDotH = clamp(dot(V, H), 1e-6, 1);
 
 			float D = DistributionGGX(NDotH, Material.SpecularRoughness);
-			D = D < 1e-6 ? 1 : D;
 			float G = GeometrySmith(NDotV, NDotL, Material.SpecularRoughness);
 			vec3 F = FresnelSchlick(VDotH, F0);
 
