@@ -369,8 +369,8 @@ vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType, vec3 Wo
 			vec3 L = WorldSpaceLightDirection;
 			vec3 N = ShadingData.NormalInWorldSpace;
 			vec3 H = normalize(L + V);
-			float DielectricF0 = CalculateF0(ShadingData.IOR1, Material.SpecularIOR);
-			vec3 F0 = mix(vec3(DielectricF0), Material.BaseColor, Material.Metalness);
+			vec3 DielectricF0 = CalculateF0(ShadingData.IOR1, Material.SpecularIOR) * Material.SpecularColor;
+			vec3 F0 = mix(DielectricF0, Material.BaseColor, Material.Metalness);
 
 			float NDotL = clamp(dot(N, L), 1e-6, 1);
 			float NDotV = clamp(dot(N, V), 1e-6, 1);
