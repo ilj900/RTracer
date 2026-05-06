@@ -475,8 +475,7 @@ void main()
         return;
     }
 
-    vec3 BxDF = EvaluateMaterialInteraction(Material, ShadingData.MaterialInteractionType, ShadingData.WorldSpaceOutgoingDirection);
-    vec3 ThroughputForThisBounce = BxDF * ShadingData.NDotI / ShadingData.MaterialScatteringPDF;
+    vec3 ThroughputForThisBounce = EvaluateSampledMaterialThroughput(Material, ShadingData.MaterialInteractionType, ShadingData.WorldSpaceOutgoingDirection);
     ThroughputForThisBounce /= ShadingData.LayerSelectionPDF;
 
     vec3 ThroughputBeforeThisBounce = CumulativeMaterialColorBuffer[PixelIndex].xyz;
@@ -696,9 +695,19 @@ void main()
 
         if (BXDFIBLSamplingResult.w != 0)
         {
-            MaterialInteractionEvaluationResult3 = EvaluateMaterialInteraction(Material, ShadingData.MaterialInteractionType, BXDFOutgoingDirection);
-            MaterialInteractionEvaluationResult3 = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResult3 * BXDFIBLSamplingResult.xyz;
-            W3 = BXDFIBLSamplingResult.w / (BXDFIBLSamplingResult.w + BXDFSamplingUniformPDF + BXDFSamplingImportancePDF);
+            if (ShadingData.IsScatteredRaySingular)
+            {
+                vec3 SampledWeight = EvaluateSampledMaterialThroughput(Material, ShadingData.MaterialInteractionType, BXDFOutgoingDirection);
+                MaterialInteractionEvaluationResult3 = ThroughputBeforeThisBounce * SampledWeight * BXDFIBLSamplingResult.xyz;
+                W3 = 1.f;
+            }
+            else
+            {
+                MaterialInteractionEvaluationResult3 = EvaluateMaterialInteraction(Material, ShadingData.MaterialInteractionType, BXDFOutgoingDirection);
+                MaterialInteractionEvaluationResult3 = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResult3 * BXDFIBLSamplingResult.xyz;
+                W3 = BXDFIBLSamplingResult.w / (BXDFIBLSamplingResult.w + BXDFSamplingUniformPDF + BXDFSamplingImportancePDF);
+            }
+
             bBRDFIBLSamplingSuccessful = true;
         }
 

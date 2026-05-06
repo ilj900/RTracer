@@ -76,7 +76,7 @@ bool IsSpecularSingular(FDeviceMaterial Material)
 /// Random visible normal generator
 /// U1 and U2 - two random numbers [0, 1]
 /// AlphaX and AlphaZ - roughness [0, 1]
-/// The coordinates basis of this code is X - right, Y - front and Z - up.
+/// The coordinate basis of this code is X - right, Y - front and Z - up.
 /// https://jcgt.org/published/0007/04/01/paper.pdf
 FVector3 SampleGGXVNDF(FVector3 ViewDirection, float AlphaX, float AlphaZ, float U1, float U2)
 {

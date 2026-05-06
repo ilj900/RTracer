@@ -477,4 +477,17 @@ float EvaluateScatteringPDF(FDeviceMaterial Material, uint RayType, vec3 WorldSp
 	return 0.f;
 }
 
+vec3 EvaluateSampledMaterialThroughput(FDeviceMaterial Material, uint RayType, vec3 WorldSpaceLightDirection)
+{
+	if (IsSpecularSingular(Material) && RayType == SPECULAR_LAYER)
+	{
+		vec3 DielectricF0 = CalculateF0(ShadingData.IOR1, Material.SpecularIOR) * Material.SpecularColor;
+		vec3 F0 = mix(DielectricF0, Material.BaseColor, Material.Metalness);
+		return Material.SpecularWeight * FresnelSchlick(ShadingData.NDotI, F0);
+	}
+
+	vec3 BxDF = EvaluateMaterialInteraction(Material, RayType, WorldSpaceLightDirection);
+	return BxDF * ShadingData.NDotI / ShadingData.MaterialScatteringPDF;
+}
+
 #endif // PROCESS_MATERIAL_INTERACTION_H

@@ -740,21 +740,29 @@ vec4 ComputeBXDFIBLInput(inout FSamplingState SamplingState, vec3 LightDirection
     /// And if we didn't hit any geometry, then we sample the IBL
     if (HitPayload.RenderableIndex == UINT_MAX)
     {
-        const uvec2 IBLSize = textureSize(IBLTextureSamplerLinear, 0);
         vec2 IBLUV = Vec3ToSphericalUV(LightDirection, M_PI_2);
+        vec3 IBL = texture(IBLTextureSamplerLinear, IBLUV).xyz;
+
+        if (ShadingData.IsScatteredRaySingular)
+        {
+            BXDFSamplingUniformPDF = 0.f;
+            BXDFSamplingImportancePDF = 0.f;
+            return vec4(IBL, 1.f);
+        }
+
+        const uvec2 IBLSize = textureSize(IBLTextureSamplerLinear, 0);
         uint TexelIndex = uint(IBLUV.y * IBLSize.x * IBLSize.y) + uint(IBLUV.x * IBLSize.x);
 
         float PDF = BXDFSamplingPDF;
         BXDFSamplingUniformPDF = 0.5f * M_INV_PI;
         BXDFSamplingImportancePDF = IBLPDFBuffer[TexelIndex];
+
         /// We use abs because LightDirection is actually the direction of scattered ray and that ray can not be on the wrong side of the hemisphere
         float NDotL = abs(dot(ShadingData.NormalInWorldSpace, LightDirection));
-        return vec4(texture(IBLTextureSamplerLinear, IBLUV).xyz * NDotL / PDF, PDF);
+        return vec4(IBL * NDotL / PDF, PDF);
     }
-    else
-    {
-        return vec4(0);
-    }
+
+    return vec4(0);
 }
 
 #endif // LIGHTING_H
