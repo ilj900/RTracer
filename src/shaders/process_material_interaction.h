@@ -3,7 +3,6 @@
 
 #define OREN_NAYAR
 #include "bxdf.h"
-#include "maths.h"
 
 uint SelectLayer(FBXDFPDF BXDFPDF, float MaterialSample)
 {
