@@ -18,7 +18,6 @@ float DistributionGGX(float NDotH, float Roughness)
 	float Denominator = NDotH2 * (A2 - 1.) + 1.;
 	Denominator = M_PI * Denominator * Denominator;
 
-	Denominator = max(Denominator, 1e-6);
 	return Numerator / Denominator;
 }
 
@@ -69,6 +68,11 @@ float Luminance709(vec3 Color)
 	return 0.2126 * Color.x + 0.7152 * Color.y + 0.0722 * Color.z;
 }
 
+bool IsSpecularSingular(FDeviceMaterial Material)
+{
+	return Material.SpecularRoughness <= 1e-4;
+}
+
 /// Random visible normal generator
 /// U1 and U2 - two random numbers [0, 1]
 /// AlphaX and AlphaZ - roughness [0, 1]
@@ -83,7 +87,7 @@ FVector3 SampleGGXVNDF(FVector3 ViewDirection, float AlphaX, float AlphaZ, float
 	/// Build an orthonormal basis
 	float LengthSquared = ViewDirectionHemisphere.x * ViewDirectionHemisphere.x + ViewDirectionHemisphere.z * ViewDirectionHemisphere.z;
 	FVector3 Tangent1 = LengthSquared > 0 ? FVector3(-ViewDirectionHemisphere.z, 0, ViewDirectionHemisphere.x) / sqrt(LengthSquared) : FVector3(1, 0, 0);
-	FVector3 Tangent2 = cross(Tangent1, ViewDirectionHemisphere);
+	FVector3 Tangent2 = cross(ViewDirectionHemisphere, Tangent1);
 	/// Parametrization of the projected area
 	float R = sqrt(U1);
 	float Phi = M_2_PI * U2;
