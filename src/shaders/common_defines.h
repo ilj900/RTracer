@@ -33,6 +33,11 @@
 
 #define FLOAT_EPSILON															0.0001f
 
+/// Sampling strategies
+#define SAMPLE_UNIFORM															0u
+#define SAMPLE_IMPORTANCE														1u
+#define SAMPLE_BXDF																2u
+
 /// Ray flags
 #define RAY_DATA_RAY_MISSED 													1u
 #define DIFFUSE_LAYER 															1u << 1

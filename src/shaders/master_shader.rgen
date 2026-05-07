@@ -496,15 +496,13 @@ void main()
 
     if (UtilityData.ActivePointLightsCount != 0 && !ShadingData.IsScatteredRaySingular)
     {
-        vec4 UniformPointLightSamplingResult = vec4(0);
-        vec4 ImportancePointLightSamplingResult = vec4(0);
         vec3 UniformOutgoingDirection = vec3(0);
         vec3 ImportanceOutgoingDirection = vec3(0);
-        float UniformSamplingImportanceSamplePDF = 0;
-        float ImportanceSamplingUniformSamplePDF = 0;
+        float UniformSamplingPDF = 0;
+        float ImportanceSamplingPDF = 0;
 
-        UniformPointLightSamplingResult = ComputeUniformPointLightInput(SamplingState, UtilityData.ActivePointLightsCount, UniformOutgoingDirection, UniformSamplingImportanceSamplePDF);
-        ImportancePointLightSamplingResult = ComputeImportancePointLightInput(SamplingState, UtilityData.ActivePointLightsCount, ImportanceOutgoingDirection, ImportanceSamplingUniformSamplePDF);
+        vec4 UniformPointLightSamplingResult = ComputePointLightInput(SamplingState, UniformOutgoingDirection, SAMPLE_UNIFORM, UniformSamplingPDF, ImportanceSamplingPDF);
+        vec4 ImportancePointLightSamplingResult = ComputePointLightInput(SamplingState, ImportanceOutgoingDirection, SAMPLE_IMPORTANCE, UniformSamplingPDF, ImportanceSamplingPDF);
 
         vec3 MaterialInteractionEvaluationResultUniformSampling = vec3(0); /// Interaction result of uniformly sampled point light and the surface
         vec3 MaterialInteractionEvaluationResultImportanceSampling = vec3(0); /// Interaction result of importance sampled point light and the surface
@@ -516,14 +514,14 @@ void main()
         {
             MaterialInteractionEvaluationResultUniformSampling = EvaluateMaterialInteraction(Material, ShadingData.MaterialInteractionType, UniformOutgoingDirection);
             MaterialInteractionEvaluationResultUniformSampling = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResultUniformSampling * UniformPointLightSamplingResult.xyz;
-            W1 = UniformPointLightSamplingResult.w / (UniformPointLightSamplingResult.w + UniformSamplingImportanceSamplePDF);
+            W1 = UniformPointLightSamplingResult.w / (UniformPointLightSamplingResult.w + UniformSamplingPDF);
         }
 
         if (ImportancePointLightSamplingResult.w > 0.)
         {
             MaterialInteractionEvaluationResultImportanceSampling = EvaluateMaterialInteraction(Material, ShadingData.MaterialInteractionType, ImportanceOutgoingDirection);
             MaterialInteractionEvaluationResultImportanceSampling = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResultImportanceSampling * ImportancePointLightSamplingResult.xyz;
-            W2 = ImportancePointLightSamplingResult.w / (ImportancePointLightSamplingResult.w + ImportanceSamplingUniformSamplePDF);
+            W2 = ImportancePointLightSamplingResult.w / (ImportancePointLightSamplingResult.w + ImportanceSamplingPDF);
         }
 
         PointLightResult = W1 * MaterialInteractionEvaluationResultUniformSampling + W2 * MaterialInteractionEvaluationResultImportanceSampling;

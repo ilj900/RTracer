@@ -1,12 +1,39 @@
 #ifndef LIGHTING_H
 #define LIGHTING_H
 
-vec4 ComputeUniformPointLightInput(inout FSamplingState SamplingState, uint PointLightsCount, out vec3 Direction, inout float ImportanceSamplingPDF)
+#include "random.h"
+
+/// Selects a point light (uniformly or by power-weighted alias table)
+/// Traces a shadow ray toward it, and
+/// If unoccluded, returns rgb = color * intensity / dist² * NdotL / PDF, w = PDF.
+/// Always writes both UniformSamplingPDF and ImportanceSamplingPDF for MIS.
+vec4 ComputePointLightInput(inout FSamplingState SamplingState, out vec3 Direction, uint SamplingStrategy,
+    inout float UniformSamplingPDF, inout float ImportanceSamplingPDF)
 {
-    /// Get light index
-    const uint LightIndex = uint(RandomFloat(SamplingState) * PointLightsCount);
-    FPointLight PointLightUniform = PointLightsBuffer[LightIndex];
-    Direction = PointLightUniform.Position - ShadingData.IntersectionCoordinatesInWorldSpace;
+    uint LightIndex = 0;
+
+    /// We can only unifor or importance sample a point light
+    switch (SamplingStrategy)
+    {
+        case SAMPLE_UNIFORM:
+            LightIndex = uint(RandomFloat(SamplingState) * UtilityData.ActivePointLightsCount);
+            break;
+        case SAMPLE_IMPORTANCE:
+            LightIndex = uint(RandomFloat(SamplingState) * UtilityData.ActivePointLightsCount);
+            FDeviceAliasTableEntry ImportanceSampleTableEntry = PointLightsImportanceBuffer[LightIndex];
+
+            if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
+            {
+                LightIndex = ImportanceSampleTableEntry.Alias;
+            }
+            break;
+        default:
+            /// BxDF sampling would return magenta color
+            return vec4(1, 0, 1, 1);
+    }
+
+    FPointLight PointLight = PointLightsBuffer[LightIndex];
+    Direction = PointLight.Position - ShadingData.IntersectionCoordinatesInWorldSpace;
     float LightDistance = length(Direction);
     Direction = normalize(Direction);
 
@@ -33,63 +60,15 @@ vec4 ComputeUniformPointLightInput(inout FSamplingState SamplingState, uint Poin
         float Attenuation = 1.f / LightDistance;
         Attenuation *= Attenuation;
         /// Here, the probability of sampling a particular point light is one to the number of point lights
-        ImportanceSamplingPDF = PointLightUniform.Power / UtilityData.TotalPointLightPower;
-        return vec4(PointLightUniform.Color * PointLightUniform.Intensity * Attenuation * NDotI * PointLightsCount, 1.f / PointLightsCount);
-    }
-    else
-    {
-        return vec4(0);
-    }
-}
+        ImportanceSamplingPDF = PointLight.Power / UtilityData.TotalPointLightPower;
+        UniformSamplingPDF = 1.f / UtilityData.ActivePointLightsCount;
 
-vec4 ComputeImportancePointLightInput(inout FSamplingState SamplingState, uint PointLightsCount, out vec3 Direction, inout float UniformSamplingPDF)
-{
-    /// Get light index by importance sampling it
-    uint ImportanceLightIndex = uint(RandomFloat(SamplingState) * PointLightsCount);
-    FDeviceAliasTableEntry ImportanceSampleTableEntry = PointLightsImportanceBuffer[ImportanceLightIndex];
+        float PDF = SamplingStrategy == SAMPLE_UNIFORM ? UniformSamplingPDF : ImportanceSamplingPDF;
 
-    if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
-    {
-        ImportanceLightIndex = ImportanceSampleTableEntry.Alias;
+        return vec4(PointLight.Color * PointLight.Intensity * Attenuation * NDotI / PDF, PDF);
     }
 
-    FPointLight PointLightImportance = PointLightsBuffer[ImportanceLightIndex];
-
-    Direction = PointLightImportance.Position - ShadingData.IntersectionCoordinatesInWorldSpace;
-    float LightDistance = length(Direction);
-    Direction = normalize(Direction);
-
-    /// Check whether light is over the surface
-    float NDotI = dot(ShadingData.NormalInWorldSpace, Direction);
-
-    if(NDotI <= 0)
-    {
-        return vec4(0);
-    }
-
-    /// Construct a ray that goes to the light
-    FRayData RayData;
-    RayData.RayFlags = 0;
-    RayData.Direction.xyz = Direction;
-    RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace + ShadingData.NormalInWorldSpace * FLOAT_EPSILON;
-
-    /// Trace the ray
-    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, LightDistance, 0);
-
-    /// And if we didn't hit any geometry, then we store light data
-    if (HitPayload.RenderableIndex == UINT_MAX)
-    {
-        float Attenuation = 1.f / LightDistance;
-        Attenuation *= Attenuation;
-        /// Here, the probability of sampling a particular point light depends on it's power and total power of all lights
-        float PDF = PointLightImportance.Power / UtilityData.TotalPointLightPower;
-        UniformSamplingPDF = 1.f / PointLightsCount;
-        return vec4(PointLightImportance.Color * PointLightImportance.Intensity * Attenuation * NDotI / PDF, PDF);
-    }
-    else
-    {
-        return vec4(0);
-    }
+    return vec4(0);
 }
 
 vec4 ComputeUniformDirectionalLightInput(inout FSamplingState SamplingState, uint DirectionalLightsCount, out vec3 Direction, inout float ImportanceSamplingPDF)
