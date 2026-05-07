@@ -65,57 +65,24 @@ vec4 ComputePointLightInput(inout FSamplingState SamplingState, out vec3 Directi
     return vec4(0);
 }
 
-vec4 ComputeUniformDirectionalLightInput(inout FSamplingState SamplingState, uint DirectionalLightsCount, out vec3 Direction, inout float ImportanceSamplingPDF)
+vec4 ComputeDirectionalLightInput(inout FSamplingState SamplingState, out vec3 Direction, uint SamplingStrategy, inout float OtherSamplingPDF)
 {
-    /// Get light index by uniformly sampling it
-    const uint LightIndex = uint(RandomFloat(SamplingState) * DirectionalLightsCount);
-    FDirectionalLight DirectionalLight = DirectionalLightsBuffer[LightIndex];
+    /// If not Importance or Uniform sampling, return indicating color
+    if (SamplingStrategy != SAMPLE_IMPORTANCE && SamplingStrategy != SAMPLE_UNIFORM)
+        return vec4(1, 0, 1, 1);
 
-    /// Check whether light is over the surface
-    Direction = -DirectionalLight.Direction;
-    float NDotI = dot(ShadingData.NormalInWorldSpace, Direction);
+    uint LightIndex = uint(RandomFloat(SamplingState) * UtilityData.ActiveDirectionalLightsCount);
 
-    if(NDotI <= 0)
+    /// If it's Importance sampling, then we need to update the LightIndex
+    if (SamplingStrategy == SAMPLE_IMPORTANCE)
     {
-        return vec4(0);
-    }
+        FDeviceAliasTableEntry ImportanceSampleTableEntry = DirectionalLightsImportanceBuffer[LightIndex];
 
-    /// Construct a ray that goes to the light
-    FRayData RayData;
-    RayData.RayFlags = 0;
-    RayData.Direction.xyz = Direction;
-    RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace + ShadingData.NormalInWorldSpace * FLOAT_EPSILON;
-
-    /// Trace the ray
-    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, 10000, 0);
-
-    /// And if we didn't hit any geometry, then we store light data
-    if (HitPayload.RenderableIndex == UINT_MAX)
-    {
-        /// Here, the probability of sampling a particular directional light is one to the number of directional lights
-        ImportanceSamplingPDF = DirectionalLight.Power / UtilityData.TotalDirectionalLightPower;
-        return vec4(DirectionalLight.Color * DirectionalLight.Intensity * NDotI * DirectionalLightsCount, 1.f / DirectionalLightsCount);
-    }
-    else
-    {
-        return vec4(0);
-    }
-}
-
-/// Sample a directional light by it's power
-vec4 ComputeImportanceDirectionalLightInput(inout FSamplingState SamplingState, uint DirectionalLightsCount, out vec3 Direction, inout float UniformSamplingPDF)
-{
-    /// Get light index by importance sampling it
-    uint LightIndex = uint(RandomFloat(SamplingState) * DirectionalLightsCount);
-    FDeviceAliasTableEntry ImportanceSampleTableEntry = DirectionalLightsImportanceBuffer[LightIndex];
-
-    if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
-    {
-        LightIndex = ImportanceSampleTableEntry.Alias;
+        if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
+            LightIndex = ImportanceSampleTableEntry.Alias;
     }
 
     FDirectionalLight DirectionalLight = DirectionalLightsBuffer[LightIndex];
-
     Direction = -DirectionalLight.Direction;
 
     /// Check whether light is over the surface
@@ -139,14 +106,16 @@ vec4 ComputeImportanceDirectionalLightInput(inout FSamplingState SamplingState, 
     if (HitPayload.RenderableIndex == UINT_MAX)
     {
         /// Here, the probability of sampling a particular directional light is it's power to the total power of all directional light
-        float PDF = DirectionalLight.Power / UtilityData.TotalDirectionalLightPower;
-        UniformSamplingPDF = 1.f / DirectionalLightsCount;
+        float UniformSamplingPDF = 1.f / UtilityData.ActiveDirectionalLightsCount;
+        float ImportanceSamplingPDF = DirectionalLight.Power / UtilityData.TotalDirectionalLightPower;
+
+        float PDF = SamplingStrategy == SAMPLE_UNIFORM ? UniformSamplingPDF : ImportanceSamplingPDF;
+        OtherSamplingPDF = SamplingStrategy == SAMPLE_UNIFORM ? ImportanceSamplingPDF : UniformSamplingPDF;
+
         return vec4(DirectionalLight.Color * DirectionalLight.Intensity * NDotI / PDF, PDF);
     }
-    else
-    {
-        return vec4(0);
-    }
+
+    return vec4(0);
 }
 
 vec4 ComputeUniformSpotLightInput(inout FSamplingState SamplingState, uint SpotLightsCount, out vec3 Direction, inout float ImportanceSamplingPDF)
