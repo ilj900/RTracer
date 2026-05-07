@@ -9,26 +9,19 @@
 /// Always writes both UniformSamplingPDF and ImportanceSamplingPDF for MIS.
 vec4 ComputePointLightInput(inout FSamplingState SamplingState, out vec3 Direction, uint SamplingStrategy, inout float OtherSamplingPDF)
 {
-    uint LightIndex = 0;
+    /// If not Importance or Uniform sampling, return indicating color
+    if (SamplingStrategy != SAMPLE_IMPORTANCE && SamplingStrategy != SAMPLE_UNIFORM)
+        return vec4(1, 0, 1, 1);
 
-    /// We can only unifor or importance sample a point light
-    switch (SamplingStrategy)
+    uint LightIndex = uint(RandomFloat(SamplingState) * UtilityData.ActivePointLightsCount);
+
+    /// If it's Importance sampling, then we need to update the LightIndex
+    if (SamplingStrategy == SAMPLE_IMPORTANCE)
     {
-        case SAMPLE_UNIFORM:
-            LightIndex = uint(RandomFloat(SamplingState) * UtilityData.ActivePointLightsCount);
-            break;
-        case SAMPLE_IMPORTANCE:
-            LightIndex = uint(RandomFloat(SamplingState) * UtilityData.ActivePointLightsCount);
-            FDeviceAliasTableEntry ImportanceSampleTableEntry = PointLightsImportanceBuffer[LightIndex];
+        FDeviceAliasTableEntry ImportanceSampleTableEntry = PointLightsImportanceBuffer[LightIndex];
 
-            if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
-            {
-                LightIndex = ImportanceSampleTableEntry.Alias;
-            }
-            break;
-        default:
-            /// BxDF sampling would return magenta color
-            return vec4(1, 0, 1, 1);
+        if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
+            LightIndex = ImportanceSampleTableEntry.Alias;
     }
 
     FPointLight PointLight = PointLightsBuffer[LightIndex];
