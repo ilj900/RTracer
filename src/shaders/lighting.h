@@ -118,11 +118,25 @@ vec4 ComputeDirectionalLightInput(inout FSamplingState SamplingState, out vec3 D
     return vec4(0);
 }
 
-vec4 ComputeUniformSpotLightInput(inout FSamplingState SamplingState, uint SpotLightsCount, out vec3 Direction, inout float ImportanceSamplingPDF)
+vec4 ComputeSpotLightInput(inout FSamplingState SamplingState, out vec3 Direction, uint SamplingStrategy, inout float OtherSamplingPDF)
 {
-    /// Get light index
-    const uint LightIndex = uint(RandomFloat(SamplingState) * SpotLightsCount);
+    /// If not Importance or Uniform sampling, return indicating color
+    if (SamplingStrategy != SAMPLE_IMPORTANCE && SamplingStrategy != SAMPLE_UNIFORM)
+        return vec4(1, 0, 1, 1);
+
+    uint LightIndex = uint(RandomFloat(SamplingState) * UtilityData.ActiveSpotLightsCount);
+
+    /// If it's Importance sampling, then we need to update the LightIndex
+    if (SamplingStrategy == SAMPLE_IMPORTANCE)
+    {
+        FDeviceAliasTableEntry ImportanceSampleTableEntry = SpotLightsImportanceBuffer[LightIndex];
+
+        if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
+            LightIndex = ImportanceSampleTableEntry.Alias;
+    }
+
     FSpotLight SpotLight = SpotLightsBuffer[LightIndex];
+
     Direction = SpotLight.Position - ShadingData.IntersectionCoordinatesInWorldSpace;
     float LightDistance = length(Direction);
     Direction = normalize(Direction);
@@ -136,6 +150,7 @@ vec4 ComputeUniformSpotLightInput(inout FSamplingState SamplingState, uint SpotL
     }
 
     float LightAngle = acos(dot(SpotLight.Direction, -Direction));
+
     /// If point is outside out outer angle, it is also not illuminated
     if (LightAngle > SpotLight.OuterAngle)
     {
@@ -167,79 +182,16 @@ vec4 ComputeUniformSpotLightInput(inout FSamplingState SamplingState, uint SpotL
         }
 
         /// Here, the probability of sampling a particular spot light is one to the number of spot lights
-        ImportanceSamplingPDF = SpotLight.Power / UtilityData.TotalSpotLightPower;
-        return vec4(SpotLight.Color * SpotLight.Intensity * Attenuation * NDotI * SpotLightsCount, 1.f / SpotLightsCount);
-    }
-    else
-    {
-        return vec4(0);
-    }
-}
+        float UniformSamplingPDF = 1.f / UtilityData.ActiveSpotLightsCount;
+        float ImportanceSamplingPDF = SpotLight.Power / UtilityData.TotalSpotLightPower;
 
-vec4 ComputeImportanceSpotLightInput(inout FSamplingState SamplingState, uint SpotLightsCount, out vec3 Direction, inout float UniformSamplingPDF)
-{
-    uint ImportanceLightIndex = uint(RandomFloat(SamplingState) * SpotLightsCount);
-    FDeviceAliasTableEntry ImportanceSampleTableEntry = SpotLightsImportanceBuffer[ImportanceLightIndex];
+        float PDF = SamplingStrategy == SAMPLE_UNIFORM ? UniformSamplingPDF : ImportanceSamplingPDF;
+        OtherSamplingPDF = SamplingStrategy == SAMPLE_UNIFORM ? ImportanceSamplingPDF : UniformSamplingPDF;
 
-    if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
-    {
-        ImportanceLightIndex = ImportanceSampleTableEntry.Alias;
+        return vec4(SpotLight.Color * SpotLight.Intensity * Attenuation * NDotI / PDF, PDF);
     }
 
-    FSpotLight SpotLightImportance = SpotLightsBuffer[ImportanceLightIndex];
-
-    Direction = SpotLightImportance.Position - ShadingData.IntersectionCoordinatesInWorldSpace;
-    float LightDistance = length(Direction);
-    Direction = normalize(Direction);
-
-    /// Check whether light is over the surface
-    float NDotI = dot(ShadingData.NormalInWorldSpace, Direction);
-
-    if(NDotI <= 0)
-    {
-        return vec4(0);
-    }
-
-    float LightAngle = acos(dot(SpotLightImportance.Direction, -Direction));
-    /// If point is outside out outer angle, it is also not illuminated
-    if (LightAngle > SpotLightImportance.OuterAngle)
-    {
-        return vec4(0);
-    }
-
-    /// Construct a ray that goes to the light
-    FRayData RayData;
-    RayData.RayFlags = 0;
-    RayData.Direction.xyz = Direction;
-    RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace + ShadingData.NormalInWorldSpace * FLOAT_EPSILON;
-
-    /// Trace the ray
-    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, 0.000001f, RayData.Direction.xyz, LightDistance, 0);
-
-    /// And if we didn't hit any geometry, then we store light data
-    if (HitPayload.RenderableIndex == UINT_MAX)
-    {
-        float Attenuation = 1.f / LightDistance;
-        Attenuation *= Attenuation;
-
-        /// If point between outer and inner angle - interpolate
-        if (LightAngle > SpotLightImportance.InnerAngle)
-        {
-            float Fraction = LightAngle - SpotLightImportance.InnerAngle;
-            float Delta = SpotLightImportance.OuterAngle - SpotLightImportance.InnerAngle;
-            Fraction = Fraction / Delta;
-            Attenuation *= pow((1. - Fraction), 2.4);
-        }
-
-        /// Here, the probability of sampling a particular spot light is dependent on the spot light's power and total spot lights power
-        float PDF = SpotLightImportance.Power / UtilityData.TotalSpotLightPower;
-        UniformSamplingPDF = 1.f / SpotLightsCount;
-        return vec4(SpotLightImportance.Color * SpotLightImportance.Intensity * Attenuation * NDotI / PDF, PDF);
-    }
-    else
-    {
-        return vec4(0);
-    }
+    return vec4(0);
 }
 
 vec4 ComputeUniformAreaLightInput(inout FSamplingState SamplingState, out vec3 LightDirection, inout float UniformSamplingImportancePDF, inout float UniformSamplingBXDFPDF)

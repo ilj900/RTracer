@@ -565,15 +565,13 @@ void main()
 
     if(UtilityData.ActiveSpotLightsCount != 0 && !ShadingData.IsScatteredRaySingular)
     {
-        vec4 UniformSpotLightSamplingResult = vec4(0);
-        vec4 ImportanceSpotLightSamplingResult = vec4(0);
         vec3 UniformOutgoingDirection = vec3(0);
         vec3 ImportanceOutgoingDirection = vec3(0);
-        float UniformSamplingImportanceSamplePDF = 0;
-        float ImportanceSamplingUniformSamplePDF = 0;
+        float UniformSamplingPDF = 0;
+        float ImportanceSamplingPDF = 0;
 
-        UniformSpotLightSamplingResult = ComputeUniformSpotLightInput(SamplingState, UtilityData.ActiveSpotLightsCount, UniformOutgoingDirection, UniformSamplingImportanceSamplePDF);
-        ImportanceSpotLightSamplingResult = ComputeImportanceSpotLightInput(SamplingState, UtilityData.ActiveSpotLightsCount, ImportanceOutgoingDirection, ImportanceSamplingUniformSamplePDF);
+        vec4 UniformSpotLightSamplingResult = ComputeSpotLightInput(SamplingState, UniformOutgoingDirection, SAMPLE_UNIFORM, ImportanceSamplingPDF);
+        vec4 ImportanceSpotLightSamplingResult = ComputeSpotLightInput(SamplingState, ImportanceOutgoingDirection, SAMPLE_IMPORTANCE, UniformSamplingPDF);
 
         vec3 MaterialInteractionEvaluationResultUniformSampling = vec3(0); /// Interaction result of uniformly sampled directional light and the surface
         vec3 MaterialInteractionEvaluationResultImportanceSampling = vec3(0); /// Interaction result of importance sampled directional light and the surface
@@ -585,14 +583,14 @@ void main()
         {
             MaterialInteractionEvaluationResultUniformSampling = EvaluateMaterialInteraction(Material, ShadingData.MaterialInteractionType, UniformOutgoingDirection);
             MaterialInteractionEvaluationResultUniformSampling = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResultUniformSampling * UniformSpotLightSamplingResult.xyz;
-            W1 = UniformSpotLightSamplingResult.w / (UniformSpotLightSamplingResult.w + UniformSamplingImportanceSamplePDF);
+            W1 = UniformSpotLightSamplingResult.w / (UniformSpotLightSamplingResult.w + ImportanceSamplingPDF);
         }
 
         if (ImportanceSpotLightSamplingResult.w != 0)
         {
             MaterialInteractionEvaluationResultImportanceSampling = EvaluateMaterialInteraction(Material, ShadingData.MaterialInteractionType, ImportanceOutgoingDirection);
             MaterialInteractionEvaluationResultImportanceSampling = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResultImportanceSampling * ImportanceSpotLightSamplingResult.xyz;
-            W2 = ImportanceSpotLightSamplingResult.w / (ImportanceSpotLightSamplingResult.w + ImportanceSamplingUniformSamplePDF);
+            W2 = ImportanceSpotLightSamplingResult.w / (ImportanceSpotLightSamplingResult.w + UniformSamplingPDF);
         }
 
         SpotLightResult = W1 * MaterialInteractionEvaluationResultUniformSampling + W2 * MaterialInteractionEvaluationResultImportanceSampling;
