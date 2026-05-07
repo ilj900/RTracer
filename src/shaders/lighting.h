@@ -1,7 +1,44 @@
 #ifndef LIGHTING_H
 #define LIGHTING_H
 
+#include "common_defines.h"
+#include "common_structures.h"
 #include "random.h"
+
+uint GetActiveLightCount(uint LightType)
+{
+    if (LightType == POINT_LIGHT)       return UtilityData.ActivePointLightsCount;
+    if (LightType == DIRECTIONAL_LIGHT) return UtilityData.ActiveDirectionalLightsCount;
+    if (LightType == SPOT_LIGHT)        return UtilityData.ActiveSpotLightsCount;
+    return 0;
+}
+
+FDeviceAliasTableEntry GetImportanceEntry(uint LightType, uint LightIndex)
+{
+    if (LightType == POINT_LIGHT)       return PointLightsImportanceBuffer[LightIndex];
+    if (LightType == DIRECTIONAL_LIGHT) return DirectionalLightsImportanceBuffer[LightIndex];
+    if (LightType == SPOT_LIGHT)        return SpotLightsImportanceBuffer[LightIndex];
+    FDeviceAliasTableEntry Empty = FDeviceAliasTableEntry(0.0, 0u); // adjust to your struct
+    return Empty;
+}
+
+uint GetLightIndex(inout FSamplingState SamplingState, uint SamplingStrategy, uint LightType)
+{
+    uint Count = GetActiveLightCount(LightType);
+     if (Count == 0) return UINT_MAX;
+
+    uint LightIndex = uint(RandomFloat(SamplingState) * Count);
+
+    if (SamplingStrategy == SAMPLE_IMPORTANCE)
+    {
+        FDeviceAliasTableEntry Entry = GetImportanceEntry(LightType, LightIndex);
+
+        if (RandomFloat(SamplingState) > Entry.Threshold)
+            LightIndex = Entry.Alias;
+    }
+
+    return LightIndex;
+}
 
 /// Selects a point light (uniformly or by power-weighted alias table)
 /// Traces a shadow ray toward it, and
@@ -13,16 +50,7 @@ vec4 ComputePointLightInput(inout FSamplingState SamplingState, out vec3 Directi
     if (SamplingStrategy != SAMPLE_IMPORTANCE && SamplingStrategy != SAMPLE_UNIFORM)
         return vec4(1, 0, 1, 1);
 
-    uint LightIndex = uint(RandomFloat(SamplingState) * UtilityData.ActivePointLightsCount);
-
-    /// If it's Importance sampling, then we need to update the LightIndex
-    if (SamplingStrategy == SAMPLE_IMPORTANCE)
-    {
-        FDeviceAliasTableEntry ImportanceSampleTableEntry = PointLightsImportanceBuffer[LightIndex];
-
-        if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
-            LightIndex = ImportanceSampleTableEntry.Alias;
-    }
+    uint LightIndex = GetLightIndex(SamplingState, SamplingStrategy, POINT_LIGHT);
 
     FPointLight PointLight = PointLightsBuffer[LightIndex];
     Direction = PointLight.Position - ShadingData.IntersectionCoordinatesInWorldSpace;
@@ -71,16 +99,7 @@ vec4 ComputeDirectionalLightInput(inout FSamplingState SamplingState, out vec3 D
     if (SamplingStrategy != SAMPLE_IMPORTANCE && SamplingStrategy != SAMPLE_UNIFORM)
         return vec4(1, 0, 1, 1);
 
-    uint LightIndex = uint(RandomFloat(SamplingState) * UtilityData.ActiveDirectionalLightsCount);
-
-    /// If it's Importance sampling, then we need to update the LightIndex
-    if (SamplingStrategy == SAMPLE_IMPORTANCE)
-    {
-        FDeviceAliasTableEntry ImportanceSampleTableEntry = DirectionalLightsImportanceBuffer[LightIndex];
-
-        if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
-            LightIndex = ImportanceSampleTableEntry.Alias;
-    }
+    uint LightIndex = GetLightIndex(SamplingState, SamplingStrategy, DIRECTIONAL_LIGHT);
 
     FDirectionalLight DirectionalLight = DirectionalLightsBuffer[LightIndex];
     Direction = -DirectionalLight.Direction;
@@ -124,16 +143,7 @@ vec4 ComputeSpotLightInput(inout FSamplingState SamplingState, out vec3 Directio
     if (SamplingStrategy != SAMPLE_IMPORTANCE && SamplingStrategy != SAMPLE_UNIFORM)
         return vec4(1, 0, 1, 1);
 
-    uint LightIndex = uint(RandomFloat(SamplingState) * UtilityData.ActiveSpotLightsCount);
-
-    /// If it's Importance sampling, then we need to update the LightIndex
-    if (SamplingStrategy == SAMPLE_IMPORTANCE)
-    {
-        FDeviceAliasTableEntry ImportanceSampleTableEntry = SpotLightsImportanceBuffer[LightIndex];
-
-        if (RandomFloat(SamplingState) > ImportanceSampleTableEntry.Threshold)
-            LightIndex = ImportanceSampleTableEntry.Alias;
-    }
+    uint LightIndex = GetLightIndex(SamplingState, SamplingStrategy, SPOT_LIGHT);
 
     FSpotLight SpotLight = SpotLightsBuffer[LightIndex];
 

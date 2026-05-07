@@ -38,6 +38,12 @@
 #define SAMPLE_IMPORTANCE														1u
 #define SAMPLE_BXDF																2u
 
+/// Light types
+#define POINT_LIGHT																0u
+#define DIRECTIONAL_LIGHT														1u
+#define SPOT_LIGHT																3u
+#define AREA_LIGHT																3u
+
 /// Ray flags
 #define RAY_DATA_RAY_MISSED 													1u
 #define DIFFUSE_LAYER 															1u << 1
