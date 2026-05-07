@@ -7,8 +7,7 @@
 /// Traces a shadow ray toward it, and
 /// If unoccluded, returns rgb = color * intensity / dist² * NdotL / PDF, w = PDF.
 /// Always writes both UniformSamplingPDF and ImportanceSamplingPDF for MIS.
-vec4 ComputePointLightInput(inout FSamplingState SamplingState, out vec3 Direction, uint SamplingStrategy,
-    inout float UniformSamplingPDF, inout float ImportanceSamplingPDF)
+vec4 ComputePointLightInput(inout FSamplingState SamplingState, out vec3 Direction, uint SamplingStrategy, inout float OtherSamplingPDF)
 {
     uint LightIndex = 0;
 
@@ -59,11 +58,13 @@ vec4 ComputePointLightInput(inout FSamplingState SamplingState, out vec3 Directi
     {
         float Attenuation = 1.f / LightDistance;
         Attenuation *= Attenuation;
-        /// Here, the probability of sampling a particular point light is one to the number of point lights
-        ImportanceSamplingPDF = PointLight.Power / UtilityData.TotalPointLightPower;
-        UniformSamplingPDF = 1.f / UtilityData.ActivePointLightsCount;
+
+        /// Get the probabilities
+        float UniformSamplingPDF = 1.f / UtilityData.ActivePointLightsCount;
+        float ImportanceSamplingPDF = PointLight.Power / UtilityData.TotalPointLightPower;
 
         float PDF = SamplingStrategy == SAMPLE_UNIFORM ? UniformSamplingPDF : ImportanceSamplingPDF;
+        OtherSamplingPDF = SamplingStrategy == SAMPLE_UNIFORM ? ImportanceSamplingPDF : UniformSamplingPDF;
 
         return vec4(PointLight.Color * PointLight.Intensity * Attenuation * NDotI / PDF, PDF);
     }

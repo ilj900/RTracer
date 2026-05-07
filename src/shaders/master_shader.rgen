@@ -501,8 +501,8 @@ void main()
         float UniformSamplingPDF = 0;
         float ImportanceSamplingPDF = 0;
 
-        vec4 UniformPointLightSamplingResult = ComputePointLightInput(SamplingState, UniformOutgoingDirection, SAMPLE_UNIFORM, UniformSamplingPDF, ImportanceSamplingPDF);
-        vec4 ImportancePointLightSamplingResult = ComputePointLightInput(SamplingState, ImportanceOutgoingDirection, SAMPLE_IMPORTANCE, UniformSamplingPDF, ImportanceSamplingPDF);
+        vec4 UniformPointLightSamplingResult = ComputePointLightInput(SamplingState, UniformOutgoingDirection, SAMPLE_UNIFORM, ImportanceSamplingPDF);
+        vec4 ImportancePointLightSamplingResult = ComputePointLightInput(SamplingState, ImportanceOutgoingDirection, SAMPLE_IMPORTANCE, UniformSamplingPDF);
 
         vec3 MaterialInteractionEvaluationResultUniformSampling = vec3(0); /// Interaction result of uniformly sampled point light and the surface
         vec3 MaterialInteractionEvaluationResultImportanceSampling = vec3(0); /// Interaction result of importance sampled point light and the surface
@@ -514,14 +514,14 @@ void main()
         {
             MaterialInteractionEvaluationResultUniformSampling = EvaluateMaterialInteraction(Material, ShadingData.MaterialInteractionType, UniformOutgoingDirection);
             MaterialInteractionEvaluationResultUniformSampling = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResultUniformSampling * UniformPointLightSamplingResult.xyz;
-            W1 = UniformPointLightSamplingResult.w / (UniformPointLightSamplingResult.w + UniformSamplingPDF);
+            W1 = UniformPointLightSamplingResult.w / (UniformPointLightSamplingResult.w + ImportanceSamplingPDF);
         }
 
         if (ImportancePointLightSamplingResult.w > 0.)
         {
             MaterialInteractionEvaluationResultImportanceSampling = EvaluateMaterialInteraction(Material, ShadingData.MaterialInteractionType, ImportanceOutgoingDirection);
             MaterialInteractionEvaluationResultImportanceSampling = ThroughputBeforeThisBounce * MaterialInteractionEvaluationResultImportanceSampling * ImportancePointLightSamplingResult.xyz;
-            W2 = ImportancePointLightSamplingResult.w / (ImportancePointLightSamplingResult.w + ImportanceSamplingPDF);
+            W2 = ImportancePointLightSamplingResult.w / (ImportancePointLightSamplingResult.w + UniformSamplingPDF);
         }
 
         PointLightResult = W1 * MaterialInteractionEvaluationResultUniformSampling + W2 * MaterialInteractionEvaluationResultImportanceSampling;
