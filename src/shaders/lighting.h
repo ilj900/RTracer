@@ -3,6 +3,7 @@
 
 #include "common_defines.h"
 #include "common_structures.h"
+#include "process_material_interaction.h"
 #include "random.h"
 
 uint GetActiveLightCount(uint LightType)
@@ -546,40 +547,8 @@ vec4 ComputeBXDFAreaLightInput(inout FSamplingState SamplingState, vec3 LightDir
     return vec4(0);
 }
 
-vec4 ComputeUniformIBLInput(inout FSamplingState SamplingState, out vec3 LightDirection, inout float UniformSamplingImportancePDF, inout float UniformSamplingBXDFPDF)
-{
-    /// TODO: Verify that sampling is uniform
-    /// Sample a random direction in the hemisphere and transform it into world-space coordinate system
-    LightDirection = Sample3DUnitHemisphere(SamplingState) * ShadingData.TransposedTNBMatrix;
-
-    FRayData RayData;
-    RayData.RayFlags = 0;
-    RayData.Direction.xyz = LightDirection;
-    RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace + ShadingData.NormalInWorldSpace * FLOAT_EPSILON;
-
-    /// Trace the ray
-    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, FLOAT_EPSILON, RayData.Direction.xyz, 10000, 0);
-
-    /// And if we didn't hit any geometry, then we sample the IBL
-    if (HitPayload.RenderableIndex == UINT_MAX)
-    {
-        const uvec2 IBLSize = textureSize(IBLTextureSamplerLinear, 0);
-        vec2 IBLUV = Vec3ToSphericalUV(ShadingData.WorldSpaceOutgoingDirection, M_PI_2);
-        uint TexelIndex = uint(IBLUV.y * IBLSize.x * IBLSize.y) + uint(IBLUV.x * IBLSize.x);
-
-        float NDotL = dot(ShadingData.NormalInWorldSpace, LightDirection);
-        float PDF = 0.5f * M_INV_PI;
-        UniformSamplingImportancePDF = IBLPDFBuffer[TexelIndex];
-        UniformSamplingBXDFPDF = EvaluateScatteringPDF(Material, ShadingData.MaterialInteractionType, LightDirection);
-        return vec4(texture(IBLTextureSamplerLinear, IBLUV).xyz * NDotL / PDF, PDF);
-    }
-    else
-    {
-        return vec4(0);
-    }
-}
-
-vec4 ComputeImportanceIBLInput(inout FSamplingState SamplingState, out vec3 LightDirection, inout float ImportanceSamplingUniformPDF, inout float ImportanceSamplingBXDFPDF)
+/// Function generates a random vector direction using importance sampling
+vec3 ImportanceSampleIBL(inout FSamplingState SamplingState)
 {
     vec2 UVCoordinates = Sample2DUnitQuad(SamplingState);
     const uvec2 IBLSize = textureSize(IBLTextureSamplerLinear, 0);
@@ -597,46 +566,49 @@ vec4 ComputeImportanceIBLInput(inout FSamplingState SamplingState, out vec3 Ligh
     /// Map UV coordinates to spherical coordinates
     vec2 SphericalCoordinates = UVCoordinates * vec2(M_2_PI, M_PI);
     SphericalCoordinates.x -= M_PI_2;
-    LightDirection.x = sin(SphericalCoordinates.y) * cos(SphericalCoordinates.x);
-    LightDirection.y = cos(SphericalCoordinates.y);
-    LightDirection.z = sin(SphericalCoordinates.y) * sin(SphericalCoordinates.x);
-
-    float NDotL = dot(ShadingData.NormalInWorldSpace, LightDirection);
-
-    if(NDotL <= 0)
-    {
-        return vec4(0);
-    }
-
-    FRayData RayData;
-    RayData.RayFlags = 0;
-    RayData.Direction.xyz = LightDirection;
-    RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace + ShadingData.NormalInWorldSpace * FLOAT_EPSILON;
-
-    /// Trace the ray
-    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, FLOAT_EPSILON, RayData.Direction.xyz, 10000, 0);
-
-    /// And if we didn't hit any geometry, then we sample the IBL
-    if (HitPayload.RenderableIndex == UINT_MAX)
-    {
-        float PDF = IBLPDFBuffer[TexelIndex] * IBLSize.x * IBLSize.y;
-        ImportanceSamplingUniformPDF = 0.5f * M_INV_PI;
-        ImportanceSamplingBXDFPDF = EvaluateScatteringPDF(Material, ShadingData.MaterialInteractionType, LightDirection);
-        return vec4(texture(IBLTextureSamplerLinear, UVCoordinates).xyz * NDotL / PDF, PDF);
-    }
-    else
-    {
-        return vec4(0);
-    }
+    vec3 Direction;
+    Direction.x = sin(SphericalCoordinates.y) * cos(SphericalCoordinates.x);
+    Direction.y = cos(SphericalCoordinates.y);
+    Direction.z = sin(SphericalCoordinates.y) * sin(SphericalCoordinates.x);
+    return vec3(Direction);
 }
 
-vec4 ComputeBXDFIBLInput(inout FSamplingState SamplingState, vec3 LightDirection, float BXDFSamplingPDF, inout float BXDFSamplingUniformPDF, inout float BXDFSamplingImportancePDF)
+/// WARNING, this function is ugly af. Read that comment
+/// It tries to cover all 3 types of sampling and to do so we
+/// 1. In the case of BxDF sampling Direction should be the already scattered ray direction
+/// 2. In the case of BxDF PDF1 should be the PDF of such scattering
+/// 3. In case SamplingStrategy is SAMPLE_UNIFORM:
+///     3.1 PDF1 will be filled with important sampling PDF
+///     3.2 PDF2 will be filled with BxDF sampling PDF
+/// 4. In case SamplingStrategy is SAMPLE_IMPORTANCE:
+///     4.1 PDF1 will be filled with uniform sampling PDF
+///     4.2 PDF2 will be filled with BxDF sampling PDF
+/// 5. In case SamplingStrategy is SAMPLE_BXDF:
+///     5.1 PDF1 will be filled with uniform sampling PDF
+///     5.2 PDF2 will be filled with important sampling PDF
+vec4 ComputeIBLInput(inout FSamplingState SamplingState, inout vec3 Direction, uint SamplingStrategy, inout float PDF1, inout float PDF2)
 {
+    if (SamplingStrategy == SAMPLE_UNIFORM)
+        Direction = Sample3DUnitHemisphere(SamplingState) * ShadingData.TransposedTNBMatrix;
+
+    if (SamplingStrategy == SAMPLE_IMPORTANCE)
+        Direction = ImportanceSampleIBL(SamplingState);
+
+    vec3 Normal = ShadingData.NormalInWorldSpace;
+
+    /// We invert normal in case if we are sampling BxDF and it was a transmission, because in this case
+    /// Transmitted BxDF is on the other side of the surface
+    if (SamplingStrategy == SAMPLE_BXDF && ((ShadingData.MaterialInteractionType & TRANSMISSION_LAYER) == TRANSMISSION_LAYER))
+        Normal = -Normal;
+
+    float NDotL = dot(Normal, Direction);
+
+    if(NDotL <= 0) return vec4(0);
+
     FRayData RayData;
     RayData.RayFlags = 0;
-    RayData.Direction.xyz = LightDirection;
-    bool bRayLeftOnTheOtherSide = (ShadingData.MaterialInteractionType & TRANSMISSION_LAYER) == TRANSMISSION_LAYER;
-    RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace + (bRayLeftOnTheOtherSide ? (-ShadingData.NormalInWorldSpace) : ShadingData.NormalInWorldSpace) * FLOAT_EPSILON;
+    RayData.Direction.xyz = Direction;
+    RayData.Origin.xyz = ShadingData.IntersectionCoordinatesInWorldSpace + Normal * FLOAT_EPSILON;
 
     /// Trace the ray
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, RayData.Origin.xyz, FLOAT_EPSILON, RayData.Direction.xyz, 10000, 0);
@@ -644,26 +616,32 @@ vec4 ComputeBXDFIBLInput(inout FSamplingState SamplingState, vec3 LightDirection
     /// And if we didn't hit any geometry, then we sample the IBL
     if (HitPayload.RenderableIndex == UINT_MAX)
     {
-        vec2 IBLUV = Vec3ToSphericalUV(LightDirection, M_PI_2);
+        vec2 IBLUV = Vec3ToSphericalUV(Direction, M_PI_2);
         vec3 IBL = texture(IBLTextureSamplerLinear, IBLUV).xyz;
 
-        if (ShadingData.IsScatteredRaySingular)
+        /// A special case for BxDF samplingm. If scattered ray is singular (perfectly reflected of refracted), just sample IBL and be off
+        if (SamplingStrategy == SAMPLE_BXDF && ShadingData.IsScatteredRaySingular)
         {
-            BXDFSamplingUniformPDF = 0.f;
-            BXDFSamplingImportancePDF = 0.f;
+            PDF1 = 0.f;
+            PDF2 = 0.f;
             return vec4(IBL, 1.f);
         }
 
         const uvec2 IBLSize = textureSize(IBLTextureSamplerLinear, 0);
         uint TexelIndex = uint(IBLUV.y * IBLSize.x * IBLSize.y) + uint(IBLUV.x * IBLSize.x);
 
-        float PDF = BXDFSamplingPDF;
-        BXDFSamplingUniformPDF = 0.5f * M_INV_PI;
-        BXDFSamplingImportancePDF = IBLPDFBuffer[TexelIndex];
+        /// PDF[0] - Uniform, PDF[1] - Importance, PDF[2] - BxDF
+        vec3 PDF = vec3(
+            0.5f * M_INV_PI,
+            IBLPDFBuffer[TexelIndex] * IBLSize.x * IBLSize.y,
+            SamplingStrategy == SAMPLE_BXDF ? PDF1 : EvaluateScatteringPDF(Material, ShadingData.MaterialInteractionType, Direction));
+        float PDF0 = 0;
 
-        /// We use abs because LightDirection is actually the direction of scattered ray and that ray can not be on the wrong side of the hemisphere
-        float NDotL = abs(dot(ShadingData.NormalInWorldSpace, LightDirection));
-        return vec4(IBL * NDotL / PDF, PDF);
+        if (SamplingStrategy == SAMPLE_UNIFORM)     { PDF0 = PDF.x; PDF1 = PDF.y; PDF2 = PDF.z; }
+        if (SamplingStrategy == SAMPLE_IMPORTANCE)  { PDF1 = PDF.x; PDF0 = PDF.y; PDF2 = PDF.z; }
+        if (SamplingStrategy == SAMPLE_BXDF)        { PDF1 = PDF.x; PDF2 = PDF.y; PDF0 = PDF.z; }
+
+        return vec4(IBL * NDotL / PDF0, PDF0);
     }
 
     return vec4(0);

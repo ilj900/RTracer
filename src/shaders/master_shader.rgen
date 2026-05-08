@@ -665,9 +665,9 @@ void main()
         float W2 = 0.f;
         float W3 = 0.f;
 
-        vec4 UniformIBLSamplingResult = ShadingData.IsScatteredRaySingular ? vec4(0) : ComputeUniformIBLInput(SamplingState, UniformOutgoingDirection, UniformSamplingImportancePDF, UniformSamplingBXDFPDF);
-        vec4 ImportanceIBLSamplingResult = ShadingData.IsScatteredRaySingular ? vec4(0) : ComputeImportanceIBLInput(SamplingState, ImportanceOutgoingDirection, ImportanceSamplingUniformPDF, ImportanceSamplingBXDFPDF);
-        vec4 BXDFIBLSamplingResult = ComputeBXDFIBLInput(SamplingState, BXDFOutgoingDirection, ShadingData.MaterialScatteringPDF, BXDFSamplingUniformPDF, BXDFSamplingImportancePDF);
+        vec4 UniformIBLSamplingResult = ShadingData.IsScatteredRaySingular ? vec4(0) : ComputeIBLInput(SamplingState, UniformOutgoingDirection, SAMPLE_UNIFORM, UniformSamplingImportancePDF, UniformSamplingBXDFPDF);
+        vec4 ImportanceIBLSamplingResult = ShadingData.IsScatteredRaySingular ? vec4(0) : ComputeIBLInput(SamplingState, ImportanceOutgoingDirection, SAMPLE_IMPORTANCE, ImportanceSamplingUniformPDF, ImportanceSamplingBXDFPDF);
+        vec4 BXDFIBLSamplingResult = ComputeIBLInput(SamplingState, BXDFOutgoingDirection, SAMPLE_BXDF, BXDFSamplingUniformPDF, BXDFSamplingImportancePDF);
 
         vec3 MaterialInteractionEvaluationResult1 = vec3(0); /// Interaction result of uniform sampled IBL and the surface
         vec3 MaterialInteractionEvaluationResult2 = vec3(0); /// Interaction result of importance sampled IBL and the surface
