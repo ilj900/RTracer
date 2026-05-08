@@ -653,13 +653,13 @@ void main()
     if (true /*UtilityData.IBLIsActive*/)
     {
         vec3 UniformOutgoingDirection = vec3(0);
-        vec3 ImportanceOutgoingDirection = vec3(0);
-        vec3 BXDFOutgoingDirection = ShadingData.WorldSpaceOutgoingDirection; ///We already have bxdf direction
         float UniformSamplingImportancePDF = 0.f;
         float UniformSamplingBXDFPDF = 0.f;
+        vec3 ImportanceOutgoingDirection = vec3(0);
         float ImportanceSamplingUniformPDF = 0.f;
         float ImportanceSamplingBXDFPDF = 0.f;
-        float BXDFSamplingUniformPDF = 0.f;
+        vec3 BXDFOutgoingDirection = ShadingData.WorldSpaceOutgoingDirection; ///We already have bxdf direction
+        float BXDFSamplingUniformPDF = ShadingData.MaterialScatteringPDF;
         float BXDFSamplingImportancePDF = 0.f;
         float W1 = 0.f;
         float W2 = 0.f;
