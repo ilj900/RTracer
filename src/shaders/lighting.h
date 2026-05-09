@@ -628,7 +628,7 @@ vec4 ComputeIBLInput(inout FSamplingState SamplingState, inout vec3 Direction, u
         }
 
         const uvec2 IBLSize = textureSize(IBLTextureSamplerLinear, 0);
-        uint TexelIndex = uint(IBLUV.y * IBLSize.x * IBLSize.y) + uint(IBLUV.x * IBLSize.x);
+        uint TexelIndex = uint(IBLUV.y * float(IBLSize.y)) * IBLSize.x + uint(IBLUV.x * float(IBLSize.x));
 
         /// PDF[0] - Uniform, PDF[1] - Importance, PDF[2] - BxDF
         vec3 PDF = vec3(
