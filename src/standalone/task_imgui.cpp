@@ -469,6 +469,19 @@ FSynchronizationPoint FImguiTask::Submit(VkPipelineStageFlags& PipelineStageFlag
 				Render->SetAccumulateBounces(bAccumulateBounces);
 			}
 
+			static char Buffer[16] = "";
+			static int Index = -1;
+			if (ImGui::InputText("Save frame at index: ", Buffer, sizeof(Buffer), ImGuiInputTextFlags_CharsDecimal))
+			{
+				Index = std::stoi(Buffer);
+			}
+
+			if (Render->Counter == Index)
+			{
+				static int SaveImageCounter = 0;
+				Render->PrintScreenExr("Autosave_" + std::to_string(SaveImageCounter++));
+			}
+
 			ImGui::End();
 		}
 	}
