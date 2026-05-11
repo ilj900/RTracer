@@ -25,6 +25,8 @@ struct FShadingData
     vec3 TangentSpaceOutgoingDirection;
     vec3 NormalInWorldSpace;
     vec3 NormalInTangentSpace;
+    vec3 HInWorldSpace;
+    vec3 HInTangentSpace;
     vec3 IntersectionCoordinatesInWorldSpace;
     vec2 UVCoordinates;
     mat3 TNBMatrix;
@@ -32,6 +34,8 @@ struct FShadingData
     float MaterialScatteringPDF;
     /// cos(angle) between normal and view direction
     float NDotI;
+    /// Cos(angle) between half-vector (genrated normal) and view direction
+    float NDotH;
     float LayerSelectionPDF;
     bool bFrontFacing;
     bool IsScatteredRaySingular;
@@ -668,6 +672,10 @@ void main()
         vec4 UniformIBLSamplingResult = ShadingData.IsScatteredRaySingular ? vec4(0) : ComputeIBLInput(SamplingState, UniformOutgoingDirection, SAMPLE_UNIFORM, UniformSamplingImportancePDF, UniformSamplingBXDFPDF);
         vec4 ImportanceIBLSamplingResult = ShadingData.IsScatteredRaySingular ? vec4(0) : ComputeIBLInput(SamplingState, ImportanceOutgoingDirection, SAMPLE_IMPORTANCE, ImportanceSamplingUniformPDF, ImportanceSamplingBXDFPDF);
         vec4 BXDFIBLSamplingResult = ComputeIBLInput(SamplingState, BXDFOutgoingDirection, SAMPLE_BXDF, BXDFSamplingUniformPDF, BXDFSamplingImportancePDF);
+
+        DebugGlobal0 = UniformIBLSamplingResult;
+        DebugGlobal1 = ImportanceIBLSamplingResult;
+        DebugGlobal2 = BXDFIBLSamplingResult;
 
         vec3 MaterialInteractionEvaluationResult1 = vec3(0); /// Interaction result of uniform sampled IBL and the surface
         vec3 MaterialInteractionEvaluationResult2 = vec3(0); /// Interaction result of importance sampled IBL and the surface

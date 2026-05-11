@@ -389,26 +389,6 @@ vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType, vec3 Wo
 			BXDF = Material.TransmissionColor;
 			break;
 		}
-		case SUBSURFACE_LAYER:
-		{
-			BXDF.xyz = Material.SubsurfaceColor;
-			break;
-		}
-		case SHEEN_LAYER:
-		{
-			BXDF.xyz = Material.SheenColor;
-			break;
-		}
-		case COAT_LAYER:
-		{
-			BXDF.xyz = Material.CoatColor;
-			break;
-		}
-		case EMISSION_LAYER:
-		{
-			BXDF.xyz = Material.EmissionColor;
-			break;
-		}
 	}
 
 	return BXDF;
@@ -437,40 +417,41 @@ float EvaluateScatteringPDF(FDeviceMaterial Material, uint RayType, vec3 WorldSp
 				{
 					return 1.f;
 				}
-				else
-				{
-					return 0.f;
-				}
+				return 0.f;
 			}
-			else
-			{
-				vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + TangentSpaceLightDirection));
-				return VNDPDF(ApproximatedNormal.xzy,
-					Material.SpecularRoughness * Material.SpecularRoughness,
-					Material.SpecularRoughness * Material.SpecularRoughness,
-					-ShadingData.TangentSpaceIncomingDirection.xzy);
-			}
+			vec3 ApproximatedNormal = normalize((-ShadingData.TangentSpaceIncomingDirection + TangentSpaceLightDirection));
+			return VNDPDF(ApproximatedNormal.xzy,
+				Material.SpecularRoughness * Material.SpecularRoughness,
+				Material.SpecularRoughness * Material.SpecularRoughness,
+				-ShadingData.TangentSpaceIncomingDirection.xzy);
 		}
 		case TRANSMISSION_LAYER:
 		{
-			/// If the ray is over the surface, then in case of transmissive it cannot be refracted.
-			return 0.f;
-		}
-		case SUBSURFACE_LAYER:
-		{
-			return 1.f;
-		}
-		case SHEEN_LAYER:
-		{
-			return 1.f;
-		}
-		case COAT_LAYER:
-		{
-			return 1.f;
-		}
-		case EMISSION_LAYER:
-		{
-			return 1.f;
+			if (Material.TransmissionRoughness == 0.f)
+				return 0.f;  // singular — MIS not used for this case
+
+			// Light must be on the transmitted side (below surface in tangent space)
+			if (TangentSpaceLightDirection.y >= 0.f)
+				return 0.f;
+
+			float IOR1 = ShadingData.IOR1;
+			float IOR2 = ShadingData.bFrontFacing ? Material.SpecularIOR : 1.f;
+
+			/// TODO: Save insted of recalculating
+			vec3 H = normalize(IOR1 * ShadingData.TangentSpaceIncomingDirection - IOR2 * TangentSpaceLightDirection);
+			if (H.y <= 0.f)
+				return 0.f;
+
+			float CosTheta = abs(dot(H, ShadingData.TangentSpaceIncomingDirection));
+			float CosT     = abs(dot(H, TangentSpaceLightDirection));
+			float Denom    = IOR1 * CosTheta + IOR2 * CosT;
+			if (abs(Denom) < 1e-6)
+				return 0.f;
+
+			float Alpha2 = Material.TransmissionRoughness * Material.TransmissionRoughness;
+			float VndPDF = VNDPDF(H.xzy, Alpha2, Alpha2, -ShadingData.TangentSpaceIncomingDirection.xzy);
+
+			return 4.f * CosTheta * VndPDF * IOR2 * IOR2 * CosT / (Denom * Denom);
 		}
 	}
 

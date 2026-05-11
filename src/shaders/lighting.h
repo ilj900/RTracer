@@ -552,7 +552,7 @@ vec3 ImportanceSampleIBL(inout FSamplingState SamplingState)
 {
     vec2 UVCoordinates = Sample2DUnitQuad(SamplingState);
     const uvec2 IBLSize = textureSize(IBLTextureSamplerLinear, 0);
-    uint TexelIndex = uint(IBLSize.x * IBLSize.y * UVCoordinates.y) + uint(IBLSize.x * UVCoordinates.x);
+    uint TexelIndex = uint(UVCoordinates.y * float(IBLSize.y)) * IBLSize.x + uint(UVCoordinates.x * float(IBLSize.x));
 
     FDeviceAliasTableEntry AliasTableEntry = IBLImportanceBuffer[TexelIndex];
     /// Get texel index
@@ -630,10 +630,13 @@ vec4 ComputeIBLInput(inout FSamplingState SamplingState, inout vec3 Direction, u
         const uvec2 IBLSize = textureSize(IBLTextureSamplerLinear, 0);
         uint TexelIndex = uint(IBLUV.y * float(IBLSize.y)) * IBLSize.x + uint(IBLUV.x * float(IBLSize.x));
 
+        float SinTheta = sin(IBLUV.y * M_PI);
+        float IBLImportancePDF = SinTheta > 1e-4 ?
+        IBLPDFBuffer[TexelIndex] * float(IBLSize.x * IBLSize.y) / (SinTheta * 2.f * M_PI * M_PI) : 0.0;
+
         /// PDF[0] - Uniform, PDF[1] - Importance, PDF[2] - BxDF
         vec3 PDF = vec3(
-            0.5f * M_INV_PI,
-            IBLPDFBuffer[TexelIndex] * IBLSize.x * IBLSize.y,
+            0.5f * M_INV_PI, IBLImportancePDF,
             SamplingStrategy == SAMPLE_BXDF ? PDF1 : EvaluateScatteringPDF(Material, ShadingData.MaterialInteractionType, Direction));
         float PDF0 = 0;
 
