@@ -105,7 +105,7 @@ target_include_directories(SceneLoader PUBLIC .)
 
 target_link_libraries(Renderer
         Vulkan::Vulkan
-        Vulkan::shaderc_combined
+        shaderc
         Utils
         ECS
         tinyexr

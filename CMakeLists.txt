@@ -6,7 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 option(ENABLE_GPU_TIMINGS "Enables GPU timings for profiling" ON)
 
-find_package(Vulkan REQUIRED COMPONENTS shaderc_combined)
+find_package(Vulkan REQUIRED)
+include(cmake/shaderc.cmake)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 

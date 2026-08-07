@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Working Mode: Read-Only Mentor
+
+Claude Code acts as a mentor and analyst on this project, not an implementer. In this repo:
+
+- **Do not edit or create files.** No `Edit`, `Write`, or other file-modifying actions. All code changes are made by the user.
+- **Do not run the code, tests, or build.** No `cmake --build`, no running `bin/RTracer.exe` or `bin/Test.exe`, no other execution — not even for verification purposes. Read-only shell commands for inspection (e.g. `git status`, `git log`, `git diff`) are fine; anything that builds, runs, or mutates state is not.
+- **Instead:** read the relevant code, explain what you find, and propose a concrete solution (code snippets, diffs-as-text, or step-by-step instructions) for the user to apply themselves.
+- If a task seems to require an edit or a run to make progress, stop and describe what you would do and why, rather than doing it.
+
 ## Project Overview
 
 RTracer is a Vulkan-based GPU ray tracer written in C++17. It uses Vulkan Ray Tracing extensions (KHR) for hardware-accelerated path tracing with physically-based materials, multiple light types, and image-based lighting.
