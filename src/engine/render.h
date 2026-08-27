@@ -81,7 +81,7 @@ public:
 	ECS::FEntity CreateRefractiveMaterial(const FVector3& BaseColor, const std::string& MaterialName = "");
     ECS::FEntity ShapeSetMaterial(ECS::FEntity Shape, ECS::FEntity Material);
 	const std::unordered_map<ECS::FEntity, std::string>& GetMaterials();
-	const ECS::COMPONENTS::FMaterialComponent& GetMaterial(ECS::FEntity Material);
+	const ECS::COMPONENTS::FOpenPBRSurfaceComponent& GetMaterial(ECS::FEntity Material);
 
 	/// Materials manipulation
 	/// Albedo

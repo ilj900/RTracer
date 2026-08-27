@@ -14,7 +14,7 @@ namespace ECS
     {
     	void FMaterialSystem::Init()
     	{
-    		FBuffer MaterialsBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(MAX_MATERIALS * sizeof(COMPONENTS::FMaterialComponent),
+    		FBuffer MaterialsBuffer = RESOURCE_ALLOCATOR()->CreateBuffer(MAX_MATERIALS * sizeof(COMPONENTS::FOpenPBRSurfaceComponent),
 					VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, MATERIAL_SYSTEM_DATA_BUFFER);
     		RESOURCE_ALLOCATOR()->RegisterBuffer(MaterialsBuffer, MATERIAL_SYSTEM_DATA_BUFFER);
 
@@ -29,7 +29,7 @@ namespace ECS
     		/// TODO: Optimize loading
     		if (!ChangedMaterials.empty())
     		{
-    			std::vector<COMPONENTS::FMaterialComponent> UpdatedMaterials(ChangedMaterials.size());
+    			std::vector<COMPONENTS::FOpenPBRSurfaceComponent> UpdatedMaterials(ChangedMaterials.size());
     			std::vector<VkDeviceSize> Sizes(ChangedMaterials.size());
     			std::vector<VkDeviceSize> Offsets(ChangedMaterials.size());
     			std::vector<void*> DataPointers(ChangedMaterials.size());
@@ -38,9 +38,9 @@ namespace ECS
 
     			for (auto Entity : ChangedMaterials)
     			{
-    				Sizes[i] = sizeof(COMPONENTS::FMaterialComponent);
-    				UpdatedMaterials[i] = COORDINATOR().GetComponent<COMPONENTS::FMaterialComponent>(Entity);
-    				Offsets[i] = sizeof(COMPONENTS::FMaterialComponent) * MaterialToIndexMap[Entity];;
+    				Sizes[i] = sizeof(COMPONENTS::FOpenPBRSurfaceComponent);
+    				UpdatedMaterials[i] = COORDINATOR().GetComponent<COMPONENTS::FOpenPBRSurfaceComponent>(Entity);
+    				Offsets[i] = sizeof(COMPONENTS::FOpenPBRSurfaceComponent) * MaterialToIndexMap[Entity];;
     				DataPointers[i] = &UpdatedMaterials[i];
     				++i;
     			}
@@ -57,7 +57,7 @@ namespace ECS
         {
             FEntity Material = COORDINATOR().CreateEntity();
     		MaterialToName[Material] = MaterialName.empty() ? "Material entity " + std::to_string(Material) : MaterialName;
-            COORDINATOR().AddComponent<ECS::COMPONENTS::FMaterialComponent>(Material, {});
+            COORDINATOR().AddComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(Material, {});
     		MaterialToIndexMap[Material] = FreeIndices.front();
     		FreeIndices.pop();
             return Material;
@@ -67,50 +67,50 @@ namespace ECS
 		{
 			FEntity Material = COORDINATOR().CreateEntity();
     		MaterialToName[Material] = MaterialName.empty() ? "Material entity " + std::to_string(Material) : MaterialName;
-			COORDINATOR().AddComponent<ECS::COMPONENTS::FMaterialComponent>(Material, {});
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(Material);
+			COORDINATOR().AddComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(Material, {});
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(Material);
 
-			MaterialComponent.BaseWeight = 0.f;
-			MaterialComponent.BaseColor = {0.f, 0.f, 0.f};
-			MaterialComponent.DiffuseRoughness = 0.f;
-			MaterialComponent.Metalness = 0.f;
-			MaterialComponent.Normal = {0.f, 0.f, 0.f};
-			MaterialComponent.SpecularWeight = 0.f;
-			MaterialComponent.SpecularColor = {0.f, 0.f, 0.f};
-			MaterialComponent.SpecularRoughness = 0.f;
-			MaterialComponent.SpecularIOR = 0.f;
-			MaterialComponent.SpecularAnisotropy = 0.f;
-			MaterialComponent.SpecularRotation = 0.f;
-			MaterialComponent.TransmissionWeight = 0.f;
-			MaterialComponent.TransmissionColor = {0.f, 0.f, 0.f};
-			MaterialComponent.TransmissionDepth = 0.f;
-			MaterialComponent.TransmissionScatter = {0.f, 0.f, 0.f};
-			MaterialComponent.TransmissionAnisotropy = 0.f;
-			MaterialComponent.TransmissionDispersion = 0.f;
-			MaterialComponent.TransmissionRoughness = 0.f;
-			MaterialComponent.SubsurfaceWeight = 0.f;
-			MaterialComponent.SubsurfaceColor = {0.f, 0.f, 0.f};
-			MaterialComponent.SubsurfaceRadius = {0.f, 0.f, 0.f};
-			MaterialComponent.SubsurfaceScale = 0.f;
-			MaterialComponent.SubsurfaceAnisotropy = 0.f;
-			MaterialComponent.SheenWeight = 0.f;
-			MaterialComponent.SheenColor = {0.f, 0.f, 0.f};
-			MaterialComponent.SheenRoughness = 0.f;
-			MaterialComponent.CoatWeight = 0.f;
-			MaterialComponent.CoatColor = {0.f, 0.f, 0.f};
-			MaterialComponent.CoatRoughness = 0.f;
-			MaterialComponent.CoatAnisotropy = 0.f;
-			MaterialComponent.CoatRotation = 0.f;
-			MaterialComponent.CoatIOR = 0.f;
-			MaterialComponent.CoatNormal = {0, 0.f, 0};
-			MaterialComponent.CoatAffectColor = 0.f;
-			MaterialComponent.CoatAffectRoughness = 0.f;
-			MaterialComponent.ThinFilmThickness = 0.f;
-			MaterialComponent.ThinFilmIOR = 0.f;
-			MaterialComponent.EmissionWeight = 0;
-			MaterialComponent.EmissionColor = {0.f, 0.f, 0.f};
-			MaterialComponent.Opacity = {0.f, 0.f, 0.f};
-			MaterialComponent.ThinWalled = false;
+    		MaterialComponent.BaseWeight = 0;
+    		MaterialComponent.BaseColor = {0.f, 0.f, 0.f};
+    		MaterialComponent.BaseMetalness = 0;
+    		MaterialComponent.BaseDiffuseRoughness = 0;
+    		MaterialComponent.SpecularWeight = 0;
+    		MaterialComponent.SpecularColor = {0.f, 0.f, 0.f};
+    		MaterialComponent.SpecularRoughness = 0;
+    		MaterialComponent.SpecularRoughnessAnisotropy = 0;
+    		MaterialComponent.SpecularIor = 0;
+    		MaterialComponent.TransmissionWeight = 0;
+    		MaterialComponent.TransmissionColor = {0.f, 0.f, 0.f};
+    		MaterialComponent.TransmissionDepth = 0;
+    		MaterialComponent.TransmissionScatter = {0.f, 0.f, 0.f};
+    		MaterialComponent.TransmissionScatterAnisotropy = 0;
+    		MaterialComponent.TransmissionDispersionScale = 0;
+    		MaterialComponent.TransmissionDispersionAbbeNumber = 0;
+    		MaterialComponent.SubsurfaceWeight = 0;
+    		MaterialComponent.SubsurfaceColor = {0.f, 0.f, 0.f};
+    		MaterialComponent.SubsurfaceRadius = 0;
+    		MaterialComponent.SubsurfaceRadiusScale = {0.f, 0.f, 0.f};
+    		MaterialComponent.SubsurfaceScatterAnisotropy = 0;
+    		MaterialComponent.CoatWeight = 0;
+    		MaterialComponent.CoatColor = {0.f, 0.f, 0.f};
+    		MaterialComponent.CoatRoughness = 0;
+    		MaterialComponent.CoatRoughnessAnisotropy = 0;
+    		MaterialComponent.CoatIor = 0;
+    		MaterialComponent.CoatDarkening = 0;
+    		MaterialComponent.FuzzWeight = 0;
+    		MaterialComponent.FuzzColor = {0.f, 0.f, 0.f};
+    		MaterialComponent.FuzzRoughness = 0;
+    		MaterialComponent.emissionLuminance = 0;
+    		MaterialComponent.emissionColor = {0.f, 0.f, 0.f};
+    		MaterialComponent.ThinFilmWeight = 0;
+    		MaterialComponent.ThinFilmThickness = 0;
+    		MaterialComponent.ThinFilmIor = 0;
+    		MaterialComponent.GeometryOpacity = 0;
+    		MaterialComponent.GeometryThinWalled = false;
+    		MaterialComponent.GeometryNormal = {0.f, 0.f, 0.f};
+    		MaterialComponent.GeometryTangent = {0.f, 0.f, 0.f};
+    		MaterialComponent.GeometryCoatNormal = {0.f, 0.f, 0.f};
+    		MaterialComponent.GeometryCoatTangent = {0.f, 0.f, 0.f};
 
     		MaterialToIndexMap[Material] = FreeIndices.front();
     		FreeIndices.pop();
@@ -121,7 +121,7 @@ namespace ECS
 		/// Albedo
 		FMaterialSystem& FMaterialSystem::SetBaseColorWeight(FEntity MaterialEntity, float Weight)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.BaseWeight = Weight;
     		ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -129,16 +129,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetBaseColorWeight(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.BaseWeightTexture = TextureComponent.TextureIndex;
+			MaterialComponent.BaseWeightTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetBaseColor(FEntity MaterialEntity, const FVector3& Color)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.BaseColor = Color;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -146,16 +146,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetBaseColor(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.BaseColorTexture = TextureComponent.TextureIndex;
+			MaterialComponent.BaseColorTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetDiffuseRoughness(FEntity MaterialEntity, float Roughness)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.DiffuseRoughness = Roughness;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -163,16 +163,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetDiffuseRoughness(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.DiffuseRoughnessTexture = TextureComponent.TextureIndex;
+			MaterialComponent.DiffuseRoughnessTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetMetalness(FEntity MaterialEntity, float Metalness)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.Metalness = Metalness;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -180,16 +180,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetMetalness(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.MetalnessTexture = TextureComponent.TextureIndex;
+			MaterialComponent.MetalnessTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetAlbedoNormal(FEntity MaterialEntity, const FVector3& Normal)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.Normal = Normal;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -198,8 +198,8 @@ namespace ECS
 		FMaterialSystem& FMaterialSystem::SetAlbedoNormal(FEntity MaterialEntity, FEntity TextureEntity)
 		{
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
-			MaterialComponent.NormalTexture = TextureComponent.TextureIndex;
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
+			MaterialComponent.NormalTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
@@ -207,7 +207,7 @@ namespace ECS
 		/// Specular
 		FMaterialSystem& FMaterialSystem::SetSpecularWeight(FEntity MaterialEntity, float Weight)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.SpecularWeight = Weight;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -215,16 +215,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetSpecularWeight(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.SpecularWeightTexture = TextureComponent.TextureIndex;
+			MaterialComponent.SpecularWeightTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetSpecularColor(FEntity MaterialEntity, const FVector3& Color)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.SpecularColor = Color;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -232,16 +232,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetSpecularColor(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.SpecularColorTexture = TextureComponent.TextureIndex;
+			MaterialComponent.SpecularColorTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetSpecularRoughness(FEntity MaterialEntity, float Roughness)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.SpecularRoughness = Roughness;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -249,16 +249,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetSpecularRoughness(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.SpecularRoughnessTexture = TextureComponent.TextureIndex;
+			MaterialComponent.SpecularRoughnessTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetSpecularIOR(FEntity MaterialEntity, float SpecularIOR)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.SpecularIOR = SpecularIOR;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -266,16 +266,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetSpecularIOR(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.SpecularIORTexture = TextureComponent.TextureIndex;
+			MaterialComponent.SpecularIORTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetSpecularAnisotropy(FEntity MaterialEntity, float Anisotropy)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.SpecularAnisotropy = Anisotropy;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -283,16 +283,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetSpecularAnisotropy(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.SpecularAnisotropyTexture = TextureComponent.TextureIndex;
+			MaterialComponent.SpecularAnisotropyTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetSpecularRotation(FEntity MaterialEntity, float Rotation)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.SpecularRotation = Rotation;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -300,9 +300,9 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetSpecularRotation(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.SpecularRotationTexture = TextureComponent.TextureIndex;
+			MaterialComponent.SpecularRotationTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
@@ -311,7 +311,7 @@ namespace ECS
 		/// Transmission
 		FMaterialSystem& FMaterialSystem::SetTransmissionWeight(FEntity MaterialEntity, float Weight)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.TransmissionWeight = Weight;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -319,16 +319,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetTransmissionWeight(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.TransmissionWeightTexture = TextureComponent.TextureIndex;
+			MaterialComponent.TransmissionWeightTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetTransmissionColor(FEntity MaterialEntity, const FVector3& Color)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.TransmissionColor = Color;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -336,7 +336,7 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetTransmissionColor(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
 			MaterialComponent.DiffuseRoughness = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
@@ -345,7 +345,7 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetTransmissionDepth(FEntity MaterialEntity, float Depth)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.TransmissionDepth = Depth;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -353,16 +353,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetTransmissionDepth(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.TransmissionWeightTexture = TextureComponent.TextureIndex;
+			MaterialComponent.TransmissionWeightTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetTransmissionScatter(FEntity MaterialEntity, const FVector3& Color)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.TransmissionScatter = Color;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -370,7 +370,7 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetTransmissionScatter(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
 			MaterialComponent.DiffuseRoughness = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
@@ -379,7 +379,7 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetTransmissionAnisotropy(FEntity MaterialEntity, float Anisotropy)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.TransmissionAnisotropy = Anisotropy;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -387,7 +387,7 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetTransmissionAnisotropy(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
 			MaterialComponent.DiffuseRoughness = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
@@ -396,7 +396,7 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetTransmissionDispersion(FEntity MaterialEntity, float Dispersion)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.TransmissionDispersion = Dispersion;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -404,7 +404,7 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetTransmissionDispersion(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
 			MaterialComponent.DiffuseRoughness = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
@@ -413,7 +413,7 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetTransmissionRoughness(FEntity MaterialEntity, float Roughness)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.TransmissionRoughness = Roughness;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -421,9 +421,9 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetTransmissionRoughness(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.TransmissionRoughnessTexture = TextureComponent.TextureIndex;
+			MaterialComponent.TransmissionRoughnessTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
@@ -432,7 +432,7 @@ namespace ECS
 		/// Subsurface
 		FMaterialSystem& FMaterialSystem::SetSubsurfaceWeight(FEntity MaterialEntity, float Weight)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.SubsurfaceWeight = Weight;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -440,16 +440,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetSubsurfaceWeight(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.SpecularWeightTexture = TextureComponent.TextureIndex;
+			MaterialComponent.SpecularWeightTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetSubsurfaceColor(FEntity MaterialEntity, const FVector3& Color)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.SubsurfaceColor = Color;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -457,7 +457,7 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetSubsurfaceColor(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
 			MaterialComponent.DiffuseRoughness = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
@@ -466,7 +466,7 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetSubsurfaceRadius(FEntity MaterialEntity, const FVector3& Color)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.SubsurfaceRadius = Color;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -474,7 +474,7 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetSubsurfaceRadius(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
 			MaterialComponent.DiffuseRoughness = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
@@ -483,7 +483,7 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetSubsurfaceScale(FEntity MaterialEntity, float Scale)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.SubsurfaceScale = Scale;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -491,7 +491,7 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetSubsurfaceScale(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
 			MaterialComponent.DiffuseRoughness = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
@@ -500,7 +500,7 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetSubsurfaceAnisotropy(FEntity MaterialEntity, float Anisotropy)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.SubsurfaceAnisotropy = Anisotropy;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -508,7 +508,7 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetSubsurfaceAnisotropy(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
 			MaterialComponent.DiffuseRoughness = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
@@ -518,7 +518,7 @@ namespace ECS
 		/// Sheen
 		FMaterialSystem& FMaterialSystem::SetSheenWeight(FEntity MaterialEntity, float Weight)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.SheenWeight = Weight;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -526,16 +526,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetSheenWeight(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.SheenWeightTexture = TextureComponent.TextureIndex;
+			MaterialComponent.SheenWeightTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetSheenColor(FEntity MaterialEntity, const FVector3& Color)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.SheenColor = Color;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -543,7 +543,7 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetSheenColor(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
 			MaterialComponent.DiffuseRoughness = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
@@ -552,7 +552,7 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetSheenRoughness(FEntity MaterialEntity, float Roughness)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.SheenRoughness = Roughness;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -560,7 +560,7 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetSheenRoughness(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
 			MaterialComponent.DiffuseRoughness = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
@@ -570,7 +570,7 @@ namespace ECS
 		/// Coat
 		FMaterialSystem& FMaterialSystem::SetCoatWeight(FEntity MaterialEntity, float Weight)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.CoatWeight = Weight;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -578,16 +578,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetCoatWeight(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.CoatWeightTexture = TextureComponent.TextureIndex;
+			MaterialComponent.CoatWeightTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetCoatColor(FEntity MaterialEntity, const FVector3& Color)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.CoatColor = Color;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -595,16 +595,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetCoatColor(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.CoatColorTexture = TextureComponent.TextureIndex;
+			MaterialComponent.CoatColorTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetCoatRoughness(FEntity MaterialEntity, float Roughness)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.CoatRoughness = Roughness;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -612,16 +612,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetCoatRoughness(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.CoatRoughnessTexture = TextureComponent.TextureIndex;
+			MaterialComponent.CoatRoughnessTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetCoatAnisotropy(FEntity MaterialEntity, float Anisotropy)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.CoatAnisotropy = Anisotropy;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -629,16 +629,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetCoatAnisotropy(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.CoatAnisotropyTexture = TextureComponent.TextureIndex;
+			MaterialComponent.CoatAnisotropyTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetCoatRotation(FEntity MaterialEntity, float Rotation)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.CoatRotation = Rotation;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -646,16 +646,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetCoatRotation(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.CoatRotationTexture = TextureComponent.TextureIndex;
+			MaterialComponent.CoatRotationTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetCoatIOR(FEntity MaterialEntity, float CoatIOR)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.CoatIOR = CoatIOR;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -663,16 +663,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetCoatIOR(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.CoatIORTexture = TextureComponent.TextureIndex;
+			MaterialComponent.CoatIORTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetCoatNormal(FEntity MaterialEntity, FVector3 Normal)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.CoatNormal = Normal;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -680,16 +680,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetCoatNormal(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.CoatNormalTexture = TextureComponent.TextureIndex;
+			MaterialComponent.CoatNormalTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetCoatAffectColor(FEntity MaterialEntity, float Color)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.CoatAffectColor = Color;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -697,16 +697,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetCoatAffectColor(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.CoatAffectColorTexture = TextureComponent.TextureIndex;
+			MaterialComponent.CoatAffectColorTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetCoatAffectRoughness(FEntity MaterialEntity, float Roughness)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.CoatAffectRoughness = Roughness;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -714,9 +714,9 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetCoatAffectRoughness(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.CoatAffectRoughnessTexture = TextureComponent.TextureIndex;
+			MaterialComponent.CoatAffectRoughnessTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
@@ -724,7 +724,7 @@ namespace ECS
 		/// Thin film
 		FMaterialSystem& FMaterialSystem::SetThinFilmThickness(FEntity MaterialEntity, float Thickness)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.ThinFilmThickness = Thickness;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -732,16 +732,16 @@ namespace ECS
 		}
 		FMaterialSystem& FMaterialSystem::SetThinFilmThickness(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.ThinFilmThicknessTexture = TextureComponent.TextureIndex;
+			MaterialComponent.ThinFilmThicknessTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 
 		}
 		FMaterialSystem& FMaterialSystem::SetThinFilmIOR(FEntity MaterialEntity, float ThinFilmIOR)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.ThinFilmIOR = ThinFilmIOR;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -749,9 +749,9 @@ namespace ECS
 		}
 		FMaterialSystem& FMaterialSystem::SetThinFilmIOR(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.ThinFilmIORTexture = TextureComponent.TextureIndex;
+			MaterialComponent.ThinFilmIORTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 
@@ -760,7 +760,7 @@ namespace ECS
 		/// Emission
 		FMaterialSystem& FMaterialSystem::SetEmissionWeight(FEntity MaterialEntity, float Weight)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.EmissionWeight = Weight;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -768,16 +768,16 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetEmissionWeight(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.EmissionWeightTexture = TextureComponent.TextureIndex;
+			MaterialComponent.EmissionWeightTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
 
 		FMaterialSystem& FMaterialSystem::SetEmissionColor(FEntity MaterialEntity, const FVector3& Color)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.EmissionColor = Color;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -785,9 +785,9 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetEmissionColor(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.EmissionColorTexture = TextureComponent.TextureIndex;
+			MaterialComponent.EmissionColorTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
@@ -795,7 +795,7 @@ namespace ECS
 		/// Opacity
 		FMaterialSystem& FMaterialSystem::SetOpacity(FEntity MaterialEntity, const FVector3& Color)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.Opacity = Color;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -803,9 +803,9 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetOpacity(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.OpacityTexture = TextureComponent.TextureIndex;
+			MaterialComponent.OpacityTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
@@ -813,7 +813,7 @@ namespace ECS
 		/// Thin walled
 		FMaterialSystem& FMaterialSystem::SetThinWalled(FEntity MaterialEntity, bool ThinWalled)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			MaterialComponent.ThinWalled = ThinWalled;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
@@ -821,9 +821,9 @@ namespace ECS
 
 		FMaterialSystem& FMaterialSystem::SetThinWalled(FEntity MaterialEntity, FEntity TextureEntity)
 		{
-			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FMaterialComponent>(MaterialEntity);
+			auto& MaterialComponent = GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 			auto& TextureComponent = GetComponent<ECS::COMPONENTS::FTextureComponent>(TextureEntity);
-			MaterialComponent.ThinWalledTexture = TextureComponent.TextureIndex;
+			MaterialComponent.ThinWalledTextureIndex = TextureComponent.TextureIndex;
 			ChangedMaterials.insert(MaterialEntity);
 			return *this;
 		}
@@ -869,53 +869,53 @@ namespace ECS
         {
             std::string Result;
 
-            auto& MaterialComponent = GetComponent<COMPONENTS::FMaterialComponent>(MaterialEntity);
+            auto& MaterialComponent = GetComponent<COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
     		uint32_t MaterialIndex = MaterialToIndexMap[MaterialEntity];
 
             Result += "FDeviceMaterial GetMaterial(vec2 TextureCoords)\r\n";
             Result += "{\r\n";
             Result += "    FDeviceMaterial Material;\r\n";
 
-            Result += GenerateGetFunction<float>(	"Material.BaseWeight",				MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, BaseWeight),				offsetof(COMPONENTS::FMaterialComponent, BaseWeightTexture),				MaterialComponent.BaseWeightTexture);
-            Result += GenerateGetFunction<FVector3>("Material.BaseColor",				MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, BaseColor),				offsetof(COMPONENTS::FMaterialComponent, BaseColorTexture),					MaterialComponent.BaseColorTexture, true);
-            Result += GenerateGetFunction<float>(	"Material.DiffuseRoughness",		MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, DiffuseRoughness),			offsetof(COMPONENTS::FMaterialComponent, DiffuseRoughnessTexture),			MaterialComponent.DiffuseRoughnessTexture);
-            Result += GenerateGetFunction<float>(	"Material.Metalness",				MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, Metalness),				offsetof(COMPONENTS::FMaterialComponent, MetalnessTexture),					MaterialComponent.MetalnessTexture);
-            Result += GenerateGetFunction<FVector3>("Material.Normal",					MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, Normal),					offsetof(COMPONENTS::FMaterialComponent, NormalTexture),					MaterialComponent.NormalTexture);
-            Result += GenerateGetFunction<float>(	"Material.SpecularWeight",			MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, SpecularWeight),			offsetof(COMPONENTS::FMaterialComponent, SpecularWeightTexture),			MaterialComponent.SpecularWeightTexture);
-            Result += GenerateGetFunction<FVector3>("Material.SpecularColor",			MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, SpecularColor),			offsetof(COMPONENTS::FMaterialComponent, SpecularColorTexture),				MaterialComponent.SpecularColorTexture, true);
-            Result += GenerateGetFunction<float>(	"Material.SpecularRoughness",		MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, SpecularRoughness),		offsetof(COMPONENTS::FMaterialComponent, SpecularRoughnessTexture),			MaterialComponent.SpecularRoughnessTexture);
-            Result += GenerateGetFunction<float>(	"Material.SpecularIOR",				MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, SpecularIOR),				offsetof(COMPONENTS::FMaterialComponent, SpecularIORTexture),				MaterialComponent.SpecularIORTexture);
-            Result += GenerateGetFunction<float>(	"Material.SpecularAnisotropy",		MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, SpecularAnisotropy),		offsetof(COMPONENTS::FMaterialComponent, SpecularAnisotropyTexture),		MaterialComponent.SpecularAnisotropyTexture);
-            Result += GenerateGetFunction<float>(	"Material.SpecularRotation",		MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, SpecularRotation),			offsetof(COMPONENTS::FMaterialComponent, SpecularRotationTexture),			MaterialComponent.SpecularRotationTexture);
-            Result += GenerateGetFunction<float>(	"Material.TransmissionWeight",		MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, TransmissionWeight),		offsetof(COMPONENTS::FMaterialComponent, TransmissionWeightTexture),		MaterialComponent.TransmissionWeightTexture);
-            Result += GenerateGetFunction<FVector3>("Material.TransmissionColor",		MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, TransmissionColor),		offsetof(COMPONENTS::FMaterialComponent, TransmissionColorTexture),			MaterialComponent.TransmissionColorTexture, true);
-            Result += GenerateGetFunction<float>(	"Material.TransmissionDepth",		MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, TransmissionDepth),		offsetof(COMPONENTS::FMaterialComponent, TransmissionDepthTexture),			MaterialComponent.TransmissionDepthTexture);
-            Result += GenerateGetFunction<FVector3>("Material.TransmissionScatter",		MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, TransmissionScatter),		offsetof(COMPONENTS::FMaterialComponent, TransmissionScatterTexture),		MaterialComponent.TransmissionScatterTexture);
-            Result += GenerateGetFunction<float>(	"Material.TransmissionAnisotropy",	MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, TransmissionAnisotropy),	offsetof(COMPONENTS::FMaterialComponent, TransmissionAnisotropyTexture),	MaterialComponent.TransmissionAnisotropyTexture);
-            Result += GenerateGetFunction<float>(	"Material.TransmissionDispersion",	MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, TransmissionDispersion),	offsetof(COMPONENTS::FMaterialComponent, TransmissionDispersionTexture),	MaterialComponent.TransmissionDispersionTexture);
-            Result += GenerateGetFunction<float>(	"Material.TransmissionRoughness",	MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, TransmissionRoughness),	offsetof(COMPONENTS::FMaterialComponent, TransmissionRoughnessTexture),		MaterialComponent.TransmissionRoughnessTexture);
-            Result += GenerateGetFunction<float>(	"Material.SubsurfaceWeight",		MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, SubsurfaceWeight),			offsetof(COMPONENTS::FMaterialComponent, SubsurfaceWeightTexture),			MaterialComponent.SubsurfaceWeightTexture);
-            Result += GenerateGetFunction<FVector3>("Material.SubsurfaceColor",			MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, SubsurfaceColor),			offsetof(COMPONENTS::FMaterialComponent, SubsurfaceColorTexture),			MaterialComponent.SubsurfaceColorTexture, true);
-            Result += GenerateGetFunction<FVector3>("Material.SubsurfaceRadius",		MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, SubsurfaceRadius),			offsetof(COMPONENTS::FMaterialComponent, SubsurfaceRadiusTexture),			MaterialComponent.SubsurfaceRadiusTexture);
-            Result += GenerateGetFunction<float>(	"Material.SubsurfaceScale",			MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, SubsurfaceScale),			offsetof(COMPONENTS::FMaterialComponent, SubsurfaceScaleTexture),			MaterialComponent.SubsurfaceScaleTexture);
-            Result += GenerateGetFunction<float>(	"Material.SubsurfaceAnisotropy",	MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, SubsurfaceAnisotropy),		offsetof(COMPONENTS::FMaterialComponent, SubsurfaceAnisotropyTexture),		MaterialComponent.SubsurfaceAnisotropyTexture);
-            Result += GenerateGetFunction<float>(	"Material.SheenWeight",				MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, SheenWeight),				offsetof(COMPONENTS::FMaterialComponent, SheenWeightTexture),				MaterialComponent.SheenWeightTexture);
-            Result += GenerateGetFunction<FVector3>("Material.SheenColor",				MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, SheenColor),				offsetof(COMPONENTS::FMaterialComponent, SheenColorTexture),				MaterialComponent.SheenColorTexture, true);
-            Result += GenerateGetFunction<float>(	"Material.SheenRoughness",			MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, SheenRoughness),			offsetof(COMPONENTS::FMaterialComponent, SheenRoughnessTexture),			MaterialComponent.SheenRoughnessTexture);
-            Result += GenerateGetFunction<float>(	"Material.CoatWeight",				MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, CoatWeight),				offsetof(COMPONENTS::FMaterialComponent, CoatWeightTexture),				MaterialComponent.CoatWeightTexture);
-            Result += GenerateGetFunction<FVector3>("Material.CoatColor",				MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, CoatColor),				offsetof(COMPONENTS::FMaterialComponent, CoatColorTexture),					MaterialComponent.CoatColorTexture, true);
-            Result += GenerateGetFunction<float>(	"Material.CoatRoughness",			MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, CoatRoughness),			offsetof(COMPONENTS::FMaterialComponent, CoatRoughnessTexture),				MaterialComponent.CoatRoughnessTexture);
-            Result += GenerateGetFunction<float>(	"Material.CoatAnisotropy",			MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, CoatAnisotropy),			offsetof(COMPONENTS::FMaterialComponent, CoatAnisotropyTexture),			MaterialComponent.CoatAnisotropyTexture);
-            Result += GenerateGetFunction<float>(	"Material.CoatRotation",			MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, CoatRotation),				offsetof(COMPONENTS::FMaterialComponent, CoatRotationTexture),				MaterialComponent.CoatRotationTexture);
-            Result += GenerateGetFunction<float>(	"Material.CoatIOR",					MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, CoatIOR),					offsetof(COMPONENTS::FMaterialComponent, CoatIORTexture),					MaterialComponent.CoatIORTexture);
-            Result += GenerateGetFunction<FVector3>("Material.CoatNormal",				MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, CoatNormal),				offsetof(COMPONENTS::FMaterialComponent, CoatNormalTexture),				MaterialComponent.CoatNormalTexture);
-            Result += GenerateGetFunction<float>(	"Material.CoatAffectColor",			MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, CoatAffectColor),			offsetof(COMPONENTS::FMaterialComponent, CoatAffectColorTexture),			MaterialComponent.CoatAffectColorTexture);
-            Result += GenerateGetFunction<float>(	"Material.CoatAffectRoughness",		MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, CoatAffectRoughness),		offsetof(COMPONENTS::FMaterialComponent, CoatAffectRoughnessTexture),		MaterialComponent.CoatAffectRoughnessTexture);
-            Result += GenerateGetFunction<float>(	"Material.ThinFilmThickness",		MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, ThinFilmThickness),		offsetof(COMPONENTS::FMaterialComponent, ThinFilmThicknessTexture),			MaterialComponent.ThinFilmThicknessTexture);
-            Result += GenerateGetFunction<float>(	"Material.ThinFilmIOR",				MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, ThinFilmIOR),				offsetof(COMPONENTS::FMaterialComponent, ThinFilmIORTexture),				MaterialComponent.ThinFilmIORTexture);
-            Result += GenerateGetFunction<float>(	"Material.EmissionWeight",			MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, EmissionWeight),			offsetof(COMPONENTS::FMaterialComponent, EmissionWeightTexture),			MaterialComponent.EmissionWeightTexture);
-            Result += GenerateGetFunction<FVector3>("Material.EmissionColor",			MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, EmissionColor),			offsetof(COMPONENTS::FMaterialComponent, EmissionColorTexture),				MaterialComponent.EmissionColorTexture, true);
-            Result += GenerateGetFunction<FVector3>("Material.Opacity",					MaterialIndex, offsetof(COMPONENTS::FMaterialComponent, Opacity),					offsetof(COMPONENTS::FMaterialComponent, OpacityTexture),					MaterialComponent.OpacityTexture);
+            Result += GenerateGetFunction<float>(	"Material.BaseWeight",				MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, BaseWeight),				offsetof(COMPONENTS::FOpenPBRSurfaceComponent, BaseWeightTexture),				MaterialComponent.BaseWeightTexture);
+            Result += GenerateGetFunction<FVector3>("Material.BaseColor",				MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, BaseColor),				offsetof(COMPONENTS::FOpenPBRSurfaceComponent, BaseColorTexture),					MaterialComponent.BaseColorTexture, true);
+            Result += GenerateGetFunction<float>(	"Material.DiffuseRoughness",		MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, DiffuseRoughness),			offsetof(COMPONENTS::FOpenPBRSurfaceComponent, DiffuseRoughnessTexture),			MaterialComponent.DiffuseRoughnessTexture);
+            Result += GenerateGetFunction<float>(	"Material.Metalness",				MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, Metalness),				offsetof(COMPONENTS::FOpenPBRSurfaceComponent, MetalnessTexture),					MaterialComponent.MetalnessTexture);
+            Result += GenerateGetFunction<FVector3>("Material.Normal",					MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, Normal),					offsetof(COMPONENTS::FOpenPBRSurfaceComponent, NormalTexture),					MaterialComponent.NormalTexture);
+            Result += GenerateGetFunction<float>(	"Material.SpecularWeight",			MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SpecularWeight),			offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SpecularWeightTexture),			MaterialComponent.SpecularWeightTexture);
+            Result += GenerateGetFunction<FVector3>("Material.SpecularColor",			MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SpecularColor),			offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SpecularColorTexture),				MaterialComponent.SpecularColorTexture, true);
+            Result += GenerateGetFunction<float>(	"Material.SpecularRoughness",		MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SpecularRoughness),		offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SpecularRoughnessTexture),			MaterialComponent.SpecularRoughnessTexture);
+            Result += GenerateGetFunction<float>(	"Material.SpecularIOR",				MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SpecularIOR),				offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SpecularIORTexture),				MaterialComponent.SpecularIORTexture);
+            Result += GenerateGetFunction<float>(	"Material.SpecularAnisotropy",		MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SpecularAnisotropy),		offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SpecularAnisotropyTexture),		MaterialComponent.SpecularAnisotropyTexture);
+            Result += GenerateGetFunction<float>(	"Material.SpecularRotation",		MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SpecularRotation),			offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SpecularRotationTexture),			MaterialComponent.SpecularRotationTexture);
+            Result += GenerateGetFunction<float>(	"Material.TransmissionWeight",		MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, TransmissionWeight),		offsetof(COMPONENTS::FOpenPBRSurfaceComponent, TransmissionWeightTexture),		MaterialComponent.TransmissionWeightTexture);
+            Result += GenerateGetFunction<FVector3>("Material.TransmissionColor",		MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, TransmissionColor),		offsetof(COMPONENTS::FOpenPBRSurfaceComponent, TransmissionColorTexture),			MaterialComponent.TransmissionColorTexture, true);
+            Result += GenerateGetFunction<float>(	"Material.TransmissionDepth",		MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, TransmissionDepth),		offsetof(COMPONENTS::FOpenPBRSurfaceComponent, TransmissionDepthTexture),			MaterialComponent.TransmissionDepthTexture);
+            Result += GenerateGetFunction<FVector3>("Material.TransmissionScatter",		MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, TransmissionScatter),		offsetof(COMPONENTS::FOpenPBRSurfaceComponent, TransmissionScatterTexture),		MaterialComponent.TransmissionScatterTexture);
+            Result += GenerateGetFunction<float>(	"Material.TransmissionAnisotropy",	MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, TransmissionAnisotropy),	offsetof(COMPONENTS::FOpenPBRSurfaceComponent, TransmissionAnisotropyTexture),	MaterialComponent.TransmissionAnisotropyTexture);
+            Result += GenerateGetFunction<float>(	"Material.TransmissionDispersion",	MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, TransmissionDispersion),	offsetof(COMPONENTS::FOpenPBRSurfaceComponent, TransmissionDispersionTexture),	MaterialComponent.TransmissionDispersionTexture);
+            Result += GenerateGetFunction<float>(	"Material.TransmissionRoughness",	MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, TransmissionRoughness),	offsetof(COMPONENTS::FOpenPBRSurfaceComponent, TransmissionRoughnessTexture),		MaterialComponent.TransmissionRoughnessTexture);
+            Result += GenerateGetFunction<float>(	"Material.SubsurfaceWeight",		MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SubsurfaceWeight),			offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SubsurfaceWeightTexture),			MaterialComponent.SubsurfaceWeightTexture);
+            Result += GenerateGetFunction<FVector3>("Material.SubsurfaceColor",			MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SubsurfaceColor),			offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SubsurfaceColorTexture),			MaterialComponent.SubsurfaceColorTexture, true);
+            Result += GenerateGetFunction<FVector3>("Material.SubsurfaceRadius",		MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SubsurfaceRadius),			offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SubsurfaceRadiusTexture),			MaterialComponent.SubsurfaceRadiusTexture);
+            Result += GenerateGetFunction<float>(	"Material.SubsurfaceScale",			MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SubsurfaceScale),			offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SubsurfaceScaleTexture),			MaterialComponent.SubsurfaceScaleTexture);
+            Result += GenerateGetFunction<float>(	"Material.SubsurfaceAnisotropy",	MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SubsurfaceAnisotropy),		offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SubsurfaceAnisotropyTexture),		MaterialComponent.SubsurfaceAnisotropyTexture);
+            Result += GenerateGetFunction<float>(	"Material.SheenWeight",				MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SheenWeight),				offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SheenWeightTexture),				MaterialComponent.SheenWeightTexture);
+            Result += GenerateGetFunction<FVector3>("Material.SheenColor",				MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SheenColor),				offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SheenColorTexture),				MaterialComponent.SheenColorTexture, true);
+            Result += GenerateGetFunction<float>(	"Material.SheenRoughness",			MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SheenRoughness),			offsetof(COMPONENTS::FOpenPBRSurfaceComponent, SheenRoughnessTexture),			MaterialComponent.SheenRoughnessTexture);
+            Result += GenerateGetFunction<float>(	"Material.CoatWeight",				MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, CoatWeight),				offsetof(COMPONENTS::FOpenPBRSurfaceComponent, CoatWeightTexture),				MaterialComponent.CoatWeightTexture);
+            Result += GenerateGetFunction<FVector3>("Material.CoatColor",				MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, CoatColor),				offsetof(COMPONENTS::FOpenPBRSurfaceComponent, CoatColorTexture),					MaterialComponent.CoatColorTexture, true);
+            Result += GenerateGetFunction<float>(	"Material.CoatRoughness",			MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, CoatRoughness),			offsetof(COMPONENTS::FOpenPBRSurfaceComponent, CoatRoughnessTexture),				MaterialComponent.CoatRoughnessTexture);
+            Result += GenerateGetFunction<float>(	"Material.CoatAnisotropy",			MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, CoatAnisotropy),			offsetof(COMPONENTS::FOpenPBRSurfaceComponent, CoatAnisotropyTexture),			MaterialComponent.CoatAnisotropyTexture);
+            Result += GenerateGetFunction<float>(	"Material.CoatRotation",			MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, CoatRotation),				offsetof(COMPONENTS::FOpenPBRSurfaceComponent, CoatRotationTexture),				MaterialComponent.CoatRotationTexture);
+            Result += GenerateGetFunction<float>(	"Material.CoatIOR",					MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, CoatIOR),					offsetof(COMPONENTS::FOpenPBRSurfaceComponent, CoatIORTexture),					MaterialComponent.CoatIORTexture);
+            Result += GenerateGetFunction<FVector3>("Material.CoatNormal",				MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, CoatNormal),				offsetof(COMPONENTS::FOpenPBRSurfaceComponent, CoatNormalTexture),				MaterialComponent.CoatNormalTexture);
+            Result += GenerateGetFunction<float>(	"Material.CoatAffectColor",			MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, CoatAffectColor),			offsetof(COMPONENTS::FOpenPBRSurfaceComponent, CoatAffectColorTexture),			MaterialComponent.CoatAffectColorTexture);
+            Result += GenerateGetFunction<float>(	"Material.CoatAffectRoughness",		MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, CoatAffectRoughness),		offsetof(COMPONENTS::FOpenPBRSurfaceComponent, CoatAffectRoughnessTexture),		MaterialComponent.CoatAffectRoughnessTexture);
+            Result += GenerateGetFunction<float>(	"Material.ThinFilmThickness",		MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, ThinFilmThickness),		offsetof(COMPONENTS::FOpenPBRSurfaceComponent, ThinFilmThicknessTexture),			MaterialComponent.ThinFilmThicknessTexture);
+            Result += GenerateGetFunction<float>(	"Material.ThinFilmIOR",				MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, ThinFilmIOR),				offsetof(COMPONENTS::FOpenPBRSurfaceComponent, ThinFilmIORTexture),				MaterialComponent.ThinFilmIORTexture);
+            Result += GenerateGetFunction<float>(	"Material.EmissionWeight",			MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, EmissionWeight),			offsetof(COMPONENTS::FOpenPBRSurfaceComponent, EmissionWeightTexture),			MaterialComponent.EmissionWeightTexture);
+            Result += GenerateGetFunction<FVector3>("Material.EmissionColor",			MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, EmissionColor),			offsetof(COMPONENTS::FOpenPBRSurfaceComponent, EmissionColorTexture),				MaterialComponent.EmissionColorTexture, true);
+            Result += GenerateGetFunction<FVector3>("Material.Opacity",					MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, Opacity),					offsetof(COMPONENTS::FOpenPBRSurfaceComponent, OpacityTexture),					MaterialComponent.OpacityTexture);
             //TODO: Add uint textures
             Result += "    Material.ThinWalled = " + std::to_string(MaterialComponent.ThinWalled) + ";\r\n";
 
@@ -948,12 +948,12 @@ namespace ECS
 			Result += "    {\r\n";
 			for (auto& Entry : EmissiveMaterials)
 			{
-				auto& MaterialComponent = GetComponentByIndex<ECS::COMPONENTS::FMaterialComponent>(Entry.first);
+				auto& MaterialComponent = GetComponentByIndex<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(Entry.first);
 				Result += "    case " + std::to_string(Entry.first) + ":\r\n";
 				Result += "    {\r\n";
 				/// TODO: Fix the indexing
-				Result += "    " + GenerateGetFunction<FVector3>("Material.EmissionColor", 0, offsetof(COMPONENTS::FMaterialComponent, EmissionColor), offsetof(COMPONENTS::FMaterialComponent, EmissionColorTexture), MaterialComponent.EmissionColorTexture);
-				Result += "    " + GenerateGetFunction<float>("Material.EmissionWeight", 0, offsetof(COMPONENTS::FMaterialComponent, EmissionWeight), offsetof(COMPONENTS::FMaterialComponent, EmissionWeightTexture), MaterialComponent.EmissionWeightTexture);
+				Result += "    " + GenerateGetFunction<FVector3>("Material.EmissionColor", 0, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, EmissionColor), offsetof(COMPONENTS::FOpenPBRSurfaceComponent, EmissionColorTexture), MaterialComponent.EmissionColorTexture);
+				Result += "    " + GenerateGetFunction<float>("Material.EmissionWeight", 0, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, EmissionWeight), offsetof(COMPONENTS::FOpenPBRSurfaceComponent, EmissionWeightTexture), MaterialComponent.EmissionWeightTexture);
 				Result += "    break;\r\n";
 				Result += "    }\r\n";
 			}

@@ -270,6 +270,127 @@ struct FDeviceMaterial
     uint32_t Dummy6;
 };
 
+struct FOpenPBRSurface
+{
+    // Base
+    float BaseWeight;
+    FVector3 BaseColor;
+    float BaseMetalness;
+    float BaseDiffuseRoughness;
+
+    // Specular
+    float SpecularWeight;
+    FVector3 SpecularColor;
+    float SpecularRoughness;
+    float SpecularRoughnessAnisotropy;
+    float SpecularIor;
+
+    // Transmission
+    float TransmissionWeight;
+    FVector3 TransmissionColor;
+    float TransmissionDepth;
+    FVector3 TransmissionScatter;
+    float TransmissionScatterAnisotropy;
+    float TransmissionDispersionScale;
+    float TransmissionDispersionAbbeNumber;
+
+    // Subsurface
+    float SubsurfaceWeight;
+    FVector3 SubsurfaceColor;
+    float SubsurfaceRadius;
+    FVector3 SubsurfaceRadiusScale;
+    float SubsurfaceScatterAnisotropy;
+
+    // Coat
+    float CoatWeight;
+    FVector3 CoatColor;
+    float CoatRoughness;
+    float CoatRoughnessAnisotropy;
+    float CoatIor;
+    float CoatDarkening;
+
+    // Fuzz
+    float FuzzWeight;
+    FVector3 FuzzColor;
+    float FuzzRoughness;
+
+    // Emission
+    float emissionLuminance;
+    FVector3 emissionColor;
+
+    // Thin film
+    float ThinFilmWeight;
+    float ThinFilmThickness;
+    float ThinFilmIor;
+
+    // Geometry
+    float GeometryOpacity;
+    uint32_t GeometryThinWalled;
+    FVector3 GeometryNormal;
+    FVector3 GeometryTangent;
+    FVector3 GeometryCoatNormal;
+    FVector3 GeometryCoatTangent;
+
+	// Base
+	uint32_t BaseWeightTextureIndex;
+	uint32_t BaseColorTextureIndex;
+	uint32_t BaseMetalnessTextureIndex;
+	uint32_t BaseDiffuseRoughnessTextureIndex;
+
+	// Specular
+	uint32_t SpecularWeightTextureIndex;
+	uint32_t SpecularColorTextureIndex;
+	uint32_t SpecularRoughnessTextureIndex;
+	uint32_t SpecularRoughnessAnisotropyTextureIndex;
+	uint32_t SpecularIorTextureIndex;
+
+	// Transmission
+	uint32_t TransmissionWeightTextureIndex;
+	uint32_t TransmissionColorTextureIndex;
+	uint32_t TransmissionDepthTextureIndex;
+	uint32_t TransmissionScatterTextureIndex;
+	uint32_t TransmissionScatterAnisotropyTextureIndex;
+	uint32_t TransmissionDispersionScaleTextureIndex;
+	uint32_t TransmissionDispersionAbbeNumberTextureIndex;
+
+	// Subsurface
+	uint32_t SubsurfaceWeightTextureIndex;
+	uint32_t SubsurfaceColorTextureIndex;
+	uint32_t SubsurfaceRadiusTextureIndex;
+	uint32_t SubsurfaceRadiusScaleTextureIndex;
+	uint32_t SubsurfaceScatterAnisotropyTextureIndex;
+
+	// Coat
+	uint32_t CoatWeightTextureIndex;
+	uint32_t CoatColorTextureIndex;
+	uint32_t CoatRoughnessTextureIndex;
+	uint32_t CoatRoughnessAnisotropyTextureIndex;
+	uint32_t CoatIorTextureIndex;
+	uint32_t CoatDarkeningTextureIndex;
+
+	// Fuzz
+	uint32_t FuzzWeightTextureIndex;
+	uint32_t FuzzColorTextureIndex;
+	uint32_t FuzzRoughnessTextureIndex;
+
+	// Emission
+	uint32_t EmissionLuminanceTextureIndex;
+	uint32_t EmissionColorTextureIndex;
+
+	// Thin film
+	uint32_t ThinFilmWeightTextureIndex;
+	uint32_t ThinFilmThicknessTextureIndex;
+	uint32_t ThinFilmIorTextureIndex;
+
+	// Geometry
+	uint32_t GeometryOpacityTextureIndex;
+	uint32_t GeometryThinWalledTextureIndex;
+	uint32_t GeometryNormalTextureIndex;
+	uint32_t GeometryTangentTextureIndex;
+	uint32_t GeometryCoatNormalTextureIndex;
+	uint32_t GeometryCoatTangentTextureIndex;
+};
+
 const uint32_t RENDERABLE_AREA_LIGHT_INDEX_MASK = 0x01FF; // It's related to maximum number of area lights (512) in Area lights system
 const uint32_t RENDERABLE_SELECTED_BIT = 1 << 9;
 const uint32_t RENDERABLE_HAS_TEXTURE = 1 << 10;

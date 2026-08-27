@@ -105,7 +105,7 @@ namespace ECS
         void FRenderableSystem::SetMaterial(FEntity Renderable, FEntity Material)
         {
             auto& RenderableComponent = GetComponent<ECS::COMPONENTS::FDeviceRenderableComponent>(Renderable);
-            RenderableComponent.MaterialIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
+            RenderableComponent.MaterialIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(Material);
             MarkDirty(Renderable);
         }
 

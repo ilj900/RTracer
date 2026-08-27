@@ -129,7 +129,7 @@ void FMasterShader::Init(FCompileDefinitions* CompileDefinitions)
 		FCompileDefinitions CombinedCompileDefinitions(MasterShaderCompileDefinitions);
 		CombinedCompileDefinitions.Push("FDeviceMaterial GetMaterial(vec2 TextureCoords);", MaterialCode);
 		auto RayGenerationShader = FShader("../src/shaders/master_shader.rgen", &CombinedCompileDefinitions);
-		uint32_t MaterialIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
+		uint32_t MaterialIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(Material);
 		MaterialPipelines[MaterialIndex] = VK_CONTEXT()->CreateRayTracingPipeline(RayGenerationShader(), RayMissShader(), RayClosestHitShader(), PipelineLayout);
 		SBTBuffers[MaterialIndex] = VK_CONTEXT()->GenerateSBT(MaterialPipelines[MaterialIndex], RMissRegion, RHitRegion, RGenRegions[MaterialIndex]);
 	}
@@ -201,7 +201,7 @@ void FMasterShader::RecordCommands()
 
 			for (auto& Material : *MATERIAL_SYSTEM())
 			{
-				uint32_t MaterialIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FMaterialComponent>(Material);
+				uint32_t MaterialIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(Material);
 
 				vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, MaterialPipelines[MaterialIndex]);
 				std::vector<VkDescriptorSet> RayTracingDescriptorSets = {

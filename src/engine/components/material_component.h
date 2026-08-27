@@ -7,112 +7,120 @@ namespace ECS
 {
     namespace COMPONENTS
     {
-        struct FMaterialComponent : FDeviceMaterial
+        struct FOpenPBRSurfaceComponent : FOpenPBRSurface
         {
-            FMaterialComponent()
-            {
-                BaseWeight = 1.f;
-                BaseColor = {0.8, 0.8, 0.8};
-                DiffuseRoughness = 0.f;
-                Metalness = 0.f;
-                Normal = {0, 1, 0};
+            FOpenPBRSurfaceComponent()
+			{
+			    // Base
+			    BaseWeight = 1.f;
+			    BaseColor = {0.8f, 0.8f, 0.8f};
+			    BaseMetalness = 0.f;
+			    BaseDiffuseRoughness = 0.f;
 
-                SpecularWeight = 0.f;
-                SpecularColor = {1, 1, 1};
-                SpecularRoughness = 0.2f;
-                SpecularIOR = 1.5;
-                SpecularAnisotropy = 0.f;
-                SpecularRotation = 0.f;
+			    // Specular
+			    SpecularWeight = 1.f;
+			    SpecularColor = {1.f, 1.f, 1.f};
+			    SpecularRoughness = 0.3f;
+			    SpecularRoughnessAnisotropy = 0.f;
+			    SpecularIor = 1.5f;
 
-                TransmissionWeight = 0;
-                TransmissionColor = {1, 1, 1};
-                TransmissionDepth = 0.f;
-                TransmissionScatter = {0, 0, 0};
-                TransmissionAnisotropy = 0.f;
-                TransmissionDispersion = 0.f;
-                TransmissionRoughness = 0.f;
+			    // Transmission
+			    TransmissionWeight = 0.f;
+			    TransmissionColor = {1.f, 1.f, 1.f};
+			    TransmissionDepth = 0.f;
+			    TransmissionScatter = {0.f, 0.f, 0.f};
+			    TransmissionScatterAnisotropy = 0.f;
+			    TransmissionDispersionScale = 0.f;
+			    TransmissionDispersionAbbeNumber = 20.f;
 
-                SubsurfaceWeight = 0.f;
-                SubsurfaceColor = {1, 1, 1};
-                SubsurfaceRadius = {1, 1, 1};
-                SubsurfaceScale = 1.f;
-                SubsurfaceAnisotropy = 0.f;
+			    // Subsurface
+			    SubsurfaceWeight = 0.f;
+			    SubsurfaceColor = {0.8f, 0.8f, 0.8f};
+			    SubsurfaceRadius = 1.f;
+			    SubsurfaceRadiusScale = {1.f, 0.5f, 0.25f};
+			    SubsurfaceScatterAnisotropy = 0.f;
 
-                SheenWeight = 0.f;
-                SheenColor = {1, 1, 1};
-                SheenRoughness = 0.3f;
+			    // Coat
+			    CoatWeight = 0.f;
+			    CoatColor = {1.f, 1.f, 1.f};
+			    CoatRoughness = 0.f;
+			    CoatRoughnessAnisotropy = 0.f;
+			    CoatIor = 1.6f;
+			    CoatDarkening = 1.f;
 
-                CoatWeight = 0.f;
-                CoatColor = {1, 1, 1};
-                CoatRoughness = 0.1f;
-                CoatAnisotropy = 0.f;
-                CoatRotation = 0.f;
-                CoatIOR = 1.5f;
-                CoatNormal = {0, 1, 0};
-                CoatAffectColor = 0.f;
-                CoatAffectRoughness = 0.f;
+			    // Fuzz
+			    FuzzWeight = 0.f;
+			    FuzzColor = {1.f, 1.f, 1.f};
+			    FuzzRoughness = 0.5f;
 
-                ThinFilmThickness = 0.f;
-                ThinFilmIOR = 1.5f;
+			    // Emission
+			    emissionLuminance = 0.f;
+			    emissionColor = {1.f, 1.f, 1.f};
 
-				EmissionWeight = 0;
-                EmissionColor = {1, 1, 1};
+			    // Thin film
+			    ThinFilmWeight = 0.f;
+			    ThinFilmThickness = 0.5f;
+			    ThinFilmIor = 1.4f;
 
-                Opacity = {1, 1, 1};
-                ThinWalled = false;
+			    // Geometry
+			    GeometryOpacity = 1.f;
+			    GeometryThinWalled = 0u;
+			    GeometryNormal = {0.f, 0.f, 0.f};        // zero = use unperturbed shading normal
+			    GeometryTangent = {0.f, 0.f, 0.f};       // zero = use unperturbed tangent
+			    GeometryCoatNormal = {0.f, 0.f, 0.f};
+			    GeometryCoatTangent = {0.f, 0.f, 0.f};
 
-            	BaseWeightTexture = UINT32_MAX;
-            	BaseColorTexture = UINT32_MAX;
-            	DiffuseRoughnessTexture = UINT32_MAX;
-            	MetalnessTexture = UINT32_MAX;
+			    // Texture indices
+			    BaseWeightTextureIndex = UINT32_MAX;
+			    BaseColorTextureIndex = UINT32_MAX;
+			    BaseMetalnessTextureIndex = UINT32_MAX;
+			    BaseDiffuseRoughnessTextureIndex = UINT32_MAX;
 
-				NormalTexture = UINT32_MAX;
-            	SpecularWeightTexture = UINT32_MAX;
-            	SpecularColorTexture = UINT32_MAX;
-            	SpecularRoughnessTexture = UINT32_MAX;
+			    SpecularWeightTextureIndex = UINT32_MAX;
+			    SpecularColorTextureIndex = UINT32_MAX;
+			    SpecularRoughnessTextureIndex = UINT32_MAX;
+			    SpecularRoughnessAnisotropyTextureIndex = UINT32_MAX;
+			    SpecularIorTextureIndex = UINT32_MAX;
 
-				SpecularIORTexture = UINT32_MAX;
-            	SpecularAnisotropyTexture = UINT32_MAX;
-            	SpecularRotationTexture = UINT32_MAX;
-            	TransmissionWeightTexture = UINT32_MAX;
+			    TransmissionWeightTextureIndex = UINT32_MAX;
+			    TransmissionColorTextureIndex = UINT32_MAX;
+			    TransmissionDepthTextureIndex = UINT32_MAX;
+			    TransmissionScatterTextureIndex = UINT32_MAX;
+			    TransmissionScatterAnisotropyTextureIndex = UINT32_MAX;
+			    TransmissionDispersionScaleTextureIndex = UINT32_MAX;
+			    TransmissionDispersionAbbeNumberTextureIndex = UINT32_MAX;
 
-				TransmissionColorTexture = UINT32_MAX;
-            	TransmissionDepthTexture = UINT32_MAX;
-            	TransmissionScatterTexture = UINT32_MAX;
-            	TransmissionAnisotropyTexture = UINT32_MAX;
+			    SubsurfaceWeightTextureIndex = UINT32_MAX;
+			    SubsurfaceColorTextureIndex = UINT32_MAX;
+			    SubsurfaceRadiusTextureIndex = UINT32_MAX;
+			    SubsurfaceRadiusScaleTextureIndex = UINT32_MAX;
+			    SubsurfaceScatterAnisotropyTextureIndex = UINT32_MAX;
 
-				TransmissionDispersionTexture = UINT32_MAX;
-            	TransmissionRoughnessTexture = UINT32_MAX;
-            	SubsurfaceWeightTexture = UINT32_MAX;
-            	SubsurfaceColorTexture = UINT32_MAX;
+			    CoatWeightTextureIndex = UINT32_MAX;
+			    CoatColorTextureIndex = UINT32_MAX;
+			    CoatRoughnessTextureIndex = UINT32_MAX;
+			    CoatRoughnessAnisotropyTextureIndex = UINT32_MAX;
+			    CoatIorTextureIndex = UINT32_MAX;
+			    CoatDarkeningTextureIndex = UINT32_MAX;
 
-				SubsurfaceRadiusTexture = UINT32_MAX;
-            	SubsurfaceScaleTexture = UINT32_MAX;
-            	SubsurfaceAnisotropyTexture = UINT32_MAX;
-            	SheenWeightTexture = UINT32_MAX;
+			    FuzzWeightTextureIndex = UINT32_MAX;
+			    FuzzColorTextureIndex = UINT32_MAX;
+			    FuzzRoughnessTextureIndex = UINT32_MAX;
 
-				SheenColorTexture = UINT32_MAX;
-            	SheenRoughnessTexture = UINT32_MAX;
-            	CoatWeightTexture = UINT32_MAX;
-            	CoatColorTexture = UINT32_MAX;
+			    EmissionLuminanceTextureIndex = UINT32_MAX;
+			    EmissionColorTextureIndex = UINT32_MAX;
 
-				CoatRoughnessTexture = UINT32_MAX;
-            	CoatAnisotropyTexture = UINT32_MAX;
-            	CoatRotationTexture = UINT32_MAX;
-            	CoatIORTexture = UINT32_MAX;
+			    ThinFilmWeightTextureIndex = UINT32_MAX;
+			    ThinFilmThicknessTextureIndex = UINT32_MAX;
+			    ThinFilmIorTextureIndex = UINT32_MAX;
 
-				CoatNormalTexture = UINT32_MAX;
-            	CoatAffectColorTexture = UINT32_MAX;
-            	CoatAffectRoughnessTexture = UINT32_MAX;
-            	ThinFilmThicknessTexture = UINT32_MAX;
-
-				ThinFilmIORTexture = UINT32_MAX;
-            	EmissionWeightTexture = UINT32_MAX;
-            	EmissionColorTexture = UINT32_MAX;
-            	OpacityTexture = UINT32_MAX;
-
-				ThinWalledTexture = UINT32_MAX;
-            };
+			    GeometryOpacityTextureIndex = UINT32_MAX;
+			    GeometryThinWalledTextureIndex = UINT32_MAX;
+			    GeometryNormalTextureIndex = UINT32_MAX;
+			    GeometryTangentTextureIndex = UINT32_MAX;
+			    GeometryCoatNormalTextureIndex = UINT32_MAX;
+			    GeometryCoatTangentTextureIndex = UINT32_MAX;
+			}
         };
     }
 }

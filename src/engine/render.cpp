@@ -45,7 +45,7 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FDeviceRenderableComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FDeviceTransformComponent>();
 	COORDINATOR().RegisterComponent<ECS::COMPONENTS::FDirectionalLightComponent>();
-    COORDINATOR().RegisterComponent<ECS::COMPONENTS::FMaterialComponent>();
+    COORDINATOR().RegisterComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FMeshComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FMeshInstanceComponent>();
     COORDINATOR().RegisterComponent<ECS::COMPONENTS::FPointLightComponent>();
@@ -85,7 +85,7 @@ FRender::FRender(uint32_t WidthIn, uint32_t HeightIn) : Width(WidthIn), Height(H
 
     /// Register Material system signature
     ECS::FSignature MaterialSignature;
-    MaterialSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FMaterialComponent>());
+    MaterialSignature.set(COORDINATOR().GetComponentType<ECS::COMPONENTS::FOpenPBRSurfaceComponent>());
     COORDINATOR().SetSystemSignature<ECS::SYSTEMS::FMaterialSystem>(MaterialSignature);
 
     /// Register Mesh systems signature
@@ -747,9 +747,9 @@ const std::unordered_map<ECS::FEntity, std::string>& FRender::GetMaterials()
 	return MATERIAL_SYSTEM()->MaterialToName;
 }
 
-const ECS::COMPONENTS::FMaterialComponent& FRender::GetMaterial(ECS::FEntity Material)
+const ECS::COMPONENTS::FOpenPBRSurfaceComponent& FRender::GetMaterial(ECS::FEntity Material)
 {
-	return MATERIAL_SYSTEM()->GetComponent<ECS::COMPONENTS::FMaterialComponent>(Material);
+	return MATERIAL_SYSTEM()->GetComponent<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(Material);
 }
 
 void FRender::MaterialSetBaseColorWeight(ECS::FEntity MaterialEntity, float Weight)
