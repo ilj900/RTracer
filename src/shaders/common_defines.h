@@ -33,6 +33,58 @@
 
 #define FLOAT_EPSILON															0.0001f
 
+// Material fields
+// Base
+#define MATERIAL_BASE_WEIGHT                        0
+#define MATERIAL_BASE_COLOR                         1
+#define MATERIAL_BASE_METALNESS                     2
+#define MATERIAL_BASE_DIFFUSE_ROUGHNESS             3
+// Specular
+#define MATERIAL_SPECULAR_WEIGHT                    4
+#define MATERIAL_SPECULAR_COLOR                     5
+#define MATERIAL_SPECULAR_ROUGHNESS                 6
+#define MATERIAL_SPECULAR_ROUGHNESS_ANISOTROPY      7
+#define MATERIAL_SPECULAR_IOR                       8
+// Transmission
+#define MATERIAL_TRANSMISSION_WEIGHT                9
+#define MATERIAL_TRANSMISSION_COLOR                 10
+#define MATERIAL_TRANSMISSION_DEPTH                 11
+#define MATERIAL_TRANSMISSION_SCATTER               12
+#define MATERIAL_TRANSMISSION_SCATTER_ANISOTROPY    13
+#define MATERIAL_TRANSMISSION_DISPERSION_SCALE      14
+#define MATERIAL_TRANSMISSION_DISPERSION_ABBE_NUMBER 15
+// Subsurface
+#define MATERIAL_SUBSURFACE_WEIGHT                  16
+#define MATERIAL_SUBSURFACE_COLOR                   17
+#define MATERIAL_SUBSURFACE_RADIUS                  18
+#define MATERIAL_SUBSURFACE_RADIUS_SCALE            19
+#define MATERIAL_SUBSURFACE_SCATTER_ANISOTROPY      20
+// Coat
+#define MATERIAL_COAT_WEIGHT                        21
+#define MATERIAL_COAT_COLOR                         22
+#define MATERIAL_COAT_ROUGHNESS                     23
+#define MATERIAL_COAT_ROUGHNESS_ANISOTROPY          24
+#define MATERIAL_COAT_IOR                           25
+#define MATERIAL_COAT_DARKENING                     26
+// Fuzz
+#define MATERIAL_FUZZ_WEIGHT                        27
+#define MATERIAL_FUZZ_COLOR                         28
+#define MATERIAL_FUZZ_ROUGHNESS                     29
+// Emission
+#define MATERIAL_EMISSION_LUMINANCE                 30
+#define MATERIAL_EMISSION_COLOR                     31
+// Thin film
+#define MATERIAL_THIN_FILM_WEIGHT                   32
+#define MATERIAL_THIN_FILM_THICKNESS                33
+#define MATERIAL_THIN_FILM_IOR                      34
+// Geometry
+#define MATERIAL_GEOMETRY_OPACITY                   35
+#define MATERIAL_GEOMETRY_THIN_WALLED               36
+#define MATERIAL_GEOMETRY_NORMAL                    37
+#define MATERIAL_GEOMETRY_TANGENT                   38
+#define MATERIAL_GEOMETRY_COAT_NORMAL               39
+#define MATERIAL_GEOMETRY_COAT_TANGENT              40
+
 /// Sampling strategies
 #define SAMPLE_UNIFORM															0u
 #define SAMPLE_IMPORTANCE														1u

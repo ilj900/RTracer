@@ -315,8 +315,8 @@ struct FOpenPBRSurface
     float FuzzRoughness;
 
     // Emission
-    float emissionLuminance;
-    FVector3 emissionColor;
+    float EmissionLuminance;
+    FVector3 EmissionColor;
 
     // Thin film
     float ThinFilmWeight;

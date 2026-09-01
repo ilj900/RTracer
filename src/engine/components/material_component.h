@@ -54,8 +54,8 @@ namespace ECS
 			    FuzzRoughness = 0.5f;
 
 			    // Emission
-			    emissionLuminance = 0.f;
-			    emissionColor = {1.f, 1.f, 1.f};
+			    EmissionLuminance = 0.f;
+			    EmissionColor = {1.f, 1.f, 1.f};
 
 			    // Thin film
 			    ThinFilmWeight = 0.f;

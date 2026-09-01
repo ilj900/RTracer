@@ -17,6 +17,12 @@ namespace ECS
         	bool Update();
             FEntity			 CreateDefaultMaterial(const std::string& MaterialName = "");
 			FEntity			 CreateEmptyMaterial(const std::string& MaterialName = "");
+
+        	FMaterialSystem& SetF(FEntity MaterialEntity, uint32_t MaterialProperty, float Property);
+        	FMaterialSystem& Set3F(FEntity MaterialEntity, uint32_t MaterialProperty, FVector3 Property);
+        	FMaterialSystem& SetTexture(FEntity MaterialEntity, uint32_t MaterialProperty, FEntity TextureEntity);
+
+
 			/// Albedo
 			FMaterialSystem& SetBaseColorWeight(FEntity MaterialEntity, float Weight);
 			FMaterialSystem& SetBaseColorWeight(FEntity MaterialEntity, FEntity TextureEntity);
