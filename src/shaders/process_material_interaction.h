@@ -111,7 +111,7 @@ vec4 ScatterSpecular(inout FSamplingState SamplingState, vec3 TangentSpaceViewDi
 	return vec4(0);
 }
 
-FBXDFPDF CalculateBXDFPDF(FDeviceMaterial Material, FShadingData ShadingData, FRayData RayData)
+FBXDFPDF CalculateBXDFPDF(FOpenPBRSurface Material, FShadingData ShadingData, FRayData RayData)
 {
 	FBXDFWeights BXDFWeights = FBXDFWeights(vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0));
 
@@ -157,7 +157,7 @@ FBXDFPDF CalculateBXDFPDF(FDeviceMaterial Material, FShadingData ShadingData, FR
 }
 
 /// Scatter ray based on material properties.
-float ScatterMaterial(FDeviceMaterial Material, FBXDFPDF BXDFPDF, out uint RayType, inout FRayData RayData, inout FSamplingState SamplingState, bool bFrontFacing)
+float ScatterMaterial(FOpenPBRSurface Material, FBXDFPDF BXDFPDF, out uint RayType, inout FRayData RayData, inout FSamplingState SamplingState, bool bFrontFacing)
 {
 	float LayerSample = RandomFloat(SamplingState);
 	RayType = SelectLayer(BXDFPDF, LayerSample);
@@ -344,7 +344,7 @@ float ScatterMaterial(FDeviceMaterial Material, FBXDFPDF BXDFPDF, out uint RayTy
 	return PDF;
 }
 
-vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType, vec3 WorldSpaceLightDirection)
+vec3 EvaluateMaterialInteraction(FOpenPBRSurface Material, uint RayType, vec3 WorldSpaceLightDirection)
 {
 	vec3 BXDF = vec3(0.f);
 
@@ -395,7 +395,7 @@ vec3 EvaluateMaterialInteraction(FDeviceMaterial Material, uint RayType, vec3 Wo
 }
 
 /// Evaluate PDF of ray coming from that direction
-float EvaluateScatteringPDF(FDeviceMaterial Material, uint RayType, vec3 WorldSpaceLightDirection)
+float EvaluateScatteringPDF(FOpenPBRSurface Material, uint RayType, vec3 WorldSpaceLightDirection)
 {
 	vec3 TangentSpaceLightDirection = WorldSpaceLightDirection * ShadingData.TNBMatrix;
 
@@ -458,7 +458,7 @@ float EvaluateScatteringPDF(FDeviceMaterial Material, uint RayType, vec3 WorldSp
 	return 0.f;
 }
 
-vec3 EvaluateSampledMaterialThroughput(FDeviceMaterial Material, uint RayType, vec3 WorldSpaceLightDirection)
+vec3 EvaluateSampledMaterialThroughput(FOpenPBRSurface Material, uint RayType, vec3 WorldSpaceLightDirection)
 {
 	if (IsSpecularSingular(Material) && RayType == SPECULAR_LAYER)
 	{

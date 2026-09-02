@@ -663,9 +663,9 @@ namespace ECS
 		    auto& MaterialComponent = GetComponent<COMPONENTS::FOpenPBRSurfaceComponent>(MaterialEntity);
 		    uint32_t MaterialIndex = MaterialToIndexMap[MaterialEntity];
 
-		    Result += "FDeviceMaterial GetMaterial(vec2 TextureCoords)\r\n";
+		    Result += "FOpenPBRSurface GetMaterial(vec2 TextureCoords)\r\n";
 		    Result += "{\r\n";
-		    Result += "    FDeviceMaterial Material;\r\n";
+		    Result += "    FOpenPBRSurface Material;\r\n";
 
 		    // Base
 		    Result += GenerateGetFunction<float>(   "Material.BaseWeight",                          MaterialIndex, offsetof(COMPONENTS::FOpenPBRSurfaceComponent, BaseWeight),                          offsetof(COMPONENTS::FOpenPBRSurfaceComponent, BaseWeightTextureIndex),                          MaterialComponent.BaseWeightTextureIndex);
@@ -738,17 +738,17 @@ namespace ECS
 
 			if (EmissiveMaterials.empty())
 			{
-				Result += "FDeviceMaterial GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex)\r\n";
+				Result += "FOpenPBRSurface GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex)\r\n";
 				Result += "{\r\n";
-				Result += "    FDeviceMaterial Material;\r\n";
+				Result += "    FOpenPBRSurface Material;\r\n";
 				Result += "    return Material;\r\n";
 				Result += "};\r\n";
 				return Result;
 			}
 
-			Result += "FDeviceMaterial GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex)\r\n";
+			Result += "FOpenPBRSurface GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex)\r\n";
 			Result += "{\r\n";
-			Result += "    FDeviceMaterial Material;\r\n";
+			Result += "    FOpenPBRSurface Material;\r\n";
 			Result += "    switch(MaterialIndex)\r\n";
 			Result += "    {\r\n";
 			for (auto& Entry : EmissiveMaterials)

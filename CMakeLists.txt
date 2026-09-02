@@ -4,6 +4,11 @@ project(RTracer)
 
 set(CMAKE_CXX_STANDARD 17)
 
+if (MSVC)
+    string(REPLACE "/debug" "/DEBUG:FULL" CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG}")
+    string(REPLACE "/debug" "/DEBUG:FULL" CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG}")
+endif()
+
 option(ENABLE_GPU_TIMINGS "Enables GPU timings for profiling" ON)
 
 find_package(Vulkan REQUIRED)

@@ -138,6 +138,7 @@ bool operator==(const FVector3& A, const FVector3& B);
 FVector3 operator*(const FVector3& A, const FVector3& B);
 FVector3 operator+(const FVector3& A, const FVector3& B);
 FVector3 operator-(const FVector3& A, const FVector3& B);
+FVector3 operator-(float A, const FVector3& B);
 FVector3 operator*(const FVector3& A, float Val);
 FVector3 operator/(const FVector3& A, float Val);
 FVector3& operator*=(FVector3& A, const FVector3& B);

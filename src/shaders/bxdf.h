@@ -45,7 +45,7 @@ float GeometrySmith(float NDotV, float NDotL, float Roughness)
 /// Calculates F (Fresnel) term for BRDF
 /// Defines the part of light that is reflected
 /// Other part is "passed inside" the material
-vec3 FresnelSchlick(float CosTheta, vec3 F0)
+FVector3 FresnelSchlick(float CosTheta, FVector3 F0)
 {
 	float M = Saturate(1.0 - CosTheta);
 	float M2 = M * M;
@@ -63,12 +63,12 @@ float CalculateF0(float IOR1, float IOR2)
 	return Ratio * Ratio;
 }
 
-float Luminance709(vec3 Color)
+float Luminance709(FVector3 Color)
 {
 	return 0.2126 * Color.x + 0.7152 * Color.y + 0.0722 * Color.z;
 }
 
-bool IsSpecularSingular(FDeviceMaterial Material)
+bool IsSpecularSingular(FOpenPBRSurface Material)
 {
 	return Material.SpecularRoughness <= 1e-4;
 }

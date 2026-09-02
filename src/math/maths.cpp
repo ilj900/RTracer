@@ -255,6 +255,11 @@ FVector3 operator-(const FVector3& A, const FVector3& B)
     return FVector3(A.X - B.X, A.Y - B.Y, A.Z - B.Z);
 }
 
+FVector3 operator-(float A, const FVector3& B)
+{
+	return {A - B.X, A - B.Y, A - B.Z};
+}
+
 FVector3 operator*(const FVector3& A, float Val)
 {
     return {A.X * Val, A.Y * Val, A.Z * Val};

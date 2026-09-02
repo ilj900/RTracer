@@ -308,7 +308,7 @@ vec4 ComputeUniformAreaLightInput(inout FSamplingState SamplingState, out vec3 L
         float NDotI = abs(dot(AreaLightTriangleNormal, LightDirection));
 
         /// Get the material
-        FDeviceMaterial EmissiveMaterial = GetEmissiveMaterial(UV, ArealLight.MaterialIndex);
+        FOpenPBRSurface EmissiveMaterial = GetEmissiveMaterial(UV, ArealLight.MaterialIndex);
         /// TODO: Is this a correct PDF formula?
         float PDF = Distance2 / (UtilityData.ActiveAreaLightsCount * ArealLight.NumberOfTriangles * TriangleArea * NDotI);
         UniformSamplingImportancePDF = Distance2 / (UtilityData.TotalAreaLightArea * NDotI);
@@ -440,7 +440,7 @@ vec4 ComputeImportanceAreaLightInput(inout FSamplingState SamplingState, out vec
         float NDotI = abs(dot(AreaLightTriangleNormal, LightDirection));
 
         /// Get the material
-        FDeviceMaterial EmissiveMaterial = GetEmissiveMaterial(UV, ArealLightImportance.MaterialIndex);
+        FOpenPBRSurface EmissiveMaterial = GetEmissiveMaterial(UV, ArealLightImportance.MaterialIndex);
         /// TODO: Is this a correct PDF formula?
         float PDF = Distance2 / (UtilityData.TotalAreaLightArea * NDotI);
         ImportanceSamplingUniformPDF = Distance2 / (UtilityData.ActiveAreaLightsCount * ArealLightImportance.NumberOfTriangles * TriangleArea * NDotI);
@@ -510,7 +510,7 @@ vec4 ComputeBXDFAreaLightInput(inout FSamplingState SamplingState, vec3 LightDir
         vec2 TextureCoords = V0.TexCoord * Barycentrics.x + V1.TexCoord * Barycentrics.y + V2.TexCoord * Barycentrics.z;
 
         /// TODO: Optimize
-        FDeviceMaterial EmissiveMaterial = GetEmissiveMaterial(TextureCoords, Renderable.MaterialIndex);
+        FOpenPBRSurface EmissiveMaterial = GetEmissiveMaterial(TextureCoords, Renderable.MaterialIndex);
 
         if (EmissiveMaterial.EmissionWeight != 0)
         {

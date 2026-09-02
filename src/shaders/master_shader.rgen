@@ -74,7 +74,7 @@ struct FBXDFPDF
 #include "random.h"
 
 FShadingData ShadingData;
-FDeviceMaterial Material;
+FOpenPBRSurface Material;
 FBXDFPDF BXDFPDF;
 
 #include "glsl_math.h"
@@ -341,8 +341,8 @@ vec3 LinearToSRGB(vec3 LinearColor) {
     return mix(Low, High, bLess);
 }
 
-FDeviceMaterial GetMaterial(vec2 TextureCoords);
-FDeviceMaterial GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex);
+FOpenPBRSurface GetMaterial(vec2 TextureCoords);
+FOpenPBRSurface GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex);
 
 void ComputeShadingData(FRenderable Renderable, FHit Hit, FDeviceTransform Transform, FRayData RayData)
 {

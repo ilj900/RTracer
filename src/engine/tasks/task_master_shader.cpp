@@ -119,15 +119,15 @@ void FMasterShader::Init(FCompileDefinitions* CompileDefinitions)
     const auto EmissiveMaterials = AREA_LIGHT_SYSTEM()->GetEmissiveMaterials();
     auto EmissiveMaterialCode = MATERIAL_SYSTEM()->GenerateEmissiveMaterialsCode(EmissiveMaterials);
     FCompileDefinitions MasterShaderCompileDefinitions(*CompileDefinitions);
-    MasterShaderCompileDefinitions.Push("FDeviceMaterial GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex);", EmissiveMaterialCode);
-	assert((sizeof(FDeviceMaterial) % sizeof(float)) == 0);
-	MasterShaderCompileDefinitions.Push("SIZE_OF_DEVICE_MATERIAL_STRUCT", std::to_string(sizeof(FDeviceMaterial) / sizeof(float)));
+    MasterShaderCompileDefinitions.Push("FOpenPBRSurface GetEmissiveMaterial(vec2 TextureCoords, uint MaterialIndex);", EmissiveMaterialCode);
+	assert((sizeof(FOpenPBRSurface) % sizeof(float)) == 0);
+	MasterShaderCompileDefinitions.Push("SIZE_OF_DEVICE_MATERIAL_STRUCT", std::to_string(sizeof(FOpenPBRSurface) / sizeof(float)));
 
 	for (auto& Material : *MATERIAL_SYSTEM())
 	{
 		auto MaterialCode = MATERIAL_SYSTEM()->GenerateMaterialCode(Material);
 		FCompileDefinitions CombinedCompileDefinitions(MasterShaderCompileDefinitions);
-		CombinedCompileDefinitions.Push("FDeviceMaterial GetMaterial(vec2 TextureCoords);", MaterialCode);
+		CombinedCompileDefinitions.Push("FOpenPBRSurface GetMaterial(vec2 TextureCoords);", MaterialCode);
 		auto RayGenerationShader = FShader("../src/shaders/master_shader.rgen", &CombinedCompileDefinitions);
 		uint32_t MaterialIndex = COORDINATOR().GetIndex<ECS::COMPONENTS::FOpenPBRSurfaceComponent>(Material);
 		MaterialPipelines[MaterialIndex] = VK_CONTEXT()->CreateRayTracingPipeline(RayGenerationShader(), RayMissShader(), RayClosestHitShader(), PipelineLayout);
