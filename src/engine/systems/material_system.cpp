@@ -276,6 +276,12 @@ namespace ECS
     		        break;
     		    }
 
+    			case(MATERIAL_GEOMETRY_THIN_WALLED):
+    			{
+    				MaterialComponent.GeometryThinWalled = Property;
+    				break;
+    			}
+
     		    default:
     		        throw std::runtime_error("Invalid material property");
     		}

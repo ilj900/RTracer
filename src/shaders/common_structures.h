@@ -325,7 +325,7 @@ struct FOpenPBRSurface
 
     // Geometry
     float GeometryOpacity;
-    uint32_t GeometryThinWalled;
+    float GeometryThinWalled;
     FVector3 GeometryNormal;
     FVector3 GeometryTangent;
     FVector3 GeometryCoatNormal;

@@ -156,7 +156,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
             {
                 auto SphereInstance = Render->CreateInstance(Sphere, { float(float(-W) * 0.5f + float(i)) * 2.1f, float(float(H) * 0.5f - float(j)) * 2.1f, 0 });
                 auto Material = Render->CreateRefractiveMaterial({ 1, 1, 1 });
-                Render->MaterialSetTransmissionRoughness(Material, float(i) * Ws + float(j) * Hs);
+                Render->MaterialSetSpecularRoughness(Material, float(i) * Ws + float(j) * Hs);
                 Render->ShapeSetMaterial(SphereInstance, Material);
             }
         }
@@ -180,7 +180,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		Render->MaterialSetBaseColor(SolidMaterial, CheckerboardTexture);
 		auto GlassMaterial = Render->CreateRefractiveMaterial({ 1, 1, 1 });
 		auto RoughnessTexture = Render->CreateTexture("../resources/roughness_texture_1.0.png");
-		Render->MaterialSetTransmissionRoughness(GlassMaterial, RoughnessTexture);
+		Render->MaterialSetSpecularRoughness(GlassMaterial, RoughnessTexture);
 
 		Render->ShapeSetMaterial(SolidPlane, SolidMaterial);
 		Render->ShapeSetMaterial(GlassPlane, GlassMaterial);
@@ -385,15 +385,15 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		float DiffuseRoughness = 1.f;
 		auto GreyMaterial = Render->CreateDiffuseMaterial({0.5f, 0.5f, 0.5f});
-		Render->MaterialSetDiffuseRoughness(GreyMaterial, DiffuseRoughness);
+		Render->MaterialSetBaseDiffuseRoughness(GreyMaterial, DiffuseRoughness);
 		auto JadeMaterial = Render->CreateDiffuseMaterial({0, 0.7333f, 0.4666f});
-		Render->MaterialSetDiffuseRoughness(JadeMaterial, DiffuseRoughness);
+		Render->MaterialSetBaseDiffuseRoughness(JadeMaterial, DiffuseRoughness);
 		auto CrimsonMaterial = Render->CreateDiffuseMaterial({0.698f, 0.1333f, 0.1333f});
-		Render->MaterialSetDiffuseRoughness(CrimsonMaterial, DiffuseRoughness);
+		Render->MaterialSetBaseDiffuseRoughness(CrimsonMaterial, DiffuseRoughness);
 		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
-		Render->MaterialSetDiffuseRoughness(WhiteMaterial, DiffuseRoughness);
+		Render->MaterialSetBaseDiffuseRoughness(WhiteMaterial, DiffuseRoughness);
 		auto OrangeMaterial = Render->CreateDiffuseMaterial({1, 0.3019f, 0});
-		Render->MaterialSetDiffuseRoughness(OrangeMaterial, DiffuseRoughness);
+		Render->MaterialSetBaseDiffuseRoughness(OrangeMaterial, DiffuseRoughness);
 
 		Render->ShapeSetMaterial(Floor, GreyMaterial);
 		Render->ShapeSetMaterial(DragonInstance, JadeMaterial);
@@ -410,7 +410,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 		float DiffuseRoughness = 0.f;
 		auto WhiteMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
-		Render->MaterialSetDiffuseRoughness(WhiteMaterial, DiffuseRoughness);
+		Render->MaterialSetBaseDiffuseRoughness(WhiteMaterial, DiffuseRoughness);
 		Render->ShapeSetMaterial(WhiteSphere, WhiteMaterial);
 
 		Render->SetIBL("../resources/white_furnace.exr");
@@ -457,7 +457,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto FloorInstance = Render->CreateInstance(Floor, {0, -2, 0}, {0, 1, 0}, {0, 0, -1});
 
 		auto EmissiveMaterial = Render->CreateEmptyMaterial();
-		Render->MaterialSetEmissionWeight(EmissiveMaterial, 1.f);
+		Render->MaterialSetEmissionLuminance(EmissiveMaterial, 1.f);
 		Render->MaterialSetEmissionColor(EmissiveMaterial, {1, 1, 1});
 		auto FloorMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
 
@@ -485,7 +485,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 		auto Light = Render->CreateInstance(Plane, {0, 120, 0}, {0, -1, 0}, {0, 0, 1});
 
 		auto EmissiveMaterial = Render->CreateEmptyMaterial();
-		Render->MaterialSetEmissionWeight(EmissiveMaterial, 1.f);
+		Render->MaterialSetEmissionLuminance(EmissiveMaterial, 1.f);
 		Render->MaterialSetEmissionColor(EmissiveMaterial, {1, 1, 1});
 		auto FloorMaterial = Render->CreateDiffuseMaterial({1, 1, 1});
 
@@ -504,7 +504,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 			auto ShaderballDiffuse = Render->CreateInstance(Shaderball, {-3, 3, 0}, {0, 0, 1}, {0, 1, 0});
 
 			auto DiffuseMaterial = Render->CreateMaterial("Diffuse material");
-			Render->MaterialSetBaseColorWeight(DiffuseMaterial, 1.f);
+			Render->MaterialSetBaseWeight(DiffuseMaterial, 1.f);
 			Render->MaterialSetBaseColor(DiffuseMaterial, FVector3(0., 0.37, 0.54));
 
 			Render->ShapeSetMaterial(ShaderballDiffuse, DiffuseMaterial);
@@ -514,14 +514,14 @@ void FSceneLoader::LoadScene(const std::string& Name)
 			auto ShaderballPlasticSmooth = Render->CreateInstance(Shaderball, {0, 3, 0}, {0, 0, 1}, {0, 1, 0});
 
 			auto SmoothPlasticMaterial = Render->CreateMaterial("Smooth plastic material");
-			Render->MaterialSetBaseColorWeight(SmoothPlasticMaterial, 1.f);
+			Render->MaterialSetBaseWeight(SmoothPlasticMaterial, 1.f);
 			Render->MaterialSetBaseColor(SmoothPlasticMaterial, FVector3(0.356f, 0.529, 0.913));
-			Render->MaterialSetMetalness(SmoothPlasticMaterial, 0.f);
+			Render->MaterialSetBaseMetalness(SmoothPlasticMaterial, 0.f);
 
 			Render->MaterialSetSpecularWeight(SmoothPlasticMaterial, 1.f);
 			Render->MaterialSetSpecularColor(SmoothPlasticMaterial, FVector3(1, 1, 1));
 			Render->MaterialSetSpecularRoughness(SmoothPlasticMaterial, 0.f);
-			Render->MaterialSetSpecularIOR(SmoothPlasticMaterial, 1.45f);
+			Render->MaterialSetSpecularIor(SmoothPlasticMaterial, 1.45f);
 
 			Render->ShapeSetMaterial(ShaderballPlasticSmooth, SmoothPlasticMaterial);
 		}
@@ -530,14 +530,14 @@ void FSceneLoader::LoadScene(const std::string& Name)
 			auto ShaderballPlasticRough = Render->CreateInstance(Shaderball, {3, 3, 0}, {0, 0, 1}, {0, 1, 0});
 
 			auto RoughPlasticMaterial = Render->CreateMaterial("Rough plastic material");
-			Render->MaterialSetBaseColorWeight(RoughPlasticMaterial, 1.f);
+			Render->MaterialSetBaseWeight(RoughPlasticMaterial, 1.f);
 			Render->MaterialSetBaseColor(RoughPlasticMaterial, FVector3(0.356f, 0.529, 0.913));
-			Render->MaterialSetMetalness(RoughPlasticMaterial, 0.f);
+			Render->MaterialSetBaseMetalness(RoughPlasticMaterial, 0.f);
 
 			Render->MaterialSetSpecularWeight(RoughPlasticMaterial, 1.f);
 			Render->MaterialSetSpecularColor(RoughPlasticMaterial, FVector3(1, 1, 1));
 			Render->MaterialSetSpecularRoughness(RoughPlasticMaterial, 0.324f);
-			Render->MaterialSetSpecularIOR(RoughPlasticMaterial, 1.45f);
+			Render->MaterialSetSpecularIor(RoughPlasticMaterial, 1.45f);
 
 			Render->ShapeSetMaterial(ShaderballPlasticRough, RoughPlasticMaterial);
 		}
@@ -547,7 +547,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 			auto CopperMaterial = Render->CreateMaterial("Copper material");
 			Render->MaterialSetBaseColor(CopperMaterial, FVector3(0.96467984, 0.37626296, 0.25818297));
-			Render->MaterialSetMetalness(CopperMaterial, 1.f);
+			Render->MaterialSetBaseMetalness(CopperMaterial, 1.f);
 
 			Render->MaterialSetSpecularWeight(CopperMaterial, 1.f);
 			Render->MaterialSetSpecularColor(CopperMaterial, FVector3(1, 1, 1));
@@ -561,7 +561,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 
 			auto WoodMaterial = Render->CreateMaterial("Wood material");
 
-			Render->MaterialSetBaseColorWeight(WoodMaterial, 1.f);
+			Render->MaterialSetBaseWeight(WoodMaterial, 1.f);
 			auto AlbedoTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_color.jpg");
 			Render->MaterialSetBaseColor(WoodMaterial, AlbedoTexture);
 
@@ -569,7 +569,6 @@ void FSceneLoader::LoadScene(const std::string& Name)
 			auto RoughnessTexture = Render->CreateTexture("../resources/MaterialX_Wood/wood_roughness.jpg");
 			Render->MaterialSetSpecularColor(WoodMaterial, FVector3(1, 1, 1));
 			Render->MaterialSetSpecularRoughness(WoodMaterial, RoughnessTexture);
-			Render->MaterialSetSpecularAnisotropy(WoodMaterial, 0.5f);
 
 			Render->ShapeSetMaterial(ShaderballWood, WoodMaterial);
 		}
@@ -583,7 +582,7 @@ void FSceneLoader::LoadScene(const std::string& Name)
 			Render->MaterialSetSpecularWeight(ChromeMaterial, 1.f);
 			Render->MaterialSetSpecularColor(ChromeMaterial, FVector3(1, 1, 1));
 			Render->MaterialSetSpecularRoughness(ChromeMaterial, 0.f);
-			Render->MaterialSetMetalness(ChromeMaterial, 1.f);
+			Render->MaterialSetBaseMetalness(ChromeMaterial, 1.f);
 
 			Render->ShapeSetMaterial(ShaderballChrome, ChromeMaterial);
 		}
