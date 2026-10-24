@@ -461,9 +461,9 @@ void main()
 
     vec3 PathThroughput = CumulativeMaterialColorBuffer[PixelIndex].xyz;
 
-    if (Material.EmissionWeight > 0.f)
+    if (Material.EmissionLuminance > 0.f)
     {
-        ThroughputBuffer[PixelIndex].xyz += PathThroughput * Material.EmissionColor * Material.EmissionWeight;
+        ThroughputBuffer[PixelIndex].xyz += PathThroughput * Material.EmissionColor * Material.EmissionLuminance;
     }
 
     /// Process material interaction
