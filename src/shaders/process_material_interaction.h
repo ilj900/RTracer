@@ -116,14 +116,14 @@ FBXDFPDF CalculateBXDFPDF(FOpenPBRSurface Material, FShadingData ShadingData, FR
 	FBXDFWeights BXDFWeights = FBXDFWeights(vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0));
 
 	float IOR1 = RayData.Eta;
-	float IOR2 = ShadingData.bFrontFacing ? Material.SpecularIOR : 1.f;
+	float IOR2 = ShadingData.bFrontFacing ? Material.SpecularIor : 1.f;
 
 	float DielectricF0 = CalculateF0(IOR1, IOR2);
-	vec3 F0 = mix(vec3(DielectricF0), Material.BaseColor, Material.Metalness);
+	vec3 F0 = mix(vec3(DielectricF0), Material.BaseColor, Material.BaseMetalness);
 
 	vec3 F = FresnelSchlick(ShadingData.NDotI, F0);
 	BXDFWeights.Specular = Material.SpecularWeight * F;
-	float NonMetal = 1.f - Material.Metalness;
+	float NonMetal = 1.f - Material.BaseMetalness;
 	BXDFWeights.Diffuse = Material.BaseWeight * Material.BaseColor * (vec3(1.0) - F) * NonMetal;
 	BXDFWeights.Transmissive = Material.TransmissionWeight * (vec3(1.0) - F) * NonMetal;
 
@@ -186,7 +186,7 @@ float ScatterMaterial(FOpenPBRSurface Material, FBXDFPDF BXDFPDF, out uint RayTy
 		case TRANSMISSION_LAYER:
 		{
 			float IOR1 = RayData.Eta;
-			float IOR2 = bFrontFacing ? Material.SpecularIOR : 1;
+			float IOR2 = bFrontFacing ? Material.SpecularIor : 1;
 			float EtaRatio = IOR1 / IOR2;
 
 			float R0 = (IOR1 - IOR2) / (IOR1 + IOR2);
@@ -194,7 +194,7 @@ float ScatterMaterial(FOpenPBRSurface Material, FBXDFPDF BXDFPDF, out uint RayTy
 
 			vec3 TangentSpaceViewDirection = ShadingData.TangentSpaceIncomingDirection;
 
-			if (Material.TransmissionRoughness == 0.f)
+			if (Material.SpecularRoughness == 0.f)
 			{
 				ShadingData.IsScatteredRaySingular = true;
 				PDF = 1.f;
@@ -242,8 +242,8 @@ float ScatterMaterial(FOpenPBRSurface Material, FBXDFPDF BXDFPDF, out uint RayTy
 
 				vec2 RandomSquare = Sample2DUnitQuad(SamplingState);
 				vec3 NewNormal = SampleGGXVNDF(-TangentSpaceViewDirection.xzy,
-					Material.TransmissionRoughness * Material.TransmissionRoughness,
-					Material.TransmissionRoughness * Material.TransmissionRoughness,
+					Material.SpecularRoughness * Material.SpecularRoughness,
+					Material.SpecularRoughness * Material.SpecularRoughness,
 					RandomSquare.x, RandomSquare.y).xzy;
                 /// NDotI is not equal to cos(theta) cause I in NDotI points towards the surface
                 float NDotI = dot(NewNormal, TangentSpaceViewDirection);
@@ -265,8 +265,8 @@ float ScatterMaterial(FOpenPBRSurface Material, FBXDFPDF BXDFPDF, out uint RayTy
 					RayType = SPECULAR_LAYER;
 					ShadingData.TangentSpaceOutgoingDirection = Reflected;
 					PDF = VNDPDF(NewNormal.xzy,
-						Material.TransmissionRoughness * Material.TransmissionRoughness,
-						Material.TransmissionRoughness * Material.TransmissionRoughness,
+						Material.SpecularRoughness * Material.SpecularRoughness,
+						Material.SpecularRoughness * Material.SpecularRoughness,
 						-TangentSpaceViewDirection.xzy);
 				}
 				else
@@ -286,8 +286,8 @@ float ScatterMaterial(FOpenPBRSurface Material, FBXDFPDF BXDFPDF, out uint RayTy
 						RayType = SPECULAR_LAYER;
 						ShadingData.TangentSpaceOutgoingDirection = Reflected;
 						PDF = VNDPDF(NewNormal.xzy,
-							Material.TransmissionRoughness * Material.TransmissionRoughness,
-							Material.TransmissionRoughness * Material.TransmissionRoughness,
+							Material.SpecularRoughness * Material.SpecularRoughness,
+							Material.SpecularRoughness * Material.SpecularRoughness,
 							-TangentSpaceViewDirection.xzy);
 					}
 					else
@@ -304,8 +304,8 @@ float ScatterMaterial(FOpenPBRSurface Material, FBXDFPDF BXDFPDF, out uint RayTy
 							break;
 
 						PDF = VNDPDF(NewNormal.xzy,
-							Material.TransmissionRoughness * Material.TransmissionRoughness,
-							Material.TransmissionRoughness * Material.TransmissionRoughness,
+							Material.SpecularRoughness * Material.SpecularRoughness,
+							Material.SpecularRoughness * Material.SpecularRoughness,
 							-TangentSpaceViewDirection.xzy);
 
 						PDF = 4.f * CosTheta * PDF * IOR2 * IOR2 * CosT / (Denom * Denom);
@@ -357,7 +357,7 @@ vec3 EvaluateMaterialInteraction(FOpenPBRSurface Material, uint RayType, vec3 Wo
 			BXDF = EvaluateOrenNayar(-ShadingData.TangentSpaceIncomingDirection,
 				TangentSpaceLightDirection,
 				Material.BaseColor,
-				Material.DiffuseRoughness * M_PI_2);
+				Material.BaseDiffuseRoughness * M_PI_2);
 #else
 			BXDF = EvaluateLambertian(Material.BaseColor);
 #endif
@@ -369,8 +369,8 @@ vec3 EvaluateMaterialInteraction(FOpenPBRSurface Material, uint RayType, vec3 Wo
 			vec3 L = WorldSpaceLightDirection;
 			vec3 N = ShadingData.NormalInWorldSpace;
 			vec3 H = normalize(L + V);
-			vec3 DielectricF0 = CalculateF0(ShadingData.IOR1, Material.SpecularIOR) * Material.SpecularColor;
-			vec3 F0 = mix(DielectricF0, Material.BaseColor, Material.Metalness);
+			vec3 DielectricF0 = CalculateF0(ShadingData.IOR1, Material.SpecularIor) * Material.SpecularColor;
+			vec3 F0 = mix(DielectricF0, Material.BaseColor, Material.BaseMetalness);
 
 			float NDotL = clamp(dot(N, L), 1e-6, 1);
 			float NDotV = clamp(dot(N, V), 1e-6, 1);
@@ -427,7 +427,7 @@ float EvaluateScatteringPDF(FOpenPBRSurface Material, uint RayType, vec3 WorldSp
 		}
 		case TRANSMISSION_LAYER:
 		{
-			if (Material.TransmissionRoughness == 0.f)
+			if (Material.SpecularRoughness == 0.f)
 				return 0.f;  // singular — MIS not used for this case
 
 			// Light must be on the transmitted side (below surface in tangent space)
@@ -435,7 +435,7 @@ float EvaluateScatteringPDF(FOpenPBRSurface Material, uint RayType, vec3 WorldSp
 				return 0.f;
 
 			float IOR1 = ShadingData.IOR1;
-			float IOR2 = ShadingData.bFrontFacing ? Material.SpecularIOR : 1.f;
+			float IOR2 = ShadingData.bFrontFacing ? Material.SpecularIor : 1.f;
 
 			/// TODO: Save insted of recalculating
 			vec3 H = normalize(IOR1 * ShadingData.TangentSpaceIncomingDirection - IOR2 * TangentSpaceLightDirection);
@@ -448,7 +448,7 @@ float EvaluateScatteringPDF(FOpenPBRSurface Material, uint RayType, vec3 WorldSp
 			if (abs(Denom) < 1e-6)
 				return 0.f;
 
-			float Alpha2 = Material.TransmissionRoughness * Material.TransmissionRoughness;
+			float Alpha2 = Material.SpecularRoughness * Material.SpecularRoughness;
 			float VndPDF = VNDPDF(H.xzy, Alpha2, Alpha2, -ShadingData.TangentSpaceIncomingDirection.xzy);
 
 			return 4.f * CosTheta * VndPDF * IOR2 * IOR2 * CosT / (Denom * Denom);
@@ -462,8 +462,8 @@ vec3 EvaluateSampledMaterialThroughput(FOpenPBRSurface Material, uint RayType, v
 {
 	if (IsSpecularSingular(Material) && RayType == SPECULAR_LAYER)
 	{
-		vec3 DielectricF0 = CalculateF0(ShadingData.IOR1, Material.SpecularIOR) * Material.SpecularColor;
-		vec3 F0 = mix(DielectricF0, Material.BaseColor, Material.Metalness);
+		vec3 DielectricF0 = CalculateF0(ShadingData.IOR1, Material.SpecularIor) * Material.SpecularColor;
+		vec3 F0 = mix(DielectricF0, Material.BaseColor, Material.BaseMetalness);
 		return Material.SpecularWeight * FresnelSchlick(ShadingData.NDotI, F0);
 	}
 

@@ -109,68 +109,78 @@
 
 
 /// AOV Indices
-#define AOV_COLOR																0u
-#define AOV_SHADING_NORMAL														1u
-#define AOV_GEOMETRIC_NORMAL													2u
-#define AOV_UV_COORDS															3u
-#define AOV_WORLD_SPACE_POSITION												4u
-#define AOV_OPACITY																5u
-#define AOV_DEPTH																6u
-#define AOV_MATERIAL_ALBEDO_WEIGHT												7u
-#define AOV_MATERIAL_ALBEDO														8u
-#define AOV_MATERIAL_DIFFUSE_ROUGHNESS											9u
-#define AOV_MATERIAL_METALNESS													10u
-#define AOV_MATERIAL_NORMAL														11u
-#define AOV_MATERIAL_SPECULAR_WEIGHT											12u
-#define AOV_MATERIAL_SPECULAR_COLOR												13u
-#define AOV_MATERIAL_SPECULAR_ROUGHNESS											14u
-#define AOV_MATERIAL_SPECULAR_IOR												15u
-#define AOV_MATERIAL_SPECULAR_ANISOTROPY										16u
-#define AOV_MATERIAL_SPECULAR_ROTATION											17u
-#define AOV_MATERIAL_TRANSMISSION_WEIGHT										18u
-#define AOV_MATERIAL_TRANSMISSION_COLOR											19u
-#define AOV_MATERIAL_TRANSMISSION_DEPTH											20u
-#define AOV_MATERIAL_TRANSMISSION_SCATTER										21u
-#define AOV_MATERIAL_TRANSMISSION_ANISOTROPY									22u
-#define AOV_MATERIAL_TRANSMISSION_DISPERSION									23u
-#define AOV_MATERIAL_TRANSMISSION_ROUGHNESS										24u
-#define AOV_MATERIAL_SUBSURFACE_WEIGHT											25u
-#define AOV_MATERIAL_SUBSURFACE_COLOR											26u
-#define AOV_MATERIAL_SUBSURFACE_RADIUS											27u
-#define AOV_MATERIAL_SUBSURFACE_SCALE											28u
-#define AOV_MATERIAL_SUBSURFACE_ANISOTROPY										29u
-#define AOV_MATERIAL_SHEEN_WEIGHT												30u
-#define AOV_MATERIAL_SHEEN_COLOR												31u
-#define AOV_MATERIAL_SHEEN_ROUGHNESS											32u
-#define AOV_MATERIAL_COAT_WEIGHT												33u
-#define AOV_MATERIAL_COAT_COLOR													34u
-#define AOV_MATERIAL_COAT_ROUGHNESS												35u
-#define AOV_MATERIAL_COAT_ANISOTROPY											36u
-#define AOV_MATERIAL_COAT_ROTATION												37u
-#define AOV_MATERIAL_COAT_IOR													38u
-#define AOV_MATERIAL_COAT_NORMAL												39u
-#define AOV_MATERIAL_COAT_AFFECT_COLOR											40u
-#define AOV_MATERIAL_COAT_AFFECT_ROUGHNESS										41u
-#define AOV_MATERIAL_THIN_FILM_THICKNESS										42u
-#define AOV_MATERIAL_THIN_FILM_IOR												43u
-#define AOV_MATERIAL_EMISSION_WEIGHT											44u
-#define AOV_MATERIAL_COLOR														45u
-#define AOV_MATERIAL_OPACITY													46u
-#define AOV_MATERIAL_THIN_WALLED												47u
-#define AOV_LUMINANCE															48u
-#define AOV_BOUNCE_HEATMAP														49u
-#define AOV_RENDERABLE_INDEX													50u
-#define AOV_PRIMITIVE_INDEX														51u
-#define AOV_MATERIAL_INDEX														52u
-#define AOV_DEBUG_LAYER_0														53u
-#define AOV_DEBUG_LAYER_1														54u
-#define AOV_DEBUG_LAYER_2														55u
-#define AOV_DEBUG_LAYER_3														56u
-#define AOV_DEBUG_LAYER_4														57u
-#define AOV_DEBUG_LAYER_5														58u
-#define AOV_DEBUG_LAYER_6														59u
-#define AOV_DEBUG_LAYER_7														60u
-#define AOV_MAX																	61u
+#define AOV_COLOR                                       						0u
+#define AOV_SHADING_NORMAL                              						1u
+#define AOV_GEOMETRIC_NORMAL                            						2u
+#define AOV_UV_COORDS                                   						3u
+#define AOV_WORLD_SPACE_POSITION                        						4u
+#define AOV_OPACITY                                     						5u
+#define AOV_DEPTH                                       						6u
+// Base
+#define AOV_MATERIAL_BASE_WEIGHT                        						7u
+#define AOV_MATERIAL_BASE_COLOR                         						8u
+#define AOV_MATERIAL_BASE_METALNESS                     						9u
+#define AOV_MATERIAL_BASE_DIFFUSE_ROUGHNESS             						10u
+// Specular
+#define AOV_MATERIAL_SPECULAR_WEIGHT                    						11u
+#define AOV_MATERIAL_SPECULAR_COLOR                     						12u
+#define AOV_MATERIAL_SPECULAR_ROUGHNESS                 						13u
+#define AOV_MATERIAL_SPECULAR_ROUGHNESS_ANISOTROPY      						14u
+#define AOV_MATERIAL_SPECULAR_IOR                       						15u
+// Transmission
+#define AOV_MATERIAL_TRANSMISSION_WEIGHT                						16u
+#define AOV_MATERIAL_TRANSMISSION_COLOR                 						17u
+#define AOV_MATERIAL_TRANSMISSION_DEPTH                 						18u
+#define AOV_MATERIAL_TRANSMISSION_SCATTER               						19u
+#define AOV_MATERIAL_TRANSMISSION_SCATTER_ANISOTROPY    						20u
+#define AOV_MATERIAL_TRANSMISSION_DISPERSION_SCALE      						21u
+#define AOV_MATERIAL_TRANSMISSION_DISPERSION_ABBE_NUMBER						22u
+// Subsurface
+#define AOV_MATERIAL_SUBSURFACE_WEIGHT                      					23u
+#define AOV_MATERIAL_SUBSURFACE_COLOR                       					24u
+#define AOV_MATERIAL_SUBSURFACE_RADIUS                      					25u
+#define AOV_MATERIAL_SUBSURFACE_RADIUS_SCALE                					26u
+#define AOV_MATERIAL_SUBSURFACE_SCATTER_ANISOTROPY          					27u
+// Coat
+#define AOV_MATERIAL_COAT_WEIGHT                            					28u
+#define AOV_MATERIAL_COAT_COLOR                             					29u
+#define AOV_MATERIAL_COAT_ROUGHNESS                         					30u
+#define AOV_MATERIAL_COAT_ROUGHNESS_ANISOTROPY              					31u
+#define AOV_MATERIAL_COAT_IOR                               					32u
+#define AOV_MATERIAL_COAT_DARKENING                         					33u
+// Fuzz
+#define AOV_MATERIAL_FUZZ_WEIGHT                            					34u
+#define AOV_MATERIAL_FUZZ_COLOR                             					35u
+#define AOV_MATERIAL_FUZZ_ROUGHNESS                         					36u
+// Emission
+#define AOV_MATERIAL_EMISSION_LUMINANCE                     					37u
+#define AOV_MATERIAL_EMISSION_COLOR                         					38u
+// Thin film
+#define AOV_MATERIAL_THIN_FILM_WEIGHT                       					39u
+#define AOV_MATERIAL_THIN_FILM_THICKNESS                    					40u
+#define AOV_MATERIAL_THIN_FILM_IOR                          					41u
+// Geometry
+#define AOV_MATERIAL_GEOMETRY_OPACITY                       					42u
+#define AOV_MATERIAL_GEOMETRY_THIN_WALLED                   					43u
+#define AOV_MATERIAL_GEOMETRY_NORMAL                        					44u
+#define AOV_MATERIAL_GEOMETRY_TANGENT                       					45u
+#define AOV_MATERIAL_GEOMETRY_COAT_NORMAL                   					46u
+#define AOV_MATERIAL_GEOMETRY_COAT_TANGENT                  					47u
+// Misc
+#define AOV_LUMINANCE                                       					48u
+#define AOV_BOUNCE_HEATMAP                                  					49u
+#define AOV_RENDERABLE_INDEX                                					50u
+#define AOV_PRIMITIVE_INDEX                                 					51u
+#define AOV_MATERIAL_INDEX                                  					52u
+#define AOV_DEBUG_LAYER_0                                   					53u
+#define AOV_DEBUG_LAYER_1                                   					54u
+#define AOV_DEBUG_LAYER_2                                   					55u
+#define AOV_DEBUG_LAYER_3                                   					56u
+#define AOV_DEBUG_LAYER_4                                   					57u
+#define AOV_DEBUG_LAYER_5                                   					58u
+#define AOV_DEBUG_LAYER_6                                   					59u
+#define AOV_DEBUG_LAYER_7                                   					60u
+#define AOV_MAX                                             					61u
 
 /// Task accumulate descriptor set layout defines
 #define ACCUMULATE_PER_FRAME_LAYOUT_INDEX 										0u

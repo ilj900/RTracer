@@ -512,7 +512,7 @@ vec4 ComputeBXDFAreaLightInput(inout FSamplingState SamplingState, vec3 LightDir
         /// TODO: Optimize
         FOpenPBRSurface EmissiveMaterial = GetEmissiveMaterial(TextureCoords, Renderable.MaterialIndex);
 
-        if (EmissiveMaterial.EmissionWeight != 0)
+        if (EmissiveMaterial.EmissionLuminance != 0)
         {
             FDeviceTransform Transform = DeviceTransforms[Renderable.TransformIndex];
 
