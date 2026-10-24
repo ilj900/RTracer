@@ -89,7 +89,7 @@ void SaveAOVs(uvec2 PixelCoords)
         case AOV_WORLD_SPACE_POSITION:
         case AOV_OPACITY:
         case AOV_DEPTH:
-        case AOV_MATERIAL_ALBEDO:
+        case AOV_MATERIAL_BASE_COLOR:
         case AOV_LUMINANCE:
         case AOV_BOUNCE_HEATMAP:
         case AOV_RENDERABLE_INDEX:
